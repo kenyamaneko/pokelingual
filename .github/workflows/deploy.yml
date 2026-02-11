@@ -153,29 +153,49 @@ jobs:
           ID_TOKEN: ${{ steps.firebase-token.outputs.token }}
         run: bash scripts/integration-test.sh
 
-      - name: Cleanup test data from Firestore
+      - name: Cleanup all test resources
         if: always()
         env:
           TEST_USER_UID: ${{ steps.firebase-token.outputs.uid }}
+          TEST_USER_EMAIL: test@pokelingual.dev
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
           if [ -z "${TEST_USER_UID}" ] || [ "${TEST_USER_UID}" = "null" ]; then
             echo "No test user UID available, skipping cleanup"
             exit 0
           fi
-          echo "Cleaning up test data for user: ${TEST_USER_UID}"
           ACCESS_TOKEN=$(gcloud auth print-access-token)
-          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
-          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+          BASE="https://firestore.googleapis.com/v1/projects/${GCP_PROJECT_ID}/databases/(default)/documents"
 
-          # Delete all documents in users/{uid}/pokemon/
+          # 1. Delete Firestore: users/{uid}/pokemon/*
+          echo "Deleting pokemon data..."
           DOCS=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             "${BASE}/users/${TEST_USER_UID}/pokemon")
           echo "${DOCS}" | jq -r '.documents[]?.name // empty' | while read -r doc_path; do
             curl -s -X DELETE -H "Authorization: Bearer ${ACCESS_TOKEN}" \
               "https://firestore.googleapis.com/v1/${doc_path}"
-            echo "Deleted: ${doc_path}"
+            echo "  Deleted: ${doc_path}"
           done
-          echo "Cleanup complete"
+
+          # 2. Remove test email from config/auth.allowed_emails
+          echo "Removing test email from allowed_emails..."
+          DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
+          VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? | select(.stringValue != "'"${TEST_USER_EMAIL}"'")]')
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
+            -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
+
+          # 3. Delete Firebase Auth user
+          echo "Deleting Firebase Auth user..."
+          curl -s -X POST \
+            "https://identitytoolkit.googleapis.com/v1/projects/${GCP_PROJECT_ID}/accounts:delete" \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"localId\":\"${TEST_USER_UID}\"}"
+
+          echo "Cleanup complete: pokemon data, allowed_emails, auth user all removed"
 
       - name: Rollback on failure
         if: failure()
