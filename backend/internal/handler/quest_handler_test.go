@@ -64,7 +64,9 @@ func TestNewQuestHandler(t *testing.T) {
 	}
 
 	var resp service.QuestNewResponse
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if resp.PokemonID != 25 {
 		t.Errorf("expected pokemon_id 25, got %d", resp.PokemonID)
 	}
@@ -101,7 +103,9 @@ func TestScoreTranslationHandler(t *testing.T) {
 	}
 
 	var resp service.ScoreResponse
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if resp.Score != 75 {
 		t.Errorf("expected score 75, got %f", resp.Score)
 	}
@@ -257,7 +261,9 @@ func TestCaptureHandler_ErrorMessageHidden(t *testing.T) {
 
 	// Then: error message does not leak internal details
 	var resp map[string]string
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if resp["error"] != "resource not found" {
 		t.Errorf("expected generic error message, got %q", resp["error"])
 	}
