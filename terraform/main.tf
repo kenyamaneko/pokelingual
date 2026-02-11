@@ -281,9 +281,11 @@ resource "google_project_iam_member" "github_actions_artifact_registry" {
 }
 
 # Grant deploy SA permissions to deploy Cloud Run
+# roles/run.admin is required (not run.developer) because --allow-unauthenticated
+# needs run.services.setIamPolicy permission to grant allUsers the invoker role.
 resource "google_project_iam_member" "github_actions_cloud_run" {
   project = var.project_id
-  role    = "roles/run.developer"
+  role    = "roles/run.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
