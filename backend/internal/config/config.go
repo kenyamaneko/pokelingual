@@ -17,7 +17,7 @@ type Config struct {
 
 // Load reads environment variables and returns the application configuration.
 func Load() *Config {
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	return &Config{
 		AppMode:                 getEnv("APP_MODE", "dev"),

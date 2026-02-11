@@ -60,7 +60,9 @@ func TestGetCollectionHandler(t *testing.T) {
 		TotalAvailable int                       `json:"total_available"`
 		CapturedCount  int                       `json:"captured_count"`
 	}
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if len(resp.Pokemon) != 3 {
 		t.Errorf("expected 3 pokemon, got %d", len(resp.Pokemon))
@@ -99,7 +101,9 @@ func TestGetCollectionHandler_WithExclusions(t *testing.T) {
 	var resp struct {
 		TotalAvailable int `json:"total_available"`
 	}
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	// TotalAvailable should be less than MaxPokemonID due to exclusions
 	if resp.TotalAvailable >= service.MaxPokemonID {
@@ -132,7 +136,9 @@ func TestGetCollectionHandler_Empty(t *testing.T) {
 		Pokemon       []service.CollectionEntry `json:"pokemon"`
 		CapturedCount int                       `json:"captured_count"`
 	}
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if len(resp.Pokemon) != 0 {
 		t.Errorf("expected 0 pokemon, got %d", len(resp.Pokemon))
@@ -179,7 +185,9 @@ func TestGetPokemonDetailHandler(t *testing.T) {
 	}
 
 	var resp service.PokemonDetailResponse
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if resp.NameEN != "Pikachu" {
 		t.Errorf("expected Pikachu, got %s", resp.NameEN)

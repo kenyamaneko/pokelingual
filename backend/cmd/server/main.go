@@ -61,7 +61,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to initialize firestore: %v", err)
 		}
-		defer firestoreClient.Close()
+		defer func() { _ = firestoreClient.Close() }()
 
 		// Initialize Gemini
 		geminiClient, err := genai.NewClient(ctx, &genai.ClientConfig{

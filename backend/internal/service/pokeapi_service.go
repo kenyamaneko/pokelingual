@@ -145,7 +145,7 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 	if err != nil {
 		return nil, fmt.Errorf("fetching species: %w", err)
 	}
-	defer speciesResp.Body.Close()
+	defer func() { _ = speciesResp.Body.Close() }()
 
 	if speciesResp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("species API returned status %d", speciesResp.StatusCode)
@@ -166,7 +166,7 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 	if err != nil {
 		return nil, fmt.Errorf("fetching pokemon: %w", err)
 	}
-	defer pokemonResp.Body.Close()
+	defer func() { _ = pokemonResp.Body.Close() }()
 
 	var pokemonData pokeAPIPokemonResponse
 	if err := json.NewDecoder(pokemonResp.Body).Decode(&pokemonData); err != nil {

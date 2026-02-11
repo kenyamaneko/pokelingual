@@ -82,8 +82,6 @@ func stripCodeFences(text string) string {
 	} else if strings.HasPrefix(text, "```") {
 		text = strings.TrimPrefix(text, "```")
 	}
-	if strings.HasSuffix(text, "```") {
-		text = strings.TrimSuffix(text, "```")
-	}
+	text = strings.TrimSuffix(text, "```")
 	return strings.TrimSpace(text)
 }

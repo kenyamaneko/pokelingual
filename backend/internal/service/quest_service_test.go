@@ -68,7 +68,7 @@ func TestScoreTranslation(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 85}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: scoring a translation
 	resp, err := svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
@@ -111,7 +111,7 @@ func TestGuessName_ExactEnglish(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: guessing the exact English name "Pikachu"
 	resp, err := svc.GuessName(context.Background(), "user1", "Pikachu")
@@ -136,7 +136,7 @@ func TestGuessName_CaseInsensitive(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: guessing "pikachu" (lowercase)
 	resp, err := svc.GuessName(context.Background(), "user1", "pikachu")
@@ -158,7 +158,7 @@ func TestGuessName_Japanese(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: guessing the Japanese name "ピカチュウ"
 	resp, err := svc.GuessName(context.Background(), "user1", "ピカチュウ")
@@ -183,7 +183,7 @@ func TestGuessName_FuzzyMatch(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: guessing "Pikacbu" (Levenshtein distance 1 from "Pikachu")
 	resp, err := svc.GuessName(context.Background(), "user1", "Pikacbu")
@@ -205,7 +205,7 @@ func TestGuessName_ThreeWrongAttempts(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: guessing wrong 3 times
 	for i := 0; i < 2; i++ {
@@ -247,7 +247,7 @@ func TestGuessName_ShortNameNoFuzzy(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: shortPokemon}
 	scorer := &testutil.MockAIScorer{}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
 
 	// When: guessing "Met" (Levenshtein distance 1 from "Mew")
 	resp, _ := svc.GuessName(context.Background(), "user1", "Met")
@@ -263,9 +263,9 @@ func TestAttemptCapture_HighScore(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 100}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
-	svc.ScoreTranslation(context.Background(), "user1", "完璧な翻訳")
-	svc.GuessName(context.Background(), "user1", "Pikachu")
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "完璧な翻訳")
+	_, _ = svc.GuessName(context.Background(), "user1", "Pikachu")
 
 	// When: attempting capture
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
@@ -290,8 +290,8 @@ func TestAttemptCapture_ZeroScore(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 0}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
-	svc.ScoreTranslation(context.Background(), "user1", "でたらめ")
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "でたらめ")
 
 	// When: attempting capture
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
@@ -313,11 +313,11 @@ func TestAttemptCapture_WrongGuessPenalty(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
-	svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
-	svc.GuessName(context.Background(), "user1", "WrongName1")
-	svc.GuessName(context.Background(), "user1", "WrongName2")
-	svc.GuessName(context.Background(), "user1", "ピカチュウ")
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
+	_, _ = svc.GuessName(context.Background(), "user1", "WrongName1")
+	_, _ = svc.GuessName(context.Background(), "user1", "WrongName2")
+	_, _ = svc.GuessName(context.Background(), "user1", "ピカチュウ")
 
 	// When: attempting capture
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
@@ -338,8 +338,8 @@ func TestAttemptCapture_SkipHalfMultiplier(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
-	svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
 
 	// When: attempting capture without guessing (skip)
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
@@ -359,11 +359,11 @@ func TestAttemptCapture_AllWrongHalfMultiplier(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
-	svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
-	svc.GuessName(context.Background(), "user1", "Wrong1")
-	svc.GuessName(context.Background(), "user1", "Wrong2")
-	svc.GuessName(context.Background(), "user1", "Wrong3")
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
+	_, _ = svc.GuessName(context.Background(), "user1", "Wrong1")
+	_, _ = svc.GuessName(context.Background(), "user1", "Wrong2")
+	_, _ = svc.GuessName(context.Background(), "user1", "Wrong3")
 
 	// When: attempting capture
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
@@ -383,9 +383,9 @@ func TestAttemptCapture_SessionDeletedAfter(t *testing.T) {
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 50}
 	svc := setupQuestService(scorer, fetcher)
-	svc.NewQuest(context.Background(), "user1")
-	svc.ScoreTranslation(context.Background(), "user1", "test")
-	svc.AttemptCapture(context.Background(), "user1")
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "test")
+	_, _ = svc.AttemptCapture(context.Background(), "user1")
 
 	// When: attempting capture again on the same session
 	_, err := svc.AttemptCapture(context.Background(), "user1")
