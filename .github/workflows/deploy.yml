@@ -39,6 +39,29 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
+      - name: Ensure test user email in allowed_emails (dev only)
+        if: github.ref_name == 'develop'
+        env:
+          TEST_USER_EMAIL: test@pokelingual.dev
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+          DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
+          EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
+          if echo "${EXISTING}" | grep -qx "${TEST_USER_EMAIL}"; then
+            echo "Test email already in allowed_emails"
+          else
+            echo "Adding test email to allowed_emails..."
+            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${TEST_USER_EMAIL}"'"}]')
+            curl -s -X PATCH \
+              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
+              -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
+            echo "Added ${TEST_USER_EMAIL} to allowed_emails"
+          fi
+
       - name: Build and push Docker image
         working-directory: backend
         run: |
@@ -57,9 +80,132 @@ jobs:
             --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
             --update-env-vars "FRONTEND_URL=${{ env.FRONTEND_URL }}"
 
+  # Integration tests: run against deployed dev backend with real resources
+  # Only runs on develop branch, between backend deploy and frontend deploy
+  integration-test:
+    name: Integration Tests
+    needs: deploy-backend
+    if: github.ref_name == 'develop'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: pokelingual-api-dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Cloud Run service URL
+        id: service-url
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GCP_REGION }} \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --format 'value(status.url)')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure test user exists and get ID token
+        id: firebase-token
+        env:
+          TEST_USER_EMAIL: test@pokelingual.dev
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          # Try to sign in
+          RESPONSE=$(curl -s -X POST \
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"${TEST_USER_EMAIL}\",\"password\":\"${TEST_USER_PASSWORD}\",\"returnSecureToken\":true}")
+          TOKEN=$(echo "${RESPONSE}" | jq -r '.idToken')
+
+          # If sign-in failed, create the user via signUp API
+          if [ "${TOKEN}" = "null" ] || [ -z "${TOKEN}" ]; then
+            echo "Test user does not exist. Creating..."
+            RESPONSE=$(curl -s -X POST \
+              "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"${TEST_USER_EMAIL}\",\"password\":\"${TEST_USER_PASSWORD}\",\"returnSecureToken\":true}")
+            TOKEN=$(echo "${RESPONSE}" | jq -r '.idToken')
+          fi
+
+          UID=$(echo "${RESPONSE}" | jq -r '.localId')
+          if [ "${TOKEN}" = "null" ] || [ -z "${TOKEN}" ]; then
+            echo "Failed to get Firebase ID token"
+            echo "${RESPONSE}" | jq .
+            exit 1
+          fi
+          echo "Test user ready: ${TEST_USER_EMAIL} (uid: ${UID})"
+          echo "::add-mask::${TOKEN}"
+          echo "token=${TOKEN}" >> "$GITHUB_OUTPUT"
+          echo "uid=${UID}" >> "$GITHUB_OUTPUT"
+
+      - name: Run integration tests
+        env:
+          SERVICE_URL: ${{ steps.service-url.outputs.url }}
+          ID_TOKEN: ${{ steps.firebase-token.outputs.token }}
+        run: bash scripts/integration-test.sh
+
+      - name: Cleanup test data from Firestore
+        if: always()
+        env:
+          TEST_USER_UID: ${{ steps.firebase-token.outputs.uid }}
+        run: |
+          if [ -z "${TEST_USER_UID}" ] || [ "${TEST_USER_UID}" = "null" ]; then
+            echo "No test user UID available, skipping cleanup"
+            exit 0
+          fi
+          echo "Cleaning up test data for user: ${TEST_USER_UID}"
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+
+          # Delete all documents in users/{uid}/pokemon/
+          DOCS=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            "${BASE}/users/${TEST_USER_UID}/pokemon")
+          echo "${DOCS}" | jq -r '.documents[]?.name // empty' | while read -r doc_path; do
+            curl -s -X DELETE -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+              "https://firestore.googleapis.com/v1/${doc_path}"
+            echo "Deleted: ${doc_path}"
+          done
+          echo "Cleanup complete"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Integration tests failed. Rolling back to previous revision..."
+          PREV_REVISION=$(gcloud run revisions list \
+            --service ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GCP_REGION }} \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --sort-by "~creationTimestamp" \
+            --format "value(REVISION)" \
+            --limit 2 | tail -1)
+          if [ -n "${PREV_REVISION}" ]; then
+            gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+              --region ${{ env.GCP_REGION }} \
+              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --to-revisions "${PREV_REVISION}=100"
+            echo "Rolled back to revision: ${PREV_REVISION}"
+          else
+            echo "WARNING: No previous revision found to rollback to"
+          fi
+
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting
-    needs: test
+    needs: [test, deploy-backend, integration-test]
+    if: |
+      always() &&
+      needs.test.result == 'success' &&
+      needs.deploy-backend.result == 'success' &&
+      (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     permissions:
