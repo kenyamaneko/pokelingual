@@ -20,10 +20,13 @@ func init() {
 }
 
 func setupTestRouter(h *handler.QuestHandler) *gin.Engine {
+	return setupTestRouterWithUID(h, "test-user")
+}
+
+func setupTestRouterWithUID(h *handler.QuestHandler, uid string) *gin.Engine {
 	r := gin.New()
-	// Simulate auth middleware by setting uid
 	r.Use(func(c *gin.Context) {
-		c.Set("uid", "test-user")
+		c.Set("uid", uid)
 		c.Next()
 	})
 	r.GET("/quest/new", h.NewQuest)

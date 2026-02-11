@@ -19,8 +19,10 @@ provider "google" {
 }
 
 provider "google-beta" {
-  project = var.project_id
-  region  = var.region
+  project                = var.project_id
+  region                 = var.region
+  user_project_override  = true
+  billing_project        = var.project_id
 }
 
 # ============================================================
@@ -37,6 +39,10 @@ resource "google_project_service" "apis" {
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
     "generativelanguage.googleapis.com",
+    "iam.googleapis.com",
+    "iamcredentials.googleapis.com",
+    "sts.googleapis.com",
+    "secretmanager.googleapis.com",
   ])
 
   service            = each.value
@@ -59,6 +65,12 @@ resource "google_firebase_web_app" "frontend" {
   display_name = "${var.firebase_web_app_display_name} (${var.environment})"
 
   depends_on = [google_firebase_project.default]
+}
+
+data "google_firebase_web_app_config" "frontend" {
+  provider   = google-beta
+  project    = var.project_id
+  web_app_id = google_firebase_web_app.frontend.app_id
 }
 
 # ============================================================
@@ -143,29 +155,12 @@ resource "google_identity_platform_config" "auth" {
     allow_duplicate_emails = false
 
     email {
-      enabled           = false
-      password_required = false
+      enabled           = true
+      password_required = true
     }
   }
 
   depends_on = [google_project_service.apis]
-}
-
-resource "google_identity_platform_default_supported_idp_config" "google" {
-  provider = google-beta
-  project  = var.project_id
-  idp_id   = "google.com"
-
-  client_id     = ""
-  client_secret = ""
-
-  enabled = true
-
-  depends_on = [google_identity_platform_config.auth]
-
-  lifecycle {
-    ignore_changes = [client_id, client_secret]
-  }
 }
 
 # ============================================================
@@ -184,78 +179,11 @@ resource "google_artifact_registry_repository" "backend" {
 # ============================================================
 # Cloud Run (Backend API)
 # ============================================================
-resource "google_cloud_run_v2_service" "backend" {
-  provider = google-beta
-  project  = var.project_id
-  name     = "pokelingual-api-${var.environment}"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
-
-  template {
-    containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/pokelingual-backend/api:latest"
-
-      ports {
-        container_port = 8080
-      }
-
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
-
-      env {
-        name  = "FRONTEND_URL"
-        value = var.environment == "prod" ? "https://pokelingual.web.app" : "https://pokelingual-dev.web.app"
-      }
-
-      env {
-        name = "GEMINI_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.gemini_api_key.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      resources {
-        limits = {
-          cpu    = var.environment == "prod" ? "1" : "1"
-          memory = var.environment == "prod" ? "512Mi" : "256Mi"
-        }
-      }
-    }
-
-    scaling {
-      min_instance_count = var.environment == "prod" ? 1 : 0
-      max_instance_count = var.environment == "prod" ? 10 : 2
-    }
-
-    service_account = google_service_account.backend.email
-  }
-
-  depends_on = [
-    google_project_service.apis,
-    google_artifact_registry_repository.backend,
-  ]
-
-  lifecycle {
-    ignore_changes = [
-      template[0].containers[0].image,
-    ]
-  }
-}
-
-# Allow unauthenticated access to Cloud Run (Firebase Auth handles app-level auth)
-resource "google_cloud_run_v2_service_iam_member" "public" {
-  provider = google-beta
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.backend.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+# NOTE: Cloud Run service is created by the first `gcloud run deploy` in GitHub Actions.
+# After the first deploy, run the following to allow public access:
+#   gcloud run services add-iam-policy-binding pokelingual-api-${environment} \
+#     --region=asia-northeast1 --member="allUsers" --role="roles/run.invoker" \
+#     --project=${project_id}
 
 # ============================================================
 # Service Account for Backend
@@ -299,4 +227,76 @@ resource "google_secret_manager_secret_iam_member" "backend_secret_access" {
   secret_id = google_secret_manager_secret.gemini_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend.email}"
+}
+
+# ============================================================
+# Workload Identity Federation (GitHub Actions → GCP)
+# ============================================================
+resource "google_iam_workload_identity_pool" "github" {
+  project                   = var.project_id
+  workload_identity_pool_id = "github-actions"
+  display_name              = "GitHub Actions"
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_iam_workload_identity_pool_provider" "github" {
+  project                            = var.project_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-oidc"
+  display_name                       = "GitHub OIDC"
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
+    "attribute.repository" = "assertion.repository"
+  }
+
+  attribute_condition = "assertion.repository == \"${var.github_repo}\""
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+
+# Service account for GitHub Actions deploy
+resource "google_service_account" "github_actions" {
+  project      = var.project_id
+  account_id   = "github-actions-deploy"
+  display_name = "GitHub Actions Deploy (${var.environment})"
+}
+
+# Allow GitHub Actions to impersonate the deploy service account
+resource "google_service_account_iam_member" "github_actions_wif" {
+  service_account_id = google_service_account.github_actions.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repo}"
+}
+
+# Grant deploy SA permissions to push to Artifact Registry
+resource "google_project_iam_member" "github_actions_artifact_registry" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant deploy SA permissions to deploy Cloud Run
+resource "google_project_iam_member" "github_actions_cloud_run" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant deploy SA permissions to act as the backend service account (required for Cloud Run deploy)
+resource "google_service_account_iam_member" "github_actions_act_as_backend" {
+  service_account_id = google_service_account.backend.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# Grant deploy SA permissions to deploy Firebase Hosting
+resource "google_project_iam_member" "github_actions_firebase_hosting" {
+  project = var.project_id
+  role    = "roles/firebasehosting.admin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
 }

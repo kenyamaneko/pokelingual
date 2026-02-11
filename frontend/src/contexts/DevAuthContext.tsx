@@ -1,11 +1,12 @@
 import { type ReactNode } from "react";
+import type { User } from "firebase/auth";
 import { AuthContext } from "./AuthContext";
 
 const devUser = {
   uid: "dev-user",
   displayName: "Dev User",
   email: "dev@example.com",
-} as any;
+} as unknown as User;
 
 export function DevAuthProvider({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +14,7 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
       value={{
         user: devUser,
         loading: false,
-        loginWithGoogle: async () => {},
+        login: async () => {},
         logout: async () => {},
       }}
     >

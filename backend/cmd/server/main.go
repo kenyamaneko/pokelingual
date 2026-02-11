@@ -72,11 +72,30 @@ func main() {
 			log.Fatalf("failed to initialize gemini: %v", err)
 		}
 
+		// Read allowed emails from Firestore (config/auth document)
+		// If the document is missing or unreadable, no one can access the app.
+		var allowedEmails []string
+		configDoc, err := firestoreClient.Collection("config").Doc("auth").Get(ctx)
+		if err != nil {
+			log.Fatalf("failed to read config/auth from Firestore: %v (no users will be allowed without this document)", err)
+		}
+		if emails, ok := configDoc.Data()["allowed_emails"].([]interface{}); ok {
+			for _, e := range emails {
+				if s, ok := e.(string); ok {
+					allowedEmails = append(allowedEmails, s)
+				}
+			}
+		}
+		if len(allowedEmails) == 0 {
+			log.Fatalf("config/auth has no allowed_emails configured — refusing to start")
+		}
+		log.Printf("Loaded %d allowed email(s) from Firestore", len(allowedEmails))
+
 		pokemonFetcher = service.NewPokeAPIService()
 		aiScorer = service.NewGeminiService(geminiClient)
 		userPokemonRepo = repository.NewUserPokemonRepo(firestoreClient)
 		userSettingsRepo = repository.NewUserSettingsRepo(firestoreClient)
-		authMiddleware = middleware.FirebaseAuth(authClient)
+		authMiddleware = middleware.FirebaseAuth(authClient, allowedEmails)
 	}
 
 	// Wire up dependencies (all services receive interfaces, not concrete types)

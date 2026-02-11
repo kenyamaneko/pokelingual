@@ -89,3 +89,33 @@ func (m *MockUserPokemonRepo) GetPokemon(ctx context.Context, uid string, pokemo
 	}
 	return m.Pokemon, nil
 }
+
+// MockUserSettingsRepo implements domain.UserSettingsRepository for testing.
+type MockUserSettingsRepo struct {
+	Settings      *model.UserSettings
+	ErrorToReturn error
+	UpdateCalls   []MockUpdateExcludedCall
+}
+
+type MockUpdateExcludedCall struct {
+	UID        string
+	PokemonIDs []int
+}
+
+func (m *MockUserSettingsRepo) GetSettings(ctx context.Context, uid string) (*model.UserSettings, error) {
+	if m.ErrorToReturn != nil {
+		return nil, m.ErrorToReturn
+	}
+	if m.Settings == nil {
+		return &model.UserSettings{ExcludedPokemonIDs: []int{}}, nil
+	}
+	return m.Settings, nil
+}
+
+func (m *MockUserSettingsRepo) UpdateExcludedPokemon(ctx context.Context, uid string, pokemonIDs []int) error {
+	m.UpdateCalls = append(m.UpdateCalls, MockUpdateExcludedCall{
+		UID:        uid,
+		PokemonIDs: pokemonIDs,
+	})
+	return m.ErrorToReturn
+}

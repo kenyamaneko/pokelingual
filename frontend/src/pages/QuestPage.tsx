@@ -65,7 +65,7 @@ export function QuestPage() {
   }, []);
 
   useEffect(() => {
-    startNewQuest();
+    startNewQuest(); // eslint-disable-line react-hooks/set-state-in-effect -- initial data fetch on mount
   }, [startNewQuest]);
 
   const handleTranslationSubmit = async (translation: string) => {

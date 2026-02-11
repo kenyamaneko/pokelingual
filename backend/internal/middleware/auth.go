@@ -8,8 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// FirebaseAuth returns a Gin middleware that verifies Firebase ID tokens.
-func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
+// FirebaseAuth returns a Gin middleware that verifies Firebase ID tokens
+// and optionally restricts access to a whitelist of email addresses.
+func FirebaseAuth(authClient *auth.Client, allowedEmails []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -29,7 +30,24 @@ func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
 			return
 		}
 
+		if len(allowedEmails) > 0 {
+			email, _ := token.Claims["email"].(string)
+			if !contains(allowedEmails, email) {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				return
+			}
+		}
+
 		c.Set("uid", token.UID)
 		c.Next()
 	}
+}
+
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }

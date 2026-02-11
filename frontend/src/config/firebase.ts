@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 
 export const isDevMode = import.meta.env.VITE_APP_MODE === "dev";
 
@@ -13,12 +13,10 @@ const firebaseConfig = {
 };
 
 let auth: Auth;
-let googleProvider: GoogleAuthProvider;
 
 if (!isDevMode) {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  googleProvider = new GoogleAuthProvider();
 }
 
-export { auth, googleProvider };
+export { auth };

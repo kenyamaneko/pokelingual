@@ -33,7 +33,7 @@ backend/tmp/
 # Terraform
 .terraform/
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
 *.tfplan
 
 # Claude Code
