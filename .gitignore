@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+tmp/
+
+# Environment
+.env
+.env.local
+*.env
+
+# Firebase
+firebase-service-account.json
+*-service-account*.json
+
+# Go
+backend/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
