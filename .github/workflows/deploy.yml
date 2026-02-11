@@ -69,6 +69,11 @@ jobs:
           docker build -t "${IMAGE}" .
           docker push "${IMAGE}"
 
+      # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
+      # これはエンドユーザー向け API での Google 推奨パターン。
+      # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
+      # IAM が有効だと Cloud Run がリクエストを拒否してしまう。
+      # アプリレベルの認証は middleware/auth.go の Firebase Auth ミドルウェアが担保する。
       - name: Deploy to Cloud Run
         env:
           FRONTEND_URL: ${{ github.ref_name == 'main' && 'https://pokelingual-prod.web.app' || 'https://pokelingual-dev.web.app' }}
@@ -78,7 +83,8 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
-            --update-env-vars "FRONTEND_URL=${{ env.FRONTEND_URL }}"
+            --update-env-vars "FRONTEND_URL=${{ env.FRONTEND_URL }}" \
+            --allow-unauthenticated
 
   # Integration tests: run against deployed dev backend with real resources
   # Only runs on develop branch, between backend deploy and frontend deploy
