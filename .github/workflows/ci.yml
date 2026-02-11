@@ -29,7 +29,9 @@ jobs:
           version: v2.4
 
       - name: Run tests with coverage
-        run: go test ./... -v -count=1 -coverprofile=coverage.out
+        run: >
+          go test ./... -v -count=1 -coverprofile=coverage.out
+          -coverpkg=./internal/handler/...,./internal/service/...,./internal/apperror/...
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out

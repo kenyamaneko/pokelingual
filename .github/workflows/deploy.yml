@@ -136,16 +136,16 @@ jobs:
             TOKEN=$(echo "${RESPONSE}" | jq -r '.idToken')
           fi
 
-          UID=$(echo "${RESPONSE}" | jq -r '.localId')
+          TEST_UID=$(echo "${RESPONSE}" | jq -r '.localId')
           if [ "${TOKEN}" = "null" ] || [ -z "${TOKEN}" ]; then
             echo "Failed to get Firebase ID token"
             echo "${RESPONSE}" | jq .
             exit 1
           fi
-          echo "Test user ready: ${TEST_USER_EMAIL} (uid: ${UID})"
+          echo "Test user ready: ${TEST_USER_EMAIL} (uid: ${TEST_UID})"
           echo "::add-mask::${TOKEN}"
           echo "token=${TOKEN}" >> "$GITHUB_OUTPUT"
-          echo "uid=${UID}" >> "$GITHUB_OUTPUT"
+          echo "uid=${TEST_UID}" >> "$GITHUB_OUTPUT"
 
       - name: Run integration tests
         env:
