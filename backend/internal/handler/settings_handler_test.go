@@ -44,7 +44,9 @@ func TestGetSettingsHandler(t *testing.T) {
 	}
 
 	var resp model.UserSettings
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if len(resp.ExcludedPokemonIDs) != 2 {
 		t.Errorf("expected 2 excluded IDs, got %d", len(resp.ExcludedPokemonIDs))
@@ -66,7 +68,9 @@ func TestGetSettingsHandler_DefaultEmpty(t *testing.T) {
 	}
 
 	var resp model.UserSettings
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if len(resp.ExcludedPokemonIDs) != 0 {
 		t.Errorf("expected 0 excluded IDs, got %d", len(resp.ExcludedPokemonIDs))
@@ -92,7 +96,9 @@ func TestUpdateExcludedPokemonHandler(t *testing.T) {
 	}
 
 	var resp map[string]string
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if resp["status"] != "ok" {
 		t.Errorf("expected status ok, got %s", resp["status"])
 	}

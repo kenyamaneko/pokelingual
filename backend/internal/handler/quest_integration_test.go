@@ -40,7 +40,9 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 		t.Fatalf("new quest: expected 200, got %d: %s", w.Code, w.Body.String())
 	}
 	var newResp service.QuestNewResponse
-	json.Unmarshal(w.Body.Bytes(), &newResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &newResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if newResp.PokemonID != 25 {
 		t.Errorf("expected pokemon_id 25, got %d", newResp.PokemonID)
 	}
@@ -59,7 +61,9 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 		t.Fatalf("score: expected 200, got %d: %s", w.Code, w.Body.String())
 	}
 	var scoreResp service.ScoreResponse
-	json.Unmarshal(w.Body.Bytes(), &scoreResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &scoreResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if scoreResp.Score != 85 {
 		t.Errorf("expected score 85, got %f", scoreResp.Score)
 	}
@@ -78,7 +82,9 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 		t.Fatalf("guess: expected 200, got %d: %s", w.Code, w.Body.String())
 	}
 	var guessResp service.GuessResponse
-	json.Unmarshal(w.Body.Bytes(), &guessResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &guessResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if !guessResp.Correct {
 		t.Error("expected correct guess")
 	}
@@ -98,7 +104,9 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 		t.Fatalf("capture: expected 200, got %d: %s", w.Code, w.Body.String())
 	}
 	var captureResp service.CaptureResponse
-	json.Unmarshal(w.Body.Bytes(), &captureResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &captureResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if captureResp.PokemonID != 25 {
 		t.Errorf("expected pokemon_id 25, got %d", captureResp.PokemonID)
 	}
@@ -168,7 +176,9 @@ func TestQuestFlow_SkipGuessAndCapture(t *testing.T) {
 		t.Fatalf("capture: expected 200, got %d: %s", w.Code, w.Body.String())
 	}
 	var captureResp service.CaptureResponse
-	json.Unmarshal(w.Body.Bytes(), &captureResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &captureResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	// Skip multiplier = 0.5, so probability = (80/100) * 0.5 = 0.40
 	expectedProb := 0.40
@@ -216,7 +226,9 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var guessResp service.GuessResponse
-	json.Unmarshal(w.Body.Bytes(), &guessResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &guessResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if !guessResp.Correct {
 		t.Error("expected correct Japanese guess")
 	}
@@ -233,7 +245,9 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var captureResp service.CaptureResponse
-	json.Unmarshal(w.Body.Bytes(), &captureResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &captureResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if captureResp.Probability != 0.90 {
 		t.Errorf("expected probability 0.90, got %f", captureResp.Probability)
 	}
@@ -283,7 +297,9 @@ func TestQuestFlow_WrongGuessesReduceProbability(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var captureResp service.CaptureResponse
-	json.Unmarshal(w.Body.Bytes(), &captureResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &captureResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	expectedProb := 0.80 * 0.5 * 0.85
 	if captureResp.Probability != expectedProb {
@@ -326,7 +342,9 @@ func TestQuestFlow_FuzzyMatchEN(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var guessResp service.GuessResponse
-	json.Unmarshal(w.Body.Bytes(), &guessResp)
+	if err := json.Unmarshal(w.Body.Bytes(), &guessResp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if !guessResp.Correct {
 		t.Error("expected fuzzy match to be correct")
 	}
@@ -374,7 +392,9 @@ func TestQuestFlow_GuessNameRevealAfterMaxAttempts(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		var resp service.GuessResponse
-		json.Unmarshal(w.Body.Bytes(), &resp)
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
 
 		if i < 2 {
 			if resp.AttemptsRemaining != 2-i {
@@ -560,7 +580,9 @@ func TestScoreTranslationHandler_ExternalServiceError(t *testing.T) {
 
 	// Verify error message doesn't leak internals
 	var resp map[string]string
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 	if resp["error"] != "external service unavailable" {
 		t.Errorf("expected generic error, got %q", resp["error"])
 	}
