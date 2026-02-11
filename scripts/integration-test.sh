@@ -22,6 +22,22 @@ AUTH_HEADER="Authorization: Bearer ${ID_TOKEN}"
 PASSED=0
 FAILED=0
 
+# IAM ポリシーの伝播を待つ（--allow-unauthenticated 設定後、反映まで最大数分かかる場合がある）
+echo "Waiting for Cloud Run service to be ready..."
+for i in $(seq 1 18); do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "${AUTH_HEADER}" "${BASE_URL}/quest/new")
+  if [ "${STATUS}" != "401" ]; then
+    echo "Service is ready (status: ${STATUS})"
+    break
+  fi
+  if [ "${i}" -eq 18 ]; then
+    echo "ERROR: Service still returning 401 after 3 minutes. IAM policy may not have propagated."
+    exit 1
+  fi
+  echo "  IAM policy propagating... (attempt ${i}/18, status: ${STATUS})"
+  sleep 10
+done
+
 run_test() {
   local name="$1"
   local method="$2"
