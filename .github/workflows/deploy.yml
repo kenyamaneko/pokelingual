@@ -95,8 +95,5 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: npm run build
 
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          channelId: live
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+      - name: Deploy to Firebase Hosting
+        run: npx firebase-tools deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }}
