@@ -248,7 +248,7 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 		t.Errorf("expected ball_type 'great' for JA guess, got %s", guessResp.BallType)
 	}
 
-	// Capture: sigmoid formula with great ball (1.5x)
+	// Capture: sigmoid formula with great ball (2.0x)
 	req = httptest.NewRequest("POST", "/quest/capture", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -257,7 +257,7 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &captureResp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
-	expectedProb := service.CalculateCaptureRate(90, 309, 1.5)
+	expectedProb := service.CalculateCaptureRate(90, 309, 2.0)
 	if captureResp.Probability != expectedProb {
 		t.Errorf("expected probability %f, got %f", expectedProb, captureResp.Probability)
 	}

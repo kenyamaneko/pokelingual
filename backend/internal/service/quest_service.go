@@ -237,9 +237,9 @@ func (s *QuestService) AttemptCapture(ctx context.Context, uid string) (*Capture
 	ballMultiplier := 1.0
 	switch session.BallType {
 	case "great":
-		ballMultiplier = 1.5
-	case "ultra":
 		ballMultiplier = 2.0
+	case "ultra":
+		ballMultiplier = 3.0
 	}
 
 	probability := CalculateCaptureRate(session.Score, session.BaseStatTotal, ballMultiplier)
@@ -278,7 +278,7 @@ func CalculateCaptureRate(score float64, bst int, ballMultiplier float64) float6
 	x := float64(bst) / 100.0
 	s := score / 100.0
 
-	logit := 3.02 - 0.34*x - 0.17*x*x + 11.98*s - 4.83*x*s + 0.58*x*x*s
+	logit := 3.12 - 0.34*x - 0.17*x*x + 12.78*s - 4.83*x*s + 0.58*x*x*s
 	rate := 1.0 / (1.0 + math.Exp(-logit))
 
 	rate *= ballMultiplier
