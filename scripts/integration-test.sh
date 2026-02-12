@@ -23,11 +23,13 @@ PASSED=0
 FAILED=0
 
 # IAM ポリシーの伝播を待つ（--allow-unauthenticated 設定後、反映まで最大数分かかる場合がある）
-echo "Waiting for Cloud Run service to be ready..."
+# 401 = Cloud Run の IAM レベルで拒否されている（まだ伝播していない）
+# 200/403 = IAM は通過した（403 はアプリレベルの認証問題なのでここでは無視）
+echo "Waiting for Cloud Run IAM policy to propagate..."
 for i in $(seq 1 18); do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "${AUTH_HEADER}" "${BASE_URL}/quest/new")
   if [ "${STATUS}" != "401" ]; then
-    echo "Service is ready (status: ${STATUS})"
+    echo "IAM policy ready (status: ${STATUS})"
     break
   fi
   if [ "${i}" -eq 18 ]; then

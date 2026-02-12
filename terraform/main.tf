@@ -298,6 +298,15 @@ resource "google_service_account_iam_member" "github_actions_act_as_backend" {
   member             = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# Grant deploy SA permissions to read/write Firestore
+# Required for integration tests: managing test user's allowed_emails in config/auth
+# and cleaning up test data (users/{uid}/pokemon/*)
+resource "google_project_iam_member" "github_actions_firestore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # Grant deploy SA permissions to deploy Firebase Hosting
 resource "google_project_iam_member" "github_actions_firebase_hosting" {
   project = var.project_id
