@@ -30,7 +30,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-500 to-red-700 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-sky-400 to-blue-500 flex items-center justify-center">
       <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
         <div className="text-6xl mb-4">
           <img
@@ -53,7 +53,7 @@ export function LoginPage() {
             placeholder="メールアドレス"
             required
             className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-gray-700
-                       focus:outline-none focus:border-red-400 transition-colors"
+                       focus:outline-none focus:border-sky-400 transition-colors"
           />
           <input
             type="password"
@@ -62,7 +62,7 @@ export function LoginPage() {
             placeholder="パスワード"
             required
             className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-gray-700
-                       focus:outline-none focus:border-red-400 transition-colors"
+                       focus:outline-none focus:border-sky-400 transition-colors"
           />
           {error && (
             <p className="text-red-500 text-sm">{error}</p>
@@ -70,8 +70,8 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-red-500 text-white py-3 px-6 rounded-xl
-                       font-semibold hover:bg-red-600 transition-colors
+            className="w-full bg-blue-500 text-white py-3 px-6 rounded-xl
+                       font-semibold hover:bg-blue-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "ログイン中..." : "ログイン"}

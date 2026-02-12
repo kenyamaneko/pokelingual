@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 import { questApi } from "../services/questApi";
 import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
@@ -18,7 +19,24 @@ type QuestPhase =
   | "scored"
   | "guessing"
   | "capturing"
-  | "result";
+  | "result"
+  | "error";
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    if (!err.response) {
+      return "サーバーに せつぞくできません。ネットワークを かくにんしてね";
+    }
+    const status = err.response.status;
+    if (status === 502) {
+      return "がいぶサービス（PokeAPI / Gemini）が おうとうしません。しばらく まってね";
+    }
+    if (status === 404) {
+      return "クエストが みつかりません。あたらしい クエストを はじめてね";
+    }
+  }
+  return fallback;
+}
 
 type BallType = "poke" | "great" | "ultra";
 
@@ -58,9 +76,9 @@ export function QuestPage() {
       const res = await questApi.newQuest();
       setQuest(res.data);
       setPhase("translating");
-    } catch {
-      setError("つうしん エラー！ もういちど ためしてね");
-      setPhase("translating");
+    } catch (err) {
+      setError(getErrorMessage(err, "ポケモンの データを よみこめません"));
+      setPhase("error");
     }
   }, []);
 
@@ -74,8 +92,8 @@ export function QuestPage() {
       const res = await questApi.scoreTranslation(translation);
       setScore(res.data);
       setPhase("guessing");
-    } catch {
-      setError("さいてんに しっぱい！ もういちど ためしてね");
+    } catch (err) {
+      setError(getErrorMessage(err, "さいてんに しっぱいしました"));
     }
   };
 
@@ -83,8 +101,8 @@ export function QuestPage() {
     try {
       const res = await questApi.guessName(guess);
       setGuessResult(res.data);
-    } catch {
-      setError("なまえの はんていに しっぱい！");
+    } catch (err) {
+      setError(getErrorMessage(err, "なまえの はんていに しっぱいしました"));
     }
   };
 
@@ -103,15 +121,15 @@ export function QuestPage() {
       const res = await questApi.attemptCapture();
       setCaptureResult(res.data);
       setPhase("result");
-    } catch {
-      setError("ほかくの はんていに しっぱい！");
+    } catch (err) {
+      setError(getErrorMessage(err, "ほかくの はんていに しっぱいしました"));
     }
   };
 
   return (
     <div className="min-h-[calc(100vh-56px)] bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
-        {error && (
+        {error && phase !== "error" && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
             <p className="text-red-700 text-sm">{error}</p>
             <button
@@ -130,10 +148,25 @@ export function QuestPage() {
           </div>
         )}
 
+        {phase === "error" && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-5xl mb-4">!</p>
+            <p className="text-gray-700 font-bold text-lg mb-2">エラーが はっせいしました</p>
+            <p className="text-gray-500 text-sm mb-6">{error}</p>
+            <button
+              onClick={startNewQuest}
+              className="bg-red-500 text-white py-3 px-8 rounded-2xl font-bold
+                         hover:bg-red-600 transition-colors shadow-lg"
+            >
+              もういちど さがす
+            </button>
+          </div>
+        )}
+
         {phase === "translating" && quest && (
           <>
             <p className="text-center text-gray-700 font-bold text-lg mb-4">
-              あ！ やせいの ？？？ がとびだしてきた！
+              あ！ やせいの ポケモンがとびだしてきた！
             </p>
             <QuestCard description={quest.description_en} />
             <TranslationInput onSubmit={handleTranslationSubmit} />
