@@ -29,3 +29,9 @@ variable "github_repo" {
   type        = string
   default     = "kenyamaneko/Pokelingual"
 }
+
+variable "alert_email" {
+  description = "Email address for Cloud Monitoring alert notifications"
+  type        = string
+  default     = "kenya.m.amaoto@gmail.com"
+}

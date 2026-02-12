@@ -43,6 +43,8 @@ resource "google_project_service" "apis" {
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",
     "secretmanager.googleapis.com",
+    "monitoring.googleapis.com",
+    "logging.googleapis.com",
   ])
 
   service            = each.value
@@ -301,4 +303,132 @@ resource "google_project_iam_member" "github_actions_firebase_hosting" {
   project = var.project_id
   role    = "roles/firebasehosting.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# ============================================================
+# Cloud Monitoring
+# ============================================================
+
+# Email notification channel
+resource "google_monitoring_notification_channel" "email" {
+  project      = var.project_id
+  display_name = "PokeLingual Alert Email (${var.environment})"
+  type         = "email"
+
+  labels = {
+    email_address = var.alert_email
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# Alert: Cloud Run error rate (5xx responses)
+resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
+  project      = var.project_id
+  display_name = "Cloud Run 5xx Error Rate (${var.environment})"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "5xx error rate > 5 req/s"
+
+    condition_threshold {
+      filter = <<-EOT
+        resource.type = "cloud_run_revision"
+        AND resource.labels.service_name = "pokelingual-api-${var.environment}"
+        AND metric.type = "run.googleapis.com/request_count"
+        AND metric.labels.response_code_class = "5xx"
+      EOT
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 5
+      duration        = "300s"
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_RATE"
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email.id]
+
+  alert_strategy {
+    auto_close = "604800s"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# Alert: Cloud Run high latency (p95 > 10s)
+resource "google_monitoring_alert_policy" "cloud_run_latency" {
+  project      = var.project_id
+  display_name = "Cloud Run High Latency (${var.environment})"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "p95 latency > 10s"
+
+    condition_threshold {
+      filter = <<-EOT
+        resource.type = "cloud_run_revision"
+        AND resource.labels.service_name = "pokelingual-api-${var.environment}"
+        AND metric.type = "run.googleapis.com/request_latencies"
+      EOT
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 10000
+      duration        = "300s"
+
+      aggregations {
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_PERCENTILE_95"
+        cross_series_reducer = "REDUCE_MAX"
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email.id]
+
+  alert_strategy {
+    auto_close = "604800s"
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# Alert: Application error logs (severity >= ERROR)
+resource "google_monitoring_alert_policy" "log_error_count" {
+  project      = var.project_id
+  display_name = "Application Error Logs (${var.environment})"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Error log entries > 10 in 5min"
+
+    condition_threshold {
+      filter = <<-EOT
+        resource.type = "cloud_run_revision"
+        AND resource.labels.service_name = "pokelingual-api-${var.environment}"
+        AND metric.type = "logging.googleapis.com/log_entry_count"
+        AND metric.labels.severity = "ERROR"
+      EOT
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 10
+      duration        = "0s"
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email.id]
+
+  alert_strategy {
+    auto_close = "604800s"
+  }
+
+  depends_on = [google_project_service.apis]
 }
