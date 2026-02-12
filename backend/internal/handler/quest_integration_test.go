@@ -23,6 +23,9 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 		DescriptionJA: "ほっぺの でんきぶくろに でんきを ためている。",
 		SpriteURL:     "https://example.com/25.png",
 		BaseStatTotal: 320,
+		Types:         []string{"electric"},
+		Height:        4,
+		Weight:        60,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 85}

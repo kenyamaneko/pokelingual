@@ -50,17 +50,20 @@ type GuessResponse struct {
 
 // CaptureResponse is the API response for a capture attempt.
 type CaptureResponse struct {
-	Captured      bool    `json:"captured"`
-	Probability   float64 `json:"probability"`
-	PokemonID     int     `json:"pokemon_id"`
-	NameEN        string  `json:"name_en"`
-	NameJA        string  `json:"name_ja"`
-	SpriteURL     string  `json:"sprite_url"`
-	Score         float64 `json:"score"`
-	DescriptionEN string  `json:"description_en"`
-	DescriptionJA string  `json:"description_ja"`
-	BaseStatTotal int     `json:"base_stat_total"`
-	BallType      string  `json:"ball_type"`
+	Captured      bool     `json:"captured"`
+	Probability   float64  `json:"probability"`
+	PokemonID     int      `json:"pokemon_id"`
+	NameEN        string   `json:"name_en"`
+	NameJA        string   `json:"name_ja"`
+	SpriteURL     string   `json:"sprite_url"`
+	Score         float64  `json:"score"`
+	DescriptionEN string   `json:"description_en"`
+	DescriptionJA string   `json:"description_ja"`
+	BaseStatTotal int      `json:"base_stat_total"`
+	BallType      string   `json:"ball_type"`
+	Types         []string `json:"types"`
+	Height        int      `json:"height"`
+	Weight        int      `json:"weight"`
 }
 
 // NewQuestService creates a new QuestService with the given dependencies.
@@ -119,6 +122,9 @@ func (s *QuestService) NewQuest(ctx context.Context, uid string) (*QuestNewRespo
 		NameJA:        pokemon.NameJA,
 		SpriteURL:     pokemon.SpriteURL,
 		BaseStatTotal: pokemon.BaseStatTotal,
+		Types:         pokemon.Types,
+		Height:        pokemon.Height,
+		Weight:        pokemon.Weight,
 	}
 	s.sessions.Store(uid, session)
 
@@ -260,6 +266,9 @@ func (s *QuestService) AttemptCapture(ctx context.Context, uid string) (*Capture
 		DescriptionJA: session.DescriptionJA,
 		BaseStatTotal: session.BaseStatTotal,
 		BallType:      session.BallType,
+		Types:         session.Types,
+		Height:        session.Height,
+		Weight:        session.Weight,
 	}, nil
 }
 

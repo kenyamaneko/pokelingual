@@ -22,14 +22,14 @@ export function HomePage() {
             className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
           >
-            捕獲 クエストに 出かける
+            冒険に 出かける
           </Link>
           <Link
             to="/collection"
             className="block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow border border-gray-200"
           >
-            コレクションを 見る
+            図鑑を 見る
           </Link>
           <Link
             to="/settings"

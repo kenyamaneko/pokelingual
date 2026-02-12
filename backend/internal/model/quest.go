@@ -8,8 +8,11 @@ type QuestSession struct {
 	NameEN        string  `json:"-"`
 	NameJA        string  `json:"-"`
 	SpriteURL     string  `json:"-"`
-	BaseStatTotal int     `json:"-"`
-	Score         float64 `json:"score,omitempty"`
+	BaseStatTotal int      `json:"-"`
+	Types         []string `json:"-"`
+	Height        int      `json:"-"`
+	Weight        int      `json:"-"`
+	Score         float64  `json:"score,omitempty"`
 	BallType      string  `json:"ball_type,omitempty"`
 	GuessAttempts int     `json:"guess_attempts,omitempty"`
 	NameGuessed   bool    `json:"-"`

@@ -16,5 +16,8 @@ type Pokemon struct {
 	DescriptionJA string           `json:"description_ja"`
 	SpriteURL     string           `json:"sprite_url"`
 	BaseStatTotal int              `json:"base_stat_total"`
+	Types         []string         `json:"types"`
+	Height        int              `json:"height"`
+	Weight        int              `json:"weight"`
 	FlavorTexts   []FlavorTextPair `json:"flavor_texts,omitempty"`
 }

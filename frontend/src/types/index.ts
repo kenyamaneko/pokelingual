@@ -31,6 +31,9 @@ export interface CaptureResponse {
   description_ja: string;
   base_stat_total: number;
   ball_type: string;
+  types?: string[];
+  height?: number;
+  weight?: number;
 }
 
 export interface CollectionEntry {
@@ -62,5 +65,8 @@ export interface PokemonDetail {
   description_en: string;
   description_ja: string;
   sprite_url: string;
+  types?: string[];
+  height?: number;
+  weight?: number;
   flavor_texts?: FlavorTextPair[];
 }

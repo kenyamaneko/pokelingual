@@ -105,9 +105,9 @@ func TestGetCollectionHandler_WithExclusions(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	// TotalAvailable should be less than MaxPokemonID due to exclusions
-	if resp.TotalAvailable >= service.MaxPokemonID {
-		t.Errorf("expected total_available < %d with exclusions, got %d", service.MaxPokemonID, resp.TotalAvailable)
+	// TotalAvailable should always be MaxPokemonID (exclusions don't affect denominator)
+	if resp.TotalAvailable != service.MaxPokemonID {
+		t.Errorf("expected total_available == %d, got %d", service.MaxPokemonID, resp.TotalAvailable)
 	}
 }
 
@@ -164,6 +164,9 @@ func TestGetPokemonDetailHandler(t *testing.T) {
 			DescriptionEN: "It stores electricity.",
 			DescriptionJA: "でんきを ためる。",
 			SpriteURL:     "https://example.com/25.png",
+			Types:         []string{"electric"},
+			Height:        4,
+			Weight:        60,
 			FlavorTexts: []model.FlavorTextPair{
 				{VersionNames: []string{"X"}, DescriptionEN: "En text", DescriptionJA: "Ja text"},
 			},

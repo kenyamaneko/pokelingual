@@ -91,6 +91,13 @@ type pokeAPIPokemonResponse struct {
 	Stats []struct {
 		BaseStat int `json:"base_stat"`
 	} `json:"stats"`
+	Types []struct {
+		Type struct {
+			Name string `json:"name"`
+		} `json:"type"`
+	} `json:"types"`
+	Height int `json:"height"`
+	Weight int `json:"weight"`
 }
 
 // TotalAvailablePokemon returns the total number of Pokemon available for quests,
@@ -186,6 +193,11 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 		bst += stat.BaseStat
 	}
 
+	var types []string
+	for _, t := range pokemonData.Types {
+		types = append(types, t.Type.Name)
+	}
+
 	spriteURL := pokemonData.Sprites.Other.OfficialArtwork.FrontDefault
 	if spriteURL == "" {
 		spriteURL = pokemonData.Sprites.FrontDefault
@@ -199,6 +211,9 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 		DescriptionJA: descriptionJA,
 		SpriteURL:     spriteURL,
 		BaseStatTotal: bst,
+		Types:         types,
+		Height:        pokemonData.Height,
+		Weight:        pokemonData.Weight,
 		FlavorTexts:   flavorTexts,
 	}, nil
 }

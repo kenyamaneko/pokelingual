@@ -17,6 +17,9 @@ const capturedResult: CaptureResponse = {
   description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
   base_stat_total: 320,
   ball_type: "ultra",
+  types: ["electric"],
+  height: 4,
+  weight: 60,
 };
 
 const escapedResult: CaptureResponse = {
@@ -31,6 +34,9 @@ const escapedResult: CaptureResponse = {
   description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
   base_stat_total: 320,
   ball_type: "poke",
+  types: ["electric"],
+  height: 4,
+  weight: 60,
 };
 
 function renderWithRouter(ui: React.ReactElement) {
@@ -73,8 +79,8 @@ describe("CaptureResult", () => {
     const onNewQuest = vi.fn();
     renderWithRouter(<CaptureResult result={capturedResult} onNewQuest={onNewQuest} />);
 
-    // When: clicking the "次のクエストへ" button
-    await user.click(screen.getByText("次の クエストへ"));
+    // When: clicking the "次の冒険へ" button
+    await user.click(screen.getByText("次の 冒険へ"));
 
     // Then: onNewQuest is called
     expect(onNewQuest).toHaveBeenCalledOnce();

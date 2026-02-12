@@ -10,7 +10,7 @@ export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
     return (
       <div className="text-center py-20">
         <p className="text-gray-400 text-lg mb-2">まだ ポケモンに 出会っていません</p>
-        <p className="text-gray-400 text-sm">クエストに 挑戦して ポケモンを 見つけよう！</p>
+        <p className="text-gray-400 text-sm">冒険に 出かけて ポケモンを 見つけよう！</p>
       </div>
     );
   }

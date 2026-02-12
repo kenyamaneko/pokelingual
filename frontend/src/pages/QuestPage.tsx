@@ -38,7 +38,7 @@ function getErrorMessage(err: unknown, fallback: string): string {
       return "外部サービス（PokeAPI / Gemini）が 応答しません。しばらく 待ってね";
     }
     if (status === 404) {
-      return "クエストが 見つかりません。新しい クエストを 始めてね";
+      return "冒険が 見つかりません。新しい 冒険を 始めてね";
     }
     return `${fallback}（${status}）`;
   }

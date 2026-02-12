@@ -108,7 +108,7 @@ export function SettingsPage() {
             苦手 ポケモン 設定
           </h2>
           <p className="text-gray-500 text-sm mb-4">
-            クエストに 出てきてほしくない ポケモンの IDを 設定できます。
+            冒険に 出てきてほしくない ポケモンの IDを 設定できます。
           </p>
 
           {error && (

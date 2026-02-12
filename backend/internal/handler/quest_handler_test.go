@@ -45,6 +45,9 @@ func TestNewQuestHandler(t *testing.T) {
 		DescriptionEN: "It stores electricity in its cheeks.",
 		SpriteURL:     "https://example.com/pikachu.png",
 		BaseStatTotal: 320,
+		Types:         []string{"electric"},
+		Height:        4,
+		Weight:        60,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}

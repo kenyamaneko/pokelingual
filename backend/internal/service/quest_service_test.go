@@ -20,6 +20,9 @@ func newTestPokemon() *model.Pokemon {
 		DescriptionJA: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
 		SpriteURL:     "https://example.com/pikachu.png",
 		BaseStatTotal: 320,
+		Types:         []string{"electric"},
+		Height:        4,
+		Weight:        60,
 	}
 }
 

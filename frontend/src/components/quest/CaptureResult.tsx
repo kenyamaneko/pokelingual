@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { CaptureResponse } from "../../types";
+import { typeColors } from "../../utils/pokemonTypes";
 
 interface CaptureResultProps {
   result: CaptureResponse;
@@ -44,6 +45,18 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
 
         <p className="text-xl font-bold text-gray-800">{result.name_en}</p>
         <p className="text-gray-500">{result.name_ja}</p>
+        {result.types && result.types.length > 0 && (
+          <div className="flex justify-center gap-2 mt-2">
+            {result.types.map((t) => (
+              <span
+                key={t}
+                className={`${typeColors[t] ?? "bg-gray-400"} text-white text-xs font-bold px-3 py-1 rounded-full`}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-4 text-sm text-gray-500">
           <span>スコア: {result.score}</span>
@@ -73,7 +86,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         className="mt-6 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
-        次の クエストへ
+        次の 冒険へ
       </button>
 
       <button

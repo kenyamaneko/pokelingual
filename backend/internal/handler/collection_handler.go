@@ -34,16 +34,6 @@ func (h *CollectionHandler) GetCollection(c *gin.Context) {
 	}
 
 	totalAvailable := service.MaxPokemonID
-	if h.settingsRepo != nil {
-		settings, err := h.settingsRepo.GetSettings(c.Request.Context(), uid)
-		if err == nil && settings != nil {
-			excluded := settings.ExcludedPokemonIDs
-			if excluded == nil {
-				excluded = service.DefaultExcludedPokemonIDs
-			}
-			totalAvailable = service.TotalAvailablePokemon(excluded)
-		}
-	}
 
 	capturedCount := 0
 	for _, e := range entries {

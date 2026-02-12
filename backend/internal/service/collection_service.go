@@ -35,6 +35,9 @@ type PokemonDetailResponse struct {
 	DescriptionEN string                 `json:"description_en"`
 	DescriptionJA string                 `json:"description_ja"`
 	SpriteURL     string                 `json:"sprite_url"`
+	Types         []string               `json:"types"`
+	Height        int                    `json:"height"`
+	Weight        int                    `json:"weight"`
 	FlavorTexts   []model.FlavorTextPair `json:"flavor_texts,omitempty"`
 }
 
@@ -93,6 +96,9 @@ func (s *CollectionService) GetPokemonDetail(ctx context.Context, uid string, po
 		DescriptionEN: pokemon.DescriptionEN,
 		DescriptionJA: pokemon.DescriptionJA,
 		SpriteURL:     pokemon.SpriteURL,
+		Types:         pokemon.Types,
+		Height:        pokemon.Height,
+		Weight:        pokemon.Weight,
 		FlavorTexts:   pokemon.FlavorTexts,
 	}, nil
 }

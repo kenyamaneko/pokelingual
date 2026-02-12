@@ -124,6 +124,9 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
   - PokeAPI の `flavor_text_entries` で日本語は Gen 6+ のゲームにのみ存在
 - FlavorTextPair: バージョンごとに EN/JA をペアリング、`ja` 優先で `ja-Hrkt` フォールバック
 - 重複排除: EN+JA テキストが同一のバージョンは VersionNames をマージ
+- タイプ・身長・体重: `/api/v2/pokemon/{id}` の `types`, `height`, `weight` から取得
+  - height: デシメートル（4 = 0.4m）、weight: ヘクトグラム（60 = 6.0kg）
+  - フロントエンドで /10 変換して m / kg 表示
 - キャッシュ: `sync.Map` によるインメモリキャッシュ
 
 ### 除外ポケモン
