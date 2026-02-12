@@ -38,10 +38,22 @@ CI/CD パイプライン内で `git describe --tags --always` を実行:
 
 ### リリース手順
 
-```
+```bash
+# 1. develop → main に PR マージ（prod デプロイが実行される）
+
+# 2. main でタグ付け → タグ push で prod 再デプロイ（クリーンなバージョン番号）
+git checkout main && git pull
 git tag v1.0.0
 git push origin v1.0.0
+
+# 3. main → develop にマージバック（タグを develop に伝播）
+git checkout develop && git pull
+git merge main
+git push origin develop
 ```
+
+マージバックにより、develop での `git describe` が `v1.0.0-N-g<sha>` を返すようになり、
+dev 環境でも「どのリリースから何コミット先か」が分かる。
 
 ## 結果
 
