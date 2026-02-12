@@ -18,19 +18,13 @@
 | CI/CD | GitHub Actions |
 | テスト | Go testing, Vitest, Testing Library |
 
-## アーキテクチャ
+## ドキュメント
 
-クリーンアーキテクチャを採用。サービス層はインターフェースに依存し、具象型に依存しない。
-
-```
-Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfaces → Repository / 外部API
-```
-
-主要なインターフェース（`backend/internal/domain/interfaces.go`）：
-- `PokemonFetcher` — ポケモンデータ取得（PokeAPI / devmock）
-- `AIScorer` — 翻訳スコアリング（Gemini / devmock）
-- `UserPokemonRepository` — 捕獲データ永続化（Firestore / devmock）
-- `UserSettingsRepository` — ユーザー設定（Firestore / devmock）
+| ドキュメント | 内容 |
+|---|---|
+| [アーキテクチャ](docs/architecture.md) | 全体構成、バックエンド/フロントエンド詳細、インフラ |
+| [技術判断記録（ADR）](docs/adr/) | 各設計判断の背景・理由・結果 |
+| [トラブルシューティング](docs/troubleshooting.md) | 開発中に遭遇した問題と解決策 |
 
 ## ディレクトリ構成
 
@@ -59,8 +53,193 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 │   └── Dockerfile.dev
 ├── terraform/               # GCP インフラ（dev/prod）
 ├── scripts/                 # 結合テストスクリプト
+├── docs/                    # ドキュメント
 ├── docker-compose.dev.yml   # ローカル開発環境
 └── Makefile
+```
+
+## セットアップ（別環境での構築）
+
+このリポジトリをクローンして別の GCP プロジェクトで動かすための手順。
+
+### 前提条件
+
+- Go 1.25+
+- Node.js 22+
+- Docker / Docker Compose
+- Terraform 1.5+
+- gcloud CLI（認証済み）
+- GitHub リポジトリ
+
+### 1. ローカル開発環境の起動
+
+ローカル開発は GCP リソース不要。devmock が全外部サービスを代替する。
+
+```bash
+git clone <repo-url>
+cd pokelingual
+
+# Docker Compose で起動
+make dev
+
+# フロントエンド: http://localhost:15151
+# バックエンド:   http://localhost:15100
+```
+
+dev モードでは認証なし・モックデータで動作する。
+
+### 2. GCP プロジェクトの準備
+
+dev 環境と prod 環境でそれぞれ GCP プロジェクトを作成する。
+
+```bash
+# プロジェクト作成（例）
+gcloud projects create my-pokelingual-dev --name="PokeLingual Dev"
+gcloud projects create my-pokelingual-prod --name="PokeLingual Prod"
+
+# 課金アカウントのリンク（必須）
+gcloud billing accounts list
+gcloud billing projects link my-pokelingual-dev --billing-account=BILLING_ACCOUNT_ID
+gcloud billing projects link my-pokelingual-prod --billing-account=BILLING_ACCOUNT_ID
+```
+
+### 3. Terraform でインフラ構築
+
+```bash
+cd terraform
+
+# tfvars を自分のプロジェクトに合わせて編集
+# environments/dev/terraform.tfvars
+#   project_id  = "my-pokelingual-dev"
+#   environment = "dev"
+#   region      = "asia-northeast1"
+
+# dev 環境
+terraform init
+terraform workspace select default  # dev workspace
+terraform apply -var-file=environments/dev/terraform.tfvars
+
+# prod 環境
+terraform workspace new prod  # 初回のみ
+terraform workspace select prod
+terraform apply -var-file=environments/prod/terraform.tfvars
+```
+
+Terraform が作成するリソース:
+- Firebase プロジェクト + Web アプリ
+- Firestore データベース + セキュリティルール
+- Identity Platform（メール/パスワード認証）
+- Artifact Registry（Docker イメージ保管）
+- Secret Manager（Gemini API キー）
+- Workload Identity Federation（GitHub Actions → GCP 認証）
+- Cloud Monitoring アラート
+- サービスアカウント + IAM
+
+> API 有効化直後にリソース作成が失敗する場合がある。その場合は再度 `terraform apply` を実行。
+
+### 4. Gemini API キーの設定
+
+```bash
+# Gemini API キーを取得（https://aistudio.google.com/apikey）
+
+# Secret Manager にキーを保存
+echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key \
+  --project=my-pokelingual-dev --data-file=-
+echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key \
+  --project=my-pokelingual-prod --data-file=-
+```
+
+### 5. Firebase ユーザーの作成
+
+サインアップ UI はないため、Firebase Console で手動作成する。
+
+1. [Firebase Console](https://console.firebase.google.com/) → プロジェクト選択
+2. Authentication → Users → Add user
+3. メールアドレスとパスワードを入力
+
+### 6. Firestore のホワイトリスト設定
+
+バックエンドは起動時に Firestore `config/auth` ドキュメントの `allowed_emails` を読み込む。
+このドキュメントがないとサーバーは起動を拒否する。
+
+Firebase Console → Firestore で以下のドキュメントを手動作成:
+
+```
+コレクション: config
+ドキュメント: auth
+フィールド:
+  allowed_emails (array)
+    - "your-email@example.com"
+```
+
+### 7. GitHub Actions の設定
+
+#### リポジトリの variables.tf を更新
+
+```hcl
+# terraform/variables.tf の github_repo を自分のリポジトリに変更
+variable "github_repo" {
+  default = "your-username/your-repo"
+}
+```
+
+#### GitHub Environments を作成
+
+リポジトリの Settings → Environments で `dev` と `prod` を作成し、以下の Secrets を設定:
+
+| Secret | 説明 | 取得方法 |
+|--------|------|----------|
+| `WIF_PROVIDER` | WIF プロバイダーのフルパス | `terraform output wif_provider` |
+| `WIF_SERVICE_ACCOUNT` | deploy SA のメールアドレス | `terraform output wif_service_account` |
+| `GCP_PROJECT_ID` | GCP プロジェクト ID | `my-pokelingual-dev` 等 |
+| `FIREBASE_API_KEY` | Firebase Web API キー | `terraform output firebase_api_key` |
+| `FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン | `PROJECT_ID.firebaseapp.com` |
+| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID | = GCP_PROJECT_ID |
+| `FIREBASE_STORAGE_BUCKET` | Storage バケット | `PROJECT_ID.firebasestorage.app` |
+| `FIREBASE_MESSAGING_SENDER_ID` | FCM Sender ID | `terraform output firebase_messaging_sender_id` |
+| `FIREBASE_APP_ID` | Firebase App ID | `terraform output firebase_app_id` |
+| `API_BASE_URL` | バックエンド URL | Cloud Run デプロイ後に取得 |
+
+dev 環境のみ追加:
+
+| Secret | 説明 |
+|--------|------|
+| `TEST_USER_PASSWORD` | 結合テスト用ユーザーのパスワード（任意の文字列） |
+
+> `TEST_USER_EMAIL` は deploy.yml 内でハードコード（`test@pokelingual.dev`）
+
+#### 初回デプロイ
+
+初回は Cloud Run サービスがまだ存在しないため、手動でデプロイする:
+
+```bash
+# バックエンド
+cd backend
+docker build -t REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial .
+docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
+gcloud run deploy pokelingual-api-dev \
+  --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
+  --region asia-northeast1 --project PROJECT_ID \
+  --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
+  --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app" \
+  --allow-unauthenticated
+
+# API_BASE_URL を取得して GitHub Secrets に設定
+gcloud run services describe pokelingual-api-dev --region asia-northeast1 --format 'value(status.url)'
+```
+
+以降は `develop` / `main` ブランチへの push で自動デプロイされる。
+
+### 8. deploy.yml の環境固有値を更新
+
+`.github/workflows/deploy.yml` 内の以下の値を自分の環境に合わせて変更:
+
+```yaml
+# FRONTEND_URL（ハードコード箇所）
+FRONTEND_URL: ${{ github.ref_name == 'main' && 'https://YOUR-PROD.web.app' || 'https://YOUR-DEV.web.app' }}
+
+# SERVICE_NAME（必要に応じて変更）
+SERVICE_NAME: ${{ github.ref_name == 'main' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}
 ```
 
 ## ローカル開発
