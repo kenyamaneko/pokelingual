@@ -97,9 +97,7 @@ export function SettingsPage() {
             バージョン
           </h2>
           <p className="text-gray-500 text-xs font-mono">
-            {import.meta.env.VITE_BUILD_VERSION
-              ? import.meta.env.VITE_BUILD_VERSION.slice(0, 7)
-              : "dev"}
+            {import.meta.env.VITE_BUILD_VERSION || "dev"}
           </p>
         </div>
 

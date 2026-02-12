@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [main, develop]
+    tags: ['v*']
   workflow_dispatch:
 
 concurrency:
@@ -17,16 +18,33 @@ jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
+  # Determine version from git tags (runs in parallel with tests)
+  determine-version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine version from git tags
+        id: version
+        run: |
+          VERSION=$(git describe --tags --always)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Detected version: ${VERSION}"
+
   deploy-backend:
     name: Deploy Backend to Cloud Run
-    needs: test
+    needs: [test, determine-version]
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+    environment: ${{ github.ref_name != 'develop' && 'prod' || 'dev' }}
     permissions:
       contents: read
       id-token: write
     env:
-      SERVICE_NAME: ${{ github.ref_name == 'main' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}
+      SERVICE_NAME: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -66,9 +84,12 @@ jobs:
       - name: Build and push Docker image
         working-directory: backend
         run: |
-          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}"
-          docker build -t "${IMAGE}" .
-          docker push "${IMAGE}"
+          IMAGE_BASE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/pokelingual-backend/api"
+          docker build \
+            -t "${IMAGE_BASE}:${{ github.sha }}" \
+            -t "${IMAGE_BASE}:${{ needs.determine-version.outputs.version }}" \
+            .
+          docker push "${IMAGE_BASE}" --all-tags
 
       # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
       # これはエンドユーザー向け API での Google 推奨パターン。
@@ -77,7 +98,7 @@ jobs:
       # アプリレベルの認証は middleware/auth.go の Firebase Auth ミドルウェアが担保する。
       - name: Deploy to Cloud Run
         env:
-          FRONTEND_URL: ${{ github.ref_name == 'main' && 'https://pokelingual-prod.web.app' || 'https://pokelingual-dev.web.app' }}
+          FRONTEND_URL: ${{ github.ref_name != 'develop' && 'https://pokelingual-prod.web.app' || 'https://pokelingual-dev.web.app' }}
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image "${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
@@ -237,14 +258,15 @@ jobs:
 
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting
-    needs: [test, deploy-backend, integration-test]
+    needs: [test, deploy-backend, integration-test, determine-version]
     if: |
       always() &&
       needs.test.result == 'success' &&
       needs.deploy-backend.result == 'success' &&
+      needs.determine-version.result == 'success' &&
       (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+    environment: ${{ github.ref_name != 'develop' && 'prod' || 'dev' }}
     permissions:
       contents: read
       id-token: write
@@ -276,7 +298,7 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-          VITE_BUILD_VERSION: ${{ github.sha }}
+          VITE_BUILD_VERSION: ${{ needs.determine-version.outputs.version }}
         run: npm run build
 
       - name: Deploy to Firebase Hosting
