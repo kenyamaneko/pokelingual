@@ -14,6 +14,9 @@
 
 ### Changed
 - 除外ポケモンをグローバルハードコードからユーザーごとの設定に変更（Firestore `config/app.default_excluded_pokemon_ids` でデフォルト管理）
+- `APP_MODE=dev` → `APP_MODE=mock` にリネーム（「開発環境」との名前衝突を解消）
+- ヘッダーに環境バッジ追加（LOCAL / DEV 表示、prod は無印）
+- `VITE_ENVIRONMENT` 環境変数を追加（local / dev / prod）
 - 設定画面のバージョン表示: コミットハッシュ → SemVer バージョン
 - 設定画面の除外ポケモン ID 上限を API から動的に取得
 

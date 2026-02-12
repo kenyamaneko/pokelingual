@@ -299,6 +299,7 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           VITE_BUILD_VERSION: ${{ needs.determine-version.outputs.version }}
+          VITE_ENVIRONMENT: ${{ github.ref_name != 'develop' && 'prod' || 'dev' }}
         run: npm run build
 
       - name: Deploy to Firebase Hosting

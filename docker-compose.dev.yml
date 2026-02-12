@@ -4,7 +4,7 @@ services:
     ports:
       - "15100:15100"
     environment:
-      APP_MODE: dev
+      APP_MODE: mock
       PORT: "15100"
       FRONTEND_URL: http://localhost:15151
 
@@ -15,5 +15,6 @@ services:
     ports:
       - "15151:15151"
     environment:
-      VITE_APP_MODE: dev
+      VITE_APP_MODE: mock
+      VITE_ENVIRONMENT: local
       VITE_API_BASE_URL: http://localhost:15100

@@ -20,7 +20,7 @@ func Load() *Config {
 	_ = godotenv.Load()
 
 	return &Config{
-		AppMode:                 getEnv("APP_MODE", "dev"),
+		AppMode:                 getEnv("APP_MODE", "mock"),
 		Port:                    getEnv("PORT", "8080"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
 		GeminiAPIKey:            getEnv("GEMINI_API_KEY", ""),

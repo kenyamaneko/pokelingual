@@ -51,8 +51,16 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 
 `cmd/server/main.go` が唯一の配線ポイント。`APP_MODE` 環境変数でモードを切り替える:
 
-- **`APP_MODE=dev`** → devmock 実装を注入（外部API不要、認証スキップ）
+- **`APP_MODE=mock`** → devmock 実装を注入（外部API不要、認証スキップ）
 - **`APP_MODE=prod`**（デフォルト以外）→ 本番実装を注入
+
+### 環境変数の使い分け
+
+| 変数名 | 用途 | 値 |
+|---|---|---|
+| `APP_MODE` | バックエンドのサービス切替（mock vs 実API） | `mock`（ローカル）/ `prod`（Cloud Run） |
+| `VITE_APP_MODE` | フロントエンドのサービス切替（Firebase Auth） | `mock`（ローカル）/ 未設定（デプロイ環境） |
+| `VITE_ENVIRONMENT` | UI の環境バッジ表示 | `local` / `dev` / `prod` |
 
 ## バックエンド詳細
 
@@ -132,7 +140,7 @@ Client → Cloud Run (IAM: allUsers) → CORS middleware → Firebase Auth middl
 
 ### ロギング
 
-- `APP_MODE=prod` 時: `slog` の JSON ハンドラーで Cloud Logging 互換形式に変換
+- `APP_MODE=prod`（= `mock` 以外）時: `slog` の JSON ハンドラーで Cloud Logging 互換形式に変換
   - `level` → `severity`（Cloud Logging が認識するフィールド名）
   - `msg` → `message`
   - WARN → `WARNING`, ERROR → `ERROR`（Cloud Logging 形式の値）

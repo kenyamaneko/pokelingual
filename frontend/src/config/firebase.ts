@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
-export const isDevMode = import.meta.env.VITE_APP_MODE === "dev";
+export const isDevMode = import.meta.env.VITE_APP_MODE === "mock";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

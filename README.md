@@ -86,7 +86,7 @@ make dev
 # バックエンド:   http://localhost:15100
 ```
 
-dev モードでは認証なし・モックデータで動作する。
+mock モードでは認証なし・モックデータで動作する。ヘッダーに「LOCAL」バッジが表示される。
 
 ### 2. GCP プロジェクトの準備
 
@@ -244,7 +244,7 @@ SERVICE_NAME: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pok
 
 ## ローカル開発
 
-Docker Compose でフロントエンド・バックエンドを起動。dev モードでは外部 API（Firebase, PokeAPI, Gemini）の代わりにモック実装（devmock）を使用する。
+Docker Compose でフロントエンド・バックエンドを起動。mock モード（`APP_MODE=mock`）では外部 API（Firebase, PokeAPI, Gemini）の代わりにモック実装（devmock）を使用する。
 
 ```bash
 # 起動

@@ -10,7 +10,7 @@
 
 - `gcloud run deploy` でデプロイ成功するが、アプリが古いコードのまま
 - PokeAPI を呼んでいるはずなのにレスポンスが ~100μs（devmock の速度）
-- `APP_MODE=prod` を設定したのに、起動ログに `Starting in dev mode` と表示
+- `APP_MODE=prod` を設定したのに、起動ログに `Starting in mock mode` と表示
 
 ### 原因
 

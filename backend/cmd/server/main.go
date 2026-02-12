@@ -28,7 +28,7 @@ func main() {
 	// Cloud Logging は JSON の "severity" フィールドで重要度を認識する。
 	// slog のデフォルト "level" を "severity" にリネームし、
 	// 値を Cloud Logging 形式（INFO, WARNING, ERROR）にマッピングする。
-	if cfg.AppMode != "dev" {
+	if cfg.AppMode != "mock" {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.LevelKey {
@@ -56,8 +56,8 @@ func main() {
 	var userSettingsRepo domain.UserSettingsRepository
 	var authMiddleware gin.HandlerFunc
 
-	if cfg.AppMode == "dev" {
-		log.Println("Starting in dev mode with mock services")
+	if cfg.AppMode == "mock" {
+		log.Println("Starting in mock mode with devmock services")
 		pokemonFetcher = devmock.NewPokemonFetcher()
 		aiScorer = devmock.NewAIScorer()
 		userPokemonRepo = devmock.NewUserPokemonRepo()
