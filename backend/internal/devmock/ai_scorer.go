@@ -24,14 +24,14 @@ func (s *AIScorer) ScoreTranslation(ctx context.Context, englishText, japaneseTr
 func mockComment(score float64) string {
 	switch {
 	case score >= 90:
-		return "素晴らしい 翻訳だ！"
+		return "全体の 意味を 正確に 捉えている。自然な 日本語で とても いい 翻訳だ！"
 	case score >= 70:
-		return "なかなか いい 翻訳だ！"
+		return "意味は よく 伝わっている。細かい ニュアンスを もう 少し 工夫すると さらに 良くなるぞ。"
 	case score >= 50:
-		return "もう 少し がんばろう！"
+		return "前半は よく 訳せているが 後半の ニュアンスが 少し 惜しい。難しい 単語は 文脈から 推測してみよう。"
 	case score >= 30:
-		return "大事な 部分が 抜けているぞ"
+		return "大事な 部分が 抜けているぞ。原文を もう一度 よく 読んで 全体の 意味を 掴もう。"
 	default:
-		return "意味が 大きく ずれているぞ"
+		return "意味が 大きく ずれている。まずは 知っている 単語を 手がかりに 全体像を つかんでみよう。"
 	}
 }

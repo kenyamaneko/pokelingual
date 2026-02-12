@@ -55,9 +55,11 @@ export function ScoreDisplay({ score }: ScoreDisplayProps) {
       </div>
 
       {score.comment && (
-        <p className="mt-3 text-center text-sm text-gray-600">
-          {score.comment}
-        </p>
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {score.comment}
+          </p>
+        </div>
       )}
     </div>
   );

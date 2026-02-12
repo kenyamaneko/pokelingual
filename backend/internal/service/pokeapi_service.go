@@ -37,8 +37,9 @@ var versionDisplayNames = map[string]string{
 	"shield":          "シールド",
 }
 
-// MaxPokemonID is the maximum Pokemon ID in the supported range (Gen 1-5).
-const MaxPokemonID = 649
+// MaxPokemonID is the maximum Pokemon ID in the supported range (Gen 1-8, excluding Legends: Arceus).
+// Default is 898; can be overridden from Firestore config/app at startup.
+var MaxPokemonID = 898
 
 // excludedPokemonIDs contains Pokemon IDs excluded from random selection.
 // Some users have phobias of certain creatures (e.g. spiders), so these Pokemon
@@ -48,6 +49,8 @@ var excludedPokemonIDs = map[int]bool{
 	168: true, // Ariados (アリアドス)
 	595: true, // Joltik (バチュル)
 	596: true, // Galvantula (デンチュラ)
+	751: true, // Dewpider (シズクモ)
+	752: true, // Araquanid (オニシズクモ)
 }
 
 // PokeAPIService implements domain.PokemonFetcher using the PokeAPI with in-memory caching.
@@ -106,7 +109,7 @@ func TotalAvailablePokemon(userExcludedIDs []int) int {
 	return MaxPokemonID - len(excluded)
 }
 
-// GetRandomPokemon returns a random Pokemon from Gen 1-5 (ID 1-649),
+// GetRandomPokemon returns a random Pokemon from the supported range (ID 1-MaxPokemonID),
 // excluding Pokemon listed in excludedPokemonIDs.
 func (s *PokeAPIService) GetRandomPokemon(ctx context.Context) (*model.Pokemon, error) {
 	var id int

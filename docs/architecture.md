@@ -102,10 +102,11 @@ guess_penalty:   1.0 - wrong_guesses × 0.05
 
 ### PokeAPI データ取得
 
-- 対象: Gen 1-5（ID 1-649）
+- 対象: Gen 1-8（ID 1-898、Firestore `config/app.max_pokemon_id` で管理）
+  - #899-905（Legends: Arceus）は対象バージョンに説明文がないため範囲外
+  - Gen 9（#906+）は PokeAPI に未収録
 - EN/JA 説明文: Gen 6（XY）以降のゲームから取得
   - PokeAPI の `flavor_text_entries` で日本語は Gen 6+ のゲームにのみ存在
-  - Gen 6+ のゲームには Gen 1-5 の全ポケモンの図鑑説明が収録されている
 - FlavorTextPair: バージョンごとに EN/JA をペアリング、`ja` 優先で `ja-Hrkt` フォールバック
 - 重複排除: EN+JA テキストが同一のバージョンは VersionNames をマージ
 - キャッシュ: `sync.Map` によるインメモリキャッシュ
@@ -113,7 +114,7 @@ guess_penalty:   1.0 - wrong_guesses × 0.05
 ### 除外ポケモン
 
 2段階の除外:
-1. **グローバル除外**（全ユーザー共通）: クモ系4匹（#167, #168, #595, #596）
+1. **グローバル除外**（全ユーザー共通）: クモ系6匹（#167, #168, #595, #596, #751, #752）
 2. **ユーザー設定除外**: `UserSettingsRepository` 経由で個別管理
 
 ### 認証フロー
@@ -198,6 +199,7 @@ loading → quest → translating → scoring → guessing → result
 ```
 config/
   auth                          # { allowed_emails: ["email1", "email2"] }
+  app                           # { max_pokemon_id: 898 }
 
 users/
   {uid}/

@@ -118,6 +118,17 @@ func main() {
 		}
 		log.Printf("Loaded %d allowed email(s) from Firestore", len(allowedEmails))
 
+		// Read max_pokemon_id from Firestore (config/app document)
+		appConfigDoc, err := firestoreClient.Collection("config").Doc("app").Get(ctx)
+		if err != nil {
+			log.Printf("config/app not found in Firestore, using default MaxPokemonID=%d", service.MaxPokemonID)
+		} else {
+			if maxID, ok := appConfigDoc.Data()["max_pokemon_id"].(int64); ok {
+				service.MaxPokemonID = int(maxID)
+				log.Printf("Loaded MaxPokemonID=%d from Firestore", service.MaxPokemonID)
+			}
+		}
+
 		pokemonFetcher = service.NewPokeAPIService()
 		aiScorer = service.NewGeminiService(geminiClient)
 		userPokemonRepo = repository.NewUserPokemonRepo(firestoreClient)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kenyamamoto/pokelingual/backend/internal/domain"
+	"github.com/kenyamamoto/pokelingual/backend/internal/service"
 )
 
 // SettingsHandler handles HTTP requests for user settings.
@@ -29,7 +30,10 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, settings)
+	c.JSON(http.StatusOK, gin.H{
+		"excluded_pokemon_ids": settings.ExcludedPokemonIDs,
+		"max_pokemon_id":      service.MaxPokemonID,
+	})
 }
 
 type updateExcludedPokemonRequest struct {

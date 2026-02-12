@@ -37,7 +37,7 @@ User's Japanese translation:
 Evaluate the translation and respond in EXACTLY this JSON format:
 {
   "score": <integer 0-100>,
-  "comment": "<one short review sentence in Japanese>"
+  "comment": "<review in Japanese, 2-3 sentences>"
 }
 
 Scoring guidelines:
@@ -48,10 +48,14 @@ Scoring guidelines:
 - 0-29: Major misunderstanding or mostly incorrect
 
 Comment guidelines:
-- One short sentence in Japanese reviewing the translation
-- Use simple kanji with spaces between words (e.g. "意味は 合っているが 表現が 少し 不自然だ")
-- Keep it under 30 characters
-- Match the tone of Pokemon game text
+- Write 2-3 short sentences in Japanese
+- Include the following as appropriate:
+  - What the user did well (good word choices, correct grammar, etc.)
+  - What could be improved (missing nuances, unnatural phrasing, mistranslations)
+  - Brief explanation of difficult English words or phrases if the user seems to have struggled with them
+- Use simple kanji with spaces between words (e.g. "「friskily」は 元気よく 跳ね回る という 意味だよ。前半は よく 訳せているが 後半の ニュアンスが 少し 惜しい。")
+- Keep the total comment under 100 characters
+- Be encouraging but honest — like a friendly Pokemon professor
 
 Respond with ONLY the JSON, no other text.`, englishText, japaneseTranslation)
 

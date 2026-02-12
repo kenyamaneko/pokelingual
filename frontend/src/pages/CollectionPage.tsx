@@ -6,7 +6,7 @@ import type { CollectionEntry, PokemonDetail } from "../types";
 
 export function CollectionPage() {
   const [collection, setCollection] = useState<CollectionEntry[]>([]);
-  const [totalAvailable, setTotalAvailable] = useState(649);
+  const [totalAvailable, setTotalAvailable] = useState(898);
   const [capturedCount, setCapturedCount] = useState(0);
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetail | null>(
     null

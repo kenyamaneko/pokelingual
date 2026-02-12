@@ -7,6 +7,7 @@ export function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [excludedIDs, setExcludedIDs] = useState<number[]>([]);
+  const [maxPokemonID, setMaxPokemonID] = useState(898);
   const [newID, setNewID] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,6 +18,7 @@ export function SettingsPage() {
       .getSettings()
       .then((res) => {
         setExcludedIDs(res.data.excluded_pokemon_ids || []);
+        if (res.data.max_pokemon_id) setMaxPokemonID(res.data.max_pokemon_id);
       })
       .catch(() => {
         setError("設定の 読み込みに 失敗！");
@@ -26,8 +28,8 @@ export function SettingsPage() {
 
   const handleAdd = () => {
     const id = parseInt(newID, 10);
-    if (isNaN(id) || id < 1 || id > 649) {
-      setError("1から649の 数値を 入れてね");
+    if (isNaN(id) || id < 1 || id > maxPokemonID) {
+      setError(`1から${maxPokemonID}の 数値を 入れてね`);
       return;
     }
     if (excludedIDs.includes(id)) {
@@ -117,11 +119,11 @@ export function SettingsPage() {
             <input
               type="number"
               min="1"
-              max="649"
+              max={maxPokemonID}
               value={newID}
               onChange={(e) => setNewID(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              placeholder="ポケモン ID (1-649)"
+              placeholder={`ポケモン ID (1-${maxPokemonID})`}
               className="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm
                          focus:outline-none focus:ring-2 focus:ring-red-300"
             />

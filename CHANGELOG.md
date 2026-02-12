@@ -8,9 +8,13 @@
 - SemVer バージョニング導入（Git タグベース、`git describe` で自動検出）
 - `v*` タグ push で prod デプロイが実行されるようになった
 - Docker イメージにバージョンタグを付与
+- 対象ポケモンを Gen 8 まで拡張（MaxPokemonID: 649 → 898）
+- MaxPokemonID を Firestore `config/app` で管理可能に（ハードコード廃止）
+- クモ系除外ポケモンに #751 Dewpider, #752 Araquanid を追加
 
 ### Changed
 - 設定画面のバージョン表示: コミットハッシュ → SemVer バージョン
+- 設定画面の除外ポケモン ID 上限を API から動的に取得
 
 ---
 

@@ -141,12 +141,12 @@ fi
 run_test "New Quest" "GET" "/quest/new" "" "pokemon_id,description_en" || true
 
 if [ -n "${LAST_RESPONSE}" ]; then
-  # pokemon_id は 1-649 の範囲であること
+  # pokemon_id は 1-898 の範囲であること
   POKEMON_ID=$(echo "${LAST_RESPONSE}" | jq -r '.pokemon_id')
-  if [ "${POKEMON_ID}" -ge 1 ] && [ "${POKEMON_ID}" -le 649 ]; then
+  if [ "${POKEMON_ID}" -ge 1 ] && [ "${POKEMON_ID}" -le 898 ]; then
     pass_test "Pokemon ID Range (${POKEMON_ID})"
   else
-    fail_test "Pokemon ID Range" "pokemon_id=${POKEMON_ID} is out of range 1-649"
+    fail_test "Pokemon ID Range" "pokemon_id=${POKEMON_ID} is out of range 1-898"
   fi
 
   # description_en が 20 文字以上であること（実際の図鑑説明は長い）
