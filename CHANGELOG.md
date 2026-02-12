@@ -11,6 +11,10 @@
 - 対象ポケモンを Gen 8 まで拡張（MaxPokemonID: 649 → 898）
 - MaxPokemonID を Firestore `config/app` で管理可能に（ハードコード廃止）
 - クモ系除外ポケモンに #751 Dewpider, #752 Araquanid を追加
+- 種族値（BST）ベースの捕獲率計算（シグモイド関数、強いポケモンほど捕まえにくい）
+- 名前当て結果でボール種類が決定（EN正解→ハイパー、JA正解→スーパー、失敗→モンスター）
+- 出題時にポケモン名を伏せ字（EN: "this/these Pokémon"、JA: "この ポケモン"）
+- 捕獲結果画面に種族値を表示
 
 ### Changed
 - 除外ポケモンをグローバルハードコードからユーザーごとの設定に変更（Firestore `config/app.default_excluded_pokemon_ids` でデフォルト管理）
@@ -19,6 +23,8 @@
 - `VITE_ENVIRONMENT` 環境変数を追加（local / dev / prod）
 - 設定画面のバージョン表示: コミットハッシュ → SemVer バージョン
 - 設定画面の除外ポケモン ID 上限を API から動的に取得
+- 捕獲確率の計算式を線形からシグモイドに変更（ADR-010）
+- 名前当て結果のレスポンス: `multiplier` → `ball_type`（poke/great/ultra）
 
 ---
 

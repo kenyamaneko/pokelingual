@@ -88,25 +88,32 @@ backend/
 クエストセッションはインメモリ（`sync.Map`）で管理。Firestore には永続化しない。
 
 ```
-1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成
-2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）
-3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）
-4. POST /api/quest/capture    → スコア × 名前ボーナス × ミスペナルティ → 捕獲確率
+1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成、説明文のポケモン名を伏せ字
+2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）、JA名も伏せ字
+3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
+4. POST /api/quest/capture    → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
 ```
 
-**捕獲確率の計算:**
-```
-probability = (score / 100) × name_multiplier × guess_penalty
-name_multiplier: 1.5 (EN正解) / 1.0 (JA正解) / 0.5 (不正解)
-guess_penalty:   1.0 - wrong_guesses × 0.05
-上限: 1.0
-```
+**ポケモン名伏せ字:**
+- 出題・スコアリング時: 説明文中のポケモン名を代名詞に置換（名前推測のヒント防止）
+  - EN: "this Pokémon"（単数）/ "of these Pokémon"（複数、前の単語で判定）
+  - JA: "この ポケモン"
+- AI スコアリングには元テキストを使用（採点精度に影響なし）
+- 捕獲結果・コレクションでは元の名前を表示
 
-**名前マッチング:**
-- 英語: 完全一致 → multiplier 1.5
-- 英語: ファジー一致（Levenshtein距離 ≤ 2, 名前4文字以上） → multiplier 1.5
-- 日本語: 完全一致 → multiplier 1.0
-- 3回不正解 → multiplier 0.5、名前を公開
+**捕獲確率の計算（シグモイド式）:**
+```
+X = BST / 100,  S = score / 100
+logit = 3.02 - 0.34X - 0.17X² + 11.98S - 4.83XS + 0.58X²S
+captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
+```
+- 種族値（BST）が高いポケモンほど捕まえにくい
+- ボール倍率: モンスターボール 1.0x / スーパーボール 1.5x / ハイパーボール 2.0x
+
+**名前当て → ボール種類:**
+- 英語名 正解（完全 or ファジー一致、Levenshtein距離 ≤ 2, 名前4文字以上）→ ハイパーボール（ultra, 2.0x）
+- 日本語名 正解 → スーパーボール（great, 1.5x）
+- スキップ・3回失敗 → モンスターボール（poke, 1.0x）
 
 ### PokeAPI データ取得
 

@@ -22,6 +22,7 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 		DescriptionEN: "It stores electricity in its cheeks.",
 		DescriptionJA: "ほっぺの でんきぶくろに でんきを ためている。",
 		SpriteURL:     "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 85}
@@ -91,8 +92,8 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 	if guessResp.Language != "en" {
 		t.Errorf("expected language en, got %s", guessResp.Language)
 	}
-	if guessResp.Multiplier != 1.5 {
-		t.Errorf("expected multiplier 1.5, got %f", guessResp.Multiplier)
+	if guessResp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra', got %s", guessResp.BallType)
 	}
 
 	// Step 4: Capture
@@ -115,6 +116,12 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 	}
 	if captureResp.SpriteURL == "" {
 		t.Error("expected non-empty sprite_url")
+	}
+	if captureResp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra', got %s", captureResp.BallType)
+	}
+	if captureResp.BaseStatTotal != 320 {
+		t.Errorf("expected base_stat_total 320, got %d", captureResp.BaseStatTotal)
 	}
 
 	// Verify persistence
@@ -140,6 +147,7 @@ func TestQuestFlow_SkipGuessAndCapture(t *testing.T) {
 		DescriptionEN: "A strange seed was planted on its back.",
 		DescriptionJA: "せなかに ふしぎな タネが うえてある。",
 		SpriteURL:     "https://example.com/1.png",
+		BaseStatTotal: 318,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
@@ -167,7 +175,7 @@ func TestQuestFlow_SkipGuessAndCapture(t *testing.T) {
 		t.Fatalf("score: expected 200, got %d", w.Code)
 	}
 
-	// Step 3: Skip guess → go directly to capture (multiplier defaults to 0.5)
+	// Step 3: Skip guess → go directly to capture (poke ball, 1.0x multiplier)
 	req = httptest.NewRequest("POST", "/quest/capture", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -180,8 +188,8 @@ func TestQuestFlow_SkipGuessAndCapture(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	// Skip multiplier = 0.5, so probability = (80/100) * 0.5 = 0.40
-	expectedProb := 0.40
+	// Verify sigmoid formula: probability should be reasonable for BST=318, score=80, poke ball
+	expectedProb := service.CalculateCaptureRate(80, 318, 1.0)
 	if captureResp.Probability != expectedProb {
 		t.Errorf("expected probability %f, got %f", expectedProb, captureResp.Probability)
 	}
@@ -198,6 +206,7 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 		DescriptionEN: "The flame on its tail indicates its life force.",
 		DescriptionJA: "しっぽの ほのおは いのちの あかし。",
 		SpriteURL:     "https://example.com/4.png",
+		BaseStatTotal: 309,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 90}
@@ -235,11 +244,11 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 	if guessResp.Language != "ja" {
 		t.Errorf("expected language ja, got %s", guessResp.Language)
 	}
-	if guessResp.Multiplier != 1.0 {
-		t.Errorf("expected multiplier 1.0 for JA guess, got %f", guessResp.Multiplier)
+	if guessResp.BallType != "great" {
+		t.Errorf("expected ball_type 'great' for JA guess, got %s", guessResp.BallType)
 	}
 
-	// Capture: prob = (90/100) * 1.0 = 0.90
+	// Capture: sigmoid formula with great ball (1.5x)
 	req = httptest.NewRequest("POST", "/quest/capture", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -248,18 +257,20 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &captureResp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
-	if captureResp.Probability != 0.90 {
-		t.Errorf("expected probability 0.90, got %f", captureResp.Probability)
+	expectedProb := service.CalculateCaptureRate(90, 309, 1.5)
+	if captureResp.Probability != expectedProb {
+		t.Errorf("expected probability %f, got %f", expectedProb, captureResp.Probability)
 	}
 }
 
-// TestQuestFlow_WrongGuessesReduceProbability tests wrong guesses apply penalty.
-func TestQuestFlow_WrongGuessesReduceProbability(t *testing.T) {
+// TestQuestFlow_WrongGuessesUsePokeBall tests wrong guesses result in poke ball.
+func TestQuestFlow_WrongGuessesUsePokeBall(t *testing.T) {
 	pokemon := &model.Pokemon{
 		ID: 7, NameEN: "Squirtle", NameJA: "ゼニガメ",
 		DescriptionEN: "It shelters itself in its shell.",
 		DescriptionJA: "こうらの なかに かくれる。",
 		SpriteURL:     "https://example.com/7.png",
+		BaseStatTotal: 314,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
@@ -280,7 +291,7 @@ func TestQuestFlow_WrongGuessesReduceProbability(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// 3 wrong guesses → all wrong
+	// 3 wrong guesses → poke ball
 	wrongNames := []string{"Pikachu", "Charmander", "Bulbasaur"}
 	for _, name := range wrongNames {
 		body, _ = json.Marshal(map[string]string{"guess": name})
@@ -290,8 +301,7 @@ func TestQuestFlow_WrongGuessesReduceProbability(t *testing.T) {
 		router.ServeHTTP(w, req)
 	}
 
-	// After 3 wrong guesses: multiplier=0.5, wrongGuesses=3, penalty=0.85
-	// probability = (80/100) * 0.5 * 0.85 = 0.34
+	// After 3 wrong guesses: poke ball (1.0x)
 	req = httptest.NewRequest("POST", "/quest/capture", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -301,9 +311,12 @@ func TestQuestFlow_WrongGuessesReduceProbability(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	expectedProb := 0.80 * 0.5 * 0.85
+	expectedProb := service.CalculateCaptureRate(80, 314, 1.0)
 	if captureResp.Probability != expectedProb {
 		t.Errorf("expected probability %f, got %f", expectedProb, captureResp.Probability)
+	}
+	if captureResp.BallType != "poke" {
+		t.Errorf("expected ball_type 'poke', got %s", captureResp.BallType)
 	}
 }
 
@@ -314,6 +327,7 @@ func TestQuestFlow_FuzzyMatchEN(t *testing.T) {
 		DescriptionEN: "It breathes fire.",
 		DescriptionJA: "ひを ふく。",
 		SpriteURL:     "https://example.com/6.png",
+		BaseStatTotal: 534,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 70}
@@ -351,8 +365,8 @@ func TestQuestFlow_FuzzyMatchEN(t *testing.T) {
 	if !guessResp.Fuzzy {
 		t.Error("expected fuzzy flag to be true")
 	}
-	if guessResp.Multiplier != 1.5 {
-		t.Errorf("expected multiplier 1.5, got %f", guessResp.Multiplier)
+	if guessResp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra', got %s", guessResp.BallType)
 	}
 }
 
@@ -363,6 +377,7 @@ func TestQuestFlow_GuessNameRevealAfterMaxAttempts(t *testing.T) {
 		DescriptionEN: "It stores electricity.",
 		DescriptionJA: "でんきを ためる。",
 		SpriteURL:     "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 50}
@@ -420,7 +435,8 @@ func TestQuestFlow_SessionIsolation(t *testing.T) {
 	pokemon := &model.Pokemon{
 		ID: 25, NameEN: "Pikachu", NameJA: "ピカチュウ",
 		DescriptionEN: "Test.", DescriptionJA: "テスト。",
-		SpriteURL: "https://example.com/25.png",
+		SpriteURL:     "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 70}
@@ -467,7 +483,8 @@ func TestQuestFlow_SessionDeletedAfterCapture(t *testing.T) {
 	pokemon := &model.Pokemon{
 		ID: 25, NameEN: "Pikachu", NameJA: "ピカチュウ",
 		DescriptionEN: "Test.", DescriptionJA: "テスト。",
-		SpriteURL: "https://example.com/25.png",
+		SpriteURL:     "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
@@ -507,7 +524,7 @@ func TestQuestFlow_SessionDeletedAfterCapture(t *testing.T) {
 
 // TestGuessNameHandler_MissingBody tests validation on empty guess body.
 func TestGuessNameHandler_MissingBody(t *testing.T) {
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x"}}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
 	scorer := &testutil.MockAIScorer{}
 	repo := &testutil.MockUserPokemonRepo{}
 
@@ -528,7 +545,7 @@ func TestGuessNameHandler_MissingBody(t *testing.T) {
 
 // TestGuessNameHandler_NoSession tests guess without active session.
 func TestGuessNameHandler_NoSession(t *testing.T) {
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x"}}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
 	scorer := &testutil.MockAIScorer{}
 	repo := &testutil.MockUserPokemonRepo{}
 
@@ -552,7 +569,8 @@ func TestScoreTranslationHandler_ExternalServiceError(t *testing.T) {
 	pokemon := &model.Pokemon{
 		ID: 25, NameEN: "Pikachu", NameJA: "ピカチュウ",
 		DescriptionEN: "Test.", DescriptionJA: "テスト。",
-		SpriteURL: "https://example.com/25.png",
+		SpriteURL:     "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ErrorToReturn: fmt.Errorf("gemini unavailable")}

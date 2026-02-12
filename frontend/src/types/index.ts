@@ -11,7 +11,7 @@ export interface ScoreResponse {
 
 export interface GuessResponse {
   correct: boolean;
-  multiplier?: number;
+  ball_type?: string;
   language?: string;
   fuzzy?: boolean;
   attempts_remaining: number;
@@ -29,6 +29,8 @@ export interface CaptureResponse {
   score: number;
   description_en: string;
   description_ja: string;
+  base_stat_total: number;
+  ball_type: string;
 }
 
 export interface CollectionEntry {

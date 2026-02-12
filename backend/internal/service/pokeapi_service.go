@@ -88,6 +88,9 @@ type pokeAPIPokemonResponse struct {
 			} `json:"official-artwork"`
 		} `json:"other"`
 	} `json:"sprites"`
+	Stats []struct {
+		BaseStat int `json:"base_stat"`
+	} `json:"stats"`
 }
 
 // TotalAvailablePokemon returns the total number of Pokemon available for quests,
@@ -178,6 +181,11 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 	descriptionEN := flavorTexts[0].DescriptionEN
 	descriptionJA := flavorTexts[0].DescriptionJA
 
+	bst := 0
+	for _, stat := range pokemonData.Stats {
+		bst += stat.BaseStat
+	}
+
 	spriteURL := pokemonData.Sprites.Other.OfficialArtwork.FrontDefault
 	if spriteURL == "" {
 		spriteURL = pokemonData.Sprites.FrontDefault
@@ -190,6 +198,7 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 		DescriptionEN: descriptionEN,
 		DescriptionJA: descriptionJA,
 		SpriteURL:     spriteURL,
+		BaseStatTotal: bst,
 		FlavorTexts:   flavorTexts,
 	}, nil
 }

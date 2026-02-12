@@ -54,8 +54,8 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
           </p>
           <p className="text-green-600 text-sm">
             {guessResult.language === "en"
-              ? "英語名 正解！ 捕まえやすさ アップ！"
-              : "日本語名 正解！"}
+              ? "英語名 正解！ ハイパーボール ゲット！"
+              : "日本語名 正解！ スーパーボール ゲット！"}
           </p>
         </div>
       )}

@@ -47,6 +47,8 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
 
         <div className="mt-4 text-sm text-gray-500">
           <span>スコア: {result.score}</span>
+          <span className="mx-2">|</span>
+          <span>種族値: {result.base_stat_total}</span>
         </div>
 
         {result.description_en && (

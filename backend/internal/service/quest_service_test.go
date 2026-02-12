@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/kenyamamoto/pokelingual/backend/internal/model"
@@ -18,6 +19,7 @@ func newTestPokemon() *model.Pokemon {
 		DescriptionEN: "When several of these Pokemon gather, their electricity can build and cause lightning storms.",
 		DescriptionJA: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
 		SpriteURL:     "https://example.com/pikachu.png",
+		BaseStatTotal: 320,
 	}
 }
 
@@ -44,6 +46,33 @@ func TestNewQuest(t *testing.T) {
 	}
 	if resp.DescriptionEN != pokemon.DescriptionEN {
 		t.Errorf("expected description to match")
+	}
+}
+
+func TestNewQuest_MasksNameInDescription(t *testing.T) {
+	// Given: a Pokemon whose name appears in the description
+	pokemon := &model.Pokemon{
+		ID:            4,
+		NameEN:        "Charmander",
+		NameJA:        "ヒトカゲ",
+		DescriptionEN: "The flame wavers when Charmander is enjoying itself.",
+		DescriptionJA: "ヒトカゲの 炎が 揺れる。",
+		SpriteURL:     "https://example.com/4.png",
+		BaseStatTotal: 309,
+	}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
+	scorer := &testutil.MockAIScorer{}
+	svc := setupQuestService(scorer, fetcher)
+
+	// When: a new quest is created
+	resp, err := svc.NewQuest(context.Background(), "user1")
+
+	// Then: the Pokemon name is masked in the description
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.DescriptionEN != "The flame wavers when this Pokémon is enjoying itself." {
+		t.Errorf("expected masked EN description, got %q", resp.DescriptionEN)
 	}
 }
 
@@ -94,6 +123,35 @@ func TestScoreTranslation(t *testing.T) {
 	}
 }
 
+func TestScoreTranslation_MasksJAName(t *testing.T) {
+	// Given: a Pokemon whose JA name appears in the JA description
+	pokemon := &model.Pokemon{
+		ID:            25,
+		NameEN:        "Pikachu",
+		NameJA:        "ピカチュウ",
+		DescriptionEN: "It stores electricity.",
+		DescriptionJA: "たくさんの ピカチュウを 集めて 発電所を 作る。",
+		SpriteURL:     "https://example.com/25.png",
+		BaseStatTotal: 320,
+	}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
+	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
+	svc := setupQuestService(scorer, fetcher)
+	_, _ = svc.NewQuest(context.Background(), "user1")
+
+	// When: scoring a translation
+	resp, err := svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
+
+	// Then: JA name is masked in the response
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := "たくさんの この ポケモンを 集めて 発電所を 作る。"
+	if resp.DescriptionJA != expected {
+		t.Errorf("expected masked JA description %q, got %q", expected, resp.DescriptionJA)
+	}
+}
+
 func TestScoreTranslation_NoSession(t *testing.T) {
 	// Given: no quest session exists for the user
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
@@ -119,15 +177,15 @@ func TestGuessName_ExactEnglish(t *testing.T) {
 	// When: guessing the exact English name "Pikachu"
 	resp, err := svc.GuessName(context.Background(), "user1", "Pikachu")
 
-	// Then: correct with 1.5x multiplier and language "en"
+	// Then: correct with ultra ball and language "en"
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !resp.Correct {
 		t.Error("expected correct guess")
 	}
-	if resp.Multiplier != 1.5 {
-		t.Errorf("expected 1.5 multiplier for English name, got %f", resp.Multiplier)
+	if resp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra' for English name, got %s", resp.BallType)
 	}
 	if resp.Language != "en" {
 		t.Errorf("expected language 'en', got %s", resp.Language)
@@ -144,15 +202,15 @@ func TestGuessName_CaseInsensitive(t *testing.T) {
 	// When: guessing "pikachu" (lowercase)
 	resp, err := svc.GuessName(context.Background(), "user1", "pikachu")
 
-	// Then: correct with 1.5x multiplier (case-insensitive match)
+	// Then: correct with ultra ball (case-insensitive match)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !resp.Correct {
 		t.Error("expected case-insensitive match")
 	}
-	if resp.Multiplier != 1.5 {
-		t.Errorf("expected 1.5 multiplier, got %f", resp.Multiplier)
+	if resp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra', got %s", resp.BallType)
 	}
 }
 
@@ -166,15 +224,15 @@ func TestGuessName_Japanese(t *testing.T) {
 	// When: guessing the Japanese name "ピカチュウ"
 	resp, err := svc.GuessName(context.Background(), "user1", "ピカチュウ")
 
-	// Then: correct with 1.0x multiplier (no bonus) and language "ja"
+	// Then: correct with great ball and language "ja"
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !resp.Correct {
 		t.Error("expected correct Japanese guess")
 	}
-	if resp.Multiplier != 1.0 {
-		t.Errorf("expected 1.0 multiplier for Japanese name, got %f", resp.Multiplier)
+	if resp.BallType != "great" {
+		t.Errorf("expected ball_type 'great' for Japanese name, got %s", resp.BallType)
 	}
 	if resp.Language != "ja" {
 		t.Errorf("expected language 'ja', got %s", resp.Language)
@@ -200,6 +258,9 @@ func TestGuessName_FuzzyMatch(t *testing.T) {
 	}
 	if !resp.Fuzzy {
 		t.Error("expected Fuzzy flag to be true")
+	}
+	if resp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra' for fuzzy EN match, got %s", resp.BallType)
 	}
 }
 
@@ -246,6 +307,7 @@ func TestGuessName_ShortNameNoFuzzy(t *testing.T) {
 		NameJA:        "ミュウ",
 		DescriptionEN: "So rare that it is still said to be a mirage.",
 		SpriteURL:     "https://example.com/mew.png",
+		BaseStatTotal: 600,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: shortPokemon}
 	scorer := &testutil.MockAIScorer{}
@@ -261,8 +323,8 @@ func TestGuessName_ShortNameNoFuzzy(t *testing.T) {
 	}
 }
 
-func TestAttemptCapture_HighScore(t *testing.T) {
-	// Given: score=100 and English name guessed correctly (1.5x multiplier)
+func TestAttemptCapture_HighScoreUltraBall(t *testing.T) {
+	// Given: score=100 and English name guessed correctly (ultra ball, 2.0x)
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 100}
 	svc := setupQuestService(scorer, fetcher)
@@ -286,79 +348,62 @@ func TestAttemptCapture_HighScore(t *testing.T) {
 	if resp.NameEN != "Pikachu" {
 		t.Errorf("expected name Pikachu, got %s", resp.NameEN)
 	}
-}
-
-func TestAttemptCapture_ZeroScore(t *testing.T) {
-	// Given: score=0 (no name guess, default multiplier 0.5)
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
-	scorer := &testutil.MockAIScorer{ScoreToReturn: 0}
-	svc := setupQuestService(scorer, fetcher)
-	_, _ = svc.NewQuest(context.Background(), "user1")
-	_, _ = svc.ScoreTranslation(context.Background(), "user1", "でたらめ")
-
-	// When: attempting capture
-	resp, err := svc.AttemptCapture(context.Background(), "user1")
-
-	// Then: probability is 0, never captured
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if resp.BallType != "ultra" {
+		t.Errorf("expected ball_type 'ultra', got %s", resp.BallType)
 	}
-	if resp.Probability != 0 {
-		t.Errorf("expected probability 0, got %f", resp.Probability)
-	}
-	if resp.Captured {
-		t.Error("should not capture with 0% probability")
+	if resp.BaseStatTotal != 320 {
+		t.Errorf("expected base_stat_total 320, got %d", resp.BaseStatTotal)
 	}
 }
 
-func TestAttemptCapture_WrongGuessPenalty(t *testing.T) {
-	// Given: score=80, 2 wrong guesses then Japanese name correct (multiplier=1.0)
+func TestAttemptCapture_PokeBallLowerProbability(t *testing.T) {
+	// Given: score=80, name guess skipped (poke ball, 1.0x)
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
 	svc := setupQuestService(scorer, fetcher)
 	_, _ = svc.NewQuest(context.Background(), "user1")
 	_, _ = svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
-	_, _ = svc.GuessName(context.Background(), "user1", "WrongName1")
-	_, _ = svc.GuessName(context.Background(), "user1", "WrongName2")
+
+	// When: attempting capture without guessing (skip → poke ball)
+	resp, err := svc.AttemptCapture(context.Background(), "user1")
+
+	// Then: probability uses sigmoid formula with ball multiplier 1.0
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := service.CalculateCaptureRate(80, 320, 1.0)
+	if math.Abs(resp.Probability-expected) > 0.001 {
+		t.Errorf("expected probability ~%.4f, got %.4f", expected, resp.Probability)
+	}
+}
+
+func TestAttemptCapture_GreatBall(t *testing.T) {
+	// Given: score=80, Japanese name guessed correctly (great ball, 1.5x)
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
+	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
+	svc := setupQuestService(scorer, fetcher)
+	_, _ = svc.NewQuest(context.Background(), "user1")
+	_, _ = svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
 	_, _ = svc.GuessName(context.Background(), "user1", "ピカチュウ")
 
 	// When: attempting capture
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
 
-	// Then: probability is reduced by 10% (2 wrong * 5% each)
-	// base = 0.8 * 1.0 * 0.90 = 0.72
+	// Then: probability uses sigmoid formula with great ball multiplier 1.5
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	expected := 0.72
-	if resp.Probability < expected-0.001 || resp.Probability > expected+0.001 {
-		t.Errorf("expected probability ~%.2f, got %f", expected, resp.Probability)
+	expected := service.CalculateCaptureRate(80, 320, 1.5)
+	if math.Abs(resp.Probability-expected) > 0.001 {
+		t.Errorf("expected probability ~%.4f, got %.4f", expected, resp.Probability)
+	}
+	if resp.BallType != "great" {
+		t.Errorf("expected ball_type 'great', got %s", resp.BallType)
 	}
 }
 
-func TestAttemptCapture_SkipHalfMultiplier(t *testing.T) {
-	// Given: score=80, name guess skipped (multiplier=0.5, 0 wrong guesses)
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
-	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
-	svc := setupQuestService(scorer, fetcher)
-	_, _ = svc.NewQuest(context.Background(), "user1")
-	_, _ = svc.ScoreTranslation(context.Background(), "user1", "翻訳テスト")
-
-	// When: attempting capture without guessing (skip)
-	resp, err := svc.AttemptCapture(context.Background(), "user1")
-
-	// Then: probability is 0.8 * 0.5 * 1.0 = 0.40
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	expected := 0.40
-	if resp.Probability < expected-0.001 || resp.Probability > expected+0.001 {
-		t.Errorf("expected probability ~%.2f, got %f", expected, resp.Probability)
-	}
-}
-
-func TestAttemptCapture_AllWrongHalfMultiplier(t *testing.T) {
-	// Given: score=80, 3 wrong guesses (multiplier=0.5, 3 wrong)
+func TestAttemptCapture_AllWrongPokeBall(t *testing.T) {
+	// Given: score=80, 3 wrong guesses (poke ball, 1.0x)
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: newTestPokemon()}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
 	svc := setupQuestService(scorer, fetcher)
@@ -371,13 +416,16 @@ func TestAttemptCapture_AllWrongHalfMultiplier(t *testing.T) {
 	// When: attempting capture
 	resp, err := svc.AttemptCapture(context.Background(), "user1")
 
-	// Then: probability is 0.8 * 0.5 * 0.85 = 0.34
+	// Then: probability uses sigmoid formula with poke ball (1.0x)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	expected := 0.34
-	if resp.Probability < expected-0.001 || resp.Probability > expected+0.001 {
-		t.Errorf("expected probability ~%.2f, got %f", expected, resp.Probability)
+	expected := service.CalculateCaptureRate(80, 320, 1.0)
+	if math.Abs(resp.Probability-expected) > 0.001 {
+		t.Errorf("expected probability ~%.4f, got %.4f", expected, resp.Probability)
+	}
+	if resp.BallType != "poke" {
+		t.Errorf("expected ball_type 'poke', got %s", resp.BallType)
 	}
 }
 
@@ -396,5 +444,143 @@ func TestAttemptCapture_SessionDeletedAfter(t *testing.T) {
 	// Then: returns an error (session was deleted after first capture)
 	if err == nil {
 		t.Error("expected error for deleted session")
+	}
+}
+
+func TestCalculateCaptureRate(t *testing.T) {
+	tests := []struct {
+		name           string
+		score          float64
+		bst            int
+		ballMultiplier float64
+		wantMin        float64
+		wantMax        float64
+	}{
+		{"weak pokemon high score", 90, 300, 1.0, 0.85, 1.0},
+		{"strong pokemon high score", 90, 600, 1.0, 0.01, 0.30},
+		{"weak pokemon low score", 30, 300, 1.0, 0.30, 0.80},
+		{"strong pokemon low score", 30, 600, 1.0, 0.001, 0.10},
+		{"ultra ball doubles rate", 50, 400, 2.0, 0.50, 1.0},
+		{"capped at 1.0", 100, 200, 2.0, 1.0, 1.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rate := service.CalculateCaptureRate(tt.score, tt.bst, tt.ballMultiplier)
+			if rate < tt.wantMin || rate > tt.wantMax {
+				t.Errorf("CalculateCaptureRate(%.0f, %d, %.1f) = %.4f, want [%.4f, %.4f]",
+					tt.score, tt.bst, tt.ballMultiplier, rate, tt.wantMin, tt.wantMax)
+			}
+		})
+	}
+}
+
+func TestMaskPokemonNameEN(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		poke string
+		want string
+	}{
+		{
+			"singular at sentence start",
+			"Pikachu stores electricity in its cheeks.",
+			"Pikachu",
+			"This Pokémon stores electricity in its cheeks.",
+		},
+		{
+			"singular mid-sentence",
+			"The flame wavers when Charmander is enjoying itself.",
+			"Charmander",
+			"The flame wavers when this Pokémon is enjoying itself.",
+		},
+		{
+			"plural with several",
+			"When several Pikachu gather, lightning storms occur.",
+			"Pikachu",
+			"When several of these Pokémon gather, lightning storms occur.",
+		},
+		{
+			"plural with many",
+			"A plan to gather many Pikachu and generate electricity.",
+			"Pikachu",
+			"A plan to gather many of these Pokémon and generate electricity.",
+		},
+		{
+			"no match",
+			"It stores electricity in its cheeks.",
+			"Pikachu",
+			"It stores electricity in its cheeks.",
+		},
+		{
+			"empty name",
+			"Some text here.",
+			"",
+			"Some text here.",
+		},
+		{
+			"case insensitive match",
+			"A wild pikachu appeared!",
+			"Pikachu",
+			"A wild this Pokémon appeared!",
+		},
+		{
+			"after period (sentence start)",
+			"It is cute. Pikachu loves ketchup.",
+			"Pikachu",
+			"It is cute. This Pokémon loves ketchup.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := service.MaskPokemonNameEN(tt.text, tt.poke)
+			if got != tt.want {
+				t.Errorf("MaskPokemonNameEN(%q, %q)\n  got  %q\n  want %q", tt.text, tt.poke, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMaskPokemonNameJA(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		poke string
+		want string
+	}{
+		{
+			"simple replacement",
+			"ピカチュウが 電気を ためている。",
+			"ピカチュウ",
+			"この ポケモンが 電気を ためている。",
+		},
+		{
+			"no match",
+			"何匹か 集まると 激しい 雷が 落ちる。",
+			"ピカチュウ",
+			"何匹か 集まると 激しい 雷が 落ちる。",
+		},
+		{
+			"empty name",
+			"何かのテキスト。",
+			"",
+			"何かのテキスト。",
+		},
+		{
+			"multiple occurrences",
+			"ピカチュウは ピカチュウらしい。",
+			"ピカチュウ",
+			"この ポケモンは この ポケモンらしい。",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := service.MaskPokemonNameJA(tt.text, tt.poke)
+			if got != tt.want {
+				t.Errorf("MaskPokemonNameJA(%q, %q)\n  got  %q\n  want %q", tt.text, tt.poke, got, tt.want)
+			}
+		})
 	}
 }

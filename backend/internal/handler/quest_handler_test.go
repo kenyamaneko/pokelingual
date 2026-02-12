@@ -44,6 +44,7 @@ func TestNewQuestHandler(t *testing.T) {
 		NameJA:        "ピカチュウ",
 		DescriptionEN: "It stores electricity in its cheeks.",
 		SpriteURL:     "https://example.com/pikachu.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 80}
@@ -77,6 +78,7 @@ func TestScoreTranslationHandler(t *testing.T) {
 	pokemon := &model.Pokemon{
 		ID: 25, NameEN: "Pikachu", NameJA: "ピカチュウ",
 		DescriptionEN: "Test description", SpriteURL: "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 75, ReviewToReturn: "テスト レビュー"}
@@ -116,7 +118,7 @@ func TestScoreTranslationHandler(t *testing.T) {
 
 func TestScoreTranslationHandler_MissingBody(t *testing.T) {
 	// Given: a quest handler
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x"}}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
 	scorer := &testutil.MockAIScorer{}
 	repo := &testutil.MockUserPokemonRepo{}
 
@@ -141,6 +143,7 @@ func TestCaptureHandler_PersistsToRepo(t *testing.T) {
 	pokemon := &model.Pokemon{
 		ID: 25, NameEN: "Pikachu", NameJA: "ピカチュウ",
 		DescriptionEN: "Test", SpriteURL: "https://example.com/25.png",
+		BaseStatTotal: 320,
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
 	scorer := &testutil.MockAIScorer{ScoreToReturn: 100}
@@ -205,7 +208,7 @@ func TestNewQuestHandler_ExternalServiceError(t *testing.T) {
 
 func TestScoreTranslationHandler_NoSession(t *testing.T) {
 	// Given: no quest session exists
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x"}}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
 	scorer := &testutil.MockAIScorer{}
 	repo := &testutil.MockUserPokemonRepo{}
 
@@ -228,7 +231,7 @@ func TestScoreTranslationHandler_NoSession(t *testing.T) {
 
 func TestCaptureHandler_NoSession(t *testing.T) {
 	// Given: no quest session exists
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x"}}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
 	scorer := &testutil.MockAIScorer{}
 	repo := &testutil.MockUserPokemonRepo{}
 
@@ -249,7 +252,7 @@ func TestCaptureHandler_NoSession(t *testing.T) {
 
 func TestCaptureHandler_ErrorMessageHidden(t *testing.T) {
 	// Given: no quest session exists
-	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x"}}
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
 	scorer := &testutil.MockAIScorer{}
 	repo := &testutil.MockUserPokemonRepo{}
 

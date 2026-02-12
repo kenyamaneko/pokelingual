@@ -114,8 +114,7 @@ export function QuestPage() {
   };
 
   const getBallType = (): BallType => {
-    if (guessResult?.correct && guessResult.language === "en") return "ultra";
-    if (guessResult?.correct && guessResult.language === "ja") return "great";
+    if (guessResult?.ball_type) return guessResult.ball_type as BallType;
     return "poke";
   };
 

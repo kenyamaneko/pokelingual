@@ -37,42 +37,44 @@ describe("NameGuess", () => {
   });
 
   it("shows correct message for English name", () => {
-    // Given: a correct English name guess result with 1.5x multiplier
+    // Given: a correct English name guess result with ultra ball
     render(
       <NameGuess
         onSubmit={vi.fn()}
         onSkip={vi.fn()}
         guessResult={{
           correct: true,
-          multiplier: 1.5,
+          ball_type: "ultra",
           language: "en",
           attempts_remaining: 2,
         }}
       />
     );
-    // Then: shows correct message with English name bonus
+    // Then: shows correct message with hyper ball bonus
     expect(screen.getByText("正解！")).toBeInTheDocument();
     expect(
-      screen.getByText("英語名 正解！ 捕まえやすさ アップ！")
+      screen.getByText("英語名 正解！ ハイパーボール ゲット！")
     ).toBeInTheDocument();
   });
 
   it("shows correct message for Japanese name", () => {
-    // Given: a correct Japanese name guess result with 1.0x multiplier
+    // Given: a correct Japanese name guess result with great ball
     render(
       <NameGuess
         onSubmit={vi.fn()}
         onSkip={vi.fn()}
         guessResult={{
           correct: true,
-          multiplier: 1.0,
+          ball_type: "great",
           language: "ja",
           attempts_remaining: 2,
         }}
       />
     );
-    // Then: shows Japanese name correct message
-    expect(screen.getByText("日本語名 正解！")).toBeInTheDocument();
+    // Then: shows Japanese name correct message with super ball
+    expect(
+      screen.getByText("日本語名 正解！ スーパーボール ゲット！")
+    ).toBeInTheDocument();
   });
 
   it("shows revealed name after 3 wrong guesses", () => {
@@ -155,7 +157,7 @@ describe("NameGuess", () => {
         onSkip={vi.fn()}
         guessResult={{
           correct: true,
-          multiplier: 1.5,
+          ball_type: "ultra",
           language: "en",
           attempts_remaining: 2,
         }}
