@@ -15,6 +15,8 @@ const capturedResult: CaptureResponse = {
   score: 90,
   description_en: "When several of these Pokemon gather, their electricity could build and cause lightning storms.",
   description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
+  base_stat_total: 320,
+  ball_type: "ultra",
 };
 
 const escapedResult: CaptureResponse = {
@@ -27,6 +29,8 @@ const escapedResult: CaptureResponse = {
   score: 30,
   description_en: "When several of these Pokemon gather, their electricity could build and cause lightning storms.",
   description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
+  base_stat_total: 320,
+  ball_type: "poke",
 };
 
 function renderWithRouter(ui: React.ReactElement) {
