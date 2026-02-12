@@ -79,7 +79,7 @@ func TestScoreTranslationHandler(t *testing.T) {
 		DescriptionEN: "Test description", SpriteURL: "https://example.com/25.png",
 	}
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
-	scorer := &testutil.MockAIScorer{ScoreToReturn: 75}
+	scorer := &testutil.MockAIScorer{ScoreToReturn: 75, CommentToReturn: "テスト コメント"}
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
@@ -97,7 +97,7 @@ func TestScoreTranslationHandler(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Then: returns 200 with score 75
+	// Then: returns 200 with score 75 and comment
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}
@@ -108,6 +108,9 @@ func TestScoreTranslationHandler(t *testing.T) {
 	}
 	if resp.Score != 75 {
 		t.Errorf("expected score 75, got %f", resp.Score)
+	}
+	if resp.Comment != "テスト コメント" {
+		t.Errorf("expected comment %q, got %q", "テスト コメント", resp.Comment)
 	}
 }
 

@@ -11,9 +11,9 @@ describe("NameGuess", () => {
     );
     // Then: input field, submit button, and skip button are present
     expect(
-      screen.getByPlaceholderText("ポケモンの なまえを にゅうりょく…")
+      screen.getByPlaceholderText("ポケモンの 名前を 入力…")
     ).toBeInTheDocument();
-    expect(screen.getByText("きみに きめた！")).toBeInTheDocument();
+    expect(screen.getByText("きみに 決めた！")).toBeInTheDocument();
     expect(
       screen.getByText("わからないので スキップ →")
     ).toBeInTheDocument();
@@ -28,9 +28,9 @@ describe("NameGuess", () => {
     );
 
     // When: typing "Pikachu" and clicking submit
-    const input = screen.getByPlaceholderText("ポケモンの なまえを にゅうりょく…");
+    const input = screen.getByPlaceholderText("ポケモンの 名前を 入力…");
     await user.type(input, "Pikachu");
-    await user.click(screen.getByText("きみに きめた！"));
+    await user.click(screen.getByText("きみに 決めた！"));
 
     // Then: onSubmit is called with "Pikachu"
     expect(onSubmit).toHaveBeenCalledWith("Pikachu");
@@ -51,9 +51,9 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows correct message with English name bonus
-    expect(screen.getByText("せいかい！")).toBeInTheDocument();
+    expect(screen.getByText("正解！")).toBeInTheDocument();
     expect(
-      screen.getByText("えいごめい せいかい！ つかまえやすさ アップ！")
+      screen.getByText("英語名 正解！ 捕まえやすさ アップ！")
     ).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows Japanese name correct message
-    expect(screen.getByText("にほんごめい せいかい！")).toBeInTheDocument();
+    expect(screen.getByText("日本語名 正解！")).toBeInTheDocument();
   });
 
   it("shows revealed name after 3 wrong guesses", () => {
@@ -90,7 +90,7 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows failure message and revealed names
-    expect(screen.getByText("ざんねん！")).toBeInTheDocument();
+    expect(screen.getByText("残念！")).toBeInTheDocument();
     expect(
       screen.getByText(/Pikachu.*ピカチュウ/)
     ).toBeInTheDocument();
@@ -110,7 +110,7 @@ describe("NameGuess", () => {
     );
     // Then: shows wrong message encouraging retry
     expect(
-      screen.getByText("はずれ… もういちど やってみよう！")
+      screen.getByText("外れ… もう一度 やってみよう！")
     ).toBeInTheDocument();
   });
 
@@ -128,7 +128,7 @@ describe("NameGuess", () => {
     );
     // Then: shows last chance message
     expect(
-      screen.getByText("はずれ… ラストチャンス！")
+      screen.getByText("外れ… ラストチャンス！")
     ).toBeInTheDocument();
   });
 
@@ -162,6 +162,6 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows "次へ進む" button instead of skip
-    expect(screen.getByText("つぎへ すすむ →")).toBeInTheDocument();
+    expect(screen.getByText("次へ 進む →")).toBeInTheDocument();
   });
 });

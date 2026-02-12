@@ -38,14 +38,14 @@ describe("CaptureResult", () => {
     // Given: a captured result
     renderWithRouter(<CaptureResult result={capturedResult} onNewQuest={vi.fn()} />);
     // Then: shows capture message
-    expect(screen.getByText(/やったー！ ピカチュウを つかまえたぞ！/)).toBeInTheDocument();
+    expect(screen.getByText(/やったー！ ピカチュウを 捕まえたぞ！/)).toBeInTheDocument();
   });
 
   it("shows escape message when not captured", () => {
     // Given: an escaped result
     renderWithRouter(<CaptureResult result={escapedResult} onNewQuest={vi.fn()} />);
     // Then: shows escape message
-    expect(screen.getByText(/やせいの ピカチュウは にげだした！/)).toBeInTheDocument();
+    expect(screen.getByText(/野生の ピカチュウは 逃げ出した！/)).toBeInTheDocument();
   });
 
   it("displays Pokemon name in both languages", () => {
@@ -70,7 +70,7 @@ describe("CaptureResult", () => {
     renderWithRouter(<CaptureResult result={capturedResult} onNewQuest={onNewQuest} />);
 
     // When: clicking the "次のクエストへ" button
-    await user.click(screen.getByText("つぎの クエストへ"));
+    await user.click(screen.getByText("次の クエストへ"));
 
     // Then: onNewQuest is called
     expect(onNewQuest).toHaveBeenCalledOnce();

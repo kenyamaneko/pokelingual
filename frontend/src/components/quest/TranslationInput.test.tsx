@@ -9,16 +9,16 @@ describe("TranslationInput", () => {
     render(<TranslationInput onSubmit={vi.fn()} />);
     // Then: textarea and button are present
     expect(
-      screen.getByPlaceholderText("にほんごを にゅうりょく...")
+      screen.getByPlaceholderText("日本語を 入力...")
     ).toBeInTheDocument();
-    expect(screen.getByText("この ほんやくで たたかう！")).toBeInTheDocument();
+    expect(screen.getByText("この 翻訳で 戦う！")).toBeInTheDocument();
   });
 
   it("button is disabled when textarea is empty", () => {
     // Given: a TranslationInput with no text entered
     render(<TranslationInput onSubmit={vi.fn()} />);
     // Then: the submit button is disabled
-    const button = screen.getByText("この ほんやくで たたかう！");
+    const button = screen.getByText("この 翻訳で 戦う！");
     expect(button).toBeDisabled();
   });
 
@@ -28,11 +28,11 @@ describe("TranslationInput", () => {
     render(<TranslationInput onSubmit={vi.fn()} />);
 
     // When: text is typed into the textarea
-    const textarea = screen.getByPlaceholderText("にほんごを にゅうりょく...");
+    const textarea = screen.getByPlaceholderText("日本語を 入力...");
     await user.type(textarea, "テスト翻訳");
 
     // Then: the submit button becomes enabled
-    const button = screen.getByText("この ほんやくで たたかう！");
+    const button = screen.getByText("この 翻訳で 戦う！");
     expect(button).not.toBeDisabled();
   });
 
@@ -43,9 +43,9 @@ describe("TranslationInput", () => {
     render(<TranslationInput onSubmit={onSubmit} />);
 
     // When: text is entered and submit button is clicked
-    const textarea = screen.getByPlaceholderText("にほんごを にゅうりょく...");
+    const textarea = screen.getByPlaceholderText("日本語を 入力...");
     await user.type(textarea, "テスト翻訳");
-    const button = screen.getByText("この ほんやくで たたかう！");
+    const button = screen.getByText("この 翻訳で 戦う！");
     await user.click(button);
 
     // Then: onSubmit is called with the entered text

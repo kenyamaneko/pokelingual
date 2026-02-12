@@ -22,14 +22,14 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
           <>
             <div className="text-4xl mb-2">&#11088;</div>
             <h2 className="text-2xl font-bold text-green-700 mb-4">
-              やったー！ {result.name_ja}を つかまえたぞ！
+              やったー！ {result.name_ja}を 捕まえたぞ！
             </h2>
           </>
         ) : (
           <>
             <div className="text-4xl mb-2">&#128168;</div>
             <h2 className="text-2xl font-bold text-gray-600 mb-4">
-              やせいの {result.name_ja}は にげだした！
+              野生の {result.name_ja}は 逃げ出した！
             </h2>
           </>
         )}
@@ -52,7 +52,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         {result.description_en && (
           <div className="mt-4 bg-gray-50 rounded-xl p-4 text-left">
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              ずかんの せつめい
+              図鑑の 説明
             </h3>
             <p className="text-gray-700 text-sm leading-relaxed italic">
               "{result.description_en}"
@@ -71,7 +71,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         className="mt-6 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
-        つぎの クエストへ
+        次の クエストへ
       </button>
 
       <button
@@ -79,7 +79,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         className="mt-3 w-full bg-white text-gray-600 py-3 rounded-2xl font-bold text-base
                    border-2 border-gray-200 hover:bg-gray-50 transition-colors"
       >
-        メニューに もどる
+        メニューに 戻る
       </button>
     </div>
   );

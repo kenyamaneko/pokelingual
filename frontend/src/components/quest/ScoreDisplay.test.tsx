@@ -5,7 +5,7 @@ import { ScoreDisplay } from "./ScoreDisplay";
 describe("ScoreDisplay", () => {
   it("displays damage and HP", () => {
     // Given: a ScoreDisplay with score 85
-    render(<ScoreDisplay score={{ score: 85, description_ja: "" }} />);
+    render(<ScoreDisplay score={{ score: 85, comment: "", description_ja: "" }} />);
     // Then: damage value and remaining HP are displayed
     expect(screen.getByText("85")).toBeInTheDocument();
     expect(screen.getByText("ダメージ")).toBeInTheDocument();
@@ -13,39 +13,46 @@ describe("ScoreDisplay", () => {
     expect(screen.getByText("15/100")).toBeInTheDocument();
   });
 
-  it("shows いちげきひっさつ for score 100", () => {
+  it("shows 一撃必殺 for score 100", () => {
     // Given: a ScoreDisplay with score 100
-    render(<ScoreDisplay score={{ score: 100, description_ja: "" }} />);
+    render(<ScoreDisplay score={{ score: 100, comment: "", description_ja: "" }} />);
     // Then: shows one-hit KO label
-    expect(screen.getByText("いちげきひっさつ！")).toBeInTheDocument();
+    expect(screen.getByText("一撃必殺！")).toBeInTheDocument();
   });
 
   it("shows ばつぐん for score >= 80", () => {
     // Given: a ScoreDisplay with score 85
-    render(<ScoreDisplay score={{ score: 85, description_ja: "" }} />);
+    render(<ScoreDisplay score={{ score: 85, comment: "", description_ja: "" }} />);
     // Then: shows super effective label
-    expect(screen.getByText("こうかはばつぐんだ！")).toBeInTheDocument();
+    expect(screen.getByText("効果は ばつぐんだ！")).toBeInTheDocument();
   });
 
   it("shows no label for score 41-79", () => {
     // Given: a ScoreDisplay with score 60
-    render(<ScoreDisplay score={{ score: 60, description_ja: "" }} />);
+    render(<ScoreDisplay score={{ score: 60, comment: "", description_ja: "" }} />);
     // Then: no evaluation label is shown
-    expect(screen.queryByText("こうかはばつぐんだ！")).not.toBeInTheDocument();
-    expect(screen.queryByText("こうかはいまひとつのようだ")).not.toBeInTheDocument();
+    expect(screen.queryByText("効果は ばつぐんだ！")).not.toBeInTheDocument();
+    expect(screen.queryByText("効果は いまひとつの ようだ")).not.toBeInTheDocument();
   });
 
   it("shows いまひとつ for score 1-40", () => {
     // Given: a ScoreDisplay with score 15
-    render(<ScoreDisplay score={{ score: 15, description_ja: "" }} />);
+    render(<ScoreDisplay score={{ score: 15, comment: "", description_ja: "" }} />);
     // Then: shows not very effective label
-    expect(screen.getByText("こうかはいまひとつのようだ")).toBeInTheDocument();
+    expect(screen.getByText("効果は いまひとつの ようだ")).toBeInTheDocument();
   });
 
   it("shows こうかがない for score 0", () => {
     // Given: a ScoreDisplay with score 0
-    render(<ScoreDisplay score={{ score: 0, description_ja: "" }} />);
+    render(<ScoreDisplay score={{ score: 0, comment: "", description_ja: "" }} />);
     // Then: shows no effect label
-    expect(screen.getByText("こうかがないみたいだ...")).toBeInTheDocument();
+    expect(screen.getByText("効果が ないみたいだ...")).toBeInTheDocument();
+  });
+
+  it("displays the AI comment when present", () => {
+    // Given: a ScoreDisplay with a comment
+    render(<ScoreDisplay score={{ score: 75, comment: "テスト コメント", description_ja: "" }} />);
+    // Then: the comment text is displayed
+    expect(screen.getByText("テスト コメント")).toBeInTheDocument();
   });
 });

@@ -42,7 +42,7 @@ export function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">PokeLingual</h1>
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
         <p className="text-gray-400 text-sm mb-8">
-          ポケモンで えいごを まなぼう！
+          ポケモンで 英語を 学ぼう！
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

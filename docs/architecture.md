@@ -81,7 +81,7 @@ backend/
 
 ```
 1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成
-2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100）
+2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）
 3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）
 4. POST /api/quest/capture    → スコア × 名前ボーナス × ミスペナルティ → 捕獲確率
 ```

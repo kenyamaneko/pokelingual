@@ -35,36 +35,36 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
   return (
     <div className="mt-4 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
       <h3 className="text-lg font-bold text-gray-700 mb-2">
-        この ポケモンの なまえは？
+        この ポケモンの 名前は？
       </h3>
       <p className="text-sm text-gray-500 mb-1">
-        えいごの なまえだと つかまえやすい！ にほんごでも OK
+        英語の 名前だと 捕まえやすい！ 日本語でも OK
       </p>
       {!isFinished && guessResult && (
         <p className="text-sm text-gray-400 mb-3">
-          のこり {guessResult.attempts_remaining}かい
+          残り {guessResult.attempts_remaining}回
         </p>
       )}
 
       {guessResult?.correct && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-3">
           <p className="text-green-700 font-bold">
-            せいかい！
-            {guessResult.fuzzy && "（すこし ちがったけど OK！）"}
+            正解！
+            {guessResult.fuzzy && "（少し 違ったけど OK！）"}
           </p>
           <p className="text-green-600 text-sm">
             {guessResult.language === "en"
-              ? "えいごめい せいかい！ つかまえやすさ アップ！"
-              : "にほんごめい せいかい！"}
+              ? "英語名 正解！ 捕まえやすさ アップ！"
+              : "日本語名 正解！"}
           </p>
         </div>
       )}
 
       {guessResult && !guessResult.correct && guessResult.attempts_remaining === 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-3">
-          <p className="text-red-700 font-bold">ざんねん！</p>
+          <p className="text-red-700 font-bold">残念！</p>
           <p className="text-red-600 text-sm">
-            こたえは {guessResult.reveal_name_en}（{guessResult.reveal_name_ja}）だったよ
+            答えは {guessResult.reveal_name_en}（{guessResult.reveal_name_ja}）だったよ
           </p>
         </div>
       )}
@@ -73,8 +73,8 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-3">
           <p className="text-yellow-700 text-sm">
             {guessResult.attempts_remaining === 1
-              ? "はずれ… ラストチャンス！"
-              : "はずれ… もういちど やってみよう！"}
+              ? "外れ… ラストチャンス！"
+              : "外れ… もう一度 やってみよう！"}
           </p>
         </div>
       )}
@@ -86,7 +86,7 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="ポケモンの なまえを にゅうりょく…"
+            placeholder="ポケモンの 名前を 入力…"
             className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl
                        focus:border-blue-500 focus:outline-none text-lg bg-white text-gray-800"
             disabled={submitting}
@@ -98,7 +98,7 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
                        hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
                        transition-colors"
           >
-            {submitting ? "…" : "きみに きめた！"}
+            {submitting ? "…" : "きみに 決めた！"}
           </button>
         </div>
       )}
@@ -108,7 +108,7 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
         className="mt-3 w-full text-gray-500 hover:text-gray-700 py-2 text-sm
                    transition-colors"
       >
-        {isFinished ? "つぎへ すすむ →" : "わからないので スキップ →"}
+        {isFinished ? "次へ 進む →" : "わからないので スキップ →"}
       </button>
     </div>
   );

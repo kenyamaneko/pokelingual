@@ -66,7 +66,7 @@ func TestScoreTranslation(t *testing.T) {
 	// Given: an active quest session and a scorer returning 85
 	pokemon := newTestPokemon()
 	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: pokemon}
-	scorer := &testutil.MockAIScorer{ScoreToReturn: 85}
+	scorer := &testutil.MockAIScorer{ScoreToReturn: 85, CommentToReturn: "テスト コメント"}
 	svc := setupQuestService(scorer, fetcher)
 	_, _ = svc.NewQuest(context.Background(), "user1")
 
@@ -79,6 +79,9 @@ func TestScoreTranslation(t *testing.T) {
 	}
 	if resp.Score != 85 {
 		t.Errorf("expected score 85, got %f", resp.Score)
+	}
+	if resp.Comment != "テスト コメント" {
+		t.Errorf("expected comment %q, got %q", "テスト コメント", resp.Comment)
 	}
 	if len(scorer.CalledWith) != 1 {
 		t.Fatalf("expected scorer called once, got %d", len(scorer.CalledWith))

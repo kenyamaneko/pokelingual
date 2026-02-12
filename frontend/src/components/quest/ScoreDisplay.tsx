@@ -19,11 +19,11 @@ function getHPBarColor(remainingHP: number): string {
 }
 
 function getScoreLabel(score: number): string | null {
-  if (score >= 100) return "いちげきひっさつ！";
-  if (score >= 80) return "こうかはばつぐんだ！";
+  if (score >= 100) return "一撃必殺！";
+  if (score >= 80) return "効果は ばつぐんだ！";
   if (score >= 41) return null;
-  if (score >= 1) return "こうかはいまひとつのようだ";
-  return "こうかがないみたいだ...";
+  if (score >= 1) return "効果は いまひとつの ようだ";
+  return "効果が ないみたいだ...";
 }
 
 export function ScoreDisplay({ score }: ScoreDisplayProps) {
@@ -53,6 +53,12 @@ export function ScoreDisplay({ score }: ScoreDisplayProps) {
         </div>
         <span className="text-xs text-gray-500 shrink-0">{remainingHP}/100</span>
       </div>
+
+      {score.comment && (
+        <p className="mt-3 text-center text-sm text-gray-600">
+          {score.comment}
+        </p>
+      )}
     </div>
   );
 }

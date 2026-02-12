@@ -19,7 +19,7 @@ describe("QuestCard", () => {
     render(<QuestCard description="Test description" />);
     // Then: the Japanese instruction text is shown
     expect(
-      screen.getByText("この えいぶんを にほんごに ほんやくしよう！")
+      screen.getByText("この 英文を 日本語に 翻訳しよう！")
     ).toBeInTheDocument();
   });
 

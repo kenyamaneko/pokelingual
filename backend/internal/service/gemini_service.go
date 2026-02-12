@@ -36,7 +36,8 @@ User's Japanese translation:
 
 Evaluate the translation and respond in EXACTLY this JSON format:
 {
-  "score": <integer 0-100>
+  "score": <integer 0-100>,
+  "comment": "<one short review sentence in Japanese>"
 }
 
 Scoring guidelines:
@@ -45,6 +46,12 @@ Scoring guidelines:
 - 50-69: Partially correct, missing important nuances or grammatical issues
 - 30-49: Significant errors but some understanding shown
 - 0-29: Major misunderstanding or mostly incorrect
+
+Comment guidelines:
+- One short sentence in Japanese reviewing the translation
+- Use simple kanji with spaces between words (e.g. "意味は 合っているが 表現が 少し 不自然だ")
+- Keep it under 30 characters
+- Match the tone of Pokemon game text
 
 Respond with ONLY the JSON, no other text.`, englishText, japaneseTranslation)
 

@@ -31,6 +31,7 @@ type QuestNewResponse struct {
 // ScoreResponse is the API response for a translation scoring.
 type ScoreResponse struct {
 	Score         float64 `json:"score"`
+	Comment       string  `json:"comment"`
 	DescriptionJA string  `json:"description_ja"`
 }
 
@@ -125,6 +126,7 @@ func (s *QuestService) ScoreTranslation(ctx context.Context, uid string, transla
 
 	return &ScoreResponse{
 		Score:         result.Score,
+		Comment:       result.Comment,
 		DescriptionJA: session.DescriptionJA,
 	}, nil
 }

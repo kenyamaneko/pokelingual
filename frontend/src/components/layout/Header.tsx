@@ -42,7 +42,7 @@ export function Header() {
                 : ""
             }`}
           >
-            せってい
+            設定
           </Link>
         </nav>
       </div>

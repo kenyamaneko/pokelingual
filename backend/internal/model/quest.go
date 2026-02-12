@@ -17,5 +17,6 @@ type QuestSession struct {
 
 // ScoreResult is the AI-agnostic result of a translation scoring.
 type ScoreResult struct {
-	Score float64 `json:"score"`
+	Score   float64 `json:"score"`
+	Comment string  `json:"comment"`
 }
