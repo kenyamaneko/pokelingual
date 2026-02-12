@@ -83,7 +83,7 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
-            --update-env-vars "FRONTEND_URL=${{ env.FRONTEND_URL }}" \
+            --update-env-vars "APP_MODE=prod,FRONTEND_URL=${{ env.FRONTEND_URL }}" \
             --allow-unauthenticated
 
   # Integration tests: run against deployed dev backend with real resources

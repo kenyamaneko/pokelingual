@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -22,6 +24,31 @@ import (
 
 func main() {
 	cfg := config.Load()
+
+	// Cloud Logging は JSON の "severity" フィールドで重要度を認識する。
+	// slog のデフォルト "level" を "severity" にリネームし、
+	// 値を Cloud Logging 形式（INFO, WARNING, ERROR）にマッピングする。
+	if cfg.AppMode != "dev" {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+				if a.Key == slog.LevelKey {
+					switch a.Value.Any().(slog.Level) {
+					case slog.LevelWarn:
+						a.Value = slog.StringValue("WARNING")
+					case slog.LevelError:
+						a.Value = slog.StringValue("ERROR")
+					default:
+						a.Value = slog.StringValue(a.Value.String())
+					}
+					a.Key = "severity"
+				}
+				if a.Key == slog.MessageKey {
+					a.Key = "message"
+				}
+				return a
+			},
+		})))
+	}
 
 	var pokemonFetcher domain.PokemonFetcher
 	var aiScorer domain.AIScorer
