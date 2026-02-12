@@ -164,7 +164,7 @@ fi
 # ============================================================
 run_test "Score Translation" "POST" "/quest/score" \
   '{"translation":"テスト翻訳です"}' \
-  "score,comment,description_ja" || true
+  "score,review,description_ja" || true
 
 if [ -n "${LAST_RESPONSE}" ]; then
   # score は 0-100 の数値であること

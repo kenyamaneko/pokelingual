@@ -18,10 +18,10 @@ func NewAIScorer() *AIScorer {
 // ScoreTranslation returns a random score between 20 and 95.
 func (s *AIScorer) ScoreTranslation(ctx context.Context, englishText, japaneseTranslation string) (*model.ScoreResult, error) {
 	score := float64(20 + rand.Intn(76))
-	return &model.ScoreResult{Score: score, Comment: mockComment(score)}, nil
+	return &model.ScoreResult{Score: score, Review: mockReview(score)}, nil
 }
 
-func mockComment(score float64) string {
+func mockReview(score float64) string {
 	switch {
 	case score >= 90:
 		return "全体の 意味を 正確に 捉えている。自然な 日本語で とても いい 翻訳だ！"

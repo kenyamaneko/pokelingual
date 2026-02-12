@@ -53,14 +53,6 @@ export function ScoreDisplay({ score }: ScoreDisplayProps) {
         </div>
         <span className="text-xs text-gray-500 shrink-0">{remainingHP}/100</span>
       </div>
-
-      {score.comment && (
-        <div className="mt-4 pt-3 border-t border-gray-100">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            {score.comment}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

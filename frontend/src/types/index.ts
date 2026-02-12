@@ -5,7 +5,7 @@ export interface QuestNewResponse {
 
 export interface ScoreResponse {
   score: number;
-  comment: string;
+  review: string;
   description_ja: string;
 }
 

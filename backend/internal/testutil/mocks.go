@@ -9,7 +9,7 @@ import (
 // MockAIScorer implements domain.AIScorer for testing.
 type MockAIScorer struct {
 	ScoreToReturn   float64
-	CommentToReturn string
+	ReviewToReturn string
 	ErrorToReturn   error
 	CalledWith      []MockScoreCall
 }
@@ -29,7 +29,7 @@ func (m *MockAIScorer) ScoreTranslation(ctx context.Context, englishText, japane
 	}
 	return &model.ScoreResult{
 		Score:   m.ScoreToReturn,
-		Comment: m.CommentToReturn,
+		Review: m.ReviewToReturn,
 	}, nil
 }
 

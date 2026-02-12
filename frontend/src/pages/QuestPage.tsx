@@ -190,6 +190,13 @@ export function QuestPage() {
                   {userTranslation}
                 </p>
               </div>
+              {score.review && (
+                <div className="mb-3 pt-3 border-t border-gray-100">
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {score.review}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-1">日本語の 説明文</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
