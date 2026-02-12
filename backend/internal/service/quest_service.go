@@ -71,12 +71,16 @@ func NewQuestService(pokemonFetcher domain.PokemonFetcher, aiScorer domain.AISco
 // NewQuest starts a new quest by fetching a random Pokemon,
 // retrying if the Pokemon is in the user's excluded list.
 func (s *QuestService) NewQuest(ctx context.Context, uid string) (*QuestNewResponse, error) {
-	// Build excluded set from user settings
+	// Build excluded set: use user settings if configured, otherwise defaults
 	excluded := map[int]bool{}
 	if s.settingsRepo != nil {
 		settings, err := s.settingsRepo.GetSettings(ctx, uid)
 		if err == nil && settings != nil {
-			for _, id := range settings.ExcludedPokemonIDs {
+			ids := settings.ExcludedPokemonIDs
+			if ids == nil {
+				ids = DefaultExcludedPokemonIDs
+			}
+			for _, id := range ids {
 				excluded[id] = true
 			}
 		}

@@ -109,7 +109,7 @@ func (m *MockUserSettingsRepo) GetSettings(ctx context.Context, uid string) (*mo
 		return nil, m.ErrorToReturn
 	}
 	if m.Settings == nil {
-		return &model.UserSettings{ExcludedPokemonIDs: []int{}}, nil
+		return &model.UserSettings{}, nil // nil ExcludedPokemonIDs = use defaults
 	}
 	return m.Settings, nil
 }

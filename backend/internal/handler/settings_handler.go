@@ -30,8 +30,13 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 		return
 	}
 
+	excluded := settings.ExcludedPokemonIDs
+	if excluded == nil {
+		excluded = service.DefaultExcludedPokemonIDs
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"excluded_pokemon_ids": settings.ExcludedPokemonIDs,
+		"excluded_pokemon_ids": excluded,
 		"max_pokemon_id":      service.MaxPokemonID,
 	})
 }

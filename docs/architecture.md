@@ -113,9 +113,11 @@ guess_penalty:   1.0 - wrong_guesses × 0.05
 
 ### 除外ポケモン
 
-2段階の除外:
-1. **グローバル除外**（全ユーザー共通）: クモ系6匹（#167, #168, #595, #596, #751, #752）
-2. **ユーザー設定除外**: `UserSettingsRepository` 経由で個別管理
+ユーザーごとに設定可能。`UserSettingsRepository` 経由で `users/{uid}/settings/preferences` に保存。
+
+- ユーザーが未設定の場合、`config/app.default_excluded_pokemon_ids` のデフォルト値を使用
+- デフォルト: クモ系6匹（#167, #168, #595, #596, #751, #752）
+- ユーザーは設定画面から自由に追加・削除可能
 
 ### 認証フロー
 
@@ -199,7 +201,7 @@ loading → quest → translating → scoring → guessing → result
 ```
 config/
   auth                          # { allowed_emails: ["email1", "email2"] }
-  app                           # { max_pokemon_id: 898 }
+  app                           # { max_pokemon_id: 898, default_excluded_pokemon_ids: [167, 168, ...] }
 
 users/
   {uid}/

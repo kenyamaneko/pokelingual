@@ -118,14 +118,24 @@ func main() {
 		}
 		log.Printf("Loaded %d allowed email(s) from Firestore", len(allowedEmails))
 
-		// Read max_pokemon_id from Firestore (config/app document)
+		// Read app config from Firestore (config/app document)
 		appConfigDoc, err := firestoreClient.Collection("config").Doc("app").Get(ctx)
 		if err != nil {
-			log.Printf("config/app not found in Firestore, using default MaxPokemonID=%d", service.MaxPokemonID)
+			log.Printf("config/app not found in Firestore, using defaults (MaxPokemonID=%d, DefaultExcluded=%v)", service.MaxPokemonID, service.DefaultExcludedPokemonIDs)
 		} else {
 			if maxID, ok := appConfigDoc.Data()["max_pokemon_id"].(int64); ok {
 				service.MaxPokemonID = int(maxID)
 				log.Printf("Loaded MaxPokemonID=%d from Firestore", service.MaxPokemonID)
+			}
+			if ids, ok := appConfigDoc.Data()["default_excluded_pokemon_ids"].([]interface{}); ok {
+				excluded := make([]int, 0, len(ids))
+				for _, v := range ids {
+					if id, ok := v.(int64); ok {
+						excluded = append(excluded, int(id))
+					}
+				}
+				service.DefaultExcludedPokemonIDs = excluded
+				log.Printf("Loaded %d default excluded Pokemon IDs from Firestore", len(excluded))
 			}
 		}
 

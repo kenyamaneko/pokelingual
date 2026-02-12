@@ -13,6 +13,7 @@
 - クモ系除外ポケモンに #751 Dewpider, #752 Araquanid を追加
 
 ### Changed
+- 除外ポケモンをグローバルハードコードからユーザーごとの設定に変更（Firestore `config/app.default_excluded_pokemon_ids` でデフォルト管理）
 - 設定画面のバージョン表示: コミットハッシュ → SemVer バージョン
 - 設定画面の除外ポケモン ID 上限を API から動的に取得
 

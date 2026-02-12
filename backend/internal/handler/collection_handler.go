@@ -37,7 +37,11 @@ func (h *CollectionHandler) GetCollection(c *gin.Context) {
 	if h.settingsRepo != nil {
 		settings, err := h.settingsRepo.GetSettings(c.Request.Context(), uid)
 		if err == nil && settings != nil {
-			totalAvailable = service.TotalAvailablePokemon(settings.ExcludedPokemonIDs)
+			excluded := settings.ExcludedPokemonIDs
+			if excluded == nil {
+				excluded = service.DefaultExcludedPokemonIDs
+			}
+			totalAvailable = service.TotalAvailablePokemon(excluded)
 		}
 	}
 

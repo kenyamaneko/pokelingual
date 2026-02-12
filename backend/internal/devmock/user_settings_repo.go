@@ -13,18 +13,15 @@ type UserSettingsRepo struct {
 	settings map[string]*model.UserSettings
 }
 
-// NewUserSettingsRepo creates a new mock UserSettingsRepo with default excluded Pokemon.
+// NewUserSettingsRepo creates a new mock UserSettingsRepo.
 func NewUserSettingsRepo() *UserSettingsRepo {
 	return &UserSettingsRepo{
-		settings: map[string]*model.UserSettings{
-			"dev-user": {
-				ExcludedPokemonIDs: []int{167, 168, 595, 596},
-			},
-		},
+		settings: map[string]*model.UserSettings{},
 	}
 }
 
-// GetSettings returns the user's settings or defaults.
+// GetSettings returns the user's settings.
+// Returns nil ExcludedPokemonIDs if the user has no settings (callers use defaults).
 func (r *UserSettingsRepo) GetSettings(_ context.Context, uid string) (*model.UserSettings, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -32,7 +29,7 @@ func (r *UserSettingsRepo) GetSettings(_ context.Context, uid string) (*model.Us
 	if s, ok := r.settings[uid]; ok {
 		return s, nil
 	}
-	return &model.UserSettings{ExcludedPokemonIDs: []int{}}, nil
+	return &model.UserSettings{}, nil // nil ExcludedPokemonIDs = use defaults
 }
 
 // UpdateExcludedPokemon updates the user's excluded Pokemon IDs.

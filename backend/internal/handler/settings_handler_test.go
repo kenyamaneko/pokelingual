@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kenyamamoto/pokelingual/backend/internal/handler"
 	"github.com/kenyamamoto/pokelingual/backend/internal/model"
+	"github.com/kenyamamoto/pokelingual/backend/internal/service"
 	"github.com/kenyamamoto/pokelingual/backend/internal/testutil"
 )
 
@@ -53,8 +54,8 @@ func TestGetSettingsHandler(t *testing.T) {
 	}
 }
 
-func TestGetSettingsHandler_DefaultEmpty(t *testing.T) {
-	// Given: user has no settings (returns default)
+func TestGetSettingsHandler_DefaultExcluded(t *testing.T) {
+	// Given: user has no settings (should return defaults)
 	settingsRepo := &testutil.MockUserSettingsRepo{}
 	sh := handler.NewSettingsHandler(settingsRepo)
 	router := setupSettingsRouter(sh)
@@ -72,8 +73,9 @@ func TestGetSettingsHandler_DefaultEmpty(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if len(resp.ExcludedPokemonIDs) != 0 {
-		t.Errorf("expected 0 excluded IDs, got %d", len(resp.ExcludedPokemonIDs))
+	// Should return DefaultExcludedPokemonIDs when user has no settings
+	if len(resp.ExcludedPokemonIDs) != len(service.DefaultExcludedPokemonIDs) {
+		t.Errorf("expected %d default excluded IDs, got %d", len(service.DefaultExcludedPokemonIDs), len(resp.ExcludedPokemonIDs))
 	}
 }
 

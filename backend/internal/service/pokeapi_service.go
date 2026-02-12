@@ -41,17 +41,11 @@ var versionDisplayNames = map[string]string{
 // Default is 898; can be overridden from Firestore config/app at startup.
 var MaxPokemonID = 898
 
-// excludedPokemonIDs contains Pokemon IDs excluded from random selection.
+// DefaultExcludedPokemonIDs is the default exclusion list for new users.
+// Can be overridden from Firestore config/app at startup.
 // Some users have phobias of certain creatures (e.g. spiders), so these Pokemon
-// are filtered out to ensure a comfortable experience.
-var excludedPokemonIDs = map[int]bool{
-	167: true, // Spinarak (イトマル)
-	168: true, // Ariados (アリアドス)
-	595: true, // Joltik (バチュル)
-	596: true, // Galvantula (デンチュラ)
-	751: true, // Dewpider (シズクモ)
-	752: true, // Araquanid (オニシズクモ)
-}
+// are excluded by default to ensure a comfortable experience.
+var DefaultExcludedPokemonIDs = []int{167, 168, 595, 596, 751, 752}
 
 // PokeAPIService implements domain.PokemonFetcher using the PokeAPI with in-memory caching.
 type PokeAPIService struct {
@@ -97,28 +91,15 @@ type pokeAPIPokemonResponse struct {
 }
 
 // TotalAvailablePokemon returns the total number of Pokemon available for quests,
-// accounting for both global and user-specific exclusions.
+// accounting for user-specific exclusions.
 func TotalAvailablePokemon(userExcludedIDs []int) int {
-	excluded := map[int]bool{}
-	for id := range excludedPokemonIDs {
-		excluded[id] = true
-	}
-	for _, id := range userExcludedIDs {
-		excluded[id] = true
-	}
-	return MaxPokemonID - len(excluded)
+	return MaxPokemonID - len(userExcludedIDs)
 }
 
-// GetRandomPokemon returns a random Pokemon from the supported range (ID 1-MaxPokemonID),
-// excluding Pokemon listed in excludedPokemonIDs.
+// GetRandomPokemon returns a random Pokemon from the supported range (ID 1-MaxPokemonID).
+// Per-user exclusion filtering is handled by QuestService.
 func (s *PokeAPIService) GetRandomPokemon(ctx context.Context) (*model.Pokemon, error) {
-	var id int
-	for {
-		id = rand.Intn(MaxPokemonID) + 1
-		if !excludedPokemonIDs[id] {
-			break
-		}
-	}
+	id := rand.Intn(MaxPokemonID) + 1
 	return s.GetPokemonByID(ctx, id)
 }
 

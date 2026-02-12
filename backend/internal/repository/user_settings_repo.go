@@ -29,7 +29,7 @@ func (r *UserSettingsRepo) GetSettings(ctx context.Context, uid string) (*model.
 	doc, err := r.settingsRef(uid).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return &model.UserSettings{ExcludedPokemonIDs: []int{}}, nil
+			return &model.UserSettings{}, nil // nil ExcludedPokemonIDs = use defaults
 		}
 		return nil, fmt.Errorf("getting settings: %w", err)
 	}
@@ -39,9 +39,7 @@ func (r *UserSettingsRepo) GetSettings(ctx context.Context, uid string) (*model.
 		return nil, fmt.Errorf("parsing settings: %w", err)
 	}
 
-	if settings.ExcludedPokemonIDs == nil {
-		settings.ExcludedPokemonIDs = []int{}
-	}
+	// nil means the field doesn't exist in Firestore → use defaults (handled by callers)
 
 	return &settings, nil
 }
