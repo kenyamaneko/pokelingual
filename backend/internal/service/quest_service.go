@@ -94,10 +94,19 @@ func (s *QuestService) NewQuest(ctx context.Context, uid string) (*QuestNewRespo
 		}
 	}
 
+	// Pick a random flavor text pair so different versions appear across quests
+	descEN := pokemon.DescriptionEN
+	descJA := pokemon.DescriptionJA
+	if len(pokemon.FlavorTexts) > 0 {
+		pair := pokemon.FlavorTexts[rand.Intn(len(pokemon.FlavorTexts))]
+		descEN = pair.DescriptionEN
+		descJA = pair.DescriptionJA
+	}
+
 	session := &model.QuestSession{
 		PokemonID:     pokemon.ID,
-		DescriptionEN: pokemon.DescriptionEN,
-		DescriptionJA: pokemon.DescriptionJA,
+		DescriptionEN: descEN,
+		DescriptionJA: descJA,
 		NameEN:        pokemon.NameEN,
 		NameJA:        pokemon.NameJA,
 		SpriteURL:     pokemon.SpriteURL,
@@ -106,7 +115,7 @@ func (s *QuestService) NewQuest(ctx context.Context, uid string) (*QuestNewRespo
 
 	return &QuestNewResponse{
 		PokemonID:     pokemon.ID,
-		DescriptionEN: pokemon.DescriptionEN,
+		DescriptionEN: descEN,
 	}, nil
 }
 

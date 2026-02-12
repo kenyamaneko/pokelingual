@@ -332,3 +332,30 @@ gh secret set API_BASE_URL --env dev --body "${URL}"
 - `VITE_API_BASE_URL` が空でもビルドエラーにならず、サイレントに同一オリジンにリクエストが飛ぶ
 - SPA のリライトルールが API パスも捕捉するため、200 OK + HTML が返る = Axios のエラーハンドリングをすり抜ける
 - `gh secret list --env ENV` でシークレットの存在確認ができる。deploy 後の不具合調査で有用
+
+---
+
+## 11. クエストの英語説明文と日本語説明文がバージョン違いだった
+
+### 症状
+
+クエスト画面で表示される英語の説明文と日本語の説明文が明らかに内容が異なっていた。
+例: Druddigon (#621) で EN は Y版「It warms its body by absorbing sunlight...」、JA は Ωルビー版「狭い 洞穴を 走り回り...」。
+
+### 原因
+
+`pokeapi_service.go` の `fetchFromAPI()` で EN と JA の説明文をそれぞれ「最初に見つかったもの」から取得しており、PokeAPI のエントリ順序に依存して異なるバージョンのテキストがペアになっていた。
+
+一方、コレクション詳細画面の `buildFlavorTextPairs()` はバージョン単位でグルーピングしてペアを作っていたため正しく表示されていた。
+
+### 解決
+
+1. `fetchFromAPI()` の greedy first-match ロジックを削除
+2. `buildFlavorTextPairs()` で構築済みの正しいペアから `DescriptionEN`/`DescriptionJA` を設定
+3. `quest_service.go` の `NewQuest()` で `FlavorTexts` からランダムにペアを選択（クエストごとに異なるバージョンの説明文が登場する）
+
+### 学び
+
+- PokeAPI の `flavor_text_entries` はバージョン順に EN/JA がグルーピングされていない。言語ごとに独立して走査すると異なるバージョンが混ざる
+- 図鑑の説明文取得はバージョン単位でペアリングするロジック（`buildFlavorTextPairs`）に統一すべき
+- devmock はハードコードされた正しいペアを返すため、この問題は本番環境でのみ発生する

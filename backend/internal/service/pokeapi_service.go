@@ -184,25 +184,15 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 		}
 	}
 
-	descriptionEN := ""
-	descriptionJA := ""
-	for _, entry := range species.FlavorTextEntries {
-		if entry.Language.Name == "en" && descriptionEN == "" {
-			descriptionEN = cleanFlavorText(entry.FlavorText)
-		}
-		if entry.Language.Name == "ja" && descriptionJA == "" {
-			descriptionJA = cleanFlavorText(entry.FlavorText)
-		}
-		if descriptionEN != "" && descriptionJA != "" {
-			break
-		}
-	}
-
-	if descriptionEN == "" {
-		return nil, fmt.Errorf("no English description found for pokemon %d", id)
-	}
-
 	flavorTexts := buildFlavorTextPairs(species.FlavorTextEntries)
+
+	if len(flavorTexts) == 0 {
+		return nil, fmt.Errorf("no EN/JA description pair found for pokemon %d", id)
+	}
+
+	// Use the first pair as the default description (version-matched)
+	descriptionEN := flavorTexts[0].DescriptionEN
+	descriptionJA := flavorTexts[0].DescriptionJA
 
 	spriteURL := pokemonData.Sprites.Other.OfficialArtwork.FrontDefault
 	if spriteURL == "" {
