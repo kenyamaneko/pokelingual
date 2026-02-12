@@ -92,6 +92,17 @@ export function SettingsPage() {
           </button>
         </div>
 
+        <div className="bg-white rounded-2xl shadow p-6 mb-6">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
+            バージョン
+          </h2>
+          <p className="text-gray-500 text-xs font-mono">
+            {import.meta.env.VITE_BUILD_VERSION
+              ? import.meta.env.VITE_BUILD_VERSION.slice(0, 7)
+              : "dev"}
+          </p>
+        </div>
+
         <div className="bg-white rounded-2xl shadow p-6">
           <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
             にがて ポケモン せってい

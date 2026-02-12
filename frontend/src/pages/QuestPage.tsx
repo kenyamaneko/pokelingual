@@ -28,12 +28,19 @@ function getErrorMessage(err: unknown, fallback: string): string {
       return "サーバーに せつぞくできません。ネットワークを かくにんしてね";
     }
     const status = err.response.status;
+    if (status === 401) {
+      return "にんしょうに しっぱいしました。ログインし なおしてね";
+    }
+    if (status === 403) {
+      return "アクセスけんが ありません";
+    }
     if (status === 502) {
       return "がいぶサービス（PokeAPI / Gemini）が おうとうしません。しばらく まってね";
     }
     if (status === 404) {
       return "クエストが みつかりません。あたらしい クエストを はじめてね";
     }
+    return `${fallback}（${status}）`;
   }
   return fallback;
 }
