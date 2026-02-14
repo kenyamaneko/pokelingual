@@ -38,9 +38,6 @@ export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
           <span className="text-xs font-semibold text-gray-700 truncate w-full text-center">
             {p.name_ja}
           </span>
-          {p.status !== "captured" && (
-            <span className="text-[10px] text-gray-400">発見ずみ</span>
-          )}
         </button>
       ))}
     </div>

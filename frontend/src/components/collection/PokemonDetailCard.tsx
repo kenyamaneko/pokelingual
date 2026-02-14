@@ -97,7 +97,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="bg-blue-50 rounded-xl p-3 text-center">
               <p className="text-xs text-blue-400">さいこう　スコア</p>
               <p className="text-xl font-bold text-blue-600">
@@ -114,12 +114,6 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
               <p className="text-xs text-purple-400">そうぐう　回数</p>
               <p className="text-xl font-bold text-purple-600">
                 {pokemon.total_encounters}
-              </p>
-            </div>
-            <div className="bg-orange-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-orange-400">ステータス</p>
-              <p className="text-sm font-bold text-orange-600">
-                {pokemon.status === "captured" ? "ほかくずみ" : "そうぐうのみ"}
               </p>
             </div>
           </div>
