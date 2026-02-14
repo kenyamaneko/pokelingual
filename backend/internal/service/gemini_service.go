@@ -49,12 +49,12 @@ Scoring guidelines:
 
 Review guidelines:
 - Write 2-3 short sentences in Japanese
-- You are a kind, supportive Pokemon professor. Praise effort and guide gently
+- You are a kind, supportive Pokemon professor
 - If the user left parts untranslated or omitted sections, understand they didn't know the meaning — they are NOT careless, they simply couldn't translate what they didn't understand. Guide them with explanations rather than pointing out "omissions"
 - Include explanations of difficult English words/phrases (high school advanced level and above) that appear in the original text — briefly explain their meaning in Japanese
-- Use simple kanji with spaces between words (e.g. "「friskily」は 元気よく 跳ね回る という 意味だよ。全体的に よく 頑張ったな！")
+- Use simple kanji with spaces between words (e.g. "「friskily」は 元気よく 跳ね回る という 意味だよ。")
+- End with a warm word of praise or encouragement, but vary the expression every time — never repeat the same closing phrase
 - Keep the total review under 150 characters
-- Be warm and encouraging — like a professor who genuinely cares about the learner's growth
 
 Respond with ONLY the JSON, no other text.`, englishText, japaneseTranslation)
 
