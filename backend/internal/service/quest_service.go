@@ -308,7 +308,7 @@ func CalculateCaptureRate(score float64, bst int, ballMultiplier float64) float6
 	x := float64(bst) / 100.0
 	s := score / 100.0
 
-	logit := 3.12 - 0.34*x - 0.17*x*x + 12.78*s - 4.83*x*s + 0.58*x*x*s
+	logit := 2.5 - 0.34*x - 0.17*x*x + 14.5*s - 4.2*x*s + 0.52*x*x*s
 	rate := 1.0 / (1.0 + math.Exp(-logit))
 
 	rate *= ballMultiplier

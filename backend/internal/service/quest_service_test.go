@@ -460,12 +460,13 @@ func TestCalculateCaptureRate(t *testing.T) {
 		wantMax        float64
 	}{
 		{"weak pokemon high score", 90, 300, 1.0, 0.95, 1.0},
-		{"strong pokemon high score", 90, 600, 1.0, 0.25, 0.40},
-		{"weak pokemon low score", 30, 300, 1.0, 0.75, 0.90},
-		{"strong pokemon low score", 30, 600, 1.0, 0.01, 0.05},
+		{"strong pokemon high score", 90, 600, 1.0, 0.75, 0.90},
+		{"weak pokemon low score", 30, 300, 1.0, 0.80, 0.95},
+		{"strong pokemon low score", 30, 600, 1.0, 0.01, 0.08},
 		{"ultra ball triples rate", 50, 400, 3.0, 1.0, 1.0},
 		{"great ball doubles rate", 50, 400, 2.0, 1.0, 1.0},
 		{"capped at 1.0", 100, 200, 3.0, 1.0, 1.0},
+		{"legendary great ball high score", 90, 680, 2.0, 0.95, 1.0},
 	}
 
 	for _, tt := range tests {
