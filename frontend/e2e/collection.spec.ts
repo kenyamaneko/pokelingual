@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { completeQuest } from "./helpers";
 
+// 正規表現の `.` は全角スペース対策。詳細は helpers.ts のコメント参照。
+
 test("図鑑ページが表示される", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /ずかんを.見る/ }).click();

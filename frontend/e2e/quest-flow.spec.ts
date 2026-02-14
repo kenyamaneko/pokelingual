@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+// 正規表現の `.` は全角スペース対策。詳細は helpers.ts のコメント参照。
+
 test("クエスト全フロー（翻訳 → 採点 → 名前当て → 捕獲 → 結果）", async ({
   page,
 }) => {

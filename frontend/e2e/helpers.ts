@@ -1,5 +1,8 @@
 import type { Page } from "@playwright/test";
 
+// UI テキストの全角スペース（\u3000）は Playwright がアクセシブル名を
+// 正規化する際に半角スペースに変換されるため、正規表現の `.` で任意の
+// 空白文字にマッチさせている（例: /この.ほんやくで/ → "この ほんやくで"）
 export async function completeQuest(page: Page) {
   await page.goto("/quest");
   await page.getByText("Who's That Pokemon?").waitFor();
