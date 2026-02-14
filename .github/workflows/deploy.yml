@@ -99,11 +99,13 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           FRONTEND_URL: ${{ github.ref_name != 'develop' && 'https://pokelingual-prod.web.app' || 'https://pokelingual-dev.web.app' }}
+          BACKEND_SA: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image "${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
             --region ${{ env.GCP_REGION }} \
             --project ${{ secrets.GCP_PROJECT_ID }} \
+            --service-account "${{ env.BACKEND_SA }}" \
             --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
             --update-env-vars "APP_MODE=prod,FRONTEND_URL=${{ env.FRONTEND_URL }}" \
             --allow-unauthenticated
