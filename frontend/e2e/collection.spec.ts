@@ -7,7 +7,7 @@ test("図鑑ページが表示される", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /ずかんを.見る/ }).click();
   await expect(page).toHaveURL("/collection");
-  await expect(page.getByText("ずかん")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ずかん" })).toBeVisible();
 });
 
 test("クエスト後に捕獲ポケモンが図鑑に表示される", async ({ page }) => {
