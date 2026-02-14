@@ -4,7 +4,7 @@ test("ホームページのリンクが全て機能する", async ({ page }) => 
   await page.goto("/");
 
   // ぼうけんに出かける → /quest
-  await page.getByRole("link", { name: /ぼうけんに\u3000出かける/ }).click();
+  await page.getByRole("link", { name: /ぼうけんに.出かける/ }).click();
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーロゴ → /
@@ -12,7 +12,7 @@ test("ホームページのリンクが全て機能する", async ({ page }) => 
   await expect(page).toHaveURL("/");
 
   // ずかんを見る → /collection
-  await page.getByRole("link", { name: /ずかんを\u3000見る/ }).click();
+  await page.getByRole("link", { name: /ずかんを.見る/ }).click();
   await expect(page).toHaveURL("/collection");
 
   // ヘッダーロゴ → /
@@ -28,14 +28,20 @@ test("ヘッダーナビゲーション", async ({ page }) => {
   await page.goto("/");
 
   // ヘッダーの「ぼうけん」リンク
-  await page.getByRole("link", { name: "ぼうけん" }).click();
+  await page
+    .getByRole("link", { name: "ぼうけん", exact: true })
+    .click();
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーの「ずかん」リンク
-  await page.getByRole("link", { name: "ずかん" }).click();
+  await page
+    .getByRole("link", { name: "ずかん", exact: true })
+    .click();
   await expect(page).toHaveURL("/collection");
 
   // ヘッダーの「せってい」リンク
-  await page.getByRole("link", { name: "せってい" }).click();
+  await page
+    .getByRole("link", { name: "せってい", exact: true })
+    .click();
   await expect(page).toHaveURL("/settings");
 });
