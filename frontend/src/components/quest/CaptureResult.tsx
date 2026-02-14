@@ -57,13 +57,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
           src={result.sprite_url}
           alt={result.name_en}
           className={`w-40 h-40 mx-auto mb-4 ${
-            result.captured
-              ? result.is_mythical
-                ? "animate-mythical-shimmer"
-                : result.is_legendary
-                  ? "animate-legendary-glow"
-                  : ""
-              : "opacity-30 grayscale"
+            result.captured ? "" : "opacity-30 grayscale"
           }`}
         />
 
