@@ -359,3 +359,48 @@ gh secret set API_BASE_URL --env dev --body "${URL}"
 - PokeAPI の `flavor_text_entries` はバージョン順に EN/JA がグルーピングされていない。言語ごとに独立して走査すると異なるバージョンが混ざる
 - 図鑑の説明文取得はバージョン単位でペアリングするロジック（`buildFlavorTextPairs`）に統一すべき
 - devmock はハードコードされた正しいペアを返すため、この問題は本番環境でのみ発生する
+
+---
+
+## 12. 本番環境で説明文が空（API_BASE_URL 未設定）
+
+### 症状
+
+prod 環境のクエスト画面で英語の説明文が空（`""`）表示。エラーメッセージは出ない。
+
+### 原因
+
+prod の GitHub Environment に `API_BASE_URL` シークレットが未設定だった。
+`VITE_API_BASE_URL` が空文字でビルドされ、フロントエンドの API リクエスト先が Cloud Run ではなく Firebase Hosting（`/api/...`）になっていた。
+Firebase Hosting は SPA rewrite で `index.html`（200 OK）を返すため、axios はエラーにならないが `res.data.description_en` が `undefined` になり空表示。
+
+### 解決
+
+prod 環境に `API_BASE_URL` シークレット（Cloud Run の URL）を追加して再デプロイ。
+
+### 学び
+
+- 新しい環境（prod）をセットアップする際は、全 GitHub Secrets を漏れなく設定すること
+- API レスポンスが予期せず HTML になるケースでは axios は 200 OK で成功扱いになる。レスポンス型のランタイム検証があるとこの手のバグを早期検出できる
+
+---
+
+## 13. Cloud Run デプロイで `iam.serviceaccounts.actAs` 権限エラー
+
+### 症状
+
+prod への初回 Cloud Run デプロイで `Permission 'iam.serviceaccounts.actAs' denied on service account PROJECT_NUMBER-compute@developer.gserviceaccount.com` エラー。
+
+### 原因
+
+`gcloud run deploy` に `--service-account` フラグがなかった。新規サービス作成時に Cloud Run がデフォルトの Compute Engine SA を使おうとするが、deploy SA には Terraform で作成したカスタム backend SA（`pokelingual-api-{env}`）への `serviceAccountUser` 権限しか付与されていない。
+
+### 解決
+
+`deploy.yml` に `--service-account` フラグを追加して、カスタム backend SA を明示指定。
+
+### 学び
+
+- Cloud Run は `--service-account` 未指定時にデフォルト Compute Engine SA を使う
+- Terraform で専用 SA を作成している場合は、deploy コマンドで明示的に指定する必要がある
+- dev では既にサービスが存在していたため問題が顕在化せず、prod の初回デプロイで発覚した
