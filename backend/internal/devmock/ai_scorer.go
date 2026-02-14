@@ -21,17 +21,22 @@ func (s *AIScorer) ScoreTranslation(ctx context.Context, englishText, japaneseTr
 	return &model.ScoreResult{Score: score, Review: mockReview(score)}, nil
 }
 
+// Chat returns a canned professor response for local development.
+func (s *AIScorer) Chat(ctx context.Context, chatCtx *model.ChatContext, messages []model.ChatMessage) (string, error) {
+	return "なるほど いい 質問だな！この 文章の ポイントは 主語と 動詞の 関係だ。わからない ところが あれば 何でも 聞いてくれ！", nil
+}
+
 func mockReview(score float64) string {
 	switch {
 	case score >= 90:
-		return "全体の 意味を 正確に 捉えている。自然な 日本語で とても いい 翻訳だ！"
+		return "素晴らしい！全体の 意味を 正確に 捉えているぞ。自然な 日本語で とても いい 翻訳だ！"
 	case score >= 70:
-		return "意味は よく 伝わっている。細かい ニュアンスを もう 少し 工夫すると さらに 良くなるぞ。"
+		return "よく 頑張ったな！意味は しっかり 伝わっているぞ。細かい ニュアンスを もう 少し 工夫すると さらに 良くなるぞ。"
 	case score >= 50:
-		return "前半は よく 訳せているが 後半の ニュアンスが 少し 惜しい。難しい 単語は 文脈から 推測してみよう。"
+		return "いい 調子だ！前半は よく 訳せているぞ。「emit」は 放つ という 意味だ。難しい 単語は 博士に 聞いてくれ。"
 	case score >= 30:
-		return "大事な 部分が 抜けているぞ。原文を もう一度 よく 読んで 全体の 意味を 掴もう。"
+		return "挑戦した ことが 大事だぞ！わからない 部分は 一緒に 学んでいこう。「fierce」は 激しい・獰猛な という 意味だ。"
 	default:
-		return "意味が 大きく ずれている。まずは 知っている 単語を 手がかりに 全体像を つかんでみよう。"
+		return "よく 挑戦したな！まずは 知っている 単語を 手がかりに 全体像を つかんでみよう。博士が 手伝うぞ。"
 	}
 }

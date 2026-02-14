@@ -150,7 +150,7 @@ func main() {
 	questService := service.NewQuestService(pokemonFetcher, aiScorer, userSettingsRepo)
 	collectionService := service.NewCollectionService(userPokemonRepo, pokemonFetcher)
 
-	questHandler := handler.NewQuestHandler(questService, userPokemonRepo)
+	questHandler := handler.NewQuestHandler(questService, userPokemonRepo, aiScorer)
 	collectionHandler := handler.NewCollectionHandler(collectionService, userSettingsRepo)
 	settingsHandler := handler.NewSettingsHandler(userSettingsRepo)
 

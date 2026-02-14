@@ -32,7 +32,7 @@ func TestQuestFlow_FullCapture(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// Step 1: Start new quest
@@ -157,7 +157,7 @@ func TestQuestFlow_SkipGuessAndCapture(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// Step 1: New quest
@@ -216,7 +216,7 @@ func TestQuestFlow_JapaneseGuessCapture(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// New → Score → Japanese guess → Capture
@@ -280,7 +280,7 @@ func TestQuestFlow_WrongGuessesUsePokeBall(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// New → Score
@@ -337,7 +337,7 @@ func TestQuestFlow_FuzzyMatchEN(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// New → Score
@@ -387,7 +387,7 @@ func TestQuestFlow_GuessNameRevealAfterMaxAttempts(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// New → Score
@@ -446,7 +446,7 @@ func TestQuestFlow_SessionIsolation(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 
 	// Create router for user-a
 	routerA := setupTestRouterWithUID(h, "user-a")
@@ -494,7 +494,7 @@ func TestQuestFlow_SessionDeletedAfterCapture(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// Complete flow: new → score → capture
@@ -532,7 +532,7 @@ func TestGuessNameHandler_MissingBody(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// POST /quest/guess-name with empty body
@@ -553,7 +553,7 @@ func TestGuessNameHandler_NoSession(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	body, _ := json.Marshal(map[string]string{"guess": "Pikachu"})
@@ -580,7 +580,7 @@ func TestScoreTranslationHandler_ExternalServiceError(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// Start quest

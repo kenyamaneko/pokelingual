@@ -49,13 +49,12 @@ Scoring guidelines:
 
 Review guidelines:
 - Write 2-3 short sentences in Japanese
-- Include the following as appropriate:
-  - What the user did well (good word choices, correct grammar, etc.)
-  - What could be improved (missing nuances, unnatural phrasing, mistranslations)
-  - Brief explanation of difficult English words or phrases if the user seems to have struggled with them
-- Use simple kanji with spaces between words (e.g. "「friskily」は 元気よく 跳ね回る という 意味だよ。前半は よく 訳せているが 後半の ニュアンスが 少し 惜しい。")
-- Keep the total review under 100 characters
-- Be encouraging but honest — like a friendly Pokemon professor
+- You are a kind, supportive Pokemon professor. Praise effort and guide gently
+- If the user left parts untranslated or omitted sections, understand they didn't know the meaning — they are NOT careless, they simply couldn't translate what they didn't understand. Guide them with explanations rather than pointing out "omissions"
+- Include explanations of difficult English words/phrases (high school advanced level and above) that appear in the original text — briefly explain their meaning in Japanese
+- Use simple kanji with spaces between words (e.g. "「friskily」は 元気よく 跳ね回る という 意味だよ。全体的に よく 頑張ったな！")
+- Keep the total review under 150 characters
+- Be warm and encouraging — like a professor who genuinely cares about the learner's growth
 
 Respond with ONLY the JSON, no other text.`, englishText, japaneseTranslation)
 
@@ -84,6 +83,53 @@ Respond with ONLY the JSON, no other text.`, englishText, japaneseTranslation)
 	}
 
 	return &scoreResult, nil
+}
+
+// Chat generates a professor's response in a conversation about the quest.
+func (s *GeminiService) Chat(ctx context.Context, chatCtx *model.ChatContext, messages []model.ChatMessage) (string, error) {
+	var history strings.Builder
+	for _, m := range messages {
+		if m.Role == "user" {
+			history.WriteString(fmt.Sprintf("User: %s\n", m.Content))
+		} else {
+			history.WriteString(fmt.Sprintf("Professor: %s\n", m.Content))
+		}
+	}
+
+	prompt := fmt.Sprintf(`You are a Pokemon professor who is knowledgeable about both Pokemon and English.
+You are chatting with a language learner who just completed a translation quest.
+
+Quest context:
+- Pokemon: %s (%s)
+- Original English text: "%s"
+- Japanese reference: "%s"
+- User's translation: "%s"
+- Score: %.0f/100
+- Your earlier review: "%s"
+
+Conversation so far:
+%s
+Respond to the user's latest message as the professor.
+
+Guidelines:
+- Respond in Japanese with simple kanji and spaces between words
+- Be warm, encouraging, and helpful
+- Answer questions about the English text, vocabulary, grammar, or the Pokemon
+- Keep your response under 200 characters
+- Do NOT use markdown formatting
+
+Respond with ONLY your message, no prefix or label.`, chatCtx.NameEN, chatCtx.NameJA, chatCtx.DescriptionEN, chatCtx.DescriptionJA, chatCtx.Translation, chatCtx.Score, chatCtx.Review, history.String())
+
+	result, err := s.client.Models.GenerateContent(ctx, s.model, genai.Text(prompt), nil)
+	if err != nil {
+		return "", fmt.Errorf("gemini API error: %w", err)
+	}
+
+	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		return "", fmt.Errorf("empty response from gemini")
+	}
+
+	return strings.TrimSpace(result.Text()), nil
 }
 
 func stripCodeFences(text string) string {

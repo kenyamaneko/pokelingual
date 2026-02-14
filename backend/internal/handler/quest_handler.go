@@ -13,13 +13,15 @@ import (
 type QuestHandler struct {
 	questService *service.QuestService
 	repo         domain.UserPokemonRepository
+	aiScorer     domain.AIScorer
 }
 
 // NewQuestHandler creates a new QuestHandler.
-func NewQuestHandler(questService *service.QuestService, repo domain.UserPokemonRepository) *QuestHandler {
+func NewQuestHandler(questService *service.QuestService, repo domain.UserPokemonRepository, aiScorer domain.AIScorer) *QuestHandler {
 	return &QuestHandler{
 		questService: questService,
 		repo:         repo,
+		aiScorer:     aiScorer,
 	}
 }
 
@@ -93,4 +95,27 @@ func (h *QuestHandler) AttemptCapture(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+// Chat handles POST /quest/chat to chat with the professor about the quest.
+func (h *QuestHandler) Chat(c *gin.Context) {
+	var req service.ChatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "messages are required"})
+		return
+	}
+
+	if len(req.Messages) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "messages cannot be empty"})
+		return
+	}
+
+	reply, err := h.aiScorer.Chat(c.Request.Context(), &req.Context, req.Messages)
+	if err != nil {
+		slog.Error("professor chat failed", "error", err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "AI service is temporarily unavailable"})
+		return
+	}
+
+	c.JSON(http.StatusOK, service.ChatResponse{Reply: reply})
 }

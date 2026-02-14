@@ -33,6 +33,7 @@ func setupTestRouterWithUID(h *handler.QuestHandler, uid string) *gin.Engine {
 	r.POST("/quest/score", h.ScoreTranslation)
 	r.POST("/quest/guess-name", h.GuessName)
 	r.POST("/quest/capture", h.AttemptCapture)
+	r.POST("/quest/chat", h.Chat)
 	return r
 }
 
@@ -54,7 +55,7 @@ func TestNewQuestHandler(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// When: GET /quest/new is called
@@ -88,7 +89,7 @@ func TestScoreTranslationHandler(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	req := httptest.NewRequest("GET", "/quest/new", nil)
@@ -126,7 +127,7 @@ func TestScoreTranslationHandler_MissingBody(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// When: POST /quest/score with empty body (no translation field)
@@ -153,7 +154,7 @@ func TestCaptureHandler_PersistsToRepo(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	req := httptest.NewRequest("GET", "/quest/new", nil)
@@ -195,7 +196,7 @@ func TestNewQuestHandler_ExternalServiceError(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// When: GET /quest/new is called
@@ -216,7 +217,7 @@ func TestScoreTranslationHandler_NoSession(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// When: POST /quest/score without starting a quest first
@@ -239,7 +240,7 @@ func TestCaptureHandler_NoSession(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// When: POST /quest/capture without an active session
@@ -260,7 +261,7 @@ func TestCaptureHandler_ErrorMessageHidden(t *testing.T) {
 	repo := &testutil.MockUserPokemonRepo{}
 
 	questSvc := service.NewQuestService(fetcher, scorer, nil)
-	h := handler.NewQuestHandler(questSvc, repo)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
 	router := setupTestRouter(h)
 
 	// When: POST /quest/capture without an active session
@@ -275,5 +276,77 @@ func TestCaptureHandler_ErrorMessageHidden(t *testing.T) {
 	}
 	if resp["error"] != "resource not found" {
 		t.Errorf("expected generic error message, got %q", resp["error"])
+	}
+}
+
+func TestChatHandler(t *testing.T) {
+	// Given: a quest handler with a mock scorer that returns a chat response
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 25, NameEN: "Pikachu", NameJA: "ピカチュウ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 320}}
+	scorer := &testutil.MockAIScorer{ChatResponseToReturn: "「emit」は 放出する という 意味だよ。"}
+	repo := &testutil.MockUserPokemonRepo{}
+
+	questSvc := service.NewQuestService(fetcher, scorer, nil)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
+	router := setupTestRouter(h)
+
+	// When: POST /quest/chat with context and messages
+	chatReq := service.ChatRequest{
+		Context: model.ChatContext{
+			DescriptionEN: "It stores electricity in its cheeks.",
+			DescriptionJA: "ほっぺに でんきを ためている。",
+			Translation:   "ほっぺに 電気を ためている。",
+			Score:         80,
+			Review:        "よく 頑張ったな！",
+			NameEN:        "Pikachu",
+			NameJA:        "ピカチュウ",
+		},
+		Messages: []model.ChatMessage{
+			{Role: "user", Content: "emitってどういう意味？"},
+		},
+	}
+	body, _ := json.Marshal(chatReq)
+	req := httptest.NewRequest("POST", "/quest/chat", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Then: returns 200 with professor's reply
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp service.ChatResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp.Reply != "「emit」は 放出する という 意味だよ。" {
+		t.Errorf("expected chat reply, got %q", resp.Reply)
+	}
+}
+
+func TestChatHandler_EmptyMessages(t *testing.T) {
+	// Given: a quest handler
+	fetcher := &testutil.MockPokemonFetcher{PokemonToReturn: &model.Pokemon{ID: 1, NameEN: "Bulbasaur", NameJA: "フシギダネ", DescriptionEN: "test", SpriteURL: "x", BaseStatTotal: 318}}
+	scorer := &testutil.MockAIScorer{}
+	repo := &testutil.MockUserPokemonRepo{}
+
+	questSvc := service.NewQuestService(fetcher, scorer, nil)
+	h := handler.NewQuestHandler(questSvc, repo, scorer)
+	router := setupTestRouter(h)
+
+	// When: POST /quest/chat with empty messages
+	chatReq := map[string]interface{}{
+		"context":  model.ChatContext{},
+		"messages": []model.ChatMessage{},
+	}
+	body, _ := json.Marshal(chatReq)
+	req := httptest.NewRequest("POST", "/quest/chat", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Then: returns 400 Bad Request
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty messages, got %d: %s", w.Code, w.Body.String())
 	}
 }

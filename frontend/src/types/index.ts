@@ -36,6 +36,25 @@ export interface CaptureResponse {
   weight?: number;
 }
 
+export interface ChatMessage {
+  role: "user" | "professor";
+  content: string;
+}
+
+export interface ChatContext {
+  description_en: string;
+  description_ja: string;
+  translation: string;
+  score: number;
+  review: string;
+  name_en: string;
+  name_ja: string;
+}
+
+export interface ChatResponse {
+  reply: string;
+}
+
 export interface CollectionEntry {
   pokemon_id: number;
   name_en: string;

@@ -92,7 +92,14 @@ backend/
 2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）、JA名も伏せ字
 3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
 4. POST /api/quest/capture    → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
+5. POST /api/quest/chat       → 博士に質問（捕獲後、フロントエンドからコンテキスト+履歴を送信）
 ```
+
+**博士チャット:**
+- 捕獲結果画面から「博士に 質問」ボタンでモーダルを開く
+- フロントエンドがステートレスにコンテキスト（原文、翻訳、スコア、レビュー、ポケモン名）+ メッセージ履歴を毎回送信
+- `domain.AIScorer` インターフェースの `Chat` メソッドで実装（Gemini/モック差し替え可能）
+- セッションは `AttemptCapture` で削除済みのため、チャットはセッション不参照
 
 **ポケモン名伏せ字:**
 - 出題・スコアリング時: 説明文中のポケモン名を代名詞に置換（名前推測のヒント防止）
@@ -168,7 +175,7 @@ frontend/src/
 │   ├── SettingsPage.tsx    # 除外ポケモン設定、ログアウト
 │   └── HomePage.tsx
 ├── components/
-│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult
+│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, ProfessorChat
 │   ├── collection/         # PokemonGrid, PokemonDetailCard
 │   └── layout/             # Header, ProtectedRoute
 ├── contexts/

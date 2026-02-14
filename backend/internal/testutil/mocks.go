@@ -8,10 +8,12 @@ import (
 
 // MockAIScorer implements domain.AIScorer for testing.
 type MockAIScorer struct {
-	ScoreToReturn   float64
-	ReviewToReturn string
-	ErrorToReturn   error
-	CalledWith      []MockScoreCall
+	ScoreToReturn        float64
+	ReviewToReturn       string
+	ChatResponseToReturn string
+	ErrorToReturn        error
+	ChatErrorToReturn    error
+	CalledWith           []MockScoreCall
 }
 
 type MockScoreCall struct {
@@ -31,6 +33,16 @@ func (m *MockAIScorer) ScoreTranslation(ctx context.Context, englishText, japane
 		Score:   m.ScoreToReturn,
 		Review: m.ReviewToReturn,
 	}, nil
+}
+
+func (m *MockAIScorer) Chat(ctx context.Context, chatCtx *model.ChatContext, messages []model.ChatMessage) (string, error) {
+	if m.ChatErrorToReturn != nil {
+		return "", m.ChatErrorToReturn
+	}
+	if m.ChatResponseToReturn != "" {
+		return m.ChatResponseToReturn, nil
+	}
+	return "テスト用の 博士の 返答だよ。", nil
 }
 
 // MockPokemonFetcher implements domain.PokemonFetcher for testing.

@@ -23,3 +23,20 @@ type ScoreResult struct {
 	Score   float64 `json:"score"`
 	Review  string  `json:"review"`
 }
+
+// ChatMessage represents a single message in the professor chat.
+type ChatMessage struct {
+	Role    string `json:"role"`    // "user" or "professor"
+	Content string `json:"content"`
+}
+
+// ChatContext holds the quest context needed for the professor chat.
+type ChatContext struct {
+	DescriptionEN string  `json:"description_en"`
+	DescriptionJA string  `json:"description_ja"`
+	Translation   string  `json:"translation"`
+	Score         float64 `json:"score"`
+	Review        string  `json:"review"`
+	NameEN        string  `json:"name_en"`
+	NameJA        string  `json:"name_ja"`
+}

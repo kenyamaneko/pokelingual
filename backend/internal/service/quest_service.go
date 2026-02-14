@@ -66,6 +66,17 @@ type CaptureResponse struct {
 	Weight        int      `json:"weight"`
 }
 
+// ChatRequest is the API request for chatting with the professor.
+type ChatRequest struct {
+	Context  model.ChatContext   `json:"context"`
+	Messages []model.ChatMessage `json:"messages" binding:"required"`
+}
+
+// ChatResponse is the API response from the professor chat.
+type ChatResponse struct {
+	Reply string `json:"reply"`
+}
+
 // NewQuestService creates a new QuestService with the given dependencies.
 func NewQuestService(pokemonFetcher domain.PokemonFetcher, aiScorer domain.AIScorer, settingsRepo domain.UserSettingsRepository) *QuestService {
 	return &QuestService{

@@ -1,14 +1,18 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CaptureResponse } from "../../types";
+import type { CaptureResponse, ChatContext } from "../../types";
 import { typeColors } from "../../utils/pokemonTypes";
+import { ProfessorChat } from "./ProfessorChat";
 
 interface CaptureResultProps {
   result: CaptureResponse;
+  chatContext: ChatContext;
   onNewQuest: () => void;
 }
 
-export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
+export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResultProps) {
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
 
   return (
     <div className="mt-4 text-center">
@@ -82,8 +86,16 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
       </div>
 
       <button
+        onClick={() => setShowChat(true)}
+        className="mt-6 w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg
+                   hover:bg-blue-600 transition-colors shadow-lg"
+      >
+        博士に 質問
+      </button>
+
+      <button
         onClick={onNewQuest}
-        className="mt-6 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
+        className="mt-3 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
         次の 冒険へ
@@ -96,6 +108,13 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
       >
         メニューに 戻る
       </button>
+
+      {showChat && (
+        <ProfessorChat
+          context={chatContext}
+          onClose={() => setShowChat(false)}
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import type {
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
+  ChatContext,
 } from "../types";
 
 type QuestPhase =
@@ -191,6 +192,7 @@ export function QuestPage() {
               </div>
               {score.review && (
                 <div className="mb-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-400 mb-1">博士からの コメント</p>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {score.review}
                   </p>
@@ -237,7 +239,19 @@ export function QuestPage() {
         })()}
 
         {phase === "result" && captureResult && (
-          <CaptureResult result={captureResult} onNewQuest={startNewQuest} />
+          <CaptureResult
+            result={captureResult}
+            chatContext={{
+              description_en: quest?.description_en ?? "",
+              description_ja: score?.description_ja ?? "",
+              translation: userTranslation,
+              score: score?.score ?? 0,
+              review: score?.review ?? "",
+              name_en: captureResult.name_en,
+              name_ja: captureResult.name_ja,
+            } satisfies ChatContext}
+            onNewQuest={startNewQuest}
+          />
         )}
       </div>
     </div>

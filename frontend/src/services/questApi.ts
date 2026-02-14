@@ -4,6 +4,9 @@ import type {
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
+  ChatContext,
+  ChatMessage,
+  ChatResponse,
 } from "../types";
 
 export const questApi = {
@@ -13,4 +16,6 @@ export const questApi = {
   guessName: (guess: string) =>
     api.post<GuessResponse>("/quest/guess-name", { guess }),
   attemptCapture: () => api.post<CaptureResponse>("/quest/capture"),
+  chat: (context: ChatContext, messages: ChatMessage[]) =>
+    api.post<ChatResponse>("/quest/chat", { context, messages }),
 };

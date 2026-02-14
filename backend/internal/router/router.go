@@ -26,6 +26,7 @@ func Setup(
 			quest.POST("/score", questHandler.ScoreTranslation)
 			quest.POST("/guess-name", questHandler.GuessName)
 			quest.POST("/capture", questHandler.AttemptCapture)
+			quest.POST("/chat", questHandler.Chat)
 		}
 
 		collection := api.Group("/collection")
