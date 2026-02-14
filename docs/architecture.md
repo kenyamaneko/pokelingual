@@ -111,10 +111,11 @@ backend/
 **捕獲確率の計算（シグモイド式）:**
 ```
 X = BST / 100,  S = score / 100
-logit = 3.12 - 0.34X - 0.17X² + 12.78S - 4.83XS + 0.58X²S
+logit = 2.5 - 0.34X - 0.17X² + 14.5S - 4.2XS + 0.52X²S
 captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 ```
 - 種族値（BST）が高いポケモンほど捕まえにくい
+- スコア90 + スーパーボールなら伝説ポケモン（BST 680）でもほぼ確実に捕獲可能
 - ボール倍率: モンスターボール 1.0x / スーパーボール 2.0x / ハイパーボール 3.0x
 
 **名前当て → ボール種類:**
@@ -134,6 +135,8 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 - タイプ・身長・体重: `/api/v2/pokemon/{id}` の `types`, `height`, `weight` から取得
   - height: デシメートル（4 = 0.4m）、weight: ヘクトグラム（60 = 6.0kg）
   - フロントエンドで /10 変換して m / kg 表示
+- 伝説・幻フラグ: `/api/v2/pokemon-species/{id}` の `is_legendary`, `is_mythical` を取得
+  - 登場時に特別メッセージ + 背景色変更（伝説=金、幻=紫）
 - キャッシュ: `sync.Map` によるインメモリキャッシュ
 
 ### 除外ポケモン

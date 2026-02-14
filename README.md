@@ -220,6 +220,7 @@ docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
 gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
   --region asia-northeast1 --project PROJECT_ID \
+  --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
   --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
   --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app" \
   --allow-unauthenticated
@@ -336,6 +337,7 @@ git push origin develop
 | POST | `/api/quest/score` | 翻訳を送信し、AI スコアを取得 |
 | POST | `/api/quest/guess-name` | ポケモンの名前を推測（EN/JA対応、ファジーマッチ有り） |
 | POST | `/api/quest/capture` | スコアと名前推測に基づいた確率で捕獲を試みる |
+| POST | `/api/quest/chat` | 博士に質問（コンテキスト + メッセージ履歴を送信） |
 
 ### Collection
 
