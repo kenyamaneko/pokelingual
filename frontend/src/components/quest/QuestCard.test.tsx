@@ -2,6 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { QuestCard } from "./QuestCard";
 
+// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
+// Testing Library の getByText は \s+ を半角スペースに正規化するため、
+// テストのアサーションでは半角スペースを使う。
 describe("QuestCard", () => {
   it("displays the English description", () => {
     // Given: a QuestCard with an English description
@@ -19,7 +22,7 @@ describe("QuestCard", () => {
     render(<QuestCard description="Test description" />);
     // Then: the Japanese instruction text is shown
     expect(
-      screen.getByText("この 英文を 日本語に 翻訳しよう！")
+      screen.getByText("この えいぶんを 日本語に ほんやくしよう！")
     ).toBeInTheDocument();
   });
 

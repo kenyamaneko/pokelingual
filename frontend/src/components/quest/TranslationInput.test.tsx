@@ -3,22 +3,25 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { TranslationInput } from "./TranslationInput";
 
+// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
+// Testing Library の getByText は \s+ を半角スペースに正規化するため、
+// テストのアサーションでは半角スペースを使う。
 describe("TranslationInput", () => {
   it("renders textarea and submit button", () => {
     // Given: a TranslationInput is rendered
     render(<TranslationInput onSubmit={vi.fn()} />);
     // Then: textarea and button are present
     expect(
-      screen.getByPlaceholderText("日本語を 入力...")
+      screen.getByPlaceholderText("日本語を 入力してね")
     ).toBeInTheDocument();
-    expect(screen.getByText("この 翻訳で 戦う！")).toBeInTheDocument();
+    expect(screen.getByText("この ほんやくで たたかう！")).toBeInTheDocument();
   });
 
   it("button is disabled when textarea is empty", () => {
     // Given: a TranslationInput with no text entered
     render(<TranslationInput onSubmit={vi.fn()} />);
     // Then: the submit button is disabled
-    const button = screen.getByText("この 翻訳で 戦う！");
+    const button = screen.getByText("この ほんやくで たたかう！");
     expect(button).toBeDisabled();
   });
 
@@ -28,11 +31,11 @@ describe("TranslationInput", () => {
     render(<TranslationInput onSubmit={vi.fn()} />);
 
     // When: text is typed into the textarea
-    const textarea = screen.getByPlaceholderText("日本語を 入力...");
+    const textarea = screen.getByPlaceholderText("日本語を 入力してね");
     await user.type(textarea, "テスト翻訳");
 
     // Then: the submit button becomes enabled
-    const button = screen.getByText("この 翻訳で 戦う！");
+    const button = screen.getByText("この ほんやくで たたかう！");
     expect(button).not.toBeDisabled();
   });
 
@@ -43,9 +46,9 @@ describe("TranslationInput", () => {
     render(<TranslationInput onSubmit={onSubmit} />);
 
     // When: text is entered and submit button is clicked
-    const textarea = screen.getByPlaceholderText("日本語を 入力...");
+    const textarea = screen.getByPlaceholderText("日本語を 入力してね");
     await user.type(textarea, "テスト翻訳");
-    const button = screen.getByText("この 翻訳で 戦う！");
+    const button = screen.getByText("この ほんやくで たたかう！");
     await user.click(button);
 
     // Then: onSubmit is called with the entered text

@@ -36,7 +36,7 @@ export function Header() {
               location.pathname === "/quest" ? "underline underline-offset-4" : ""
             }`}
           >
-            冒険
+            ぼうけん
           </Link>
           <Link
             to="/collection"
@@ -46,7 +46,7 @@ export function Header() {
                 : ""
             }`}
           >
-            図鑑
+            ずかん
           </Link>
           <Link
             to="/settings"
@@ -56,7 +56,7 @@ export function Header() {
                 : ""
             }`}
           >
-            設定
+            せってい
           </Link>
         </nav>
       </div>

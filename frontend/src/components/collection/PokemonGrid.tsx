@@ -9,8 +9,8 @@ export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
   if (pokemon.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-400 text-lg mb-2">まだ ポケモンに 出会っていません</p>
-        <p className="text-gray-400 text-sm">冒険に 出かけて ポケモンを 見つけよう！</p>
+        <p className="text-gray-400 text-lg mb-2">まだ　ポケモンに　出会っていません</p>
+        <p className="text-gray-400 text-sm">ぼうけんに　出かけて　ポケモンを　見つけよう！</p>
       </div>
     );
   }
@@ -39,7 +39,7 @@ export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
             {p.name_ja}
           </span>
           {p.status !== "captured" && (
-            <span className="text-[10px] text-gray-400">発見済み</span>
+            <span className="text-[10px] text-gray-400">発見ずみ</span>
           )}
         </button>
       ))}

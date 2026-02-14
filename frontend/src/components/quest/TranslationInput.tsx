@@ -23,7 +23,7 @@ export function TranslationInput({ onSubmit }: TranslationInputProps) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="日本語を 入力..."
+        placeholder="日本語を　入力してね"
         className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl
                    focus:border-blue-500 focus:outline-none text-lg resize-none
                    bg-white text-gray-800"
@@ -39,10 +39,10 @@ export function TranslationInput({ onSubmit }: TranslationInputProps) {
         {submitting ? (
           <span className="flex items-center justify-center gap-2">
             <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-            採点中…
+            さいてん　しています…
           </span>
         ) : (
-          "この 翻訳で 戦う！"
+          "この　ほんやくで　たたかう！"
         )}
       </button>
     </div>

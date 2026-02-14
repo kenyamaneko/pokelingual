@@ -19,11 +19,11 @@ function getHPBarColor(remainingHP: number): string {
 }
 
 function getScoreLabel(score: number): string | null {
-  if (score >= 100) return "一撃必殺！";
-  if (score >= 80) return "効果は ばつぐんだ！";
+  if (score >= 100) return "いちげき　ひっさつ！";
+  if (score >= 80) return "こうかは　ばつぐんだ！";
   if (score >= 41) return null;
-  if (score >= 1) return "効果は いまひとつの ようだ";
-  return "効果が ないみたいだ...";
+  if (score >= 1) return "こうかは　いまひとつの　ようだ";
+  return "こうかが　ないみたいだ...";
 }
 
 export function ScoreDisplay({ score }: ScoreDisplayProps) {

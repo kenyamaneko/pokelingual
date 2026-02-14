@@ -23,7 +23,7 @@ export function LoginPage() {
     try {
       await login(email, password);
     } catch {
-      setError("メールアドレスまたはパスワードが正しくありません");
+      setError("メールアドレス　または　パスワードが　正しくありません");
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ export function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">PokeLingual</h1>
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
         <p className="text-gray-400 text-sm mb-8">
-          ポケモンで 英語を 学ぼう！
+          ポケモンで　えいごを　学ぼう！
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

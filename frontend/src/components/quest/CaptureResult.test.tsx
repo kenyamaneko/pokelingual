@@ -20,6 +20,8 @@ const capturedResult: CaptureResponse = {
   types: ["electric"],
   height: 4,
   weight: 60,
+  is_legendary: false,
+  is_mythical: false,
 };
 
 const escapedResult: CaptureResponse = {
@@ -37,6 +39,8 @@ const escapedResult: CaptureResponse = {
   types: ["electric"],
   height: 4,
   weight: 60,
+  is_legendary: false,
+  is_mythical: false,
 };
 
 const chatContext: ChatContext = {
@@ -53,19 +57,22 @@ function renderWithRouter(ui: React.ReactElement) {
   return render(<BrowserRouter>{ui}</BrowserRouter>);
 }
 
+// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
+// Testing Library の getByText は \s+ を半角スペースに正規化するため、
+// テストのアサーションでは半角スペースを使う。
 describe("CaptureResult", () => {
   it("shows capture message when captured", () => {
     // Given: a captured result
     renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
     // Then: shows capture message
-    expect(screen.getByText(/やったー！ ピカチュウを 捕まえたぞ！/)).toBeInTheDocument();
+    expect(screen.getByText(/やったー！ ピカチュウを つかまえたぞ！/)).toBeInTheDocument();
   });
 
   it("shows escape message when not captured", () => {
     // Given: an escaped result
     renderWithRouter(<CaptureResult result={escapedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
     // Then: shows escape message
-    expect(screen.getByText(/野生の ピカチュウは 逃げ出した！/)).toBeInTheDocument();
+    expect(screen.getByText(/やせいの ピカチュウは にげだした！/)).toBeInTheDocument();
   });
 
   it("displays Pokemon name in both languages", () => {
@@ -89,8 +96,8 @@ describe("CaptureResult", () => {
     const onNewQuest = vi.fn();
     renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={onNewQuest} />);
 
-    // When: clicking the "次の冒険へ" button
-    await user.click(screen.getByText("次の 冒険へ"));
+    // When: clicking the "つぎのぼうけんへ" button
+    await user.click(screen.getByText("つぎの ぼうけんへ"));
 
     // Then: onNewQuest is called
     expect(onNewQuest).toHaveBeenCalledOnce();
@@ -100,7 +107,7 @@ describe("CaptureResult", () => {
     // Given: a captured result
     renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
     // Then: the chat button is displayed
-    expect(screen.getByText("博士に 質問")).toBeInTheDocument();
+    expect(screen.getByText("はかせに しつもん")).toBeInTheDocument();
   });
 
   it("renders Pokemon sprite", () => {

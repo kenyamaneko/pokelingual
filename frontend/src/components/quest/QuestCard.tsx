@@ -14,7 +14,7 @@ export function QuestCard({ description }: QuestCardProps) {
         </p>
       </div>
       <p className="text-sm text-gray-500 mt-3 text-center">
-        この 英文を 日本語に 翻訳しよう！
+        この　えいぶんを　日本語に　ほんやくしよう！
       </p>
     </div>
   );

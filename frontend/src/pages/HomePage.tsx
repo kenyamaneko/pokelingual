@@ -10,10 +10,10 @@ export function HomePage() {
           className="w-24 h-24 mx-auto mb-6"
         />
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          おーす！ 未来の チャンピオン
+          おーす！　みらいの　チャンピオン
         </h1>
         <p className="text-gray-500 mb-8">
-          英語を 翻訳して ポケモンを 捕まえよう！
+          えいごを　ほんやくして　ポケモンを　つかまえよう！
         </p>
 
         <div className="space-y-4">
@@ -22,21 +22,21 @@ export function HomePage() {
             className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
           >
-            冒険に 出かける
+            ぼうけんに　出かける
           </Link>
           <Link
             to="/collection"
             className="block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow border border-gray-200"
           >
-            図鑑を 見る
+            ずかんを　見る
           </Link>
           <Link
             to="/settings"
             className="block w-full bg-white hover:bg-gray-100 text-gray-500 py-3 px-6 rounded-2xl
                        font-bold text-base transition-colors border border-gray-200"
           >
-            設定
+            せってい
           </Link>
         </div>
       </div>

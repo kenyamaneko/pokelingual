@@ -3,6 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { NameGuess } from "./NameGuess";
 
+// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
+// Testing Library の getByText は \s+ を半角スペースに正規化するため、
+// テストのアサーションでは半角スペースを使う。
 describe("NameGuess", () => {
   it("renders input and buttons when no guess yet", () => {
     // Given: a NameGuess with no previous guess result
@@ -11,9 +14,9 @@ describe("NameGuess", () => {
     );
     // Then: input field, submit button, and skip button are present
     expect(
-      screen.getByPlaceholderText("ポケモンの 名前を 入力…")
+      screen.getByPlaceholderText("ポケモンの 名前を 入力してね")
     ).toBeInTheDocument();
-    expect(screen.getByText("きみに 決めた！")).toBeInTheDocument();
+    expect(screen.getByText("きみに きめた！")).toBeInTheDocument();
     expect(
       screen.getByText("わからないので スキップ →")
     ).toBeInTheDocument();
@@ -28,9 +31,9 @@ describe("NameGuess", () => {
     );
 
     // When: typing "Pikachu" and clicking submit
-    const input = screen.getByPlaceholderText("ポケモンの 名前を 入力…");
+    const input = screen.getByPlaceholderText("ポケモンの 名前を 入力してね");
     await user.type(input, "Pikachu");
-    await user.click(screen.getByText("きみに 決めた！"));
+    await user.click(screen.getByText("きみに きめた！"));
 
     // Then: onSubmit is called with "Pikachu"
     expect(onSubmit).toHaveBeenCalledWith("Pikachu");
@@ -51,9 +54,9 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows correct message with hyper ball bonus
-    expect(screen.getByText("正解！")).toBeInTheDocument();
+    expect(screen.getByText("せいかい！")).toBeInTheDocument();
     expect(
-      screen.getByText("英語名 正解！ ハイパーボール ゲット！")
+      screen.getByText("えいご名 せいかい！ ハイパーボール ゲット！")
     ).toBeInTheDocument();
   });
 
@@ -73,7 +76,7 @@ describe("NameGuess", () => {
     );
     // Then: shows Japanese name correct message with super ball
     expect(
-      screen.getByText("日本語名 正解！ スーパーボール ゲット！")
+      screen.getByText("日本語名 せいかい！ スーパーボール ゲット！")
     ).toBeInTheDocument();
   });
 
@@ -92,7 +95,7 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows failure message and revealed names
-    expect(screen.getByText("残念！")).toBeInTheDocument();
+    expect(screen.getByText("ざんねん！")).toBeInTheDocument();
     expect(
       screen.getByText(/Pikachu.*ピカチュウ/)
     ).toBeInTheDocument();
@@ -112,7 +115,7 @@ describe("NameGuess", () => {
     );
     // Then: shows wrong message encouraging retry
     expect(
-      screen.getByText("外れ… もう一度 やってみよう！")
+      screen.getByText("はずれ… もう一度 やってみよう！")
     ).toBeInTheDocument();
   });
 
@@ -130,7 +133,7 @@ describe("NameGuess", () => {
     );
     // Then: shows last chance message
     expect(
-      screen.getByText("外れ… ラストチャンス！")
+      screen.getByText("はずれ… ラストチャンス！")
     ).toBeInTheDocument();
   });
 
@@ -164,6 +167,6 @@ describe("NameGuess", () => {
       />
     );
     // Then: shows "次へ進む" button instead of skip
-    expect(screen.getByText("次へ 進む →")).toBeInTheDocument();
+    expect(screen.getByText("次へ すすむ →")).toBeInTheDocument();
   });
 });

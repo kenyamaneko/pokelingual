@@ -25,19 +25,22 @@ const chatContext: ChatContext = {
   name_ja: "ピカチュウ",
 };
 
+// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
+// Testing Library の getByText は \s+ を半角スペースに正規化するため、
+// テストのアサーションでは半角スペースを使う。
 describe("ProfessorChat", () => {
   it("renders the chat modal with header", () => {
     // Given: the chat modal is open
     render(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
     // Then: the header is displayed
-    expect(screen.getByText("博士に 質問")).toBeInTheDocument();
+    expect(screen.getByText("はかせに しつもん")).toBeInTheDocument();
   });
 
   it("shows placeholder text when no messages", () => {
     // Given: the chat modal is open with no messages
     render(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
     // Then: placeholder text is displayed
-    expect(screen.getByText(/博士に 聞いてみよう/)).toBeInTheDocument();
+    expect(screen.getByText(/はかせに 聞いてみよう/)).toBeInTheDocument();
   });
 
   it("calls onClose when close button is clicked", async () => {
@@ -59,9 +62,9 @@ describe("ProfessorChat", () => {
     render(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
 
     // When: typing and sending a message
-    const input = screen.getByPlaceholderText("質問を 入力…");
+    const input = screen.getByPlaceholderText("しつもんを 入力してね");
     await user.type(input, "emitってどういう意味？");
-    await user.click(screen.getByText("送信"));
+    await user.click(screen.getByText("はかせに 聞く"));
 
     // Then: user message appears and professor replies
     expect(screen.getByText("emitってどういう意味？")).toBeInTheDocument();
