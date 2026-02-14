@@ -19,5 +19,7 @@ type Pokemon struct {
 	Types         []string         `json:"types"`
 	Height        int              `json:"height"`
 	Weight        int              `json:"weight"`
+	IsLegendary   bool             `json:"is_legendary"`
+	IsMythical    bool             `json:"is_mythical"`
 	FlavorTexts   []FlavorTextPair `json:"flavor_texts,omitempty"`
 }

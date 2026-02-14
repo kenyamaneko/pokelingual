@@ -18,23 +18,37 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
     <div className="mt-4 text-center">
       <div
         className={`rounded-3xl shadow-xl p-8 border-2 ${
-          result.captured
-            ? "bg-gradient-to-b from-green-50 to-white border-green-300"
-            : "bg-gradient-to-b from-gray-50 to-white border-gray-300"
+          result.captured && result.is_mythical
+            ? "bg-gradient-to-b from-purple-100 to-indigo-50 border-purple-400"
+            : result.captured && result.is_legendary
+              ? "bg-gradient-to-b from-amber-100 to-yellow-50 border-amber-400"
+              : result.captured
+                ? "bg-gradient-to-b from-green-50 to-white border-green-300"
+                : "bg-gradient-to-b from-gray-50 to-white border-gray-300"
         }`}
       >
         {result.captured ? (
           <>
             <div className="text-4xl mb-2">&#11088;</div>
-            <h2 className="text-2xl font-bold text-green-700 mb-4">
-              やったー！ {result.name_ja}を 捕まえたぞ！
+            <h2 className={`text-2xl font-bold mb-4 ${
+              result.is_mythical
+                ? "text-purple-700"
+                : result.is_legendary
+                  ? "text-amber-700"
+                  : "text-green-700"
+            }`}>
+              {result.is_mythical
+                ? `しんじられない！　まぼろしの　${result.name_ja}を　つかまえたぞ！`
+                : result.is_legendary
+                  ? `やったー！　でんせつの　${result.name_ja}を　つかまえたぞ！`
+                  : `やったー！　${result.name_ja}を　つかまえたぞ！`}
             </h2>
           </>
         ) : (
           <>
             <div className="text-4xl mb-2">&#128168;</div>
             <h2 className="text-2xl font-bold text-gray-600 mb-4">
-              野生の {result.name_ja}は 逃げ出した！
+              やせいの　{result.name_ja}は　にげだした！
             </h2>
           </>
         )}
@@ -43,7 +57,13 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
           src={result.sprite_url}
           alt={result.name_en}
           className={`w-40 h-40 mx-auto mb-4 ${
-            result.captured ? "" : "opacity-30 grayscale"
+            result.captured
+              ? result.is_mythical
+                ? "animate-mythical-shimmer"
+                : result.is_legendary
+                  ? "animate-legendary-glow"
+                  : ""
+              : "opacity-30 grayscale"
           }`}
         />
 
@@ -65,13 +85,13 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         <div className="mt-4 text-sm text-gray-500">
           <span>スコア: {result.score}</span>
           <span className="mx-2">|</span>
-          <span>種族値: {result.base_stat_total}</span>
+          <span>しゅぞくち: {result.base_stat_total}</span>
         </div>
 
         {result.description_en && (
           <div className="mt-4 bg-gray-50 rounded-xl p-4 text-left">
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              図鑑の 説明
+              かくちの　ずかんの　せつめい
             </h3>
             <p className="text-gray-700 text-sm leading-relaxed italic">
               "{result.description_en}"
@@ -90,7 +110,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         className="mt-6 w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-blue-600 transition-colors shadow-lg"
       >
-        博士に 質問
+        はかせに　しつもん
       </button>
 
       <button
@@ -98,7 +118,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         className="mt-3 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
-        次の 冒険へ
+        つぎの　ぼうけんへ
       </button>
 
       <button
@@ -106,7 +126,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         className="mt-3 w-full bg-white text-gray-600 py-3 rounded-2xl font-bold text-base
                    border-2 border-gray-200 hover:bg-gray-50 transition-colors"
       >
-        メニューに 戻る
+        メニューに　もどる
       </button>
 
       {showChat && (

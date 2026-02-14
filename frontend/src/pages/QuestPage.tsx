@@ -26,20 +26,20 @@ type QuestPhase =
 function getErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     if (!err.response) {
-      return "サーバーに 接続できません。ネットワークを 確認してね";
+      return "サーバーに　せつぞくできません。ネットワークを　かくにんしてください";
     }
     const status = err.response.status;
     if (status === 401) {
-      return "認証に 失敗しました。ログインし 直してね";
+      return "にんしょうに　しっぱいしました。ログイン　しなおしてください";
     }
     if (status === 403) {
-      return "アクセス権が ありません";
+      return "アクセスけんが　ありません";
     }
     if (status === 502) {
-      return "外部サービス（PokeAPI / Gemini）が 応答しません。しばらく 待ってね";
+      return "がいぶサービス（PokeAPI / Gemini）が　おうとうしません。しばらく　待ってください";
     }
     if (status === 404) {
-      return "冒険が 見つかりません。新しい 冒険を 始めてね";
+      return "ぼうけんが　見つかりません。新しい　ぼうけんを　始めてください";
     }
     return `${fallback}（${status}）`;
   }
@@ -85,7 +85,7 @@ export function QuestPage() {
       setQuest(res.data);
       setPhase("translating");
     } catch (err) {
-      setError(getErrorMessage(err, "ポケモンの データを 読み込めません"));
+      setError(getErrorMessage(err, "ポケモンの　データを　読みこめません"));
       setPhase("error");
     }
   }, []);
@@ -101,7 +101,7 @@ export function QuestPage() {
       setScore(res.data);
       setPhase("guessing");
     } catch (err) {
-      setError(getErrorMessage(err, "採点に 失敗しました"));
+      setError(getErrorMessage(err, "さいてんに　しっぱいしました"));
     }
   };
 
@@ -110,7 +110,7 @@ export function QuestPage() {
       const res = await questApi.guessName(guess);
       setGuessResult(res.data);
     } catch (err) {
-      setError(getErrorMessage(err, "名前の 判定に 失敗しました"));
+      setError(getErrorMessage(err, "名前の　はんていに　しっぱいしました"));
     }
   };
 
@@ -129,12 +129,20 @@ export function QuestPage() {
       setCaptureResult(res.data);
       setPhase("result");
     } catch (err) {
-      setError(getErrorMessage(err, "捕獲の 判定に 失敗しました"));
+      setError(getErrorMessage(err, "ほかくの　はんていに　しっぱいしました"));
     }
   };
 
+  const isSpecial = quest?.is_legendary || quest?.is_mythical;
+
+  const bgClass = quest?.is_mythical
+    ? "min-h-[calc(100vh-56px)] bg-gradient-to-b from-purple-50 to-gray-50 py-8"
+    : quest?.is_legendary
+      ? "min-h-[calc(100vh-56px)] bg-gradient-to-b from-amber-50 to-gray-50 py-8"
+      : "min-h-[calc(100vh-56px)] bg-gray-50 py-8";
+
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-gray-50 py-8">
+    <div className={bgClass}>
       <div className="max-w-2xl mx-auto px-4">
         {error && phase !== "error" && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
@@ -151,21 +159,21 @@ export function QuestPage() {
         {phase === "loading" && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mb-4" />
-            <p className="text-gray-500">野生の ポケモンを 探しています…</p>
+            <p className="text-gray-500">やせいの　ポケモンを　さがしています…</p>
           </div>
         )}
 
         {phase === "error" && (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="text-5xl mb-4">!</p>
-            <p className="text-gray-700 font-bold text-lg mb-2">エラーが 発生しました</p>
+            <p className="text-gray-700 font-bold text-lg mb-2">エラーが　はっせいしました</p>
             <p className="text-gray-500 text-sm mb-6">{error}</p>
             <button
               onClick={startNewQuest}
               className="bg-red-500 text-white py-3 px-8 rounded-2xl font-bold
                          hover:bg-red-600 transition-colors shadow-lg"
             >
-              もう一度 探す
+              もう一度　さがす
             </button>
           </div>
         )}
@@ -173,8 +181,13 @@ export function QuestPage() {
         {phase === "translating" && quest && (
           <>
             <p className="text-center text-gray-700 font-bold text-lg mb-4">
-              あ！ 野生の ポケモンが 飛び出してきた！
+              あ！　やせいの　ポケモンが　とび出してきた！
             </p>
+            {isSpecial && (
+              <p className="text-center text-amber-600 font-bold text-sm mb-4 animate-pulse">
+                ただならぬ　けはいを　感じる…
+              </p>
+            )}
             <QuestCard description={quest.description_en} />
             <TranslationInput onSubmit={handleTranslationSubmit} />
           </>
@@ -185,21 +198,21 @@ export function QuestPage() {
             <QuestCard description={quest.description_en} />
             <div className="mt-4 bg-white rounded-2xl shadow-lg p-5 border border-gray-200">
               <div className="mb-3">
-                <p className="text-xs font-semibold text-gray-400 mb-1">きみの 翻訳</p>
+                <p className="text-xs font-semibold text-gray-400 mb-1">きみの　ほんやく</p>
                 <p className="text-gray-800 text-sm leading-relaxed">
                   {userTranslation}
                 </p>
               </div>
               {score.review && (
                 <div className="mb-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 mb-1">博士からの コメント</p>
+                  <p className="text-xs font-semibold text-gray-400 mb-1">はかせからの　コメント</p>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {score.review}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-xs font-semibold text-gray-400 mb-1">日本語の 説明文</p>
+                <p className="text-xs font-semibold text-gray-400 mb-1">日本語の　せつめい文</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   「{score.description_ja}」
                 </p>
@@ -224,7 +237,7 @@ export function QuestPage() {
                 className="w-24 h-24 animate-bounce mb-6"
               />
               <p className="text-gray-600 mb-6 text-lg">
-                {BALL_NAMES[ball]}を 手に 入れた！
+                {BALL_NAMES[ball]}を　手に　入れた！
               </p>
               <button
                 onClick={handleCapture}
@@ -232,7 +245,7 @@ export function QuestPage() {
                            hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
                            active:scale-95 transform"
               >
-                {BALL_NAMES[ball]}を つかう
+                {BALL_NAMES[ball]}を　使う
               </button>
             </div>
           );

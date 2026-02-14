@@ -74,6 +74,23 @@ var mockPokemon = []model.Pokemon{
 			{VersionNames: []string{"サン"}, DescriptionEN: "When it retracts its long neck into its shell, it squirts out water with vigorous force.", DescriptionJA: "長い 首を 甲羅に 引っ込める ときに 勢い よく 水を 噴き出す。"},
 		},
 	},
+	{
+		ID:            150,
+		NameEN:        "Mewtwo",
+		NameJA:        "ミュウツー",
+		DescriptionEN: "It was created by a scientist after years of horrific gene-splicing and DNA-engineering experiments.",
+		DescriptionJA: "遺伝子を 組み替えて 作られた ポケモン。人間の 科学力で 体は 作れても やさしい 心を 作ることは できなかった。",
+		SpriteURL:     "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+		BaseStatTotal: 680,
+		Types:         []string{"psychic"},
+		Height:        20,
+		Weight:        1220,
+		IsLegendary:   true,
+		FlavorTexts: []model.FlavorTextPair{
+			{VersionNames: []string{"X"}, DescriptionEN: "It was created by a scientist after years of horrific gene-splicing and DNA-engineering experiments.", DescriptionJA: "遺伝子を 組み替えて 作られた ポケモン。人間の 科学力で 体は 作れても やさしい 心を 作ることは できなかった。"},
+			{VersionNames: []string{"ソード"}, DescriptionEN: "A Pokémon that was created by genetic manipulation. However, even though the scientific power of humans made its body, they failed to give it a warm heart.", DescriptionJA: "遺伝子 操作に よって つくられた ポケモン。人間の 科学力で 体は つくれても 優しい 心を つくることは できなかった。"},
+		},
+	},
 }
 
 // PokemonFetcher implements domain.PokemonFetcher with hardcoded Pokemon data.

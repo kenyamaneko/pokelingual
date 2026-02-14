@@ -61,7 +61,9 @@ func NewPokeAPIService() *PokeAPIService {
 }
 
 type pokeAPISpeciesResponse struct {
-	ID               int `json:"id"`
+	ID               int  `json:"id"`
+	IsLegendary      bool `json:"is_legendary"`
+	IsMythical       bool `json:"is_mythical"`
 	Names            []struct {
 		Name     string `json:"name"`
 		Language struct {
@@ -214,6 +216,8 @@ func (s *PokeAPIService) fetchFromAPI(ctx context.Context, id int) (*model.Pokem
 		Types:         types,
 		Height:        pokemonData.Height,
 		Weight:        pokemonData.Weight,
+		IsLegendary:   species.IsLegendary,
+		IsMythical:    species.IsMythical,
 		FlavorTexts:   flavorTexts,
 	}, nil
 }

@@ -1,6 +1,8 @@
 export interface QuestNewResponse {
   pokemon_id: number;
   description_en: string;
+  is_legendary: boolean;
+  is_mythical: boolean;
 }
 
 export interface ScoreResponse {
@@ -34,6 +36,8 @@ export interface CaptureResponse {
   types?: string[];
   height?: number;
   weight?: number;
+  is_legendary: boolean;
+  is_mythical: boolean;
 }
 
 export interface ChatMessage {

@@ -5,3 +5,22 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* 伝説ポケモン: 金色の脈動グロー */
+@keyframes legendary-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(234, 179, 8, 0.3)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 20px rgba(234, 179, 8, 0.6)); transform: scale(1.05); }
+}
+.animate-legendary-glow {
+  animation: legendary-glow 2s ease-in-out infinite;
+}
+
+/* 幻ポケモン: 虹色のシマーエフェクト */
+@keyframes mythical-shimmer {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.3)) hue-rotate(0deg); transform: scale(1); }
+  33% { filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.5)) hue-rotate(30deg); transform: scale(1.03); }
+  66% { filter: drop-shadow(0 0 16px rgba(236, 72, 153, 0.5)) hue-rotate(-30deg); transform: scale(1.03); }
+}
+.animate-mythical-shimmer {
+  animation: mythical-shimmer 3s ease-in-out infinite;
+}

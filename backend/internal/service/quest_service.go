@@ -28,6 +28,8 @@ type QuestService struct {
 type QuestNewResponse struct {
 	PokemonID     int    `json:"pokemon_id"`
 	DescriptionEN string `json:"description_en"`
+	IsLegendary   bool   `json:"is_legendary"`
+	IsMythical    bool   `json:"is_mythical"`
 }
 
 // ScoreResponse is the API response for a translation scoring.
@@ -64,6 +66,8 @@ type CaptureResponse struct {
 	Types         []string `json:"types"`
 	Height        int      `json:"height"`
 	Weight        int      `json:"weight"`
+	IsLegendary   bool     `json:"is_legendary"`
+	IsMythical    bool     `json:"is_mythical"`
 }
 
 // ChatRequest is the API request for chatting with the professor.
@@ -136,12 +140,16 @@ func (s *QuestService) NewQuest(ctx context.Context, uid string) (*QuestNewRespo
 		Types:         pokemon.Types,
 		Height:        pokemon.Height,
 		Weight:        pokemon.Weight,
+		IsLegendary:   pokemon.IsLegendary,
+		IsMythical:    pokemon.IsMythical,
 	}
 	s.sessions.Store(uid, session)
 
 	return &QuestNewResponse{
 		PokemonID:     pokemon.ID,
 		DescriptionEN: MaskPokemonNameEN(descEN, pokemon.NameEN),
+		IsLegendary:   pokemon.IsLegendary,
+		IsMythical:    pokemon.IsMythical,
 	}, nil
 }
 
@@ -280,6 +288,8 @@ func (s *QuestService) AttemptCapture(ctx context.Context, uid string) (*Capture
 		Types:         session.Types,
 		Height:        session.Height,
 		Weight:        session.Weight,
+		IsLegendary:   session.IsLegendary,
+		IsMythical:    session.IsMythical,
 	}, nil
 }
 

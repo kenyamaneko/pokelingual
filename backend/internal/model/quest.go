@@ -12,6 +12,8 @@ type QuestSession struct {
 	Types         []string `json:"-"`
 	Height        int      `json:"-"`
 	Weight        int      `json:"-"`
+	IsLegendary   bool     `json:"-"`
+	IsMythical    bool     `json:"-"`
 	Score         float64  `json:"score,omitempty"`
 	BallType      string  `json:"ball_type,omitempty"`
 	GuessAttempts int     `json:"guess_attempts,omitempty"`
