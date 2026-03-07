@@ -106,6 +106,7 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --service-account "${{ env.BACKEND_SA }}" \
+            --remove-secrets "GEMINI_API_KEY" \
             --update-env-vars "APP_MODE=prod,FRONTEND_URL=${{ env.FRONTEND_URL }},GCP_PROJECT=${{ secrets.GCP_PROJECT_ID }}" \
             --allow-unauthenticated
 

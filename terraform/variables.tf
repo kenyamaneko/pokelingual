@@ -25,9 +25,9 @@ variable "firebase_web_app_display_name" {
 }
 
 variable "github_repo" {
-  description = "GitHub repository in owner/repo format (e.g. kenyamaneko/Pokelingual)"
+  description = "GitHub repository in owner/repo format (e.g. kenyamaneko/pokelingual)"
   type        = string
-  default     = "kenyamaneko/Pokelingual"
+  default     = "kenyamaneko/pokelingual"
 }
 
 variable "alert_email" {
