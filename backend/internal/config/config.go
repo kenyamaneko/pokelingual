@@ -11,7 +11,8 @@ type Config struct {
 	AppMode                 string
 	Port                    string
 	FirebaseCredentialsPath string
-	GeminiAPIKey            string
+	GCPProject              string
+	GCPLocation             string
 	FrontendURL             string
 }
 
@@ -23,7 +24,8 @@ func Load() *Config {
 		AppMode:                 getEnv("APP_MODE", "mock"),
 		Port:                    getEnv("PORT", "8080"),
 		FirebaseCredentialsPath: getEnv("FIREBASE_CREDENTIALS_PATH", ""),
-		GeminiAPIKey:            getEnv("GEMINI_API_KEY", ""),
+		GCPProject:              getEnv("GCP_PROJECT", ""),
+		GCPLocation:             getEnv("GCP_LOCATION", "us-central1"),
 		FrontendURL:             getEnv("FRONTEND_URL", "http://localhost:5173"),
 	}
 }

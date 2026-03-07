@@ -90,10 +90,11 @@ func main() {
 		}
 		defer func() { _ = firestoreClient.Close() }()
 
-		// Initialize Gemini
+		// Initialize Gemini (Vertex AI backend, uses ADC)
 		geminiClient, err := genai.NewClient(ctx, &genai.ClientConfig{
-			APIKey:  cfg.GeminiAPIKey,
-			Backend: genai.BackendGeminiAPI,
+			Project:  cfg.GCPProject,
+			Location: cfg.GCPLocation,
+			Backend:  genai.BackendVertexAI,
 		})
 		if err != nil {
 			log.Fatalf("failed to initialize gemini: %v", err)
