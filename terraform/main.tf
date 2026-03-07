@@ -38,11 +38,10 @@ resource "google_project_service" "apis" {
     "cloudbuild.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
-    "generativelanguage.googleapis.com",
+    "aiplatform.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",
-    "secretmanager.googleapis.com",
     "monitoring.googleapis.com",
     "logging.googleapis.com",
   ])
@@ -208,27 +207,10 @@ resource "google_project_iam_member" "backend_firebase_auth" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
-# ============================================================
-# Secret Manager (Gemini API Key)
-# ============================================================
-resource "google_secret_manager_secret" "gemini_api_key" {
-  provider  = google-beta
-  project   = var.project_id
-  secret_id = "gemini-api-key"
-
-  replication {
-    auto {}
-  }
-
-  depends_on = [google_project_service.apis]
-}
-
-resource "google_secret_manager_secret_iam_member" "backend_secret_access" {
-  provider  = google-beta
-  project   = var.project_id
-  secret_id = google_secret_manager_secret.gemini_api_key.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.backend.email}"
+resource "google_project_iam_member" "backend_vertex_ai" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
 # ============================================================
