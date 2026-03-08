@@ -20,7 +20,7 @@ dev-restart:
 test: test-backend test-frontend
 
 test-backend:
-	cd backend && go test ./... -v
+	cd backend && npx tsc --noEmit
 
 test-frontend:
 	cd frontend && npx vitest run

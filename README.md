@@ -9,14 +9,14 @@
 | レイヤー | 技術 |
 |---------|------|
 | フロントエンド | React 19, TypeScript, Vite, Tailwind CSS |
-| バックエンド | Go 1.25, Gin |
+| バックエンド | Node.js 22, Express, TypeScript |
 | データベース | Cloud Firestore |
 | 認証 | Firebase Authentication（メール/パスワード） |
-| AI スコアリング | Gemini API（gemini-2.5-flash） |
+| AI スコアリング | Gemini（Vertex AI, gemini-2.5-flash） |
 | ポケモンデータ | PokeAPI |
-| インフラ | GCP（Cloud Run, Artifact Registry, Secret Manager）, Terraform |
+| インフラ | GCP（Cloud Run, Artifact Registry）, Terraform |
 | CI/CD | GitHub Actions |
-| テスト | Go testing, Vitest, Testing Library |
+| テスト | Vitest, Testing Library, Playwright |
 
 ## ドキュメント
 
@@ -64,7 +64,6 @@
 
 ### 前提条件
 
-- Go 1.25+
 - Node.js 22+
 - Docker / Docker Compose
 - Terraform 1.5+
@@ -271,8 +270,8 @@ make dev-logs
 # 全テスト実行
 make test
 
-# バックエンドのみ
-cd backend && go test ./... -v
+# バックエンドのみ（型チェック）
+cd backend && npx tsc --noEmit
 
 # フロントエンドのみ
 cd frontend && npx vitest run

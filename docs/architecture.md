@@ -4,7 +4,7 @@
 
 ```
 ┌──────────────────────┐     ┌──────────────────────────────────────────────────┐
-│   Frontend (React)   │     │              Backend (Go / Gin)                  │
+│   Frontend (React)   │     │           Backend (Node.js / Express)             │
 │   Firebase Hosting   │     │              Cloud Run                           │
 │                      │     │                                                  │
 │  LoginPage           │     │  ┌──────────────────────────────────────┐        │
@@ -31,7 +31,7 @@
 
 ## クリーンアーキテクチャ
 
-サービス層はインターフェース（`domain/interfaces.go`）に依存し、具象型には依存しない。
+サービス層はインターフェース（`domain/interfaces.ts`）に依存し、具象型には依存しない。
 これにより、本番実装とモック実装を差し替え可能にしている。
 
 ```
@@ -42,14 +42,14 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 
 | インターフェース | 本番実装 | devmock | テスト用 |
 |---|---|---|---|
-| `PokemonFetcher` | `PokeAPIService` | `devmock.PokemonFetcher` | `testutil.MockPokemonFetcher` |
-| `AIScorer` | `GeminiService` | `devmock.AIScorer` | `testutil.MockAIScorer` |
-| `UserPokemonRepository` | `repository.UserPokemonRepo` | `devmock.UserPokemonRepo` | `testutil.MockUserPokemonRepo` |
-| `UserSettingsRepository` | `repository.UserSettingsRepo` | `devmock.UserSettingsRepo` | `testutil.MockUserSettingsRepo` |
+| `PokemonFetcher` | `PokeAPIService` | `MockPokemonFetcher` | - |
+| `AIScorer` | `GeminiService` | `MockAIScorer` | - |
+| `UserPokemonRepository` | `UserPokemonRepo` | `MockUserPokemonRepo` | - |
+| `UserSettingsRepository` | `UserSettingsRepo` | `MockUserSettingsRepo` | - |
 
 ### 依存性注入
 
-`cmd/server/main.go` が唯一の配線ポイント。`APP_MODE` 環境変数でモードを切り替える:
+`src/main.ts` が唯一の配線ポイント。`APP_MODE` 環境変数でモードを切り替える:
 
 - **`APP_MODE=mock`** → devmock 実装を注入（外部API不要、認証スキップ）
 - **`APP_MODE=prod`**（デフォルト以外）→ 本番実装を注入
@@ -67,25 +67,23 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 ### レイヤー構成
 
 ```
-backend/
-├── cmd/server/main.go       # エントリーポイント、DI
-├── internal/
-│   ├── config/              # 環境変数 → Config struct
-│   ├── domain/              # インターフェース定義（依存の方向の起点）
-│   ├── handler/             # HTTP リクエスト/レスポンス変換
-│   ├── middleware/           # CORS, Firebase Auth
-│   ├── model/               # データ構造体（Pokemon, Quest, UserPokemon 等）
-│   ├── repository/          # Firestore 実装
-│   ├── router/              # Gin ルーティング定義
-│   ├── service/             # PokeAPI, Gemini, Quest, Collection
-│   ├── apperror/            # アプリケーション固有エラー型
-│   ├── devmock/             # ローカル開発用モック
-│   └── testutil/            # テスト用モック
+backend/src/
+├── main.ts                  # エントリーポイント、DI
+├── config/                  # 環境変数 → Config
+├── types/                   # 型定義（Pokemon, Quest, UserPokemon 等）
+├── domain/                  # インターフェース定義（依存の方向の起点）
+├── handler/                 # HTTP リクエスト/レスポンス変換
+├── middleware/              # CORS, Firebase Auth
+├── repository/              # Firestore 実装
+├── router/                  # Express ルーティング定義
+├── service/                 # PokeAPI, Gemini, Quest, Collection
+├── apperror/                # アプリケーション固有エラー型
+└── devmock/                 # ローカル開発用モック
 ```
 
 ### Quest フロー（状態遷移）
 
-クエストセッションはインメモリ（`sync.Map`）で管理。Firestore には永続化しない。
+クエストセッションはインメモリ（`Map`）で管理。Firestore には永続化しない。
 
 ```
 1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成、説明文のポケモン名を伏せ字
@@ -137,7 +135,7 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
   - フロントエンドで /10 変換して m / kg 表示
 - 伝説・幻フラグ: `/api/v2/pokemon-species/{id}` の `is_legendary`, `is_mythical` を取得
   - 登場時に特別メッセージ + 背景色変更（伝説=金、幻=紫）
-- キャッシュ: `sync.Map` によるインメモリキャッシュ
+- キャッシュ: `Map` によるインメモリキャッシュ
 
 ### 除外ポケモン
 
@@ -154,16 +152,13 @@ Client → Cloud Run (IAM: allUsers) → CORS middleware → Firebase Auth middl
 ```
 
 - Cloud Run の IAM は `allUsers`（無認証許可）。Firebase Auth トークンは IAM トークンではないため
-- アプリレベルの認証は `middleware/auth.go` が担当
+- アプリレベルの認証は `middleware/auth.ts` が担当
 - `allowed_emails`: Firestore `config/auth` ドキュメントから起動時に読み込み
 - メールがホワイトリストにない場合は 403
 
 ### ロギング
 
-- `APP_MODE=prod`（= `mock` 以外）時: `slog` の JSON ハンドラーで Cloud Logging 互換形式に変換
-  - `level` → `severity`（Cloud Logging が認識するフィールド名）
-  - `msg` → `message`
-  - WARN → `WARNING`, ERROR → `ERROR`（Cloud Logging 形式の値）
+- `console.log` / `console.error` で出力（Cloud Run が Cloud Logging に自動転送）
 
 ## フロントエンド詳細
 
@@ -218,7 +213,7 @@ loading → quest → translating → scoring → guessing → result
 | Firestore | ユーザーデータ（`users/{uid}/pokemon/{id}`） |
 | Identity Platform | メール/パスワード認証 |
 | Artifact Registry | Docker イメージ保管 |
-| Secret Manager | Gemini API キー |
+| Vertex AI | Gemini（ADC 認証、API キー不要） |
 | WIF Pool + Provider | GitHub Actions → GCP 認証（JSON キー不要） |
 | Cloud Monitoring | 5xx アラート、レイテンシアラート、エラーログアラート |
 
