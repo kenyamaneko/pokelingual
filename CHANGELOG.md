@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Added
+- Playwright E2E テスト導入（クエスト全フロー、図鑑、ナビゲーション、6テスト）
+- CI に E2E テストジョブ追加（Docker Compose mock モードで並列実行）
+
 ## [1.0.0] - 2026-02-14
 
 ### Added

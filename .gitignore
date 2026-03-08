@@ -15,10 +15,8 @@ tmp/
 firebase-service-account.json
 *-service-account*.json
 
-# Go
-backend/tmp/
+# Binary / shared libs
 *.exe
-*.exe~
 *.dll
 *.so
 *.dylib

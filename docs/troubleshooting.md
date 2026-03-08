@@ -404,3 +404,33 @@ prod への初回 Cloud Run デプロイで `Permission 'iam.serviceaccounts.act
 - Cloud Run は `--service-account` 未指定時にデフォルト Compute Engine SA を使う
 - Terraform で専用 SA を作成している場合は、deploy コマンドで明示的に指定する必要がある
 - dev では既にサービスが存在していたため問題が顕在化せず、prod の初回デプロイで発覚した
+
+---
+
+## 14. Playwright E2E テストで全角スペースのテキストが見つからない
+
+### 症状
+
+`getByRole("link", { name: /ぼうけんに\u3000出かける/ })` が 30 秒タイムアウト。要素は画面に表示されているのに見つからない。
+
+### 原因
+
+Playwright はアクセシブル名を取得する際にホワイトスペースを正規化し、全角スペース（`\u3000`）を半角スペースに変換する。そのためリテラルの `\u3000` を含む正規表現はマッチしない。
+
+### 解決
+
+正規表現で `.`（任意の1文字）を使い、全角・半角どちらのスペースにもマッチさせる:
+
+```typescript
+// Before: タイムアウト
+await page.getByRole("link", { name: /ぼうけんに\u3000出かける/ });
+
+// After: OK
+await page.getByRole("link", { name: /ぼうけんに.出かける/ });
+```
+
+### 学び
+
+- Playwright の `getByRole`, `getByPlaceholder` はアクセシブル名のホワイトスペースを正規化する
+- `getByText` も同様に影響を受ける場合がある
+- 全角スペースを多用する日本語 UI では、正規表現の `.` で任意の空白文字にマッチさせるのが安全
