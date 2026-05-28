@@ -21,8 +21,8 @@ export function firebaseAuth(authClient: Auth, allowedEmails: string[]) {
       const token = await authClient.verifyIdToken(idToken);
 
       if (allowedEmails.length > 0) {
-        const email = token.email ?? "";
-        if (!allowedEmails.includes(email)) {
+        // email クレームを持たないトークン (電話認証・匿名認証など) は本アプリ未対応のため拒否する
+        if (!token.email || !allowedEmails.includes(token.email)) {
           res.status(403).json({ error: "access denied" });
           return;
         }

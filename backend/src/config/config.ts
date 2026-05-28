@@ -11,26 +11,50 @@ export interface Config {
   globalDailyLimit: number;
 }
 
-function getEnv(key: string, fallback: string): string {
-  return process.env[key] || fallback;
-}
+/** mock モード時に許容するデフォルト値。本番モードでは必須 env が未設定なら起動エラーにする。 */
+const MOCK_DEFAULTS = {
+  port: "8080",
+  gcpProject: "",
+  gcpLocation: "us-central1",
+  frontendURL: "http://localhost:5173",
+  perUserDailyLimit: 30,
+  globalDailyLimit: 1500,
+} as const;
 
-function getIntEnv(key: string, fallback: number): number {
+function getEnv(key: string): string | undefined {
   const v = process.env[key];
-  if (!v) return fallback;
-  const n = parseInt(v, 10);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
+  // 空文字を未設定と同一視。空文字をホワイトリスト等に流すと意図しない挙動になるため
+  return v === undefined || v === "" ? undefined : v;
 }
 
-/** 環境変数から Config を構築する。未設定値はデフォルトを使う。 */
+function getIntEnv(key: string): number | undefined {
+  const v = getEnv(key);
+  if (v === undefined) return undefined;
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`invalid env: ${key}=${v} (must be a positive integer)`);
+  }
+  return n;
+}
+
+function requireEnv(key: string): string {
+  const v = getEnv(key);
+  if (v === undefined) throw new Error(`required env not set: ${key}`);
+  return v;
+}
+
+/** 環境変数から Config を構築する。本番モードでは必須 env (GCP_PROJECT, FRONTEND_URL) が未設定なら起動エラー。 */
 export function loadConfig(): Config {
+  const appMode = getEnv("APP_MODE") ?? "mock";
+  const isMock = appMode === "mock";
+
   return {
-    appMode: getEnv("APP_MODE", "mock"),
-    port: getEnv("PORT", "8080"),
-    gcpProject: getEnv("GCP_PROJECT", ""),
-    gcpLocation: getEnv("GCP_LOCATION", "us-central1"),
-    frontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
-    perUserDailyLimit: getIntEnv("PER_USER_DAILY_LIMIT", 30),
-    globalDailyLimit: getIntEnv("GLOBAL_DAILY_LIMIT", 1500),
+    appMode,
+    port: getEnv("PORT") ?? MOCK_DEFAULTS.port,
+    gcpProject: isMock ? (getEnv("GCP_PROJECT") ?? MOCK_DEFAULTS.gcpProject) : requireEnv("GCP_PROJECT"),
+    gcpLocation: getEnv("GCP_LOCATION") ?? MOCK_DEFAULTS.gcpLocation,
+    frontendURL: isMock ? (getEnv("FRONTEND_URL") ?? MOCK_DEFAULTS.frontendURL) : requireEnv("FRONTEND_URL"),
+    perUserDailyLimit: getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit,
+    globalDailyLimit: getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit,
   };
 }
