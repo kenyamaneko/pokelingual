@@ -66,6 +66,7 @@ const BALL_NAMES: Record<BallType, string> = {
   ultra: "ハイパーボール",
 };
 
+/** クエストの主要ページ。出題→翻訳→採点→名前推測→捕獲→チャットのフェーズ遷移を司る。 */
 export function QuestPage() {
   const [phase, setPhase] = useState<QuestPhase>("loading");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);

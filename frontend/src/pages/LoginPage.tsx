@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState, type FormEvent } from "react";
 
+/** ログインページ。Email/Password と Google サインインを提供する。 */
 export function LoginPage() {
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();

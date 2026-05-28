@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+/** ホームページ。クエスト開始・図鑑・設定への導線を表示する。 */
 export function HomePage() {
   return (
     <div className="min-h-[calc(100vh-56px)] bg-gray-50 flex items-center justify-center">

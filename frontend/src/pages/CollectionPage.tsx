@@ -4,6 +4,7 @@ import { PokemonGrid } from "../components/collection/PokemonGrid";
 import { PokemonDetailCard } from "../components/collection/PokemonDetailCard";
 import type { CollectionEntry, PokemonDetail } from "../types";
 
+/** 図鑑コレクション一覧ページ。捕獲済み数と全ポケモンのカードグリッドを表示する。 */
 export function CollectionPage() {
   const [collection, setCollection] = useState<CollectionEntry[]>([]);
   const [totalAvailable, setTotalAvailable] = useState(898);

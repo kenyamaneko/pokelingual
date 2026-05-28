@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../services/settingsApi";
 
+/** 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。 */
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
