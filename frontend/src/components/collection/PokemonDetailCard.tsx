@@ -1,5 +1,6 @@
 import type { PokemonDetail } from "../../types";
 import { typeColors } from "../../utils/pokemonTypes";
+import { formatPokemonId, formatHeightMeters, formatWeightKilograms } from "../../utils/pokemonFormat";
 
 interface PokemonDetailCardProps {
   pokemon: PokemonDetail;
@@ -36,7 +37,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
         <div className="p-6">
           <div className="text-center mb-4">
             <span className="text-sm text-gray-400">
-              #{String(pokemon.pokemon_id).padStart(3, "0")}
+              #{formatPokemonId(pokemon.pokemon_id)}
             </span>
             <h2 className="text-2xl font-bold text-gray-800">
               {pokemon.name_en}
@@ -56,7 +57,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
             )}
             {pokemon.height != null && pokemon.weight != null && (
               <p className="text-sm text-gray-400 mt-2">
-                たかさ: {(pokemon.height / 10).toFixed(1)}m | おもさ: {(pokemon.weight / 10).toFixed(1)}kg
+                たかさ: {formatHeightMeters(pokemon.height)}m | おもさ: {formatWeightKilograms(pokemon.weight)}kg
               </p>
             )}
           </div>

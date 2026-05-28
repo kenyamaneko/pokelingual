@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../services/settingsApi";
+import { formatPokemonId } from "../utils/pokemonFormat";
 
 /** 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。 */
 export function SettingsPage() {
@@ -163,7 +164,7 @@ export function SettingsPage() {
                   className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2"
                 >
                   <span className="text-gray-700 text-sm font-mono">
-                    #{String(id).padStart(3, "0")}
+                    #{formatPokemonId(id)}
                   </span>
                   <button
                     onClick={() => handleRemove(id)}

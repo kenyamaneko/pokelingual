@@ -1,4 +1,5 @@
 import type { CollectionEntry } from "../../types";
+import { formatPokemonId } from "../../utils/pokemonFormat";
 
 interface PokemonGridProps {
   pokemon: CollectionEntry[];
@@ -34,7 +35,7 @@ export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
             }`}
           />
           <span className="text-xs text-gray-400 mt-1">
-            #{String(p.pokemon_id).padStart(3, "0")}
+            #{formatPokemonId(p.pokemon_id)}
           </span>
           <span className="text-xs font-semibold text-gray-700 truncate w-full text-center">
             {p.name_ja}
