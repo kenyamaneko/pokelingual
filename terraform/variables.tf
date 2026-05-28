@@ -49,3 +49,17 @@ variable "google_oauth_client_secret" {
   default     = ""
   sensitive   = true
 }
+
+# 請求アカウントの表示名。未設定（空文字）なら Billing Budget は作成しない。
+# 作成には Terraform 実行者が billing.budgets.create 権限を請求アカウントレベルで持つ必要あり
+variable "billing_account_display_name" {
+  description = "GCP billing account display name. Leave empty to skip Billing Budget creation."
+  type        = string
+  default     = ""
+}
+
+variable "monthly_budget_jpy" {
+  description = "Monthly budget cap in JPY. Alerts fire at 50/80/100% of this amount."
+  type        = number
+  default     = 5000
+}
