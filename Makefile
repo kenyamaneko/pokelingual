@@ -23,4 +23,4 @@ test-backend:
 	cd backend && npx tsc --noEmit && npm test
 
 test-frontend:
-	cd frontend && npx vitest run
+	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
