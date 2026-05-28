@@ -1,5 +1,11 @@
 import axios from "axios";
 import { auth, isDevMode } from "../config/firebase";
+import {
+  RATE_LIMIT_EVENT,
+  rateLimitEvents,
+  type RateLimitDetail,
+  type RateLimitKind,
+} from "./rateLimitEvents";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + "/api",
@@ -17,5 +23,20 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (axios.isAxiosError(err) && err.response?.status === 429) {
+      const data = err.response.data as { error?: string; message?: string };
+      const detail: RateLimitDetail = {
+        kind: (data.error === "global" ? "global" : "user") as RateLimitKind,
+        message: data.message ?? "きょうの　じょうげんに　たっしました",
+      };
+      rateLimitEvents.dispatchEvent(new CustomEvent(RATE_LIMIT_EVENT, { detail }));
+    }
+    return Promise.reject(err);
+  },
+);
 
 export default api;

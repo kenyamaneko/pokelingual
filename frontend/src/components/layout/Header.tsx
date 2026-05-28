@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUsage } from "../../contexts/UsageContext";
 
 const envLabel = (() => {
   const env = import.meta.env.VITE_ENVIRONMENT;
@@ -10,11 +11,14 @@ const envLabel = (() => {
 
 export function Header() {
   const { user } = useAuth();
+  const { usage } = useUsage();
   const location = useLocation();
 
   if (!user || location.pathname === "/login") {
     return null;
   }
+
+  const remaining = usage ? Math.max(0, usage.limit - usage.count) : null;
 
   return (
     <header className="bg-red-500 text-white shadow-md">
@@ -26,6 +30,14 @@ export function Header() {
           {envLabel && (
             <span className="text-xs font-semibold bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full">
               {envLabel}
+            </span>
+          )}
+          {usage && remaining !== null && (
+            <span
+              className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full"
+              title="きょうの　のこり　AI呼び出しかいすう（JST 0:00 に リセット）"
+            >
+              のこり {remaining}/{usage.limit}
             </span>
           )}
         </div>

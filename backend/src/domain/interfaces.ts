@@ -27,3 +27,13 @@ export interface UserSettingsRepository {
   getSettings(uid: string): Promise<UserSettings>;
   updateExcludedPokemon(uid: string, pokemonIDs: number[]): Promise<void>;
 }
+
+export interface DailyUsage {
+  count: number;
+  limit: number;
+}
+
+export interface RateLimitRepository {
+  checkAndIncrement(uid: string): Promise<DailyUsage>;
+  getUserUsage(uid: string): Promise<DailyUsage>;
+}

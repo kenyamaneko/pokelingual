@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import axios from "axios";
 import { questApi } from "../../services/questApi";
+import { useUsage } from "../../contexts/UsageContext";
 import type { ChatContext, ChatMessage } from "../../types";
 
 interface ProfessorChatProps {
@@ -12,6 +14,7 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { refresh: refreshUsage } = useUsage();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,7 +37,13 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
         content: res.data.reply,
       };
       setMessages([...updatedMessages, professorMessage]);
-    } catch {
+      refreshUsage();
+    } catch (err) {
+      // 429 は UsageProvider 側でモーダルが出るので、チャット枠にはエラー文言を出さない
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        setMessages(messages);
+        return;
+      }
       const errorMessage: ChatMessage = {
         role: "professor",
         content: "すまない、うまく　答えられなかった。もう一度　聞いてくれ。",
