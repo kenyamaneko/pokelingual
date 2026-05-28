@@ -28,7 +28,13 @@ const fakeUser = { uid: "alice" } as unknown as User;
 function renderWithAuth(user: User | null = fakeUser) {
   return render(
     <AuthContext.Provider
-      value={{ user, loading: false, login: async () => {}, logout: async () => {} }}
+      value={{
+        user,
+        loading: false,
+        login: async () => {},
+        loginWithGoogle: async () => {},
+        logout: async () => {},
+      }}
     >
       <UsageProvider>
         <Probe />

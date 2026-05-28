@@ -15,6 +15,7 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
         user: devUser,
         loading: false,
         login: async () => {},
+        loginWithGoogle: async () => {},
         logout: async () => {},
       }}
     >
