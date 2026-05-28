@@ -9,6 +9,7 @@ interface ProfessorChatProps {
   onClose: () => void;
 }
 
+/** オーキド博士チャットモーダル。クエスト文脈を渡して質問応答 UI を提供する。 */
 export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");

@@ -7,6 +7,7 @@ interface NameGuessProps {
   guessResult: GuessResponse | null;
 }
 
+/** ポケモン名の推測入力 UI。残り試行数・正誤・最終正解の表示を担う。 */
 export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
   const [guess, setGuess] = useState("");
   const [submitting, setSubmitting] = useState(false);

@@ -26,6 +26,7 @@ function getScoreLabel(score: number): string | null {
   return "こうかが　ないみたいだ...";
 }
 
+/** 採点結果をダメージ表現で表示する。HPバーとスコア帯のラベルを含む。 */
 export function ScoreDisplay({ score }: ScoreDisplayProps) {
   const remainingHP = 100 - score.score;
 

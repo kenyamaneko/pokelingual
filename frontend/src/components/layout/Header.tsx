@@ -9,6 +9,7 @@ const envLabel = (() => {
   return null;
 })();
 
+/** ログイン後の全ページ共通ヘッダ。環境ラベルと当日のレート残量を表示する。 */
 export function Header() {
   const { user } = useAuth();
   const { usage } = useUsage();

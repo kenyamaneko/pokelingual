@@ -6,6 +6,7 @@ interface Props {
   onDismiss: () => void;
 }
 
+/** レート制限到達を通知し、JST 0:00 までのカウントダウンを表示するモーダル。 */
 export function RateLimitModal({ detail, onDismiss }: Props) {
   const [countdown, setCountdown] = useState(formatUntilJstMidnight());
 

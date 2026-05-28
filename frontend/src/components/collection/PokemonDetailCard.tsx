@@ -6,6 +6,7 @@ interface PokemonDetailCardProps {
   onClose: () => void;
 }
 
+/** ポケモン詳細モーダル。図鑑番号・タイプ・複数バージョンの説明文・実績を表示する。 */
 export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) {
   return (
     <div
