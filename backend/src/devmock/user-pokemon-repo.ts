@@ -1,6 +1,7 @@
 import type { UserPokemonRepository } from "../domain/interfaces.js";
 import type { UserPokemon } from "../types/index.js";
 
+/** ローカル開発用のインメモリ UserPokemonRepository 実装。 */
 export class MockUserPokemonRepo implements UserPokemonRepository {
   private data = new Map<string, Map<number, UserPokemon>>();
 

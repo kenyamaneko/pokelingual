@@ -60,6 +60,7 @@ const mockPokemon: Pokemon[] = [
   },
 ];
 
+/** PokeAPI を呼ばずに固定リストから返す開発用 PokemonFetcher 実装。 */
 export class MockPokemonFetcher implements PokemonFetcher {
   async getRandomPokemon(): Promise<Pokemon> {
     return { ...mockPokemon[Math.floor(Math.random() * mockPokemon.length)] };

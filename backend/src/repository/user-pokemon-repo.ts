@@ -2,6 +2,7 @@ import type { Firestore } from "@google-cloud/firestore";
 import type { UserPokemonRepository } from "../domain/interfaces.js";
 import type { UserPokemon } from "../types/index.js";
 
+/** ユーザの図鑑進捗を Firestore に永続化する UserPokemonRepository 実装。 */
 export class UserPokemonRepo implements UserPokemonRepository {
   private db: Firestore;
 
@@ -9,6 +10,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
     this.db = db;
   }
 
+  /** 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。 */
   async upsertEncounter(uid: string, pokemonID: number, score: number, captured: boolean): Promise<void> {
     const ref = this.db
       .collection("users").doc(uid)
@@ -52,6 +54,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
     });
   }
 
+  /** ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。 */
   async getCollection(uid: string): Promise<UserPokemon[]> {
     const snapshot = await this.db
       .collection("users").doc(uid)
@@ -62,6 +65,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
     return snapshot.docs.map((doc) => doc.data() as UserPokemon);
   }
 
+  /** 特定ポケモンのユーザ実績を取得する。未遭遇ならエラーを投げる。 */
   async getPokemon(uid: string, pokemonID: number): Promise<UserPokemon> {
     const doc = await this.db
       .collection("users").doc(uid)

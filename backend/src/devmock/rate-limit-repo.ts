@@ -1,6 +1,7 @@
 import { RateLimitError } from "../apperror/apperror.js";
 import type { DailyUsage, RateLimitRepository } from "../domain/interfaces.js";
 
+/** ローカル開発用のインメモリ RateLimitRepository 実装。プロセス再起動で揮発する。 */
 export class MockRateLimitRepo implements RateLimitRepository {
   private userCounts = new Map<string, { date: string; count: number }>();
   private globalCount: { date: string; count: number } = { date: "", count: 0 };

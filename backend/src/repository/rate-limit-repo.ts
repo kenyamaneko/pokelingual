@@ -3,6 +3,7 @@ import { FieldValue } from "@google-cloud/firestore";
 import { RateLimitError } from "../apperror/apperror.js";
 import type { DailyUsage, RateLimitRepository } from "../domain/interfaces.js";
 
+/** Firestore で日次レートリミットを管理する RateLimitRepository 実装。 */
 export class RateLimitRepo implements RateLimitRepository {
   constructor(
     private db: Firestore,
@@ -10,6 +11,7 @@ export class RateLimitRepo implements RateLimitRepository {
     private globalLimit: number,
   ) {}
 
+  /** 当日カウントを検証して上限到達なら RateLimitError、未到達ならインクリメントして返す。 */
   async checkAndIncrement(uid: string): Promise<DailyUsage> {
     const today = jstDate();
     const userRef = this.db.doc(`users/${uid}/daily_usage/${today}`);
@@ -31,6 +33,7 @@ export class RateLimitRepo implements RateLimitRepository {
     });
   }
 
+  /** 当日のユーザ利用カウントと上限を返す。読み取り専用。 */
   async getUserUsage(uid: string): Promise<DailyUsage> {
     const snap = await this.db.doc(`users/${uid}/daily_usage/${jstDate()}`).get();
     return {

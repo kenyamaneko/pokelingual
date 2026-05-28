@@ -1,6 +1,7 @@
 import type { AIScorer } from "../domain/interfaces.js";
 import type { ScoreResult, ChatContext, ChatMessage } from "../types/index.js";
 
+/** Gemini を呼ばずに固定的なスコアと講評を返す開発用 AIScorer 実装。 */
 export class MockAIScorer implements AIScorer {
   async scoreTranslation(_englishText: string, _japaneseTranslation: string): Promise<ScoreResult> {
     const score = 20 + Math.floor(Math.random() * 76);

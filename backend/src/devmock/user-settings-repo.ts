@@ -1,6 +1,7 @@
 import type { UserSettingsRepository } from "../domain/interfaces.js";
 import type { UserSettings } from "../types/index.js";
 
+/** ローカル開発用のインメモリ UserSettingsRepository 実装。 */
 export class MockUserSettingsRepo implements UserSettingsRepository {
   private settings = new Map<string, UserSettings>();
 

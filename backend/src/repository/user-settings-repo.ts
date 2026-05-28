@@ -2,6 +2,7 @@ import type { Firestore } from "@google-cloud/firestore";
 import type { UserSettingsRepository } from "../domain/interfaces.js";
 import type { UserSettings } from "../types/index.js";
 
+/** ユーザ設定 (除外ポケモン等) を Firestore に永続化する UserSettingsRepository 実装。 */
 export class UserSettingsRepo implements UserSettingsRepository {
   private db: Firestore;
 
@@ -13,6 +14,7 @@ export class UserSettingsRepo implements UserSettingsRepository {
     return this.db.collection("users").doc(uid).collection("settings").doc("preferences");
   }
 
+  /** ユーザ設定を取得する。未保存なら excluded_pokemon_ids が null の値を返す。 */
   async getSettings(uid: string): Promise<UserSettings> {
     const doc = await this.settingsRef(uid).get();
     if (!doc.exists) {
@@ -22,6 +24,7 @@ export class UserSettingsRepo implements UserSettingsRepository {
     return data;
   }
 
+  /** 除外ポケモンID リストを上書き保存する。 */
   async updateExcludedPokemon(uid: string, pokemonIDs: number[]): Promise<void> {
     await this.settingsRef(uid).set(
       { excluded_pokemon_ids: pokemonIDs },
