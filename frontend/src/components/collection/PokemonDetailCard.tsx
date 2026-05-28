@@ -1,5 +1,5 @@
 import type { PokemonDetail } from "../../types";
-import { typeColors } from "../../utils/pokemonTypes";
+import { getTypeColor } from "../../utils/pokemonTypes";
 import { formatPokemonId, formatHeightMeters, formatWeightKilograms } from "../../utils/pokemonFormat";
 
 interface PokemonDetailCardProps {
@@ -48,7 +48,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
                 {pokemon.types.map((t) => (
                   <span
                     key={t}
-                    className={`${typeColors[t] ?? "bg-gray-400"} text-white text-xs font-bold px-3 py-1 rounded-full`}
+                    className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
                   >
                     {t}
                   </span>

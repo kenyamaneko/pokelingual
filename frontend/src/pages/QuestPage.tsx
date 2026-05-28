@@ -260,15 +260,15 @@ export function QuestPage() {
           </div>
         )}
 
-        {phase === "result" && captureResult && (
+        {phase === "result" && captureResult && quest && score && (
           <CaptureResult
             result={captureResult}
             chatContext={{
-              description_en: quest?.description_en ?? "",
-              description_ja: score?.description_ja ?? "",
+              description_en: quest.description_en,
+              description_ja: score.description_ja,
               translation: userTranslation,
-              score: score?.score ?? 0,
-              review: score?.review ?? "",
+              score: score.score,
+              review: score.review,
               name_en: captureResult.name_en,
               name_ja: captureResult.name_ja,
             } satisfies ChatContext}

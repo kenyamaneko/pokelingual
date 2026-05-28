@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CaptureResponse, ChatContext } from "../../types";
-import { typeColors } from "../../utils/pokemonTypes";
+import { getTypeColor } from "../../utils/pokemonTypes";
 import { ProfessorChat } from "./ProfessorChat";
 
 interface CaptureResultProps {
@@ -69,7 +69,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
             {result.types.map((t) => (
               <span
                 key={t}
-                className={`${typeColors[t] ?? "bg-gray-400"} text-white text-xs font-bold px-3 py-1 rounded-full`}
+                className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
               >
                 {t}
               </span>

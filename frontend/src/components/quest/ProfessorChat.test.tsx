@@ -9,7 +9,7 @@ Element.prototype.scrollIntoView = vi.fn();
 
 vi.mock("../../services/questApi", () => ({
   questApi: {
-    chat: vi.fn().mockResolvedValue({
+    replyToChat: vi.fn().mockResolvedValue({
       data: { reply: "テスト用の 博士の 返答だよ。" },
     }),
   },
