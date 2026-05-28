@@ -9,6 +9,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [excludedIDs, setExcludedIDs] = useState<number[]>([]);
   const [maxPokemonID, setMaxPokemonID] = useState(898);
+  const [maxExcludedCount, setMaxExcludedCount] = useState(30);
   const [newID, setNewID] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,6 +21,7 @@ export function SettingsPage() {
       .then((res) => {
         setExcludedIDs(res.data.excluded_pokemon_ids || []);
         if (res.data.max_pokemon_id) setMaxPokemonID(res.data.max_pokemon_id);
+        if (res.data.max_excluded_count) setMaxExcludedCount(res.data.max_excluded_count);
       })
       .catch(() => {
         setError("せっていの　読みこみに　しっぱいしました");
@@ -27,7 +29,13 @@ export function SettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const isLimitReached = excludedIDs.length >= maxExcludedCount;
+
   const handleAdd = () => {
+    if (isLimitReached) {
+      setError(`じょがいは　${maxExcludedCount}びきまでだよ`);
+      return;
+    }
     const id = parseInt(newID, 10);
     if (isNaN(id) || id < 1 || id > maxPokemonID) {
       setError(`1から${maxPokemonID}の　かずを　いれてね`);
@@ -105,9 +113,14 @@ export function SettingsPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow p-6">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
-            にがて　ポケモン　せってい
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase">
+              にがて　ポケモン　せってい
+            </h2>
+            <span className="text-xs text-gray-400 font-mono">
+              {excludedIDs.length} / {maxExcludedCount}
+            </span>
+          </div>
           <p className="text-gray-500 text-sm mb-4">
             ぼうけんに　出てきてほしくない　ポケモンの　IDを　せっていできます
           </p>
@@ -130,7 +143,7 @@ export function SettingsPage() {
             />
             <button
               onClick={handleAdd}
-              disabled={saving}
+              disabled={saving || isLimitReached}
               className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm
                          hover:bg-red-600 transition-colors disabled:opacity-50"
             >

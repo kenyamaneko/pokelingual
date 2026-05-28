@@ -3,6 +3,13 @@ import type { UserSettingsRepository } from "../domain/interfaces.js";
 import { maxPokemonID, defaultExcludedPokemonIDs } from "../service/pokeapi-service.js";
 import { handleError } from "./error.js";
 
+/**
+ * ユーザが除外指定できるポケモン数の上限。
+ * Why: quest-service の出題抽選は除外比率が上がるとリトライ失敗の確率が上がる。
+ * maxPokemonID=898 想定でこの値以下なら 10 回リトライで実質衝突しない (確率 < 1e-14)。
+ */
+export const MAX_EXCLUDED_POKEMON_COUNT = 30;
+
 /** ユーザ設定 (除外ポケモン等) のエンドポイントを束ねるハンドラ。 */
 export class SettingsHandler {
   private settingsRepo: UserSettingsRepository;
@@ -20,6 +27,7 @@ export class SettingsHandler {
       res.json({
         excluded_pokemon_ids: excluded,
         max_pokemon_id: maxPokemonID,
+        max_excluded_count: MAX_EXCLUDED_POKEMON_COUNT,
       });
     } catch (err) {
       handleError(res, err, req.path);
@@ -32,6 +40,10 @@ export class SettingsHandler {
     const { pokemon_ids } = req.body;
     if (!Array.isArray(pokemon_ids)) {
       res.status(400).json({ error: "invalid request body" });
+      return;
+    }
+    if (pokemon_ids.length > MAX_EXCLUDED_POKEMON_COUNT) {
+      res.status(400).json({ error: `excluded_pokemon_ids exceeds limit (max ${MAX_EXCLUDED_POKEMON_COUNT})` });
       return;
     }
     try {

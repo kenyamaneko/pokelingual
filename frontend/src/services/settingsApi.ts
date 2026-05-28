@@ -4,6 +4,7 @@ import api from "./api";
 export interface UserSettings {
   excluded_pokemon_ids: number[];
   max_pokemon_id: number;
+  max_excluded_count: number;
 }
 
 /** ユーザ設定エンドポイントを呼ぶ API クライアント。 */

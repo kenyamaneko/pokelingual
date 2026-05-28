@@ -1,8 +1,14 @@
 import levenshtein from "js-levenshtein";
 import { NotFoundError, ExternalServiceError } from "../apperror/apperror.js";
 import type { AIScorer, PokemonFetcher, UserSettingsRepository } from "../domain/interfaces.js";
-import type { QuestSession, ChatContext, ChatMessage } from "../types/index.js";
+import type { Pokemon, QuestSession, ChatContext, ChatMessage } from "../types/index.js";
 import { defaultExcludedPokemonIDs } from "./pokeapi-service.js";
+
+/**
+ * 出題抽選のリトライ上限。除外設定の最大数 (MAX_EXCLUDED_POKEMON_COUNT) と
+ * maxPokemonID の関係から、この回数で実質衝突確率はゼロに収束する。
+ */
+const MAX_RANDOM_PICK_RETRY = 10;
 
 /** 新しい出題ポケモンのレスポンス。ポケモン名はマスク済みの説明文を含む。 */
 export interface QuestNewResponse {
@@ -83,23 +89,26 @@ export class QuestService {
 
   /** 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。 */
   async newQuest(uid: string): Promise<QuestNewResponse> {
-    const excluded = new Set<number>();
-    try {
-      const settings = await this.settingsRepo.getSettings(uid);
-      const ids = settings.excluded_pokemon_ids ?? defaultExcludedPokemonIDs;
-      for (const id of ids) excluded.add(id);
-    } catch { /* use empty set */ }
+    const settings = await this.settingsRepo.getSettings(uid);
+    const ids = settings.excluded_pokemon_ids ?? defaultExcludedPokemonIDs;
+    const excluded = new Set<number>(ids);
 
-    let pokemon;
-    for (let i = 0; i < 10; i++) {
+    let pokemon: Pokemon | undefined;
+    for (let i = 0; i < MAX_RANDOM_PICK_RETRY; i++) {
+      let candidate: Pokemon;
       try {
-        pokemon = await this.pokemonFetcher.getRandomPokemon();
+        candidate = await this.pokemonFetcher.getRandomPokemon();
       } catch (err) {
         throw new ExternalServiceError("PokeAPI", err as Error);
       }
-      if (!excluded.has(pokemon.id)) break;
+      if (!excluded.has(candidate.id)) {
+        pokemon = candidate;
+        break;
+      }
     }
-    if (!pokemon) throw new ExternalServiceError("PokeAPI", new Error("failed to get pokemon"));
+    if (!pokemon) {
+      throw new Error(`failed to pick non-excluded pokemon after ${MAX_RANDOM_PICK_RETRY} attempts (excluded=${excluded.size})`);
+    }
 
     let descEN = pokemon.description_en;
     let descJA = pokemon.description_ja;
