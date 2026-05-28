@@ -7,22 +7,32 @@ import { getFirestore } from "firebase-admin/firestore";
 import { loadConfig } from "./config/config.js";
 import { corsConfig } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
+import { rateLimit } from "./middleware/rate-limit.js";
 import { devAuth } from "./devmock/auth.js";
 import { MockAIScorer } from "./devmock/ai-scorer.js";
 import { MockPokemonFetcher } from "./devmock/pokemon-fetcher.js";
 import { MockUserPokemonRepo } from "./devmock/user-pokemon-repo.js";
 import { MockUserSettingsRepo } from "./devmock/user-settings-repo.js";
+import { MockRateLimitRepo } from "./devmock/rate-limit-repo.js";
 import { GeminiService } from "./service/gemini-service.js";
 import { PokeAPIService, setMaxPokemonID, setDefaultExcludedPokemonIDs } from "./service/pokeapi-service.js";
 import { QuestService } from "./service/quest-service.js";
 import { CollectionService } from "./service/collection-service.js";
 import { UserPokemonRepo } from "./repository/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./repository/user-settings-repo.js";
+import { RateLimitRepo } from "./repository/rate-limit-repo.js";
 import { QuestHandler } from "./handler/quest-handler.js";
 import { CollectionHandler } from "./handler/collection-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
+import { UsageHandler } from "./handler/usage-handler.js";
 import { setupRoutes } from "./router/router.js";
-import type { AIScorer, PokemonFetcher, UserPokemonRepository, UserSettingsRepository } from "./domain/interfaces.js";
+import type {
+  AIScorer,
+  PokemonFetcher,
+  UserPokemonRepository,
+  UserSettingsRepository,
+  RateLimitRepository,
+} from "./domain/interfaces.js";
 import type { RequestHandler } from "express";
 
 const cfg = loadConfig();
@@ -31,6 +41,7 @@ let pokemonFetcher: PokemonFetcher;
 let aiScorer: AIScorer;
 let userPokemonRepo: UserPokemonRepository;
 let userSettingsRepo: UserSettingsRepository;
+let rateLimitRepo: RateLimitRepository;
 let authMiddleware: RequestHandler;
 
 if (cfg.appMode === "mock") {
@@ -39,6 +50,7 @@ if (cfg.appMode === "mock") {
   aiScorer = new MockAIScorer();
   userPokemonRepo = new MockUserPokemonRepo();
   userSettingsRepo = new MockUserSettingsRepo();
+  rateLimitRepo = new MockRateLimitRepo(cfg.perUserDailyLimit, cfg.globalDailyLimit);
   authMiddleware = devAuth();
 } else {
   // Initialize Firebase
@@ -85,23 +97,33 @@ if (cfg.appMode === "mock") {
   aiScorer = new GeminiService(vertexAI);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
+  rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
   authMiddleware = firebaseAuth(authClient, allowedEmails);
 }
 
-// Wire up dependencies
+console.log(`Rate limits: per-user=${cfg.perUserDailyLimit}/day, global=${cfg.globalDailyLimit}/day`);
+
 const questService = new QuestService(pokemonFetcher, aiScorer, userSettingsRepo);
 const collectionService = new CollectionService(userPokemonRepo, pokemonFetcher);
 
 const questHandler = new QuestHandler(questService, userPokemonRepo, aiScorer);
 const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo);
 const settingsHandler = new SettingsHandler(userSettingsRepo);
+const usageHandler = new UsageHandler(rateLimitRepo);
 
-// Setup Express
 const app = express();
 app.use(express.json());
 app.use(corsConfig(cfg.frontendURL));
 
-const apiRouter = setupRoutes(authMiddleware, questHandler, collectionHandler, settingsHandler);
+const rateLimitMiddleware = rateLimit(rateLimitRepo);
+const apiRouter = setupRoutes(
+  authMiddleware,
+  rateLimitMiddleware,
+  questHandler,
+  collectionHandler,
+  settingsHandler,
+  usageHandler,
+);
 app.use("/api", apiRouter);
 
 app.listen(parseInt(cfg.port), () => {

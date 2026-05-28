@@ -16,3 +16,15 @@ export class ExternalServiceError extends Error {
     this.cause = err;
   }
 }
+
+export type RateLimitKind = "user" | "global";
+
+export class RateLimitError extends Error {
+  kind: RateLimitKind;
+
+  constructor(kind: RateLimitKind) {
+    super(`rate limit exceeded: ${kind}`);
+    this.name = "RateLimitError";
+    this.kind = kind;
+  }
+}

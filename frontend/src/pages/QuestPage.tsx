@@ -6,6 +6,7 @@ import { TranslationInput } from "../components/quest/TranslationInput";
 import { ScoreDisplay } from "../components/quest/ScoreDisplay";
 import { NameGuess } from "../components/quest/NameGuess";
 import { CaptureResult } from "../components/quest/CaptureResult";
+import { useUsage } from "../contexts/UsageContext";
 import type {
   QuestNewResponse,
   ScoreResponse,
@@ -22,6 +23,11 @@ type QuestPhase =
   | "capturing"
   | "result"
   | "error";
+
+// 429 は UsageProvider が グローバルにモーダル表示するため、各ページのエラー文言は出さない
+function isRateLimitError(err: unknown): boolean {
+  return axios.isAxiosError(err) && err.response?.status === 429;
+}
 
 function getErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
@@ -70,6 +76,7 @@ export function QuestPage() {
   );
   const [userTranslation, setUserTranslation] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { refresh: refreshUsage } = useUsage();
 
   const startNewQuest = useCallback(async () => {
     setPhase("loading");
@@ -100,7 +107,9 @@ export function QuestPage() {
       const res = await questApi.scoreTranslation(translation);
       setScore(res.data);
       setPhase("guessing");
+      refreshUsage();
     } catch (err) {
+      if (isRateLimitError(err)) return;
       setError(getErrorMessage(err, "さいてんに　しっぱいしました"));
     }
   };
