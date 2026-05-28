@@ -23,15 +23,12 @@ export function setupRoutes(
   router.post("/quest/capture", questHandler.attemptCapture);
   router.post("/quest/chat", rateLimitMiddleware, questHandler.chat);
 
-  // Collection routes
   router.get("/collection", collectionHandler.getCollection);
   router.get("/collection/:id", collectionHandler.getPokemonDetail);
 
-  // Settings routes
   router.get("/settings", settingsHandler.getSettings);
   router.put("/settings/excluded-pokemon", settingsHandler.updateExcludedPokemon);
 
-  // Usage
   router.get("/usage", usageHandler.getUsage);
 
   return router;

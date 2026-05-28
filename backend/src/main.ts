@@ -53,14 +53,12 @@ if (cfg.appMode === "mock") {
   rateLimitRepo = new MockRateLimitRepo(cfg.perUserDailyLimit, cfg.globalDailyLimit);
   authMiddleware = devAuth();
 } else {
-  // Initialize Firebase
   const firebaseApp = initializeApp({
     credential: applicationDefault(),
   });
   const authClient = getAuth(firebaseApp);
   const firestoreClient = getFirestore(firebaseApp);
 
-  // Initialize Gemini (Vertex AI)
   const vertexAI = new VertexAI({
     project: cfg.gcpProject,
     location: cfg.gcpLocation,
@@ -78,7 +76,6 @@ if (cfg.appMode === "mock") {
     console.log(`Loaded ${allowedEmails.length} allowed email(s) from Firestore (whitelist mode)`);
   }
 
-  // Read app config from Firestore
   const appConfigDoc = await firestoreClient.collection("config").doc("app").get();
   if (appConfigDoc.exists) {
     const data = appConfigDoc.data();
