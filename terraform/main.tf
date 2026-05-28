@@ -164,6 +164,20 @@ resource "google_identity_platform_config" "auth" {
   depends_on = [google_project_service.apis]
 }
 
+# Google Sign-In プロバイダ。client_id/secret が空なら無効化し、設定済みなら有効化する
+resource "google_identity_platform_default_supported_idp_config" "google" {
+  count = var.google_oauth_client_id != "" ? 1 : 0
+
+  provider      = google-beta
+  project       = var.project_id
+  idp_id        = "google.com"
+  client_id     = var.google_oauth_client_id
+  client_secret = var.google_oauth_client_secret
+  enabled       = true
+
+  depends_on = [google_identity_platform_config.auth]
+}
+
 # ============================================================
 # Artifact Registry (for Docker images)
 # ============================================================

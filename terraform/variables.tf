@@ -35,3 +35,17 @@ variable "alert_email" {
   type        = string
   default     = "kenya.m.amaoto@gmail.com"
 }
+
+# Google Sign-In 用 OAuth クライアント。GCP コンソールで手動作成し、tfvars または環境変数で注入する
+variable "google_oauth_client_id" {
+  description = "OAuth 2.0 client ID for Google Sign-In (Identity Platform)"
+  type        = string
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "OAuth 2.0 client secret for Google Sign-In (Identity Platform)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

@@ -1,6 +1,6 @@
 import express from "express";
 import { VertexAI } from "@google-cloud/vertexai";
-import { initializeApp, cert, applicationDefault } from "firebase-admin/app";
+import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -66,18 +66,17 @@ if (cfg.appMode === "mock") {
     location: cfg.gcpLocation,
   });
 
-  // Read allowed emails from Firestore
+  // ホワイトリストは config/auth.allowed_emails で運用。
+  // 空配列 or ドキュメント不在は「公開モード（誰でも認証通過後にアクセス可）」として明示的に許容する
   const configDoc = await firestoreClient.collection("config").doc("auth").get();
-  if (!configDoc.exists) {
-    console.error("config/auth document not found in Firestore");
-    process.exit(1);
-  }
-  const allowedEmails: string[] = (configDoc.data()?.allowed_emails as string[]) ?? [];
+  const allowedEmails: string[] = configDoc.exists
+    ? (configDoc.data()?.allowed_emails as string[]) ?? []
+    : [];
   if (allowedEmails.length === 0) {
-    console.error("config/auth has no allowed_emails configured — refusing to start");
-    process.exit(1);
+    console.warn("config/auth.allowed_emails is empty — running in PUBLIC mode (any authenticated user allowed)");
+  } else {
+    console.log(`Loaded ${allowedEmails.length} allowed email(s) from Firestore (whitelist mode)`);
   }
-  console.log(`Loaded ${allowedEmails.length} allowed email(s) from Firestore`);
 
   // Read app config from Firestore
   const appConfigDoc = await firestoreClient.collection("config").doc("app").get();
