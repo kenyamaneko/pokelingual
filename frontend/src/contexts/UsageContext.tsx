@@ -25,6 +25,7 @@ const UsageContext = createContext<UsageContextValue>({
   refresh: async () => {},
 });
 
+/** 当日のAPI利用状況を購読し、レート制限到達時にモーダルを表示するプロバイダ。 */
 export function UsageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [usage, setUsage] = useState<DailyUsage | null>(null);
@@ -68,5 +69,6 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** 当日の利用状況と手動リフレッシュ関数を取得するフック。 */
 // eslint-disable-next-line react-refresh/only-export-components
 export const useUsage = () => useContext(UsageContext);
