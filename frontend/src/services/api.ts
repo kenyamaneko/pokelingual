@@ -7,6 +7,7 @@ import {
   type RateLimitKind,
 } from "./rateLimitEvents";
 
+/** バックエンド API への共通 axios クライアント。認証トークン付与とレート制限通知のインターセプタを持つ。 */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + "/api",
 });

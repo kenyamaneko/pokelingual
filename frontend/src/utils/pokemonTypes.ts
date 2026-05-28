@@ -1,3 +1,4 @@
+/** ポケモンタイプ名から Tailwind 背景色クラスへのマップ。 */
 export const typeColors: Record<string, string> = {
   normal: "bg-gray-400",
   fire: "bg-red-500",

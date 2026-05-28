@@ -9,6 +9,7 @@ import type {
   ChatResponse,
 } from "../types";
 
+/** クエスト関連エンドポイント (出題・採点・推測・捕獲・チャット) を呼ぶ API クライアント。 */
 export const questApi = {
   newQuest: () => api.get<QuestNewResponse>("/quest/new"),
   scoreTranslation: (translation: string) =>

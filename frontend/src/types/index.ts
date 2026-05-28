@@ -1,3 +1,4 @@
+/** /quest/new のレスポンス。マスク済み英語説明文を含む。 */
 export interface QuestNewResponse {
   pokemon_id: number;
   description_en: string;
@@ -5,12 +6,14 @@ export interface QuestNewResponse {
   is_mythical: boolean;
 }
 
+/** /quest/score のレスポンス。スコア・講評・日本語説明 (マスク済み) を含む。 */
 export interface ScoreResponse {
   score: number;
   review: string;
   description_ja: string;
 }
 
+/** /quest/guess-name のレスポンス。正解時はボール種別、不正解時は残試行を返す。 */
 export interface GuessResponse {
   correct: boolean;
   ball_type?: string;
@@ -21,6 +24,7 @@ export interface GuessResponse {
   reveal_name_ja?: string;
 }
 
+/** /quest/capture のレスポンス。捕獲成否と表示用のポケモン情報を含む。 */
 export interface CaptureResponse {
   captured: boolean;
   probability: number;
@@ -40,11 +44,13 @@ export interface CaptureResponse {
   is_mythical: boolean;
 }
 
+/** チャットの 1 発言。 */
 export interface ChatMessage {
   role: "user" | "professor";
   content: string;
 }
 
+/** /quest/chat に渡すクエスト文脈。 */
 export interface ChatContext {
   description_en: string;
   description_ja: string;
@@ -55,10 +61,12 @@ export interface ChatContext {
   name_ja: string;
 }
 
+/** /quest/chat のレスポンス。 */
 export interface ChatResponse {
   reply: string;
 }
 
+/** 図鑑一覧の 1 エントリ。 */
 export interface CollectionEntry {
   pokemon_id: number;
   name_en: string;
@@ -69,12 +77,14 @@ export interface CollectionEntry {
   best_score: number;
 }
 
+/** 図鑑説明文の英日ペア。複数バージョンをまとめる。 */
 export interface FlavorTextPair {
   version_names: string[];
   description_en: string;
   description_ja: string;
 }
 
+/** /collection/:id のレスポンス。ユーザ実績と PokeAPI の詳細情報を合成した形。 */
 export interface PokemonDetail {
   pokemon_id: number;
   status: string;

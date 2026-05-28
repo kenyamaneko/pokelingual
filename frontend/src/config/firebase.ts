@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
+/** モック (dev) モードで動作中かどうかのフラグ。Firebase 初期化を分岐するのに使う。 */
 export const isDevMode = import.meta.env.VITE_APP_MODE === "mock";
 
 const firebaseConfig = {
