@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+/** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
   appMode: string;
   port: string;
@@ -21,6 +22,7 @@ function getIntEnv(key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+/** 環境変数から Config を構築する。未設定値はデフォルトを使う。 */
 export function loadConfig(): Config {
   return {
     appMode: getEnv("APP_MODE", "mock"),

@@ -5,6 +5,7 @@ import type { CollectionHandler } from "../handler/collection-handler.js";
 import type { SettingsHandler } from "../handler/settings-handler.js";
 import type { UsageHandler } from "../handler/usage-handler.js";
 
+/** 認証ミドルウェアを噛ませた API ルータを構築して返す。 */
 export function setupRoutes(
   authMiddleware: RequestHandler,
   rateLimitMiddleware: RequestHandler,

@@ -1,3 +1,4 @@
+/** 進行中のクエストセッション。出題から捕獲までの状態を保持する。 */
 export interface QuestSession {
   pokemon_id: number;
   description_en: string;
@@ -17,16 +18,19 @@ export interface QuestSession {
   name_guessed: boolean;
 }
 
+/** AIScorer.scoreTranslation の戻り値。 */
 export interface ScoreResult {
   score: number;
   review: string;
 }
 
+/** チャットの 1 発言。 */
 export interface ChatMessage {
   role: "user" | "professor";
   content: string;
 }
 
+/** オーキド博士チャットに与えるクエスト文脈。 */
 export interface ChatContext {
   description_en: string;
   description_ja: string;

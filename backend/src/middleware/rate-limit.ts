@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction, RequestHandler } from "express";
 import type { RateLimitRepository } from "../domain/interfaces.js";
 import { handleError } from "../handler/error.js";
 
+/** RateLimitRepository を介してリクエストを検証・カウントするミドルウェアを返す。 */
 export function rateLimit(repo: RateLimitRepository): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
     const uid = res.locals.uid as string;

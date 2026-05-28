@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import type { Auth } from "firebase-admin/auth";
 
+/** Firebase ID トークンを検証し、許可メールならば uid を res.locals に格納するミドルウェアを返す。 */
 export function firebaseAuth(authClient: Auth, allowedEmails: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
