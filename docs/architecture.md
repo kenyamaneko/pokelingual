@@ -46,6 +46,7 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 | `AIScorer` | `GeminiService` | `MockAIScorer` | - |
 | `UserPokemonRepository` | `UserPokemonRepo` | `MockUserPokemonRepo` | - |
 | `UserSettingsRepository` | `UserSettingsRepo` | `MockUserSettingsRepo` | - |
+| `RateLimitRepository` | `RateLimitRepo`（Firestore） | `MockRateLimitRepo`（メモリ） | - |
 
 ### 依存性注入
 
@@ -155,6 +156,38 @@ Client → Cloud Run (IAM: allUsers) → CORS middleware → Firebase Auth middl
 - アプリレベルの認証は `middleware/auth.ts` が担当
 - `allowed_emails`: Firestore `config/auth` ドキュメントから起動時に読み込み
 - メールがホワイトリストにない場合は 403
+- **`allowed_emails` が空配列・ドキュメント不在の場合は公開モード**（誰でも認証通過後にアクセス可）
+  - dev 環境: ホワイトリスト運用、prod 環境: 空配列で公開
+
+### コスト管理層（レートリミット）
+
+Gemini API の従量課金が予算（月 5,000円）を超えないよう、AI 呼び出しに2層の日次上限を設ける。
+詳細は [ADR-011](adr/011-rate-limiting.md) を参照。
+
+```
+Auth middleware → Rate limit middleware → Handler
+                       │
+                       ▼
+                  RateLimitRepo
+                  ├ users/{uid}/daily_usage/{YYYY-MM-DD}  → per-user カウンタ
+                  └ system/daily_usage/{YYYY-MM-DD}       → global カウンタ
+```
+
+| 制限 | 値 | 単位 |
+|---|---|---|
+| 1ユーザー1日あたり | 30回（環境変数 `PER_USER_DAILY_LIMIT`） | AI 呼び出し |
+| 全体1日あたり | 1,500回（環境変数 `GLOBAL_DAILY_LIMIT`） | AI 呼び出し |
+| リセット時刻 | JST 0:00 | 固定 |
+
+- カウント対象: `/api/quest/score` と `/api/quest/chat`（Gemini を呼ぶエンドポイント）
+- グローバル上限を先に判定（混雑時に「混雑」と「あなたが使い切った」を区別可能）
+- 上限到達時は HTTP 429 + `kind: "user" | "global"` を返す
+- Firestore トランザクションで原子的にチェック+インクリメント
+- Gemini モデルは `thinkingBudget: 0` で thinking トークンを無効化（4倍コスト削減）
+
+**Billing Budget アラート（二重防御）:**
+- アプリ層レートリミットがバグった時の保険として、GCP Billing Budget で 50/80/100% メール通知
+- 自動停止は実装しない（Billing 通知は数時間遅延、アプリ層の上限が実質的な保護）
 
 ### ロギング
 
@@ -216,6 +249,7 @@ loading → quest → translating → scoring → guessing → result
 | Vertex AI | Gemini（ADC 認証、API キー不要） |
 | WIF Pool + Provider | GitHub Actions → GCP 認証（JSON キー不要） |
 | Cloud Monitoring | 5xx アラート、レイテンシアラート、エラーログアラート |
+| Billing Budget | 月次予算アラート（50/80/100% でメール通知） |
 
 **Cloud Run は Terraform 管理外** — GitHub Actions の `gcloud run deploy` が作成・更新。
 
@@ -232,6 +266,12 @@ users/
       {pokemon_id}              # { pokemon_id, name_en, name_ja, sprite_url, score, status, ... }
     settings/
       preferences               # { excluded_pokemon_ids: [167, 168, ...] }
+    daily_usage/
+      {YYYY-MM-DD}              # { count, updated_at } — per-user レートリミットカウンタ
+
+system/
+  daily_usage/
+    {YYYY-MM-DD}                # { count, updated_at } — global レートリミットカウンタ
 ```
 
 ### 環境
