@@ -6,12 +6,21 @@ interface Props {
   onDismiss: () => void;
 }
 
+const MS_PER_SECOND = 1000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+/** UTC からの JST (Asia/Tokyo) オフセット。 */
+const JST_OFFSET_MS = 9 * MS_PER_HOUR;
+/** カウントダウン更新間隔。1 秒毎に再計算する。 */
+const COUNTDOWN_TICK_MS = MS_PER_SECOND;
+
 /** レート制限到達を通知し、JST 0:00 までのカウントダウンを表示するモーダル。 */
 export function RateLimitModal({ detail, onDismiss }: Props) {
   const [countdown, setCountdown] = useState(formatUntilJstMidnight());
 
   useEffect(() => {
-    const id = setInterval(() => setCountdown(formatUntilJstMidnight()), 1000);
+    const id = setInterval(() => setCountdown(formatUntilJstMidnight()), COUNTDOWN_TICK_MS);
     return () => clearInterval(id);
   }, []);
 
@@ -54,15 +63,14 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
 }
 
 function formatUntilJstMidnight(): string {
-  // JST の翌日 0:00 までの残時間を hh:mm:ss で返す。ローカルTZに依存しないよう UTC で計算
-  const nowUtcMs = Date.now();
-  const nowJstMs = nowUtcMs + 9 * 60 * 60 * 1000;
-  const msSinceJstMidnight = nowJstMs % (24 * 60 * 60 * 1000);
-  const remaining = 24 * 60 * 60 * 1000 - msSinceJstMidnight;
+  // ローカルTZに依存しないよう UTC ベースで JST 翌日 0:00 までの残時間を hh:mm:ss で返す。
+  const nowJstMs = Date.now() + JST_OFFSET_MS;
+  const msSinceJstMidnight = nowJstMs % MS_PER_DAY;
+  const remaining = MS_PER_DAY - msSinceJstMidnight;
 
-  const h = Math.floor(remaining / (60 * 60 * 1000));
-  const m = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-  const s = Math.floor((remaining % (60 * 1000)) / 1000);
+  const h = Math.floor(remaining / MS_PER_HOUR);
+  const m = Math.floor((remaining % MS_PER_HOUR) / MS_PER_MINUTE);
+  const s = Math.floor((remaining % MS_PER_MINUTE) / MS_PER_SECOND);
 
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
