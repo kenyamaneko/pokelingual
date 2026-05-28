@@ -39,8 +39,9 @@ export function UsageProvider({ children }: { children: ReactNode }) {
     try {
       const res = await usageApi.get();
       setUsage(res.data);
-    } catch {
-      // 取得失敗時はヘッダー非表示で良い（致命的でない）
+    } catch (err) {
+      // ヘッダーのレート残量表示は補助情報なので UI 上は無視するが、診断のためログは残す
+      console.warn("failed to fetch usage", err);
     }
   }, [user]);
 

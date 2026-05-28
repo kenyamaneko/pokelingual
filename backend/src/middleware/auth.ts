@@ -30,7 +30,8 @@ export function firebaseAuth(authClient: Auth, allowedEmails: string[]) {
 
       res.locals.uid = token.uid;
       next();
-    } catch {
+    } catch (err) {
+      console.warn("token verification failed", { error: String(err) });
       res.status(401).json({ error: "invalid token" });
     }
   };
