@@ -13,6 +13,12 @@ export interface CollectionEntry {
   best_score: number;
 }
 
+/** getCollection の戻り値。表示可能なエントリと、PokeAPI 取得失敗で除外された件数を返す。 */
+export interface CollectionResult {
+  entries: CollectionEntry[];
+  unavailable_count: number;
+}
+
 /** ポケモン詳細レスポンス。ユーザ実績と PokeAPI 情報を合成して返す。 */
 export interface PokemonDetailResponse extends UserPokemon {
   name_en: string;
@@ -37,9 +43,10 @@ export class CollectionService {
   }
 
   /** ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。 */
-  async getCollection(uid: string): Promise<CollectionEntry[]> {
+  async getCollection(uid: string): Promise<CollectionResult> {
     const pokemons = await this.repo.getCollection(uid);
     const entries: CollectionEntry[] = [];
+    let unavailableCount = 0;
 
     for (const up of pokemons) {
       try {
@@ -54,11 +61,14 @@ export class CollectionService {
           best_score: up.best_score,
         });
       } catch (err) {
-        console.warn(`failed to fetch pokemon data, skipping pokemon_id=${up.pokemon_id}`, err);
+        // PokeAPI 単体の取得失敗を全体失敗にすると図鑑が完全に開けなくなる。
+        // 件数をクライアントに伝えてユーザにフィードバックする方針。
+        unavailableCount++;
+        console.error("failed to fetch pokemon data", { pokemon_id: up.pokemon_id, error: String(err) });
       }
     }
 
-    return entries;
+    return { entries, unavailable_count: unavailableCount };
   }
 
   /** 特定ポケモンのユーザ実績と PokeAPI 詳細を合成して返す。 */

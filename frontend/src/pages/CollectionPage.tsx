@@ -9,10 +9,13 @@ export function CollectionPage() {
   const [collection, setCollection] = useState<CollectionEntry[]>([]);
   const [totalAvailable, setTotalAvailable] = useState(898);
   const [capturedCount, setCapturedCount] = useState(0);
+  const [unavailableCount, setUnavailableCount] = useState(0);
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetail | null>(
     null
   );
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   useEffect(() => {
     collectionApi
@@ -21,17 +24,23 @@ export function CollectionPage() {
         setCollection(res.data.pokemon || []);
         setTotalAvailable(res.data.total_available);
         setCapturedCount(res.data.captured_count ?? 0);
+        setUnavailableCount(res.data.unavailable_count ?? 0);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("failed to load collection", err);
+        setListError("ずかんの　よみこみに　しっぱいしました");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const handleSelect = async (id: number) => {
+    setDetailError(null);
     try {
       const res = await collectionApi.getPokemonDetail(id);
       setSelectedPokemon(res.data);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("failed to load pokemon detail", err);
+      setDetailError("ポケモンの　しょうさいを　よみこめなかったよ");
     }
   };
 
@@ -47,10 +56,24 @@ export function CollectionPage() {
           </span>
         </div>
 
+        {unavailableCount > 0 && (
+          <p className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm rounded-xl px-4 py-2 mb-4">
+            {unavailableCount}びき　よみこめなかったよ。あとで　もう一度　ためしてね
+          </p>
+        )}
+
+        {detailError && (
+          <p className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2 mb-4">
+            {detailError}
+          </p>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500" />
           </div>
+        ) : listError ? (
+          <p className="text-center text-red-500 py-20">{listError}</p>
         ) : (
           <PokemonGrid pokemon={collection} onSelect={handleSelect} />
         )}

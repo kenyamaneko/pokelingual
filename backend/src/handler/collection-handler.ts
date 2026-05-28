@@ -18,12 +18,13 @@ export class CollectionHandler {
   getCollection = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
-      const entries = await this.collectionService.getCollection(uid);
+      const { entries, unavailable_count } = await this.collectionService.getCollection(uid);
       const capturedCount = entries.filter((e) => e.status === "captured").length;
       res.json({
         pokemon: entries,
         total_available: maxPokemonID,
         captured_count: capturedCount,
+        unavailable_count,
       });
     } catch (err) {
       handleError(res, err, req.path);
