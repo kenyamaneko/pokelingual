@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { AIScorer, UserPokemonRepository } from "../domain/interfaces.js";
 import type { QuestService, ChatRequest } from "../service/quest-service.js";
+import { ExternalServiceError } from "../apperror/apperror.js";
 import { handleError } from "./error.js";
 
 /** クエスト関連エンドポイント (出題・採点・名前推測・捕獲・チャット) を束ねるハンドラ。 */
@@ -66,7 +67,7 @@ export class QuestHandler {
       try {
         await this.repo.upsertEncounter(uid, resp.pokemon_id, resp.score, resp.captured);
       } catch (err) {
-        console.error("failed to persist encounter", { error: String(err), uid, pokemon_id: resp.pokemon_id });
+        throw new ExternalServiceError("Firestore", err as Error);
       }
       res.json(resp);
     } catch (err) {
@@ -85,8 +86,7 @@ export class QuestHandler {
       const reply = await this.aiScorer.chat(body.context, body.messages);
       res.json({ reply });
     } catch (err) {
-      console.error("professor chat failed", { error: String(err) });
-      res.status(502).json({ error: "AI service is temporarily unavailable" });
+      handleError(res, new ExternalServiceError("Gemini", err as Error), req.path);
     }
   };
 }
