@@ -44,7 +44,7 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    refresh();
+    refresh(); // eslint-disable-line react-hooks/set-state-in-effect -- initial data fetch on mount
   }, [refresh]);
 
   useEffect(() => {
