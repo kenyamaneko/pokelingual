@@ -76,6 +76,7 @@ export function QuestPage() {
     null
   );
   const [userTranslation, setUserTranslation] = useState("");
+  const [ballType, setBallType] = useState<BallType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { refresh: refreshUsage } = useUsage();
 
@@ -86,6 +87,7 @@ export function QuestPage() {
     setGuessResult(null);
     setCaptureResult(null);
     setUserTranslation("");
+    setBallType(null);
     setError(null);
 
     try {
@@ -119,17 +121,17 @@ export function QuestPage() {
     try {
       const res = await questApi.guessName(guess);
       setGuessResult(res.data);
+      if (res.data.ball_type) {
+        setBallType(res.data.ball_type as BallType);
+      }
     } catch (err) {
       setError(getErrorMessage(err, "名前の　はんていに　しっぱいしました"));
     }
   };
 
-  const getBallType = (): BallType => {
-    if (guessResult?.ball_type) return guessResult.ball_type as BallType;
-    return "poke";
-  };
-
   const handleSkipGuess = () => {
+    // 名前推測スキップ時はポケボール固定で捕獲フェーズへ進む仕様
+    setBallType("poke");
     setPhase("capturing");
   };
 
@@ -237,29 +239,26 @@ export function QuestPage() {
           </>
         )}
 
-        {phase === "capturing" && (() => {
-          const ball = getBallType();
-          return (
-            <div className="flex flex-col items-center justify-center py-20">
-              <img
-                src={BALL_SPRITES[ball]}
-                alt={BALL_NAMES[ball]}
-                className="w-24 h-24 animate-bounce mb-6"
-              />
-              <p className="text-gray-600 mb-6 text-lg">
-                {BALL_NAMES[ball]}を　手に　入れた！
-              </p>
-              <button
-                onClick={handleCapture}
-                className="bg-red-500 text-white py-4 px-12 rounded-2xl font-bold text-xl
-                           hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
-                           active:scale-95 transform"
-              >
-                {BALL_NAMES[ball]}を　使う
-              </button>
-            </div>
-          );
-        })()}
+        {phase === "capturing" && ballType && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <img
+              src={BALL_SPRITES[ballType]}
+              alt={BALL_NAMES[ballType]}
+              className="w-24 h-24 animate-bounce mb-6"
+            />
+            <p className="text-gray-600 mb-6 text-lg">
+              {BALL_NAMES[ballType]}を　手に　入れた！
+            </p>
+            <button
+              onClick={handleCapture}
+              className="bg-red-500 text-white py-4 px-12 rounded-2xl font-bold text-xl
+                         hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
+                         active:scale-95 transform"
+            >
+              {BALL_NAMES[ballType]}を　使う
+            </button>
+          </div>
+        )}
 
         {phase === "result" && captureResult && (
           <CaptureResult
