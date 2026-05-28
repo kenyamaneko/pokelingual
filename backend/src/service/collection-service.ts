@@ -2,6 +2,7 @@ import { ExternalServiceError } from "../apperror/apperror.js";
 import type { PokemonFetcher, UserPokemonRepository } from "../domain/interfaces.js";
 import type { FlavorTextPair, UserPokemon } from "../types/index.js";
 
+/** 図鑑一覧の 1 エントリ。ユーザ実績と表示用のポケモン基本情報を含む。 */
 export interface CollectionEntry {
   pokemon_id: number;
   name_en: string;
@@ -12,6 +13,7 @@ export interface CollectionEntry {
   best_score: number;
 }
 
+/** ポケモン詳細レスポンス。ユーザ実績と PokeAPI 情報を合成して返す。 */
 export interface PokemonDetailResponse extends UserPokemon {
   name_en: string;
   name_ja: string;
@@ -24,6 +26,7 @@ export interface PokemonDetailResponse extends UserPokemon {
   flavor_texts?: FlavorTextPair[];
 }
 
+/** 図鑑コレクションの取得・整形ロジックを束ねるサービス。 */
 export class CollectionService {
   private repo: UserPokemonRepository;
   private pokemonFetcher: PokemonFetcher;
@@ -33,6 +36,7 @@ export class CollectionService {
     this.pokemonFetcher = pokemonFetcher;
   }
 
+  /** ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。 */
   async getCollection(uid: string): Promise<CollectionEntry[]> {
     const pokemons = await this.repo.getCollection(uid);
     const entries: CollectionEntry[] = [];
@@ -57,6 +61,7 @@ export class CollectionService {
     return entries;
   }
 
+  /** 特定ポケモンのユーザ実績と PokeAPI 詳細を合成して返す。 */
   async getPokemonDetail(uid: string, pokemonID: number): Promise<PokemonDetailResponse> {
     const userPokemon = await this.repo.getPokemon(uid, pokemonID);
 

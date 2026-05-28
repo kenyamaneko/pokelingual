@@ -23,10 +23,14 @@ const versionDisplayNames: Record<string, string> = {
   "shield": "シールド",
 };
 
+/** 抽選対象とする最大ポケモンID。Firestore 設定があれば起動時に上書きされる。 */
 export let maxPokemonID = 898;
+/** デフォルトで出題から除外するポケモンIDリスト。Firestore 設定があれば起動時に上書きされる。 */
 export let defaultExcludedPokemonIDs = [167, 168, 595, 596, 751, 752];
 
+/** maxPokemonID を更新する。起動時の Firestore 設定読み込みから呼ばれる。 */
 export function setMaxPokemonID(id: number) { maxPokemonID = id; }
+/** defaultExcludedPokemonIDs を更新する。起動時の Firestore 設定読み込みから呼ばれる。 */
 export function setDefaultExcludedPokemonIDs(ids: number[]) { defaultExcludedPokemonIDs = ids; }
 
 interface PokeAPISpeciesResponse {
@@ -52,14 +56,17 @@ interface PokeAPIPokemonResponse {
   weight: number;
 }
 
+/** PokeAPI から種別情報を取得しメモリキャッシュする PokemonFetcher 実装。 */
 export class PokeAPIService implements PokemonFetcher {
   private cache = new Map<number, Pokemon>();
 
+  /** ランダムなポケモンを 1 体取得する。 */
   async getRandomPokemon(): Promise<Pokemon> {
     const id = Math.floor(Math.random() * maxPokemonID) + 1;
     return this.getPokemonByID(id);
   }
 
+  /** ID 指定でポケモンを取得する。キャッシュ済みなら API は叩かない。 */
   async getPokemonByID(id: number): Promise<Pokemon> {
     const cached = this.cache.get(id);
     if (cached) return cached;

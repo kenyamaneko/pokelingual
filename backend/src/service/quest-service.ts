@@ -4,6 +4,7 @@ import type { AIScorer, PokemonFetcher, UserSettingsRepository } from "../domain
 import type { QuestSession, ChatContext, ChatMessage } from "../types/index.js";
 import { defaultExcludedPokemonIDs } from "./pokeapi-service.js";
 
+/** 新しい出題ポケモンのレスポンス。ポケモン名はマスク済みの説明文を含む。 */
 export interface QuestNewResponse {
   pokemon_id: number;
   description_en: string;
@@ -11,12 +12,14 @@ export interface QuestNewResponse {
   is_mythical: boolean;
 }
 
+/** 翻訳採点結果。スコア・講評・日本語版説明 (マスク済み) を返す。 */
 export interface ScoreResponse {
   score: number;
   review: string;
   description_ja: string;
 }
 
+/** 名前推測の判定結果。正解時は付与ボール種別、不正解時は残り試行回数を返す。 */
 export interface GuessResponse {
   correct: boolean;
   ball_type?: string;
@@ -27,6 +30,7 @@ export interface GuessResponse {
   reveal_name_ja?: string;
 }
 
+/** 捕獲試行結果。捕獲成否と表示用のポケモン情報を含む。 */
 export interface CaptureResponse {
   captured: boolean;
   probability: number;
@@ -46,15 +50,21 @@ export interface CaptureResponse {
   is_mythical: boolean;
 }
 
+/** オーキド博士チャットへのリクエスト。会話履歴と現クエストのコンテキストを含む。 */
 export interface ChatRequest {
   context: ChatContext;
   messages: ChatMessage[];
 }
 
+/** オーキド博士チャットのレスポンス。 */
 export interface ChatResponse {
   reply: string;
 }
 
+/**
+ * クエストの出題・採点・名前推測・捕獲のドメインロジックを束ねるサービス。
+ * セッションはユーザ uid ごとにメモリ保持する。
+ */
 export class QuestService {
   private pokemonFetcher: PokemonFetcher;
   private aiScorer: AIScorer;
@@ -71,6 +81,7 @@ export class QuestService {
     this.settingsRepo = settingsRepo;
   }
 
+  /** 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。 */
   async newQuest(uid: string): Promise<QuestNewResponse> {
     const excluded = new Set<number>();
     try {
@@ -126,6 +137,7 @@ export class QuestService {
     };
   }
 
+  /** AIScorer で翻訳を採点し、結果をセッションへ記録する。 */
   async scoreTranslation(uid: string, translation: string): Promise<ScoreResponse> {
     const session = this.getSession(uid);
 
@@ -145,6 +157,7 @@ export class QuestService {
     };
   }
 
+  /** 名前推測を判定し、正解ならボール種別を確定、不正解なら残り試行を返す。 */
   guessName(uid: string, guess: string): GuessResponse {
     const session = this.getSession(uid);
 
@@ -188,6 +201,7 @@ export class QuestService {
     return { correct: false, attempts_remaining: remaining };
   }
 
+  /** スコア・BST・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。 */
   attemptCapture(uid: string): CaptureResponse {
     const session = this.getSession(uid);
 
@@ -227,6 +241,7 @@ export class QuestService {
   }
 }
 
+/** スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。 */
 export function calculateCaptureRate(score: number, bst: number, ballMultiplier: number): number {
   const x = bst / 100.0;
   const s = score / 100.0;
@@ -243,6 +258,7 @@ const pluralHints = new Set([
   "several", "many", "multiple", "few", "these", "those", "numerous",
 ]);
 
+/** 説明文中のポケモン名英語表記を "this Pokémon" / "of these Pokémon" に置換する。 */
 export function maskPokemonNameEN(text: string, name: string): string {
   if (!name) return text;
 
@@ -288,6 +304,7 @@ export function maskPokemonNameEN(text: string, name: string): string {
   return result;
 }
 
+/** 説明文中のポケモン名日本語表記を "この ポケモン" に置換する。 */
 export function maskPokemonNameJA(text: string, name: string): string {
   if (!name) return text;
   return text.replaceAll(name, "この ポケモン");

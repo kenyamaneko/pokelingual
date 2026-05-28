@@ -8,6 +8,7 @@ type GenerationConfigWithThinking = GenerationConfig & {
   thinkingConfig?: { thinkingBudget: number };
 };
 
+/** Vertex AI 経由で Gemini を呼び出す AIScorer 実装。翻訳採点と教授チャットを担う。 */
 export class GeminiService implements AIScorer {
   private model: GenerativeModel;
 
@@ -18,6 +19,7 @@ export class GeminiService implements AIScorer {
     });
   }
 
+  /** 英日翻訳の精度を 0-100 で採点し、講評文を返す。 */
   async scoreTranslation(englishText: string, japaneseTranslation: string): Promise<ScoreResult> {
     const prompt = `You are an English-to-Japanese translation evaluator for a language learning app.
 
@@ -66,6 +68,7 @@ Respond with ONLY the JSON, no other text.`;
     return scoreResult;
   }
 
+  /** クエスト文脈と会話履歴を踏まえてオーキド博士キャラとして応答する。 */
   async chat(chatCtx: ChatContext, messages: ChatMessage[]): Promise<string> {
     let history = "";
     for (const m of messages) {
