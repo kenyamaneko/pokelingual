@@ -10,6 +10,22 @@ import { defaultExcludedPokemonIDs } from "./pokeapi-service.js";
  */
 const MAX_RANDOM_PICK_RETRY = 10;
 
+/** ポケモン名推測の最大試行回数。これを超えるとポケボール固定での捕獲フェーズへ。 */
+const MAX_NAME_GUESS_ATTEMPTS = 3;
+
+/** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
+const FUZZY_MATCH_MIN_NAME_LENGTH = 3;
+
+/** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
+const FUZZY_MATCH_MAX_DISTANCE = 2;
+
+/** ボール種別ごとの捕獲確率倍率。great=英語名正解、ultra=日本語名正解、poke=不正解。 */
+const BALL_MULTIPLIER: Record<string, number> = {
+  poke: 1.0,
+  great: 2.0,
+  ultra: 3.0,
+};
+
 /** 新しい出題ポケモンのレスポンス。ポケモン名はマスク済みの説明文を含む。 */
 export interface QuestNewResponse {
   pokemon_id: number;
@@ -179,28 +195,29 @@ export class QuestService {
     const nameENNorm = session.name_en.toLowerCase();
     const guessJA = guess.trim();
 
+    const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
+
     if (guessNorm === nameENNorm) {
       session.ball_type = "ultra";
       session.name_guessed = true;
-      return { correct: true, ball_type: "ultra", language: "en", attempts_remaining: 3 - session.guess_attempts };
+      return { correct: true, ball_type: "ultra", language: "en", attempts_remaining: remaining };
     }
 
     if (guessJA === session.name_ja) {
       session.ball_type = "great";
       session.name_guessed = true;
-      return { correct: true, ball_type: "great", language: "ja", attempts_remaining: 3 - session.guess_attempts };
+      return { correct: true, ball_type: "great", language: "ja", attempts_remaining: remaining };
     }
 
-    if (nameENNorm.length > 3) {
+    if (nameENNorm.length > FUZZY_MATCH_MIN_NAME_LENGTH) {
       const dist = levenshtein(guessNorm, nameENNorm);
-      if (dist <= 2) {
+      if (dist <= FUZZY_MATCH_MAX_DISTANCE) {
         session.ball_type = "ultra";
         session.name_guessed = true;
-        return { correct: true, ball_type: "ultra", language: "en", fuzzy: true, attempts_remaining: 3 - session.guess_attempts };
+        return { correct: true, ball_type: "ultra", language: "en", fuzzy: true, attempts_remaining: remaining };
       }
     }
 
-    const remaining = 3 - session.guess_attempts;
     if (remaining <= 0) {
       session.ball_type = "poke";
       session.name_guessed = true;
@@ -214,10 +231,7 @@ export class QuestService {
   attemptCapture(uid: string): CaptureResponse {
     const session = this.getSession(uid);
 
-    let ballMultiplier = 1.0;
-    if (session.ball_type === "great") ballMultiplier = 2.0;
-    if (session.ball_type === "ultra") ballMultiplier = 3.0;
-
+    const ballMultiplier = BALL_MULTIPLIER[session.ball_type] ?? BALL_MULTIPLIER.poke;
     const probability = calculateCaptureRate(session.score, session.base_stat_total, ballMultiplier);
     const captured = Math.random() < probability;
 
@@ -252,15 +266,17 @@ export class QuestService {
 
 /** スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。 */
 export function calculateCaptureRate(score: number, bst: number, ballMultiplier: number): number {
+  // 種族値とスコアを 0〜10 程度に正規化。ロジット係数のスケールを揃えるため。
   const x = bst / 100.0;
   const s = score / 100.0;
 
+  // ロジット係数は ARCHITECTURE.md の捕獲確率モデル参照。BST 高ほど捕獲難、スコア高ほど易、
+  // 相互作用項で「強いポケモンは高スコアでないと捕まらない」挙動を表現する。
   const logit = 2.5 - 0.34 * x - 0.17 * x * x + 14.5 * s - 4.2 * x * s + 0.52 * x * x * s;
-  let rate = 1.0 / (1.0 + Math.exp(-logit));
+  const baseRate = 1.0 / (1.0 + Math.exp(-logit));
 
-  rate *= ballMultiplier;
-  if (rate > 1.0) rate = 1.0;
-  return rate;
+  // ボール倍率を掛けた結果は 1.0 を超えうるので確率の上限でクランプする。
+  return Math.min(1.0, baseRate * ballMultiplier);
 }
 
 const pluralHints = new Set([
