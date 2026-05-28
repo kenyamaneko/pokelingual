@@ -3,6 +3,7 @@ import type { UserSettingsRepository } from "../domain/interfaces.js";
 import { maxPokemonID, defaultExcludedPokemonIDs } from "../service/pokeapi-service.js";
 import { handleError } from "./error.js";
 
+/** ユーザ設定 (除外ポケモン等) のエンドポイントを束ねるハンドラ。 */
 export class SettingsHandler {
   private settingsRepo: UserSettingsRepository;
 
@@ -10,6 +11,7 @@ export class SettingsHandler {
     this.settingsRepo = settingsRepo;
   }
 
+  /** GET /settings — 除外ポケモンIDと最大ポケモンIDを返す。 */
   getSettings = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -24,6 +26,7 @@ export class SettingsHandler {
     }
   };
 
+  /** PUT /settings/excluded-pokemon — 除外ポケモンIDリストを更新する。 */
   updateExcludedPokemon = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { pokemon_ids } = req.body;

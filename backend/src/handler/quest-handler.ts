@@ -3,6 +3,7 @@ import type { AIScorer, UserPokemonRepository } from "../domain/interfaces.js";
 import type { QuestService, ChatRequest } from "../service/quest-service.js";
 import { handleError } from "./error.js";
 
+/** クエスト関連エンドポイント (出題・採点・名前推測・捕獲・チャット) を束ねるハンドラ。 */
 export class QuestHandler {
   private questService: QuestService;
   private repo: UserPokemonRepository;
@@ -14,6 +15,7 @@ export class QuestHandler {
     this.aiScorer = aiScorer;
   }
 
+  /** GET /quest/new — 新しい出題ポケモンを返す。 */
   newQuest = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -24,6 +26,7 @@ export class QuestHandler {
     }
   };
 
+  /** POST /quest/score — ユーザの翻訳文を Gemini で採点しスコアを返す。 */
   scoreTranslation = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { translation } = req.body;
@@ -39,6 +42,7 @@ export class QuestHandler {
     }
   };
 
+  /** POST /quest/guess-name — ポケモン名の推測を判定し残り試行回数を返す。 */
   guessName = (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { guess } = req.body;
@@ -54,6 +58,7 @@ export class QuestHandler {
     }
   };
 
+  /** POST /quest/capture — 捕獲を試行し結果を永続化する。 */
   attemptCapture = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -69,6 +74,7 @@ export class QuestHandler {
     }
   };
 
+  /** POST /quest/chat — オーキド博士キャラクタとのチャット応答を返す。 */
   chat = async (req: Request, res: Response) => {
     const body = req.body as ChatRequest;
     if (!body.messages || body.messages.length === 0) {

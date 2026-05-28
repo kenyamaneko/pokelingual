@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { NotFoundError, ExternalServiceError, RateLimitError } from "../apperror/apperror.js";
 
+/** ドメインエラーを HTTP ステータスにマップしてレスポンスを返す共通ハンドラ。 */
 export function handleError(res: Response, err: unknown, path: string): void {
   if (err instanceof NotFoundError) {
     console.warn("resource not found", { error: String(err), path });

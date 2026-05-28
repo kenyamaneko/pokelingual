@@ -4,6 +4,7 @@ import type { CollectionService } from "../service/collection-service.js";
 import { maxPokemonID } from "../service/pokeapi-service.js";
 import { handleError } from "./error.js";
 
+/** ポケモン図鑑 (コレクション) 取得用エンドポイントを束ねるハンドラ。 */
 export class CollectionHandler {
   private collectionService: CollectionService;
   private settingsRepo: UserSettingsRepository;
@@ -13,6 +14,7 @@ export class CollectionHandler {
     this.settingsRepo = settingsRepo;
   }
 
+  /** GET /collection — ユーザの図鑑一覧を返す。 */
   getCollection = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -28,6 +30,7 @@ export class CollectionHandler {
     }
   };
 
+  /** GET /collection/:id — 特定ポケモンの詳細を返す。 */
   getPokemonDetail = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const id = parseInt(String(req.params.id), 10);
