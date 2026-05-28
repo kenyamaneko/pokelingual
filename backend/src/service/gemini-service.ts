@@ -1,13 +1,21 @@
 import { VertexAI } from "@google-cloud/vertexai";
+import type { GenerativeModel, GenerationConfig } from "@google-cloud/vertexai";
 import type { AIScorer } from "../domain/interfaces.js";
 import type { ScoreResult, ChatContext, ChatMessage } from "../types/index.js";
 
+// @google-cloud/vertexai 1.x は thinkingConfig を型定義していないが REST API は受け付けるため拡張
+type GenerationConfigWithThinking = GenerationConfig & {
+  thinkingConfig?: { thinkingBudget: number };
+};
+
 export class GeminiService implements AIScorer {
-  private vertexAI: VertexAI;
-  private modelName = "gemini-2.5-flash";
+  private model: GenerativeModel;
 
   constructor(vertexAI: VertexAI) {
-    this.vertexAI = vertexAI;
+    this.model = vertexAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as GenerationConfigWithThinking,
+    });
   }
 
   async scoreTranslation(englishText: string, japaneseTranslation: string): Promise<ScoreResult> {
@@ -43,8 +51,7 @@ Review guidelines:
 
 Respond with ONLY the JSON, no other text.`;
 
-    const model = this.vertexAI.getGenerativeModel({ model: this.modelName });
-    const result = await model.generateContent(prompt);
+    const result = await this.model.generateContent(prompt);
     const response = result.response;
 
     const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -93,8 +100,7 @@ Guidelines:
 
 Respond with ONLY your message, no prefix or label.`;
 
-    const model = this.vertexAI.getGenerativeModel({ model: this.modelName });
-    const result = await model.generateContent(prompt);
+    const result = await this.model.generateContent(prompt);
     const response = result.response;
 
     const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
