@@ -69,7 +69,7 @@ Respond with ONLY the JSON, no other text.`;
   }
 
   /** クエスト文脈と会話履歴を踏まえてオーキド博士キャラとして応答する。 */
-  async chat(chatCtx: ChatContext, messages: ChatMessage[]): Promise<string> {
+  async replyToChat(chatCtx: ChatContext, messages: ChatMessage[]): Promise<string> {
     let history = "";
     for (const m of messages) {
       if (m.role === "user") {

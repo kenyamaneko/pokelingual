@@ -10,7 +10,7 @@ import type {
 /** 翻訳採点と教授チャットを担う AI スコアラ。GeminiService と MockAIScorer が実装する。 */
 export interface AIScorer {
   scoreTranslation(englishText: string, japaneseTranslation: string): Promise<ScoreResult>;
-  chat(chatCtx: ChatContext, messages: ChatMessage[]): Promise<string>;
+  replyToChat(chatCtx: ChatContext, messages: ChatMessage[]): Promise<string>;
 }
 
 /** ポケモン情報の取得を担うフェッチャ。PokeAPIService と MockPokemonFetcher が実装する。 */

@@ -17,6 +17,6 @@ export const questApi = {
   guessName: (guess: string) =>
     api.post<GuessResponse>("/quest/guess-name", { guess }),
   attemptCapture: () => api.post<CaptureResponse>("/quest/capture"),
-  chat: (context: ChatContext, messages: ChatMessage[]) =>
+  replyToChat: (context: ChatContext, messages: ChatMessage[]) =>
     api.post<ChatResponse>("/quest/chat", { context, messages }),
 };

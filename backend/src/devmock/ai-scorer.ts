@@ -21,7 +21,7 @@ export class MockAIScorer implements AIScorer {
     return { score, review: mockReview(score) };
   }
 
-  async chat(_chatCtx: ChatContext, _messages: ChatMessage[]): Promise<string> {
+  async replyToChat(_chatCtx: ChatContext, _messages: ChatMessage[]): Promise<string> {
     return "なるほど いい 質問だな！この 文章の ポイントは 主語と 動詞の 関係だ。わからない ところが あれば 何でも 聞いてくれ！";
   }
 }

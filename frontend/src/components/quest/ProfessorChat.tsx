@@ -32,7 +32,7 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
     setLoading(true);
 
     try {
-      const res = await questApi.chat(context, updatedMessages);
+      const res = await questApi.replyToChat(context, updatedMessages);
       const professorMessage: ChatMessage = {
         role: "professor",
         content: res.data.reply,

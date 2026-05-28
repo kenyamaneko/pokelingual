@@ -76,14 +76,14 @@ export class QuestHandler {
   };
 
   /** POST /quest/chat — オーキド博士キャラクタとのチャット応答を返す。 */
-  chat = async (req: Request, res: Response) => {
+  replyToChat = async (req: Request, res: Response) => {
     const body = req.body as ChatRequest;
     if (!body.messages || body.messages.length === 0) {
       res.status(400).json({ error: "messages are required" });
       return;
     }
     try {
-      const reply = await this.aiScorer.chat(body.context, body.messages);
+      const reply = await this.aiScorer.replyToChat(body.context, body.messages);
       res.json({ reply });
     } catch (err) {
       handleError(res, new ExternalServiceError("Gemini", err as Error), req.path);

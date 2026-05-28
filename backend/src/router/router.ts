@@ -22,7 +22,7 @@ export function setupRoutes(
   router.post("/quest/score", rateLimitMiddleware, questHandler.scoreTranslation);
   router.post("/quest/guess-name", questHandler.guessName);
   router.post("/quest/capture", questHandler.attemptCapture);
-  router.post("/quest/chat", rateLimitMiddleware, questHandler.chat);
+  router.post("/quest/chat", rateLimitMiddleware, questHandler.replyToChat);
 
   router.get("/collection", collectionHandler.getCollection);
   router.get("/collection/:id", collectionHandler.getPokemonDetail);
