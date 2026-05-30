@@ -8,6 +8,10 @@ type GenerationConfigWithThinking = GenerationConfig & {
   thinkingConfig?: { thinkingBudget: number };
 };
 
+/** Gemini が返す翻訳スコアの許容範囲。プロンプト上 0-100 を指示しており、これを外れたら仕様違反。 */
+const SCORE_MIN = 0;
+const SCORE_MAX = 100;
+
 /** Vertex AI 経由で Gemini を呼び出す AIScorer 実装。翻訳採点と教授チャットを担う。 */
 export class GeminiService implements AIScorer {
   private model: GenerativeModel;
@@ -64,7 +68,9 @@ Respond with ONLY the JSON, no other text.`;
     const cleaned = stripCodeFences(text);
     const scoreResult: ScoreResult = JSON.parse(cleaned);
 
-    scoreResult.score = Math.max(0, Math.min(100, scoreResult.score));
+    if (!Number.isFinite(scoreResult.score) || scoreResult.score < SCORE_MIN || scoreResult.score > SCORE_MAX) {
+      throw new Error(`gemini returned out-of-range score: ${scoreResult.score}`);
+    }
     return scoreResult;
   }
 

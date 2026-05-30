@@ -20,9 +20,9 @@ export function SettingsPage() {
     settingsApi
       .getSettings()
       .then((res) => {
-        setExcludedIDs(res.data.excluded_pokemon_ids || []);
-        if (res.data.max_pokemon_id) setMaxPokemonID(res.data.max_pokemon_id);
-        if (res.data.max_excluded_count) setMaxExcludedCount(res.data.max_excluded_count);
+        setExcludedIDs(res.data.excluded_pokemon_ids);
+        setMaxPokemonID(res.data.max_pokemon_id);
+        setMaxExcludedCount(res.data.max_excluded_count);
       })
       .catch(() => {
         setError("せっていの　読みこみに　しっぱいしました");

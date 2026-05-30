@@ -21,10 +21,10 @@ export function CollectionPage() {
     collectionApi
       .getCollection()
       .then((res) => {
-        setCollection(res.data.pokemon || []);
+        setCollection(res.data.pokemon);
         setTotalAvailable(res.data.total_available);
-        setCapturedCount(res.data.captured_count ?? 0);
-        setUnavailableCount(res.data.unavailable_count ?? 0);
+        setCapturedCount(res.data.captured_count);
+        setUnavailableCount(res.data.unavailable_count);
       })
       .catch((err) => {
         console.error("failed to load collection", err);
