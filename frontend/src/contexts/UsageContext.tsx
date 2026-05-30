@@ -20,10 +20,7 @@ interface UsageContextValue {
   refresh: () => Promise<void>;
 }
 
-const UsageContext = createContext<UsageContextValue>({
-  usage: null,
-  refresh: async () => {},
-});
+const UsageContext = createContext<UsageContextValue | undefined>(undefined);
 
 /** 当日のAPI利用状況を購読し、レート制限到達時にモーダルを表示するプロバイダ。 */
 export function UsageProvider({ children }: { children: ReactNode }) {
@@ -70,6 +67,10 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** 当日の利用状況と手動リフレッシュ関数を取得するフック。 */
+/** 当日の利用状況と手動リフレッシュ関数を取得するフック。Provider 外で呼ぶと例外。 */
 // eslint-disable-next-line react-refresh/only-export-components
-export const useUsage = () => useContext(UsageContext);
+export const useUsage = (): UsageContextValue => {
+  const ctx = useContext(UsageContext);
+  if (!ctx) throw new Error("useUsage must be used within UsageProvider");
+  return ctx;
+};

@@ -1,7 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
+import type { ReactNode } from "react";
 import { ProfessorChat } from "./ProfessorChat";
+import { AuthContext } from "../../contexts/AuthContext";
+import { UsageProvider } from "../../contexts/UsageContext";
 import type { ChatContext } from "../../types";
 
 // jsdom doesn't support scrollIntoView
@@ -14,6 +17,26 @@ vi.mock("../../services/questApi", () => ({
     }),
   },
 }));
+
+vi.mock("../../services/usageApi", () => ({
+  usageApi: { get: vi.fn().mockResolvedValue({ data: { count: 0, limit: 30 } }) },
+}));
+
+function renderWithProviders(ui: ReactNode) {
+  return render(
+    <AuthContext.Provider
+      value={{
+        user: null,
+        loading: false,
+        login: async () => {},
+        loginWithGoogle: async () => {},
+        logout: async () => {},
+      }}
+    >
+      <UsageProvider>{ui}</UsageProvider>
+    </AuthContext.Provider>,
+  );
+}
 
 const chatContext: ChatContext = {
   description_en: "It stores electricity in its cheeks.",
@@ -31,14 +54,14 @@ const chatContext: ChatContext = {
 describe("ProfessorChat", () => {
   it("renders the chat modal with header", () => {
     // Given: the chat modal is open
-    render(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
+    renderWithProviders(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
     // Then: the header is displayed
     expect(screen.getByText("はかせに しつもん")).toBeInTheDocument();
   });
 
   it("shows placeholder text when no messages", () => {
     // Given: the chat modal is open with no messages
-    render(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
+    renderWithProviders(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
     // Then: placeholder text is displayed
     expect(screen.getByText(/はかせに 聞いてみよう/)).toBeInTheDocument();
   });
@@ -47,7 +70,7 @@ describe("ProfessorChat", () => {
     // Given: the chat modal is open
     const user = userEvent.setup();
     const onClose = vi.fn();
-    render(<ProfessorChat context={chatContext} onClose={onClose} />);
+    renderWithProviders(<ProfessorChat context={chatContext} onClose={onClose} />);
 
     // When: clicking the close button
     await user.click(screen.getByText("\u00D7"));
@@ -59,7 +82,7 @@ describe("ProfessorChat", () => {
   it("sends a message and displays professor reply", async () => {
     // Given: the chat modal is open
     const user = userEvent.setup();
-    render(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
+    renderWithProviders(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
 
     // When: typing and sending a message
     const input = screen.getByPlaceholderText("しつもんを 入力してね");

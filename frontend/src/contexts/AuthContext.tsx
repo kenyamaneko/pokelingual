@@ -24,13 +24,7 @@ interface AuthContextType {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  login: async () => {},
-  loginWithGoogle: async () => {},
-  logout: async () => {},
-});
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -66,6 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** 現在の認証状態とログイン/ログアウト操作を取得するフック。 */
+/** 現在の認証状態とログイン/ログアウト操作を取得するフック。Provider 外で呼ぶと例外。 */
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = (): AuthContextType => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};

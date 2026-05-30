@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsage } from "../../contexts/UsageContext";
 
+// prod 環境ではラベルを出さない仕様。VITE_ENVIRONMENT 未設定や想定外の値も同じく非表示扱い。
 const envLabel = (() => {
   const env = import.meta.env.VITE_ENVIRONMENT;
   if (env === "local") return "LOCAL";
