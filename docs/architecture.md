@@ -40,7 +40,7 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 
 ### インターフェースと実装の対応
 
-| インターフェース | 本番実装 | devmock | テスト用 |
+| インターフェース | 本番実装 | モック実装 | テスト用 |
 |---|---|---|---|
 | `PokemonFetcher` | `PokeAPIService` | `MockPokemonFetcher` | - |
 | `AIScorer` | `GeminiService` | `MockAIScorer` | - |
@@ -52,7 +52,7 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 
 `src/main.ts` が唯一の配線ポイント。`APP_MODE` 環境変数でモードを切り替える:
 
-- **`APP_MODE=mock`** → devmock 実装を注入（外部API不要、認証スキップ）
+- **`APP_MODE=mock`** → モック実装を注入（外部API不要、認証スキップ）
 - **`APP_MODE=prod`**（デフォルト以外）→ 本番実装を注入
 
 ### 環境変数の使い分け
@@ -78,8 +78,7 @@ backend/src/
 ├── repository/              # Firestore 実装
 ├── router/                  # Express ルーティング定義
 ├── service/                 # PokeAPI, Gemini, Quest, Collection
-├── apperror/                # アプリケーション固有エラー型
-└── devmock/                 # ローカル開発用モック
+└── apperror/                # アプリケーション固有エラー型
 ```
 
 ### Quest フロー（状態遷移）

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { MockRateLimitRepo } from "../devmock/rate-limit-repo.js";
+import { MockRateLimitRepo } from "./rate-limit-repo-mock.js";
 import { RateLimitError } from "../apperror/apperror.js";
 import type { RateLimitRepository } from "../domain/interfaces.js";
 

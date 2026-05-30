@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Request, Response, NextFunction } from "express";
 import { rateLimit } from "./rate-limit.js";
-import { MockRateLimitRepo } from "../devmock/rate-limit-repo.js";
+import { MockRateLimitRepo } from "../repository/rate-limit-repo-mock.js";
 
 // HTTP 境界での仕様: 上限以内は通し、超えたら 429 を返す
 function makeReqRes() {

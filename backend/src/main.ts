@@ -8,12 +8,12 @@ import { loadConfig } from "./config/config.js";
 import { corsConfig } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
-import { devAuth } from "./devmock/auth.js";
-import { MockAIScorer } from "./devmock/ai-scorer.js";
-import { MockPokemonFetcher } from "./devmock/pokemon-fetcher.js";
-import { MockUserPokemonRepo } from "./devmock/user-pokemon-repo.js";
-import { MockUserSettingsRepo } from "./devmock/user-settings-repo.js";
-import { MockRateLimitRepo } from "./devmock/rate-limit-repo.js";
+import { devAuth } from "./middleware/auth-mock.js";
+import { MockAIScorer } from "./service/ai-scorer-mock.js";
+import { MockPokemonFetcher } from "./service/pokemon-fetcher-mock.js";
+import { MockUserPokemonRepo } from "./repository/user-pokemon-repo-mock.js";
+import { MockUserSettingsRepo } from "./repository/user-settings-repo-mock.js";
+import { MockRateLimitRepo } from "./repository/rate-limit-repo-mock.js";
 import { GeminiService } from "./service/gemini-service.js";
 import { PokeAPIService, type PokeAPISettings } from "./service/pokeapi-service.js";
 import { QuestService } from "./service/quest-service.js";
@@ -66,7 +66,7 @@ let rateLimitRepo: RateLimitRepository;
 let authMiddleware: RequestHandler;
 
 if (cfg.appMode === "mock") {
-  console.log("Starting in mock mode with devmock services");
+  console.log("Starting in mock mode with in-memory implementations");
   pokemonFetcher = new MockPokemonFetcher();
   aiScorer = new MockAIScorer();
   userPokemonRepo = new MockUserPokemonRepo();

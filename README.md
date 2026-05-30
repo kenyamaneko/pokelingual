@@ -36,12 +36,11 @@
 │   │   ├── domain/          # インターフェース定義
 │   │   ├── handler/         # HTTP ハンドラー
 │   │   ├── middleware/      # 認証、CORS
-│   │   ├── model/           # データモデル
+│   │   ├── types/           # データモデル
 │   │   ├── repository/      # Firestore 実装
 │   │   ├── router/          # ルーティング定義
 │   │   ├── service/         # ビジネスロジック（PokeAPI, Gemini, Quest）
-│   │   ├── devmock/         # ローカル開発用モック実装
-│   │   └── testutil/        # テスト用モック
+│   │   └── apperror/        # アプリケーション固有エラー型
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
@@ -72,7 +71,7 @@
 
 ### 1. ローカル開発環境の起動
 
-ローカル開発は GCP リソース不要。devmock が全外部サービスを代替する。
+ローカル開発は GCP リソース不要。モック実装が全外部サービスを代替する。
 
 ```bash
 git clone <repo-url>
@@ -244,7 +243,7 @@ SERVICE_NAME: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pok
 
 ## ローカル開発
 
-Docker Compose でフロントエンド・バックエンドを起動。mock モード（`APP_MODE=mock`）では外部 API（Firebase, PokeAPI, Gemini）の代わりにモック実装（devmock）を使用する。
+Docker Compose でフロントエンド・バックエンドを起動。mock モード（`APP_MODE=mock`）では外部 API（Firebase, PokeAPI, Gemini）の代わりにモック実装を使用する。
 
 ```bash
 # 起動
