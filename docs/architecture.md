@@ -40,19 +40,22 @@ Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfac
 
 ### インターフェースと実装の対応
 
-| インターフェース | 本番実装 | モック実装 | テスト用 |
-|---|---|---|---|
-| `PokemonFetcher` | `PokeAPIService` | `MockPokemonFetcher` | - |
-| `AIScorer` | `GeminiService` | `MockAIScorer` | - |
-| `UserPokemonRepository` | `UserPokemonRepo` | `MockUserPokemonRepo` | - |
-| `UserSettingsRepository` | `UserSettingsRepo` | `MockUserSettingsRepo` | - |
-| `RateLimitRepository` | `RateLimitRepo`（Firestore） | `MockRateLimitRepo`（メモリ） | - |
+| インターフェース | 本番実装 | モック実装 |
+|---|---|---|
+| `PokemonFetcher` | `PokeAPIService` | `MockPokemonFetcher` |
+| `AIScorer` | `GeminiService` | `MockAIScorer` |
+| `UserPokemonRepository` | `UserPokemonRepo` | - (Firestore Emulator 上の本番実装) |
+| `UserSettingsRepository` | `UserSettingsRepo` | - (Firestore Emulator 上の本番実装) |
+| `RateLimitRepository` | `RateLimitRepo` | - (Firestore Emulator 上の本番実装) |
+
+Repository 層はモックを持たない。ローカル/テスト共に Firestore Emulator 上で本番実装を動かすことで、永続化挙動のドリフトを構造的に排除している。
 
 ### 依存性注入
 
 `src/main.ts` が唯一の配線ポイント。`APP_MODE` 環境変数でモードを切り替える:
 
-- **`APP_MODE=mock`** → モック実装を注入（外部API不要、認証スキップ）
+- **`APP_MODE=mock`** → 外部 API (PokeAPI/Gemini) と認証はモック注入、永続化は Firestore Emulator に接続して本番 Repo を使う
+  - `FIRESTORE_EMULATOR_HOST` が未設定なら起動エラー
 - **`APP_MODE=prod`**（デフォルト以外）→ 本番実装を注入
 
 ### 環境変数の使い分け

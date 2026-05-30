@@ -1,5 +1,6 @@
 import express from "express";
 import { VertexAI } from "@google-cloud/vertexai";
+import { Firestore } from "@google-cloud/firestore";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -11,9 +12,6 @@ import { rateLimit } from "./middleware/rate-limit.js";
 import { devAuth } from "./middleware/auth-mock.js";
 import { MockAIScorer } from "./service/ai-scorer-mock.js";
 import { MockPokemonFetcher } from "./service/pokemon-fetcher-mock.js";
-import { MockUserPokemonRepo } from "./repository/user-pokemon-repo-mock.js";
-import { MockUserSettingsRepo } from "./repository/user-settings-repo-mock.js";
-import { MockRateLimitRepo } from "./repository/rate-limit-repo-mock.js";
 import { GeminiService } from "./service/gemini-service.js";
 import { PokeAPIService, type PokeAPISettings } from "./service/pokeapi-service.js";
 import { QuestService } from "./service/quest-service.js";
@@ -66,12 +64,22 @@ let rateLimitRepo: RateLimitRepository;
 let authMiddleware: RequestHandler;
 
 if (cfg.appMode === "mock") {
-  console.log("Starting in mock mode with in-memory implementations");
+  // mock モード: 外部 API (PokeAPI / Gemini / Firebase Auth) はモック差し替え、
+  // 永続化は Firestore Emulator (FIRESTORE_EMULATOR_HOST が指す) を介して本番 Repo を使う。
+  // ローカル実装と本番実装の挙動ドリフトを Repo 層で発生させないための構成。
+  if (!process.env.FIRESTORE_EMULATOR_HOST) {
+    throw new Error(
+      "FIRESTORE_EMULATOR_HOST must be set in mock mode " +
+        "(docker-compose では firestore-emulator サービスが提供する)",
+    );
+  }
+  console.log(`Starting in mock mode (Firestore Emulator: ${process.env.FIRESTORE_EMULATOR_HOST})`);
+  const firestoreClient = new Firestore({ projectId: cfg.gcpProject });
   pokemonFetcher = new MockPokemonFetcher();
   aiScorer = new MockAIScorer();
-  userPokemonRepo = new MockUserPokemonRepo();
-  userSettingsRepo = new MockUserSettingsRepo();
-  rateLimitRepo = new MockRateLimitRepo(cfg.perUserDailyLimit, cfg.globalDailyLimit);
+  userPokemonRepo = new UserPokemonRepo(firestoreClient);
+  userSettingsRepo = new UserSettingsRepo(firestoreClient);
+  rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
   authMiddleware = devAuth();
 } else {
   const firebaseApp = initializeApp({

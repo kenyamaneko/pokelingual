@@ -1,4 +1,17 @@
 services:
+  firestore-emulator:
+    # Firestore Emulator は Java を必要とする。alpine タグは Java を含まないため emulators タグを使う
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud emulators firestore start --host-port=0.0.0.0:8080 --project=pokelingual-mock
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ || exit 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 10s
+
   backend:
     build: ./backend
     ports:
@@ -7,6 +20,11 @@ services:
       APP_MODE: mock
       PORT: "15100"
       FRONTEND_URL: http://localhost:15151
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      GCP_PROJECT: pokelingual-mock
+    depends_on:
+      firestore-emulator:
+        condition: service_healthy
 
   frontend:
     build:

@@ -71,7 +71,7 @@
 
 ### 1. ローカル開発環境の起動
 
-ローカル開発は GCP リソース不要。モック実装が全外部サービスを代替する。
+ローカル開発は GCP リソース不要。外部 API (PokeAPI/Gemini) と認証はモック実装で代替し、永続化は Docker 内の Firestore Emulator を使う。
 
 ```bash
 git clone <repo-url>
@@ -243,7 +243,7 @@ SERVICE_NAME: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pok
 
 ## ローカル開発
 
-Docker Compose でフロントエンド・バックエンドを起動。mock モード（`APP_MODE=mock`）では外部 API（Firebase, PokeAPI, Gemini）の代わりにモック実装を使用する。
+Docker Compose でフロントエンド・バックエンド・Firestore Emulator を起動。mock モード（`APP_MODE=mock`）では外部 API（Firebase Auth, PokeAPI, Gemini）の代わりにモック実装を使用し、永続化は Emulator に接続する。
 
 ```bash
 # 起動

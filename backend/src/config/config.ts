@@ -14,7 +14,8 @@ export interface Config {
 /** mock モード時に許容するデフォルト値。本番モードでは必須 env が未設定なら起動エラーにする。 */
 const MOCK_DEFAULTS = {
   port: "8080",
-  gcpProject: "",
+  // Firestore Emulator は projectId が非空であることを要求する。本番プロジェクトと混同しないよう専用名にする
+  gcpProject: "pokelingual-mock",
   gcpLocation: "us-central1",
   frontendURL: "http://localhost:5173",
   perUserDailyLimit: 30,
