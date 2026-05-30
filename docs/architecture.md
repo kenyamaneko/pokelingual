@@ -168,8 +168,8 @@ Auth middleware → Rate limit middleware → Handler
                        │
                        ▼
                   RateLimitRepo
-                  ├ users/{uid}/daily_usage/{YYYY-MM-DD}  → per-user カウンタ
-                  └ system/daily_usage/{YYYY-MM-DD}       → global カウンタ
+                  ├ users/{uid}/daily_usage/{YYYY-MM-DD}        → per-user カウンタ
+                  └ system/global/daily_usage/{YYYY-MM-DD}      → global カウンタ
 ```
 
 | 制限 | 値 | 単位 |
@@ -269,8 +269,9 @@ users/
       {YYYY-MM-DD}              # { count, updated_at } — per-user レートリミットカウンタ
 
 system/
-  daily_usage/
-    {YYYY-MM-DD}                # { count, updated_at } — global レートリミットカウンタ
+  global/
+    daily_usage/
+      {YYYY-MM-DD}              # { count, updated_at } — global レートリミットカウンタ
 ```
 
 ### 環境

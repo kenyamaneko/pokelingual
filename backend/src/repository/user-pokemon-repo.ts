@@ -1,4 +1,5 @@
-import type { Firestore } from "@google-cloud/firestore";
+import type { Firestore, DocumentData } from "@google-cloud/firestore";
+import { Timestamp } from "@google-cloud/firestore";
 import type { UserPokemonRepository } from "../domain/interfaces.js";
 import type { UserPokemon } from "../types/index.js";
 
@@ -34,7 +35,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
         return;
       }
 
-      const existing = doc.data() as UserPokemon;
+      const existing = toUserPokemon(doc.data()!);
       const now = new Date();
 
       existing.total_encounters++;
@@ -62,7 +63,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
       .orderBy("pokemon_id", "asc")
       .get();
 
-    return snapshot.docs.map((doc) => doc.data() as UserPokemon);
+    return snapshot.docs.map((doc) => toUserPokemon(doc.data()));
   }
 
   /** 特定ポケモンのユーザ実績を取得する。未遭遇ならエラーを投げる。 */
@@ -73,6 +74,20 @@ export class UserPokemonRepo implements UserPokemonRepository {
       .get();
 
     if (!doc.exists) throw new Error(`pokemon not found: ${pokemonID}`);
-    return doc.data() as UserPokemon;
+    return toUserPokemon(doc.data()!);
   }
+}
+
+// Firestore は Date を Timestamp として永続化するため、読み出し時に Date へ戻す。
+// 型定義 (UserPokemon) は Date を約束しているので、型と実体を揃えるために中央集約する。
+function toUserPokemon(data: DocumentData): UserPokemon {
+  return {
+    pokemon_id: data.pokemon_id,
+    status: data.status,
+    total_captures: data.total_captures,
+    total_encounters: data.total_encounters,
+    last_captured_at: data.last_captured_at instanceof Timestamp ? data.last_captured_at.toDate() : null,
+    last_encountered_at: (data.last_encountered_at as Timestamp).toDate(),
+    best_score: data.best_score,
+  };
 }

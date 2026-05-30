@@ -75,3 +75,7 @@ Billing Budget はメール通知のみ（選択肢 4）で「想定外コスト
 - 上限到達時は博士口調モーダルでゲーム演出として見せる（エラーではない）
 - ヘッダーに「のこり N/30 回」を常時表示してユーザーが残量を把握できる
 - Billing アラートメールで二重防御
+
+## 追記 (2026-05-30)
+
+設計時の global カウンタのパス `system/daily_usage/{YYYY-MM-DD}` は実装で `system/global/daily_usage/{YYYY-MM-DD}` に修正した。Firestore のドキュメントパスは collection/doc の交互で偶数階層が必須のため、3階層の元案は無効パスだった (Firestore Emulator テストで顕在化)。意味的な変更はなく、global カウンタの永続化先として機能する。

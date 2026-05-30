@@ -15,7 +15,8 @@ export class RateLimitRepo implements RateLimitRepository {
   async checkAndIncrement(uid: string): Promise<DailyUsage> {
     const today = jstDate();
     const userRef = this.db.doc(`users/${uid}/daily_usage/${today}`);
-    const globalRef = this.db.doc(`system/daily_usage/${today}`);
+    // users/{uid}/daily_usage/{date} と階層を揃え、Firestore の doc は偶数階層必須という制約を満たす
+    const globalRef = this.db.doc(`system/global/daily_usage/${today}`);
 
     return await this.db.runTransaction(async (tx) => {
       const [userSnap, globalSnap] = await Promise.all([tx.get(userRef), tx.get(globalRef)]);

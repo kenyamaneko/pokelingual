@@ -14,6 +14,8 @@ tmp/
 # Firebase
 firebase-service-account.json
 *-service-account*.json
+firestore-debug.log
+firebase-debug.log
 
 # Binary / shared libs
 *.exe

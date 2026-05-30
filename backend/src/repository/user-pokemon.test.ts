@@ -1,10 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { MockUserPokemonRepo } from "./user-pokemon-repo-mock.js";
+import { UserPokemonRepo } from "./user-pokemon-repo.js";
+import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-emulator-helper.js";
 import type { UserPokemonRepository } from "../domain/interfaces.js";
 
 // ユーザ図鑑エントリの永続化仕様。実装に依存しないコントラクトテスト。
-function userPokemonContract(label: string, createRepo: () => UserPokemonRepository) {
+function userPokemonContract(
+  label: string,
+  createRepo: () => UserPokemonRepository,
+  setup?: () => Promise<void>,
+) {
   describe(label, () => {
+    if (setup) beforeEach(setup);
+
     it("未遭遇のポケモンに対する upsert は seen として記録される", async () => {
       const repo = createRepo();
       await repo.upsertEncounter("alice", 25, 70, false);
@@ -108,3 +116,10 @@ function userPokemonContract(label: string, createRepo: () => UserPokemonReposit
 }
 
 userPokemonContract("MockUserPokemonRepo", () => new MockUserPokemonRepo());
+
+const db = requireFirestoreEmulator();
+userPokemonContract(
+  "UserPokemonRepo (Firestore emulator)",
+  () => new UserPokemonRepo(db),
+  clearFirestoreEmulator,
+);

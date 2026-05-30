@@ -1,11 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { MockRateLimitRepo } from "./rate-limit-repo-mock.js";
+import { RateLimitRepo } from "./rate-limit-repo.js";
+import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-emulator-helper.js";
 import { RateLimitError } from "../apperror/apperror.js";
 import type { RateLimitRepository } from "../domain/interfaces.js";
 
-// レートリミット機能のふるまい仕様。実装に依存しないコントラクトテスト
-function rateLimitContract(label: string, createRepo: (perUser: number, global: number) => RateLimitRepository) {
+// レートリミット機能のふるまい仕様。実装に依存しないコントラクトテスト。
+// Mock と Firestore Emulator 実装の両方に同じ仕様を要求することで挙動差分を防ぐ。
+function rateLimitContract(
+  label: string,
+  createRepo: (perUser: number, global: number) => RateLimitRepository,
+  setup?: () => Promise<void>,
+) {
   describe(label, () => {
+    if (setup) beforeEach(setup);
+
     it("ユーザーは perUserLimit 回までAI呼び出しできる", async () => {
       const repo = createRepo(5, 1000);
       for (let i = 0; i < 5; i++) {
@@ -72,8 +81,16 @@ function rateLimitContract(label: string, createRepo: (perUser: number, global: 
 
 rateLimitContract("MockRateLimitRepo", (perUser, global) => new MockRateLimitRepo(perUser, global));
 
+const db = requireFirestoreEmulator();
+rateLimitContract(
+  "RateLimitRepo (Firestore emulator)",
+  (perUser, global) => new RateLimitRepo(db, perUser, global),
+  clearFirestoreEmulator,
+);
+
+// JST 日次リセットは jstDate() の Date 依存挙動の検証なので Mock で代表させる。
+// Firestore Repo も同じ jstDate() ロジックを共有しており、リセット境界の挙動は同一になる。
 describe("レートリミットの日次リセット仕様", () => {
-  // 翌日に切り替わるとカウントがリセットされることを Date モックで検証
   beforeEach(() => {
     vi.useFakeTimers();
   });

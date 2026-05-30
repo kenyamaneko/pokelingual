@@ -1,10 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { MockUserSettingsRepo } from "./user-settings-repo-mock.js";
+import { UserSettingsRepo } from "./user-settings-repo.js";
+import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-emulator-helper.js";
 import type { UserSettingsRepository } from "../domain/interfaces.js";
 
 // ユーザ設定の永続化仕様。実装に依存しないコントラクトテスト。
-function userSettingsContract(label: string, createRepo: () => UserSettingsRepository) {
+function userSettingsContract(
+  label: string,
+  createRepo: () => UserSettingsRepository,
+  setup?: () => Promise<void>,
+) {
   describe(label, () => {
+    if (setup) beforeEach(setup);
+
     it("未保存ユーザーは excluded_pokemon_ids=null として読める", async () => {
       const repo = createRepo();
       const settings = await repo.getSettings("newcomer");
@@ -48,3 +56,10 @@ function userSettingsContract(label: string, createRepo: () => UserSettingsRepos
 }
 
 userSettingsContract("MockUserSettingsRepo", () => new MockUserSettingsRepo());
+
+const db = requireFirestoreEmulator();
+userSettingsContract(
+  "UserSettingsRepo (Firestore emulator)",
+  () => new UserSettingsRepo(db),
+  clearFirestoreEmulator,
+);
