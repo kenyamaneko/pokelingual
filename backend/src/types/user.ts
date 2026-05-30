@@ -4,7 +4,8 @@ export interface UserPokemon {
   status: string;
   total_captures: number;
   total_encounters: number;
-  last_captured_at: Date;
+  /** 未捕獲なら null。Date 特殊値で未捕獲を表現しないため。 */
+  last_captured_at: Date | null;
   last_encountered_at: Date;
   best_score: number;
 }

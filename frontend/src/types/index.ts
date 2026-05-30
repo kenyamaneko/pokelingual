@@ -90,7 +90,7 @@ export interface PokemonDetail {
   status: string;
   total_captures: number;
   total_encounters: number;
-  last_captured_at: string;
+  last_captured_at: string | null;
   last_encountered_at: string;
   best_score: number;
   name_en: string;

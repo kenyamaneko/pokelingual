@@ -26,7 +26,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
           status: captured ? "captured" : "seen",
           total_captures: captured ? 1 : 0,
           total_encounters: 1,
-          last_captured_at: captured ? now : new Date(0),
+          last_captured_at: captured ? now : null,
           last_encountered_at: now,
           best_score: score,
         };

@@ -1,6 +1,6 @@
 /** リソースが存在しないことを表す。handleError で 404 にマップされる。 */
 export class NotFoundError extends Error {
-  constructor(message = "not found") {
+  constructor(message: string) {
     super(message);
     this.name = "NotFoundError";
   }

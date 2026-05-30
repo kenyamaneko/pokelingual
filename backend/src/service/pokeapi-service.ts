@@ -170,7 +170,15 @@ function buildFlavorTextPairs(
   }
 
   const orderIndex = new Map(versionOrder.map((v, i) => [v, i]));
-  pairs.sort((a, b) => (orderIndex.get(a.version) ?? 999) - (orderIndex.get(b.version) ?? 999));
+  pairs.sort((a, b) => {
+    // versionDisplayNames を通過した version は versionOrder にも必ず含まれる契約。
+    const aIdx = orderIndex.get(a.version);
+    const bIdx = orderIndex.get(b.version);
+    if (aIdx === undefined || bIdx === undefined) {
+      throw new Error(`version not registered in versionOrder: ${a.version} or ${b.version}`);
+    }
+    return aIdx - bIdx;
+  });
 
   const result: FlavorTextPair[] = [];
   for (const p of pairs) {
