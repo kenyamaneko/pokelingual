@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
-import type { UserSettingsRepository } from "../domain/interfaces.js";
-import { maxPokemonID, defaultExcludedPokemonIDs } from "../service/pokeapi-service.js";
+import type { PokemonFetcher, UserSettingsRepository } from "../domain/interfaces.js";
 import { handleError } from "./error.js";
 
 /**
@@ -12,21 +11,20 @@ export const MAX_EXCLUDED_POKEMON_COUNT = 30;
 
 /** ユーザ設定 (除外ポケモン等) のエンドポイントを束ねるハンドラ。 */
 export class SettingsHandler {
-  private settingsRepo: UserSettingsRepository;
-
-  constructor(settingsRepo: UserSettingsRepository) {
-    this.settingsRepo = settingsRepo;
-  }
+  constructor(
+    private settingsRepo: UserSettingsRepository,
+    private pokemonFetcher: PokemonFetcher,
+  ) {}
 
   /** GET /settings — 除外ポケモンIDと最大ポケモンIDを返す。 */
   getSettings = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
       const settings = await this.settingsRepo.getSettings(uid);
-      const excluded = settings.excluded_pokemon_ids ?? defaultExcludedPokemonIDs;
+      const excluded = settings.excluded_pokemon_ids ?? this.pokemonFetcher.getDefaultExcludedPokemonIDs();
       res.json({
         excluded_pokemon_ids: excluded,
-        max_pokemon_id: maxPokemonID,
+        max_pokemon_id: this.pokemonFetcher.getMaxPokemonID(),
         max_excluded_count: MAX_EXCLUDED_POKEMON_COUNT,
       });
     } catch (err) {

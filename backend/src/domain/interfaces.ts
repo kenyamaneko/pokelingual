@@ -13,10 +13,12 @@ export interface AIScorer {
   replyToChat(chatCtx: ChatContext, messages: ChatMessage[]): Promise<string>;
 }
 
-/** ポケモン情報の取得を担うフェッチャ。PokeAPIService と MockPokemonFetcher が実装する。 */
+/** ポケモン情報の取得とアプリ設定 (最大ID・除外IDリスト) を担うフェッチャ。 */
 export interface PokemonFetcher {
   getRandomPokemon(): Promise<Pokemon>;
   getPokemonByID(id: number): Promise<Pokemon>;
+  getMaxPokemonID(): number;
+  getDefaultExcludedPokemonIDs(): number[];
 }
 
 /** ユーザの図鑑進捗 (遭遇/捕獲) を永続化するリポジトリ。 */

@@ -1,18 +1,15 @@
 import type { Request, Response } from "express";
-import type { UserSettingsRepository } from "../domain/interfaces.js";
+import type { PokemonFetcher, UserSettingsRepository } from "../domain/interfaces.js";
 import type { CollectionService } from "../service/collection-service.js";
-import { maxPokemonID } from "../service/pokeapi-service.js";
 import { handleError } from "./error.js";
 
 /** ポケモン図鑑 (コレクション) 取得用エンドポイントを束ねるハンドラ。 */
 export class CollectionHandler {
-  private collectionService: CollectionService;
-  private settingsRepo: UserSettingsRepository;
-
-  constructor(collectionService: CollectionService, settingsRepo: UserSettingsRepository) {
-    this.collectionService = collectionService;
-    this.settingsRepo = settingsRepo;
-  }
+  constructor(
+    private collectionService: CollectionService,
+    private settingsRepo: UserSettingsRepository,
+    private pokemonFetcher: PokemonFetcher,
+  ) {}
 
   /** GET /collection — ユーザの図鑑一覧を返す。 */
   getCollection = async (req: Request, res: Response) => {
@@ -22,7 +19,7 @@ export class CollectionHandler {
       const capturedCount = entries.filter((e) => e.status === "captured").length;
       res.json({
         pokemon: entries,
-        total_available: maxPokemonID,
+        total_available: this.pokemonFetcher.getMaxPokemonID(),
         captured_count: capturedCount,
         unavailable_count,
       });

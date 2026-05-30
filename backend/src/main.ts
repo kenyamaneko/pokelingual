@@ -15,7 +15,7 @@ import { MockUserPokemonRepo } from "./devmock/user-pokemon-repo.js";
 import { MockUserSettingsRepo } from "./devmock/user-settings-repo.js";
 import { MockRateLimitRepo } from "./devmock/rate-limit-repo.js";
 import { GeminiService } from "./service/gemini-service.js";
-import { PokeAPIService, setMaxPokemonID, setDefaultExcludedPokemonIDs } from "./service/pokeapi-service.js";
+import { PokeAPIService, type PokeAPISettings } from "./service/pokeapi-service.js";
 import { QuestService } from "./service/quest-service.js";
 import { CollectionService } from "./service/collection-service.js";
 import { UserPokemonRepo } from "./repository/user-pokemon-repo.js";
@@ -34,6 +34,27 @@ import type {
   RateLimitRepository,
 } from "./domain/interfaces.js";
 import type { RequestHandler } from "express";
+
+/** Firestore の config/app ドキュメントから PokeAPI 設定を読み込む。未設定ならデフォルト値。 */
+const DEFAULT_POKE_API_SETTINGS: PokeAPISettings = {
+  maxPokemonID: 898,
+  defaultExcludedPokemonIDs: [167, 168, 595, 596, 751, 752],
+};
+
+async function loadPokeAPISettings(
+  firestoreClient: ReturnType<typeof getFirestore>,
+): Promise<PokeAPISettings> {
+  const doc = await firestoreClient.collection("config").doc("app").get();
+  if (!doc.exists) return DEFAULT_POKE_API_SETTINGS;
+  const data = doc.data();
+  const maxPokemonID = typeof data?.max_pokemon_id === "number"
+    ? data.max_pokemon_id
+    : DEFAULT_POKE_API_SETTINGS.maxPokemonID;
+  const defaultExcludedPokemonIDs = Array.isArray(data?.default_excluded_pokemon_ids)
+    ? (data.default_excluded_pokemon_ids as number[])
+    : DEFAULT_POKE_API_SETTINGS.defaultExcludedPokemonIDs;
+  return { maxPokemonID, defaultExcludedPokemonIDs };
+}
 
 const cfg = loadConfig();
 
@@ -76,20 +97,12 @@ if (cfg.appMode === "mock") {
     console.log(`Loaded ${allowedEmails.length} allowed email(s) from Firestore (whitelist mode)`);
   }
 
-  const appConfigDoc = await firestoreClient.collection("config").doc("app").get();
-  if (appConfigDoc.exists) {
-    const data = appConfigDoc.data();
-    if (data?.max_pokemon_id) {
-      setMaxPokemonID(data.max_pokemon_id as number);
-      console.log(`Loaded MaxPokemonID=${data.max_pokemon_id} from Firestore`);
-    }
-    if (Array.isArray(data?.default_excluded_pokemon_ids)) {
-      setDefaultExcludedPokemonIDs(data.default_excluded_pokemon_ids as number[]);
-      console.log(`Loaded ${(data.default_excluded_pokemon_ids as number[]).length} default excluded Pokemon IDs from Firestore`);
-    }
-  }
-
-  pokemonFetcher = new PokeAPIService();
+  const pokeApiSettings = await loadPokeAPISettings(firestoreClient);
+  console.log(
+    `Loaded PokeAPI settings: maxPokemonID=${pokeApiSettings.maxPokemonID}, ` +
+      `defaultExcluded=${pokeApiSettings.defaultExcludedPokemonIDs.length}`,
+  );
+  pokemonFetcher = new PokeAPIService(pokeApiSettings);
   aiScorer = new GeminiService(vertexAI);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
@@ -103,8 +116,8 @@ const questService = new QuestService(pokemonFetcher, aiScorer, userSettingsRepo
 const collectionService = new CollectionService(userPokemonRepo, pokemonFetcher);
 
 const questHandler = new QuestHandler(questService, userPokemonRepo, aiScorer);
-const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo);
-const settingsHandler = new SettingsHandler(userSettingsRepo);
+const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo, pokemonFetcher);
+const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonFetcher);
 const usageHandler = new UsageHandler(rateLimitRepo);
 
 const app = express();

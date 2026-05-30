@@ -60,8 +60,20 @@ const mockPokemon: Pokemon[] = [
   },
 ];
 
+/** Mock 用のポケモン設定。本番と同じ値を返すことで UI 側の表示挙動を本番と揃える。 */
+const MOCK_MAX_POKEMON_ID = 898;
+const MOCK_DEFAULT_EXCLUDED_POKEMON_IDS = [167, 168, 595, 596, 751, 752];
+
 /** PokeAPI を呼ばずに固定リストから返す開発用 PokemonFetcher 実装。 */
 export class MockPokemonFetcher implements PokemonFetcher {
+  getMaxPokemonID(): number {
+    return MOCK_MAX_POKEMON_ID;
+  }
+
+  getDefaultExcludedPokemonIDs(): number[] {
+    return MOCK_DEFAULT_EXCLUDED_POKEMON_IDS;
+  }
+
   async getRandomPokemon(): Promise<Pokemon> {
     return { ...mockPokemon[Math.floor(Math.random() * mockPokemon.length)] };
   }

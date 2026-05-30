@@ -2,7 +2,6 @@ import levenshtein from "js-levenshtein";
 import { NotFoundError, ExternalServiceError } from "../apperror/apperror.js";
 import type { AIScorer, PokemonFetcher, UserSettingsRepository } from "../domain/interfaces.js";
 import type { Pokemon, QuestSession, ChatContext, ChatMessage } from "../types/index.js";
-import { defaultExcludedPokemonIDs } from "./pokeapi-service.js";
 
 /**
  * 出題抽選のリトライ上限。除外設定の最大数 (MAX_EXCLUDED_POKEMON_COUNT) と
@@ -106,7 +105,7 @@ export class QuestService {
   /** 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。 */
   async newQuest(uid: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(uid);
-    const ids = settings.excluded_pokemon_ids ?? defaultExcludedPokemonIDs;
+    const ids = settings.excluded_pokemon_ids ?? this.pokemonFetcher.getDefaultExcludedPokemonIDs();
     const excluded = new Set<number>(ids);
 
     let pokemon: Pokemon | undefined;
