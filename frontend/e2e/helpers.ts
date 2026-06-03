@@ -1,23 +1,33 @@
 import type { Page } from "@playwright/test";
+import { BUTTON, PLACEHOLDER, TEXT } from "./labels";
 
-// UI テキストの全角スペース（\u3000）は Playwright がアクセシブル名を
-// 正規化する際に半角スペースに変換されるため、正規表現の `.` で任意の
-// 空白文字にマッチさせている（例: /この.ほんやくで/ → "この ほんやくで"）
+// /signup から新規登録し、認証済みでホームに着地するまでを行う。dev モードの E2E で使う。
+export async function registerViaUi(page: Page, email: string, password: string) {
+  await page.goto("/signup");
+  await page.getByTestId("signup-email").fill(email);
+  await page.getByTestId("signup-password").fill(password);
+  await page.getByTestId("signup-password-confirm").fill(password);
+  await page.getByTestId("signup-submit").click();
+  // 登録成功で onAuthStateChanged が発火し、ホームへリダイレクトされる
+  await page.waitForURL("/");
+}
+
+// クエストを1回完走させる（翻訳→採点→名前スキップ→捕獲→結果カード表示まで）。
 export async function completeQuest(page: Page) {
   await page.goto("/quest");
-  await page.getByText("Who's That Pokemon?").waitFor();
+  await page.getByText(TEXT.questTitle).waitFor();
 
   // 翻訳入力 → 送信
-  await page.getByPlaceholder(/日本語を.入力してね/).fill("テスト翻訳");
-  await page.getByRole("button", { name: /この.ほんやくで/ }).click();
+  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳");
+  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
 
   // スコア表示待ち → 名前スキップ
-  await page.getByText("ダメージ").waitFor();
-  await page.getByRole("button", { name: /スキップ/ }).click();
+  await page.getByText(TEXT.damage).waitFor();
+  await page.getByRole("button", { name: BUTTON.skip }).click();
 
   // ボール使用
-  await page.getByRole("button", { name: /を.使う/ }).click();
+  await page.getByRole("button", { name: BUTTON.useBall }).click();
 
   // 結果表示待ち
-  await page.getByRole("button", { name: /つぎの.ぼうけんへ/ }).waitFor();
+  await page.getByRole("button", { name: BUTTON.nextQuest }).waitFor();
 }

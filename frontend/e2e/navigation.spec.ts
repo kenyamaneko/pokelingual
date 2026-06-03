@@ -1,28 +1,30 @@
 import { test, expect } from "@playwright/test";
+import { LINK } from "./labels";
 
-// 正規表現の `.` は全角スペース対策。詳細は helpers.ts のコメント参照。
+// 認証バイパス済み（DevAuthProvider）の mock モード専用。dev では各ページが認証で保護される。
+test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
 test("ホームページのリンクが全て機能する", async ({ page }) => {
   await page.goto("/");
 
   // ぼうけんに出かける → /quest
-  await page.getByRole("link", { name: /ぼうけんに.出かける/ }).click();
+  await page.getByRole("link", { name: LINK.startQuest }).click();
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーロゴ → /
-  await page.getByRole("link", { name: "PokeLingual" }).click();
+  await page.getByRole("link", { name: LINK.logo }).click();
   await expect(page).toHaveURL("/");
 
   // ずかんを見る → /collection
-  await page.getByRole("link", { name: /ずかんを.見る/ }).click();
+  await page.getByRole("link", { name: LINK.viewCollection }).click();
   await expect(page).toHaveURL("/collection");
 
   // ヘッダーロゴ → /
-  await page.getByRole("link", { name: "PokeLingual" }).click();
+  await page.getByRole("link", { name: LINK.logo }).click();
   await expect(page).toHaveURL("/");
 
   // せってい → /settings
-  await page.getByRole("link", { name: "せってい" }).first().click();
+  await page.getByRole("link", { name: LINK.settings }).first().click();
   await expect(page).toHaveURL("/settings");
 });
 
@@ -30,20 +32,14 @@ test("ヘッダーナビゲーション", async ({ page }) => {
   await page.goto("/");
 
   // ヘッダーの「ぼうけん」リンク
-  await page
-    .getByRole("link", { name: "ぼうけん", exact: true })
-    .click();
+  await page.getByRole("link", { name: LINK.navQuest, exact: true }).click();
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーの「ずかん」リンク
-  await page
-    .getByRole("link", { name: "ずかん", exact: true })
-    .click();
+  await page.getByRole("link", { name: LINK.navCollection, exact: true }).click();
   await expect(page).toHaveURL("/collection");
 
   // ヘッダーの「せってい」リンク
-  await page
-    .getByRole("link", { name: "せってい", exact: true })
-    .click();
+  await page.getByRole("link", { name: LINK.settings, exact: true }).click();
   await expect(page).toHaveURL("/settings");
 });
