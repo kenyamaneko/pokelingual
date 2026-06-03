@@ -1,0 +1,13 @@
+# build context をリポジトリルートに変更したため、ルートレベルの .dockerignore で除外する。
+# backend/frontend それぞれの node_modules を context に含めると数百MB 単位で送信されビルドが遅くなる。
+**/node_modules
+**/dist
+.git
+.vscode
+.idea
+**/.env
+**/.env.local
+**/.env.*.local
+terraform/.terraform
+terraform/*.tfstate*
+terraform.tfstate.d

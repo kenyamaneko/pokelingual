@@ -81,6 +81,29 @@ jobs:
             echo "Added ${TEST_USER_EMAIL} to allowed_emails"
           fi
 
+      - name: Ensure E2E user email in allowed_emails (dev only)
+        if: github.ref_name == 'develop'
+        env:
+          E2E_USER_EMAIL: e2e@pokelingual.dev
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+          DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
+          EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
+          if echo "${EXISTING}" | grep -qx "${E2E_USER_EMAIL}"; then
+            echo "E2E email already in allowed_emails"
+          else
+            echo "Adding E2E email to allowed_emails..."
+            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${E2E_USER_EMAIL}"'"}]')
+            curl -s -X PATCH \
+              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
+              -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
+            echo "Added ${E2E_USER_EMAIL} to allowed_emails"
+          fi
+
       - name: Build and push Docker image
         working-directory: backend
         run: |
@@ -306,3 +329,76 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }}
+
+  # Cloud Dev E2E: 実 Firebase Auth で新規登録し、デプロイ済みフロント/バックエンドに対して
+  # フルフローを通す。develop のみ。実行前後でテストユーザを掃除する。
+  e2e-dev:
+    name: Cloud Dev E2E
+    needs: deploy-frontend
+    if: github.ref_name == 'develop'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      E2E_USER_EMAIL: e2e@pokelingual.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install chromium --with-deps
+
+      # 前回実行が中断され Auth ユーザが残っていると新規登録が EMAIL_EXISTS で失敗するため、
+      # 実行前に best-effort で削除する（毎回まっさらな状態から登録する）。
+      - name: Pre-clean leftover E2E user
+        env:
+          E2E_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: bash scripts/cleanup-e2e-user.sh
+
+      - name: Run cloud-dev E2E
+        working-directory: frontend
+        env:
+          E2E_MODE: dev
+          E2E_BASE_URL: https://pokelingual-dev.web.app
+          E2E_EMAIL: ${{ env.E2E_USER_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: npx playwright test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-dev
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      # テスト最後の後始末。許可リストのメールは恒久フィクスチャなので残し、
+      # Auth ユーザと Firestore の users/{uid} データのみ削除する。
+      - name: Cleanup E2E user and data
+        if: always()
+        env:
+          E2E_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: bash scripts/cleanup-e2e-user.sh
