@@ -1,0 +1,40 @@
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import App from "./App";
+
+/**
+ * ルーティングの 404 仕様:
+ * - 未定義 URL では NotFound ページを表示する (catch-all)
+ * - 定義済み URL では NotFound を表示しない
+ *
+ * テスト環境は VITE_APP_MODE=mock のため DevAuthProvider (ログイン済み) で動作する。
+ * Header が UsageProvider 経由で /usage を引くため usageApi をモックする。
+ */
+vi.mock("./api/usageApi", () => ({
+  usageApi: {
+    get: vi.fn().mockResolvedValue({ data: { count: 0, limit: 30 } }),
+  },
+}));
+
+describe("ルーティングの 404 仕様", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("未定義 URL では NotFound ページを表示する", async () => {
+    window.history.pushState({}, "", "/no-such-page");
+    render(<App />);
+
+    // findBy で UsageProvider の非同期取得が落ち着くまで待ち、act 警告を避ける
+    expect(await screen.findByTestId("not-found")).toBeInTheDocument();
+  });
+
+  it("定義済み URL (/) では NotFound を表示しない", async () => {
+    window.history.pushState({}, "", "/");
+    render(<App />);
+
+    // ヘッダー (ログイン後共通) の描画完了を待ってから NotFound の不在を確認する
+    expect(await screen.findByText("PokeLingual")).toBeInTheDocument();
+    expect(screen.queryByTestId("not-found")).not.toBeInTheDocument();
+  });
+});

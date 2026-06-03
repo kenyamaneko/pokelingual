@@ -1,73 +1,75 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import { RateLimitModal } from "./RateLimitModal";
+import { spec } from "../../test/labels";
+import { RateLimitModal, RATE_LIMIT_LABELS } from "./RateLimitModal";
 
-// ユーザー上限・全体上限到達時に出るモーダルのふるまい仕様
-describe("RateLimitModal の表示仕様", () => {
-  it("ユーザー上限到達時はユーザー向けタイトルを出す", () => {
-    render(
-      <RateLimitModal
-        detail={{ kind: "user", message: "テストメッセージ" }}
-        onDismiss={() => {}}
-      />,
-    );
-    expect(screen.getByText(/しゅぎょう/)).toBeInTheDocument();
-  });
-
-  it("全体上限到達時はトレーナー混雑のタイトルを出す", () => {
-    render(
-      <RateLimitModal
-        detail={{ kind: "global", message: "テストメッセージ" }}
-        onDismiss={() => {}}
-      />,
-    );
-    expect(screen.getByText(/トレーナー/)).toBeInTheDocument();
-  });
-
-  it("API から受け取ったメッセージが表示される", () => {
-    render(
-      <RateLimitModal
-        detail={{ kind: "user", message: "サーバーからの メッセージ" }}
-        onDismiss={() => {}}
-      />,
-    );
-    expect(screen.getByText(/サーバーからの/)).toBeInTheDocument();
-  });
-
-  it("リセット時刻までのカウントダウンが表示される", () => {
+/**
+ * RateLimitModal の仕様:
+ * - kind ("user" / "global") に応じてタイトルが切り替わる
+ * - 閉じるボタン (×) と「また あした くる」ボタンで onDismiss が呼ばれる
+ * - 背景 (バックドロップ) クリックで onDismiss が呼ばれる
+ *
+ * カウントダウン表示は実装詳細 (フォーマットは変わりうる) のためテストしない。
+ */
+describe("RateLimitModal の仕様", () => {
+  it("kind=user のときユーザ向けタイトルを出す", () => {
     render(
       <RateLimitModal
         detail={{ kind: "user", message: "x" }}
-        onDismiss={() => {}}
+        onDismiss={vi.fn()}
       />,
     );
-    // hh:mm:ss 形式
-    expect(screen.getByText(/^\d{2}:\d{2}:\d{2}$/)).toBeInTheDocument();
+    expect(screen.getByText(spec(RATE_LIMIT_LABELS.userTitle))).toBeInTheDocument();
   });
 
-  it("「また あした くる」ボタン押下で onDismiss が呼ばれる", async () => {
+  it("kind=global のときグローバル向けタイトルを出す", () => {
+    render(
+      <RateLimitModal
+        detail={{ kind: "global", message: "x" }}
+        onDismiss={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(spec(RATE_LIMIT_LABELS.globalTitle))).toBeInTheDocument();
+  });
+
+  it("閉じる (×) ボタンで onDismiss が呼ばれる", async () => {
+    const user = userEvent.setup();
     const onDismiss = vi.fn();
     render(
-      <RateLimitModal
-        detail={{ kind: "user", message: "x" }}
-        onDismiss={onDismiss}
-      />,
+      <RateLimitModal detail={{ kind: "user", message: "x" }} onDismiss={onDismiss} />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /また/ }));
+
+    await user.click(
+      screen.getByRole("button", { name: RATE_LIMIT_LABELS.closeButtonAria }),
+    );
+
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
-  it("背景クリックでも閉じられる", async () => {
+  it("「また あした くる」ボタンで onDismiss が呼ばれる", async () => {
+    const user = userEvent.setup();
     const onDismiss = vi.fn();
-    const { container } = render(
-      <RateLimitModal
-        detail={{ kind: "user", message: "x" }}
-        onDismiss={onDismiss}
-      />,
+    render(
+      <RateLimitModal detail={{ kind: "user", message: "x" }} onDismiss={onDismiss} />,
     );
-    // 背景オーバーレイ要素
-    await userEvent.click(container.firstChild as Element);
-    expect(onDismiss).toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole("button", { name: RATE_LIMIT_LABELS.dismissButton }),
+    );
+
+    expect(onDismiss).toHaveBeenCalledOnce();
+  });
+
+  it("バックドロップ (ダイアログ外) クリックで onDismiss が呼ばれる", () => {
+    const onDismiss = vi.fn();
+    render(
+      <RateLimitModal detail={{ kind: "user", message: "x" }} onDismiss={onDismiss} />,
+    );
+
+    // バックドロップを直接クリックする。dialog 内のクリックは伝播停止される仕様。
+    fireEvent.click(screen.getByTestId("rate-limit-backdrop"));
+
+    expect(onDismiss).toHaveBeenCalledOnce();
   });
 });

@@ -1,61 +1,51 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { ScoreDisplay } from "./ScoreDisplay";
+import { ScoreDisplay, SCORE_LABELS } from "./ScoreDisplay";
+import type { ScoreResponse } from "../../../../shared/api-types/quest";
+import { spec } from "../../test/labels";
 
-// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
-// Testing Library の getByText は \s+ を半角スペースに正規化するため、
-// テストのアサーションでは半角スペースを使う。
-describe("ScoreDisplay", () => {
-  it("displays damage and HP", () => {
-    // Given: a ScoreDisplay with score 85
-    render(<ScoreDisplay score={{ score: 85, review: "", description_ja: "" }} />);
-    // Then: damage value and remaining HP are displayed
-    expect(screen.getByText("85")).toBeInTheDocument();
-    expect(screen.getByText("ダメージ")).toBeInTheDocument();
-    expect(screen.getByText("HP")).toBeInTheDocument();
-    expect(screen.getByText("15/100")).toBeInTheDocument();
+/**
+ * ScoreDisplay の仕様:
+ * - スコアの値域 (0, 1-40, 41-79, 80-99, 100) ごとに表示する "こうか" ラベルが切り替わる
+ * - HP 表示は 100 - score
+ *
+ * 文言は SCORE_LABELS から import する SSOT。`spec()` で testing-library 用に正規化する。
+ */
+function withScore(score: number): ScoreResponse {
+  return { score, review: "", description_ja: "" };
+}
+
+describe("ScoreDisplay の仕様", () => {
+  it("score=100 のとき 'いちげき ひっさつ' ラベルを出す", () => {
+    render(<ScoreDisplay score={withScore(100)} />);
+    expect(screen.getByText(spec(SCORE_LABELS.critical))).toBeInTheDocument();
   });
 
-  it("shows 一撃必殺 for score 100", () => {
-    // Given: a ScoreDisplay with score 100
-    render(<ScoreDisplay score={{ score: 100, review: "", description_ja: "" }} />);
-    // Then: shows one-hit KO label
-    expect(screen.getByText("いちげき ひっさつ！")).toBeInTheDocument();
+  it("score=80-99 のとき 'ばつぐん' ラベルを出す", () => {
+    render(<ScoreDisplay score={withScore(85)} />);
+    expect(screen.getByText(spec(SCORE_LABELS.superEffective))).toBeInTheDocument();
   });
 
-  it("shows ばつぐん for score >= 80", () => {
-    // Given: a ScoreDisplay with score 85
-    render(<ScoreDisplay score={{ score: 85, review: "", description_ja: "" }} />);
-    // Then: shows super effective label
-    expect(screen.getByText("こうかは ばつぐんだ！")).toBeInTheDocument();
+  it("score=41-79 のとき 効果ラベルは出さない (通常帯)", () => {
+    render(<ScoreDisplay score={withScore(60)} />);
+    expect(screen.queryByText(spec(SCORE_LABELS.critical))).not.toBeInTheDocument();
+    expect(screen.queryByText(spec(SCORE_LABELS.superEffective))).not.toBeInTheDocument();
+    expect(screen.queryByText(spec(SCORE_LABELS.notVeryEffective))).not.toBeInTheDocument();
+    expect(screen.queryByText(spec(SCORE_LABELS.noEffect))).not.toBeInTheDocument();
   });
 
-  it("shows no label for score 41-79", () => {
-    // Given: a ScoreDisplay with score 60
-    render(<ScoreDisplay score={{ score: 60, review: "", description_ja: "" }} />);
-    // Then: no evaluation label is shown
-    expect(screen.queryByText("こうかは ばつぐんだ！")).not.toBeInTheDocument();
-    expect(screen.queryByText("こうかは いまひとつの ようだ")).not.toBeInTheDocument();
+  it("score=1-40 のとき 'いまひとつ' ラベルを出す", () => {
+    render(<ScoreDisplay score={withScore(15)} />);
+    expect(screen.getByText(spec(SCORE_LABELS.notVeryEffective))).toBeInTheDocument();
   });
 
-  it("shows いまひとつ for score 1-40", () => {
-    // Given: a ScoreDisplay with score 15
-    render(<ScoreDisplay score={{ score: 15, review: "", description_ja: "" }} />);
-    // Then: shows not very effective label
-    expect(screen.getByText("こうかは いまひとつの ようだ")).toBeInTheDocument();
+  it("score=0 のとき 'こうかなし' ラベルを出す", () => {
+    render(<ScoreDisplay score={withScore(0)} />);
+    expect(screen.getByText(spec(SCORE_LABELS.noEffect))).toBeInTheDocument();
   });
 
-  it("shows こうかがない for score 0", () => {
-    // Given: a ScoreDisplay with score 0
-    render(<ScoreDisplay score={{ score: 0, review: "", description_ja: "" }} />);
-    // Then: shows no effect label
-    expect(screen.getByText("こうかが ないみたいだ...")).toBeInTheDocument();
-  });
-
-  it("does not render review (review is shown in QuestPage)", () => {
-    // Given: a ScoreDisplay with a review
-    render(<ScoreDisplay score={{ score: 75, review: "テスト レビュー", description_ja: "" }} />);
-    // Then: ScoreDisplay does not render the review text
-    expect(screen.queryByText("テスト レビュー")).not.toBeInTheDocument();
+  it("HP 表示は (100 - score) / 100 になる", () => {
+    render(<ScoreDisplay score={withScore(35)} />);
+    expect(screen.getByText("65/100")).toBeInTheDocument();
   });
 });

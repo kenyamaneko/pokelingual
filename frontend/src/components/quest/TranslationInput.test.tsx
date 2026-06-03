@@ -3,55 +3,37 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { TranslationInput } from "./TranslationInput";
 
-// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
-// Testing Library の getByText は \s+ を半角スペースに正規化するため、
-// テストのアサーションでは半角スペースを使う。
-describe("TranslationInput", () => {
-  it("renders textarea and submit button", () => {
-    // Given: a TranslationInput is rendered
+/**
+ * TranslationInput の仕様:
+ * - 空テキストでは送信不可
+ * - 入力後は送信可
+ * - 送信時に onSubmit へ入力値が渡る
+ *
+ * 文言検証は意図的に行わない (ボタンの存在は role で取得)。
+ */
+describe("TranslationInput の仕様", () => {
+  it("空テキストのときは送信ボタンが disabled", () => {
     render(<TranslationInput onSubmit={vi.fn()} />);
-    // Then: textarea and button are present
-    expect(
-      screen.getByPlaceholderText("日本語を 入力してね")
-    ).toBeInTheDocument();
-    expect(screen.getByText("この ほんやくで たたかう！")).toBeInTheDocument();
+    expect(screen.getByRole("button")).toBeDisabled();
   });
 
-  it("button is disabled when textarea is empty", () => {
-    // Given: a TranslationInput with no text entered
-    render(<TranslationInput onSubmit={vi.fn()} />);
-    // Then: the submit button is disabled
-    const button = screen.getByText("この ほんやくで たたかう！");
-    expect(button).toBeDisabled();
-  });
-
-  it("button is enabled when text is entered", async () => {
-    // Given: a TranslationInput is rendered
+  it("テキスト入力後は送信ボタンが enabled", async () => {
     const user = userEvent.setup();
     render(<TranslationInput onSubmit={vi.fn()} />);
 
-    // When: text is typed into the textarea
-    const textarea = screen.getByPlaceholderText("日本語を 入力してね");
-    await user.type(textarea, "テスト翻訳");
+    await user.type(screen.getByRole("textbox"), "テスト翻訳");
 
-    // Then: the submit button becomes enabled
-    const button = screen.getByText("この ほんやくで たたかう！");
-    expect(button).not.toBeDisabled();
+    expect(screen.getByRole("button")).toBeEnabled();
   });
 
-  it("calls onSubmit with the entered text", async () => {
-    // Given: a TranslationInput with an onSubmit handler
+  it("送信時に onSubmit へ入力値が渡る", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<TranslationInput onSubmit={onSubmit} />);
 
-    // When: text is entered and submit button is clicked
-    const textarea = screen.getByPlaceholderText("日本語を 入力してね");
-    await user.type(textarea, "テスト翻訳");
-    const button = screen.getByText("この ほんやくで たたかう！");
-    await user.click(button);
+    await user.type(screen.getByRole("textbox"), "テスト翻訳");
+    await user.click(screen.getByRole("button"));
 
-    // Then: onSubmit is called with the entered text
     expect(onSubmit).toHaveBeenCalledWith("テスト翻訳");
   });
 });

@@ -1,22 +1,25 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { screen, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { UsageProvider, useUsage } from "./UsageContext";
-import { AuthContext } from "./AuthContext";
-import type { User } from "firebase/auth";
+import type { AxiosResponse } from "axios";
+import { useUsage } from "./UsageContext";
+import { usageApi } from "../api/usageApi";
+import type { DailyUsage } from "../../../shared/api-types/usage";
 import {
   rateLimitEvents,
   RATE_LIMIT_EVENT,
-} from "../services/rateLimitEvents";
+} from "../utils/rateLimitEvents";
+import { renderWithProviders } from "../test/render";
+import type { User } from "firebase/auth";
 
-vi.mock("../services/usageApi", () => {
-  return {
-    usageApi: {
-      get: vi.fn(),
-    },
-  };
-});
+vi.mock("../api/usageApi", () => ({
+  usageApi: { get: vi.fn() },
+}));
 
-const usageApiMock = await import("../services/usageApi");
+function mockUsage(count: number, limit: number) {
+  vi.mocked(usageApi.get).mockResolvedValue({
+    data: { count, limit },
+  } as AxiosResponse<DailyUsage>);
+}
 
 function Probe() {
   const { usage } = useUsage();
@@ -25,22 +28,8 @@ function Probe() {
 
 const fakeUser = { uid: "alice" } as unknown as User;
 
-function renderWithAuth(user: User | null = fakeUser) {
-  return render(
-    <AuthContext.Provider
-      value={{
-        user,
-        loading: false,
-        login: async () => {},
-        loginWithGoogle: async () => {},
-        logout: async () => {},
-      }}
-    >
-      <UsageProvider>
-        <Probe />
-      </UsageProvider>
-    </AuthContext.Provider>,
-  );
+function renderUsage(user: User | null = fakeUser) {
+  return renderWithProviders(<Probe />, { user });
 }
 
 describe("UsageProvider のふるまい仕様", () => {
@@ -49,11 +38,9 @@ describe("UsageProvider のふるまい仕様", () => {
   });
 
   it("ログイン後にバックエンドの /usage を取得して表示できる", async () => {
-    vi.mocked(usageApiMock.usageApi.get).mockResolvedValue({
-      data: { count: 3, limit: 30 },
-    } as Awaited<ReturnType<typeof usageApiMock.usageApi.get>>);
+    mockUsage(3, 30);
 
-    renderWithAuth();
+    renderUsage();
 
     await waitFor(() => {
       expect(screen.getByTestId("usage")).toHaveTextContent("3/30");
@@ -61,19 +48,17 @@ describe("UsageProvider のふるまい仕様", () => {
   });
 
   it("未ログイン時は usage を取得しない", async () => {
-    renderWithAuth(null);
+    renderUsage(null);
     await waitFor(() => {
       expect(screen.getByTestId("usage")).toHaveTextContent("none");
     });
-    expect(usageApiMock.usageApi.get).not.toHaveBeenCalled();
+    expect(usageApi.get).not.toHaveBeenCalled();
   });
 
   it("レートリミットイベントを受信するとモーダル（タイトル）が表示される", async () => {
-    vi.mocked(usageApiMock.usageApi.get).mockResolvedValue({
-      data: { count: 30, limit: 30 },
-    } as Awaited<ReturnType<typeof usageApiMock.usageApi.get>>);
+    mockUsage(30, 30);
 
-    renderWithAuth();
+    renderUsage();
     await waitFor(() => expect(screen.getByTestId("usage")).toHaveTextContent("30/30"));
 
     act(() => {
@@ -88,16 +73,12 @@ describe("UsageProvider のふるまい仕様", () => {
   });
 
   it("レートリミット発火後は最新の usage を再取得する", async () => {
-    vi.mocked(usageApiMock.usageApi.get).mockResolvedValue({
-      data: { count: 0, limit: 30 },
-    } as Awaited<ReturnType<typeof usageApiMock.usageApi.get>>);
+    mockUsage(0, 30);
 
-    renderWithAuth();
-    await waitFor(() => expect(usageApiMock.usageApi.get).toHaveBeenCalledTimes(1));
+    renderUsage();
+    await waitFor(() => expect(usageApi.get).toHaveBeenCalledTimes(1));
 
-    vi.mocked(usageApiMock.usageApi.get).mockResolvedValue({
-      data: { count: 30, limit: 30 },
-    } as Awaited<ReturnType<typeof usageApiMock.usageApi.get>>);
+    mockUsage(30, 30);
 
     act(() => {
       rateLimitEvents.dispatchEvent(
@@ -107,7 +88,7 @@ describe("UsageProvider のふるまい仕様", () => {
       );
     });
 
-    await waitFor(() => expect(usageApiMock.usageApi.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(usageApi.get).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByTestId("usage")).toHaveTextContent("30/30"));
   });
 });

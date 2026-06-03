@@ -1,120 +1,148 @@
 import { render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import { CaptureResult } from "./CaptureResult";
-import type { CaptureResponse, ChatContext } from "../../types";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { spec } from "../../test/labels";
+import { CaptureResult, CAPTURE_RESULT_LABELS } from "./CaptureResult";
+import { renderWithProviders } from "../../test/render";
+import type {
+  CaptureResponse,
+  ChatContext,
+} from "../../../../shared/api-types/quest";
 
-const capturedResult: CaptureResponse = {
-  captured: true,
-  probability: 0.85,
-  pokemon_id: 25,
-  name_en: "Pikachu",
-  name_ja: "ピカチュウ",
-  sprite_url: "https://example.com/pikachu.png",
-  score: 90,
-  description_en: "When several of these Pokemon gather, their electricity could build and cause lightning storms.",
-  description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
-  base_stat_total: 320,
-  ball_type: "ultra",
-  types: ["electric"],
-  height: 4,
-  weight: 60,
-  is_legendary: false,
-  is_mythical: false,
-};
+// ProfessorChat 内で UsageContext / Auth を要求するため、最小モックを準備
+vi.mock("../../api/usageApi", () => ({
+  usageApi: { get: vi.fn().mockResolvedValue({ data: { count: 0, limit: 30 } }) },
+}));
 
-const escapedResult: CaptureResponse = {
-  captured: false,
-  probability: 0.3,
-  pokemon_id: 25,
-  name_en: "Pikachu",
-  name_ja: "ピカチュウ",
-  sprite_url: "https://example.com/pikachu.png",
-  score: 30,
-  description_en: "When several of these Pokemon gather, their electricity could build and cause lightning storms.",
-  description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
-  base_stat_total: 320,
-  ball_type: "poke",
-  types: ["electric"],
-  height: 4,
-  weight: 60,
-  is_legendary: false,
-  is_mythical: false,
-};
-
-const chatContext: ChatContext = {
-  description_en: "When several of these Pokemon gather, their electricity could build and cause lightning storms.",
-  description_ja: "何匹か 集まると そこに 激しい 雷が 落ちることがある。",
-  translation: "何匹か 集まると 雷が 落ちる。",
-  score: 90,
-  review: "よく 頑張ったな！",
-  name_en: "Pikachu",
-  name_ja: "ピカチュウ",
-};
-
-function renderWithRouter(ui: React.ReactElement) {
-  return render(<BrowserRouter>{ui}</BrowserRouter>);
+function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
+  return {
+    captured: true,
+    probability: 0.85,
+    pokemon_id: 25,
+    name_en: "Pikachu",
+    name_ja: "ピカチュウ",
+    sprite_url: "https://example.com/pikachu.png",
+    score: 90,
+    description_en: "desc en",
+    description_ja: "desc ja",
+    base_stat_total: 320,
+    ball_type: "ultra",
+    types: ["electric"],
+    height: 4,
+    weight: 60,
+    is_legendary: false,
+    is_mythical: false,
+    ...overrides,
+  };
 }
 
-// NOTE: コンポーネント側は全角スペース（U+3000）を使用しているが、
-// Testing Library の getByText は \s+ を半角スペースに正規化するため、
-// テストのアサーションでは半角スペースを使う。
-describe("CaptureResult", () => {
-  it("shows capture message when captured", () => {
-    // Given: a captured result
-    renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
-    // Then: shows capture message
-    expect(screen.getByText(/やったー！ ピカチュウを つかまえたぞ！/)).toBeInTheDocument();
+const chatContext: ChatContext = {
+  description_en: "desc en",
+  description_ja: "desc ja",
+  translation: "yaku",
+  score: 90,
+  review: "review",
+  name_en: "Pikachu",
+  name_ja: "ピカチュウ",
+};
+
+
+/**
+ * CaptureResult の仕様:
+ * - captured=true なら捕獲タイトル、false なら逃走タイトルを表示する
+ * - 「つぎの ぼうけんへ」ボタンで onNewQuest が呼ばれる
+ * - 「はかせに しつもん」ボタンでチャットモーダルが開く
+ *
+ * テスト対象外: 画像 src/ポケモン名/スコア の "props 透過" 表示は仕様ではなく、
+ * Render が動けば成立するため検証しない。
+ */
+describe("CaptureResult の仕様", () => {
+  it("captured=true で捕獲タイトル (ポケモン名入り) を表示する", () => {
+    renderWithProviders(
+      <CaptureResult result={baseResult()} chatContext={chatContext} onNewQuest={vi.fn()} />,
+      { withRouter: true },
+    );
+    expect(
+      screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ"))),
+    ).toBeInTheDocument();
   });
 
-  it("shows escape message when not captured", () => {
-    // Given: an escaped result
-    renderWithRouter(<CaptureResult result={escapedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
-    // Then: shows escape message
-    expect(screen.getByText(/やせいの ピカチュウは にげだした！/)).toBeInTheDocument();
+  it("captured=false で逃走タイトルを表示する", () => {
+    renderWithProviders(
+      <CaptureResult
+        result={baseResult({ captured: false })}
+        chatContext={chatContext}
+        onNewQuest={vi.fn()}
+      />,
+      { withRouter: true },
+    );
+    expect(
+      screen.getByText(spec(CAPTURE_RESULT_LABELS.escapedTitle("ピカチュウ"))),
+    ).toBeInTheDocument();
   });
 
-  it("displays Pokemon name in both languages", () => {
-    // Given: a captured result
-    renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
-    // Then: both English and Japanese names are displayed
-    expect(screen.getByText("Pikachu")).toBeInTheDocument();
-    expect(screen.getByText("ピカチュウ")).toBeInTheDocument();
-  });
-
-  it("displays score", () => {
-    // Given: a captured result with score 90
-    renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
-    // Then: score is displayed
-    expect(screen.getByText("スコア: 90")).toBeInTheDocument();
-  });
-
-  it("calls onNewQuest when button is clicked", async () => {
-    // Given: a CaptureResult with an onNewQuest handler
+  it("「つぎの ぼうけんへ」ボタンで onNewQuest が呼ばれる", async () => {
     const user = userEvent.setup();
     const onNewQuest = vi.fn();
-    renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={onNewQuest} />);
+    renderWithProviders(
+      <CaptureResult
+        result={baseResult()}
+        chatContext={chatContext}
+        onNewQuest={onNewQuest}
+      />,
+      { withRouter: true },
+    );
 
-    // When: clicking the "つぎのぼうけんへ" button
-    await user.click(screen.getByText("つぎの ぼうけんへ"));
+    await user.click(
+      screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.nextButton }),
+    );
 
-    // Then: onNewQuest is called
     expect(onNewQuest).toHaveBeenCalledOnce();
   });
 
-  it("shows professor chat button", () => {
-    // Given: a captured result
-    renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
-    // Then: the chat button is displayed
-    expect(screen.getByText("はかせに しつもん")).toBeInTheDocument();
+  it("「メニューに もどる」ボタンでホーム (/) へ遷移する", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/quest"]}>
+        <Routes>
+          <Route
+            path="/quest"
+            element={
+              <CaptureResult
+                result={baseResult()}
+                chatContext={chatContext}
+                onNewQuest={vi.fn()}
+              />
+            }
+          />
+          <Route path="/" element={<div data-testid="home-page" />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.backToMenuButton }),
+    );
+
+    expect(screen.getByTestId("home-page")).toBeInTheDocument();
   });
 
-  it("renders Pokemon sprite", () => {
-    // Given: a captured result with a sprite URL
-    renderWithRouter(<CaptureResult result={capturedResult} chatContext={chatContext} onNewQuest={vi.fn()} />);
-    // Then: the sprite image is rendered with correct src
-    const img = screen.getByAltText("Pikachu");
-    expect(img).toHaveAttribute("src", "https://example.com/pikachu.png");
+  it("「はかせに しつもん」ボタンでチャットモーダルが開く", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <CaptureResult result={baseResult()} chatContext={chatContext} onNewQuest={vi.fn()} />,
+      { withRouter: true },
+    );
+
+    // 初期状態ではチャットダイアログは存在しない
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.chatButton }),
+    );
+
+    // クリック後はチャットダイアログ (ProfessorChat) が出現する
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 });
