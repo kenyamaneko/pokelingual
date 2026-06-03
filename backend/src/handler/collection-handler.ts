@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
-import type { PokemonFetcher, UserSettingsRepository } from "../domain/interfaces.js";
+import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
 import type { CollectionService } from "../service/collection-service.js";
+import type { CollectionResponse } from "../../../shared/api-types/collection.js";
 import { handleError } from "./error.js";
 
 /** ポケモン図鑑 (コレクション) 取得用エンドポイントを束ねるハンドラ。 */
@@ -8,7 +9,7 @@ export class CollectionHandler {
   constructor(
     private collectionService: CollectionService,
     private settingsRepo: UserSettingsRepository,
-    private pokemonFetcher: PokemonFetcher,
+    private pokemonConfig: PokemonConfig,
   ) {}
 
   /** GET /collection — ユーザの図鑑一覧を返す。 */
@@ -17,12 +18,13 @@ export class CollectionHandler {
     try {
       const { entries, unavailable_count } = await this.collectionService.getCollection(uid);
       const capturedCount = entries.filter((e) => e.status === "captured").length;
-      res.json({
+      const body: CollectionResponse = {
         pokemon: entries,
-        total_available: this.pokemonFetcher.getMaxPokemonID(),
+        total_available: this.pokemonConfig.maxPokemonID,
         captured_count: capturedCount,
         unavailable_count,
-      });
+      };
+      res.json(body);
     } catch (err) {
       handleError(res, err, req.path);
     }

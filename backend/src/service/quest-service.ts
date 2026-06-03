@@ -1,7 +1,20 @@
 import levenshtein from "js-levenshtein";
-import { NotFoundError, ExternalServiceError } from "../apperror/apperror.js";
-import type { AIScorer, PokemonFetcher, UserSettingsRepository } from "../domain/interfaces.js";
-import type { Pokemon, QuestSession, ChatContext, ChatMessage } from "../types/index.js";
+import { NotFoundError, ExternalServiceError } from "../domain/errors.js";
+import type {
+  LLMClient,
+  PokemonClient,
+  PokemonConfig,
+  RandomSource,
+  UserSettingsRepository,
+} from "../domain/ports.js";
+import type { Pokemon } from "../domain/pokemon.js";
+import type { QuestSession, ScoreResult } from "../domain/quest.js";
+import type {
+  QuestNewResponse,
+  ScoreResponse,
+  GuessResponse,
+  CaptureResponse,
+} from "../../../shared/api-types/quest.js";
 
 /**
  * 出題抽選のリトライ上限。除外設定の最大数 (MAX_EXCLUDED_POKEMON_COUNT) と
@@ -18,6 +31,10 @@ const FUZZY_MATCH_MIN_NAME_LENGTH = 3;
 /** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
 const FUZZY_MATCH_MAX_DISTANCE = 2;
 
+/** LLM が返す翻訳スコアの許容範囲。プロンプト上 0-100 を指示しており、これを外れたら仕様違反。 */
+const SCORE_MIN = 0;
+const SCORE_MAX = 100;
+
 /** ボール種別ごとの捕獲確率倍率。great=英語名正解、ultra=日本語名正解、poke=不正解。 */
 const BALL_MULTIPLIER: Record<string, number> = {
   poke: 1.0,
@@ -25,96 +42,36 @@ const BALL_MULTIPLIER: Record<string, number> = {
   ultra: 3.0,
 };
 
-/** 新しい出題ポケモンのレスポンス。ポケモン名はマスク済みの説明文を含む。 */
-export interface QuestNewResponse {
-  pokemon_id: number;
-  description_en: string;
-  is_legendary: boolean;
-  is_mythical: boolean;
-}
-
-/** 翻訳採点結果。スコア・講評・日本語版説明 (マスク済み) を返す。 */
-export interface ScoreResponse {
-  score: number;
-  review: string;
-  description_ja: string;
-}
-
-/** 名前推測の判定結果。正解時は付与ボール種別、不正解時は残り試行回数を返す。 */
-export interface GuessResponse {
-  correct: boolean;
-  ball_type?: string;
-  language?: string;
-  fuzzy?: boolean;
-  attempts_remaining: number;
-  reveal_name_en?: string;
-  reveal_name_ja?: string;
-}
-
-/** 捕獲試行結果。捕獲成否と表示用のポケモン情報を含む。 */
-export interface CaptureResponse {
-  captured: boolean;
-  probability: number;
-  pokemon_id: number;
-  name_en: string;
-  name_ja: string;
-  sprite_url: string;
-  score: number;
-  description_en: string;
-  description_ja: string;
-  base_stat_total: number;
-  ball_type: string;
-  types: string[];
-  height: number;
-  weight: number;
-  is_legendary: boolean;
-  is_mythical: boolean;
-}
-
-/** オーキド博士チャットへのリクエスト。会話履歴と現クエストのコンテキストを含む。 */
-export interface ChatRequest {
-  context: ChatContext;
-  messages: ChatMessage[];
-}
-
-/** オーキド博士チャットのレスポンス。 */
-export interface ChatResponse {
-  reply: string;
-}
+// QuestNewResponse / ScoreResponse / GuessResponse / CaptureResponse の API 契約型は shared/api-types/quest.d.ts を参照
 
 /**
  * クエストの出題・採点・名前推測・捕獲のドメインロジックを束ねるサービス。
  * セッションはユーザ uid ごとにメモリ保持する。
  */
 export class QuestService {
-  private pokemonFetcher: PokemonFetcher;
-  private aiScorer: AIScorer;
-  private settingsRepo: UserSettingsRepository;
   private sessions = new Map<string, QuestSession>();
 
   constructor(
-    pokemonFetcher: PokemonFetcher,
-    aiScorer: AIScorer,
-    settingsRepo: UserSettingsRepository,
-  ) {
-    this.pokemonFetcher = pokemonFetcher;
-    this.aiScorer = aiScorer;
-    this.settingsRepo = settingsRepo;
-  }
+    private pokemonClient: PokemonClient,
+    private llm: LLMClient,
+    private pokemonConfig: PokemonConfig,
+    private settingsRepo: UserSettingsRepository,
+    private random: RandomSource,
+  ) {}
 
   /** 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。 */
   async newQuest(uid: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(uid);
-    const ids = settings.excluded_pokemon_ids ?? this.pokemonFetcher.getDefaultExcludedPokemonIDs();
+    const ids = settings.excluded_pokemon_ids ?? this.pokemonConfig.defaultExcludedPokemonIDs;
     const excluded = new Set<number>(ids);
 
     let pokemon: Pokemon | undefined;
     for (let i = 0; i < MAX_RANDOM_PICK_RETRY; i++) {
       let candidate: Pokemon;
       try {
-        candidate = await this.pokemonFetcher.getRandomPokemon();
+        candidate = await this.pokemonClient.getRandomPokemon();
       } catch (err) {
-        throw new ExternalServiceError("PokeAPI", err as Error);
+        throw new ExternalServiceError("PokemonAPI", err as Error);
       }
       if (!excluded.has(candidate.id)) {
         pokemon = candidate;
@@ -128,7 +85,7 @@ export class QuestService {
     let descEN = pokemon.description_en;
     let descJA = pokemon.description_ja;
     if (pokemon.flavor_texts && pokemon.flavor_texts.length > 0) {
-      const pair = pokemon.flavor_texts[Math.floor(Math.random() * pokemon.flavor_texts.length)];
+      const pair = pokemon.flavor_texts[Math.floor(this.random.next() * pokemon.flavor_texts.length)];
       descEN = pair.description_en;
       descJA = pair.description_ja;
     }
@@ -161,15 +118,15 @@ export class QuestService {
     };
   }
 
-  /** AIScorer で翻訳を採点し、結果をセッションへ記録する。 */
+  /** LLM で翻訳を採点し、結果をセッションへ記録する。 */
   async scoreTranslation(uid: string, translation: string): Promise<ScoreResponse> {
     const session = this.getSession(uid);
 
-    let result;
+    let result: ScoreResult;
     try {
-      result = await this.aiScorer.scoreTranslation(session.description_en, translation);
+      result = await this.scoreWithLLM(session.description_en, translation);
     } catch (err) {
-      throw new ExternalServiceError("Gemini", err as Error);
+      throw new ExternalServiceError("LLM", err as Error);
     }
 
     session.score = result.score;
@@ -179,6 +136,17 @@ export class QuestService {
       review: result.review,
       description_ja: maskPokemonNameJA(session.description_ja, session.name_ja),
     };
+  }
+
+  private async scoreWithLLM(englishText: string, translation: string): Promise<ScoreResult> {
+    const prompt = buildScorePrompt(englishText, translation);
+    const text = await this.llm.generateText(prompt);
+    const parsed: ScoreResult = JSON.parse(text);
+
+    if (!Number.isFinite(parsed.score) || parsed.score < SCORE_MIN || parsed.score > SCORE_MAX) {
+      throw new Error(`LLM returned out-of-range score: ${parsed.score}`);
+    }
+    return parsed;
   }
 
   /** 名前推測を判定し、正解ならボール種別を確定、不正解なら残り試行を返す。 */
@@ -232,7 +200,7 @@ export class QuestService {
 
     const ballMultiplier = BALL_MULTIPLIER[session.ball_type] ?? BALL_MULTIPLIER.poke;
     const probability = calculateCaptureRate(session.score, session.base_stat_total, ballMultiplier);
-    const captured = Math.random() < probability;
+    const captured = this.random.next() < probability;
 
     this.sessions.delete(uid);
 
@@ -261,6 +229,40 @@ export class QuestService {
     if (!session) throw new NotFoundError("no active quest session");
     return session;
   }
+}
+
+function buildScorePrompt(englishText: string, translation: string): string {
+  return `You are an English-to-Japanese translation evaluator for a language learning app.
+
+Original English text:
+"${englishText}"
+
+User's Japanese translation:
+"${translation}"
+
+Evaluate the translation and respond in EXACTLY this JSON format:
+{
+  "score": <integer 0-100>,
+  "review": "<review in Japanese, 2-3 sentences>"
+}
+
+Scoring guidelines:
+- 90-100: Accurate meaning, natural Japanese, minor issues at most
+- 70-89: Core meaning preserved, some awkward phrasing or minor errors
+- 50-69: Partially correct, missing important nuances or grammatical issues
+- 30-49: Significant errors but some understanding shown
+- 0-29: Major misunderstanding or mostly incorrect
+
+Review guidelines:
+- Write 2-3 short sentences in Japanese
+- You are a kind, supportive Pokemon professor
+- If the user left parts untranslated or omitted sections, understand they didn't know the meaning — they are NOT careless, they simply couldn't translate what they didn't understand. Guide them with explanations rather than pointing out "omissions"
+- Include explanations of difficult English words/phrases (high school advanced level and above) that appear in the original text — briefly explain their meaning in Japanese
+- Use simple kanji with spaces between words (e.g. "「friskily」は 元気よく 跳ね回る という 意味だよ。")
+- End with a warm word of praise or encouragement, but vary the expression every time — never repeat the same closing phrase
+- Keep the total review under 150 characters
+
+Respond with ONLY the JSON, no other text.`;
 }
 
 /** スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。 */

@@ -1,0 +1,46 @@
+import type { Pokemon } from "./pokemon.js";
+import type { UserPokemon, UserSettings } from "./user.js";
+// DailyUsage は API レスポンスにそのまま乗る形なので、shared/api-types/usage.d.ts を SSOT として再 export する。
+import type { DailyUsage } from "../../../shared/api-types/usage.js";
+export type { DailyUsage };
+
+/** プロンプトを投げてテキスト応答を得る LLM ポート。プロンプト組み立てとレスポンス解釈はサービス側で行う。 */
+export interface LLMClient {
+  generateText(prompt: string): Promise<string>;
+}
+
+/** [0,1) の乱数を供給するポート。捕獲抽選などの確率的処理をテスト/mock で決定化するための seam。 */
+export interface RandomSource {
+  next(): number;
+}
+
+/** ポケモン情報の取得を担うデータソースポート。出題抽選プールは実装側のデータ事情に依存する。 */
+export interface PokemonClient {
+  getPokemonByID(id: number): Promise<Pokemon>;
+  getRandomPokemon(): Promise<Pokemon>;
+}
+
+/** ポケモン関連のアプリ設定値。Firestore など外部ソースから組み立てて注入する。 */
+export interface PokemonConfig {
+  maxPokemonID: number;
+  defaultExcludedPokemonIDs: readonly number[];
+}
+
+/** ユーザの図鑑進捗 (遭遇/捕獲) を永続化するリポジトリ。 */
+export interface UserPokemonRepository {
+  upsertEncounter(uid: string, pokemonID: number, score: number, captured: boolean): Promise<void>;
+  getCollection(uid: string): Promise<UserPokemon[]>;
+  getPokemon(uid: string, pokemonID: number): Promise<UserPokemon>;
+}
+
+/** ユーザ設定 (除外ポケモン等) を永続化するリポジトリ。 */
+export interface UserSettingsRepository {
+  getSettings(uid: string): Promise<UserSettings>;
+  updateExcludedPokemon(uid: string, pokemonIDs: number[]): Promise<void>;
+}
+
+/** 日次レート制限カウンタを管理するリポジトリ。Firestore 版とインメモリ版がある。 */
+export interface RateLimitRepository {
+  checkAndIncrement(uid: string): Promise<DailyUsage>;
+  getUserUsage(uid: string): Promise<DailyUsage>;
+}

@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { NotFoundError, ExternalServiceError, RateLimitError } from "../apperror/apperror.js";
+import { NotFoundError, ExternalServiceError, RateLimitError } from "../domain/errors.js";
 
 /** ドメインエラーを HTTP ステータスにマップしてレスポンスを返す共通ハンドラ。 */
 export function handleError(res: Response, err: unknown, path: string): void {

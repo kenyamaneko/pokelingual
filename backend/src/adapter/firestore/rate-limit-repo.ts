@@ -1,7 +1,7 @@
 import type { Firestore } from "@google-cloud/firestore";
 import { FieldValue } from "@google-cloud/firestore";
-import { RateLimitError } from "../apperror/apperror.js";
-import type { DailyUsage, RateLimitRepository } from "../domain/interfaces.js";
+import { RateLimitError } from "../../domain/errors.js";
+import type { DailyUsage, RateLimitRepository } from "../../domain/ports.js";
 
 /** Firestore で日次レートリミットを管理する RateLimitRepository 実装。 */
 export class RateLimitRepo implements RateLimitRepository {

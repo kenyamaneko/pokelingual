@@ -1,6 +1,6 @@
 import type { Firestore } from "@google-cloud/firestore";
-import type { UserSettingsRepository } from "../domain/interfaces.js";
-import type { UserSettings } from "../types/index.js";
+import type { UserSettingsRepository } from "../../domain/ports.js";
+import type { UserSettings } from "../../domain/user.js";
 
 /** ユーザ設定 (除外ポケモン等) を Firestore に永続化する UserSettingsRepository 実装。 */
 export class UserSettingsRepo implements UserSettingsRepository {

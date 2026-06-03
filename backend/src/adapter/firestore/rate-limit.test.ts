@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { RateLimitRepo } from "./rate-limit-repo.js";
 import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-emulator-helper.js";
-import { RateLimitError } from "../apperror/apperror.js";
+import { RateLimitError } from "../../domain/errors.js";
 
 const db = requireFirestoreEmulator();
 

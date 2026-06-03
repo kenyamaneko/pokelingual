@@ -1,5 +1,6 @@
-import type { PokemonFetcher } from "../domain/interfaces.js";
-import type { Pokemon, FlavorTextPair } from "../types/index.js";
+import type { PokemonClient, PokemonConfig } from "../../domain/ports.js";
+import type { Pokemon } from "../../domain/pokemon.js";
+import type { FlavorTextPair } from "../../../../shared/api-types/collection.js";
 
 const versionOrder = [
   "x", "y", "omega-ruby", "alpha-sapphire",
@@ -22,14 +23,6 @@ const versionDisplayNames: Record<string, string> = {
   "sword": "ソード",
   "shield": "シールド",
 };
-
-/** PokeAPIService の構築に必要な設定値。起動時に Firestore から組み立てる。 */
-export interface PokeAPISettings {
-  /** 抽選対象とする最大ポケモンID。 */
-  maxPokemonID: number;
-  /** デフォルトで出題から除外するポケモンIDリスト。 */
-  defaultExcludedPokemonIDs: number[];
-}
 
 interface PokeAPISpeciesResponse {
   id: number;
@@ -54,27 +47,17 @@ interface PokeAPIPokemonResponse {
   weight: number;
 }
 
-/** PokeAPI から種別情報を取得しメモリキャッシュする PokemonFetcher 実装。 */
-export class PokeAPIService implements PokemonFetcher {
+/** PokeAPI から種別情報を取得しメモリキャッシュする PokemonClient 実装。 */
+export class PokeAPIClient implements PokemonClient {
   private cache = new Map<number, Pokemon>();
 
-  constructor(private settings: PokeAPISettings) {}
+  constructor(private config: PokemonConfig) {}
 
-  getMaxPokemonID(): number {
-    return this.settings.maxPokemonID;
-  }
-
-  getDefaultExcludedPokemonIDs(): number[] {
-    return this.settings.defaultExcludedPokemonIDs;
-  }
-
-  /** ランダムなポケモンを 1 体取得する。 */
   async getRandomPokemon(): Promise<Pokemon> {
-    const id = Math.floor(Math.random() * this.settings.maxPokemonID) + 1;
+    const id = Math.floor(Math.random() * this.config.maxPokemonID) + 1;
     return this.getPokemonByID(id);
   }
 
-  /** ID 指定でポケモンを取得する。キャッシュ済みなら API は叩かない。 */
   async getPokemonByID(id: number): Promise<Pokemon> {
     const cached = this.cache.get(id);
     if (cached) return cached;

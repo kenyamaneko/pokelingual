@@ -18,25 +18,8 @@ export interface QuestSession {
   name_guessed: boolean;
 }
 
-/** AIScorer.scoreTranslation の戻り値。 */
+/** 翻訳採点結果。スコアと講評文 (LLM が直接返す内部表現)。 */
 export interface ScoreResult {
   score: number;
   review: string;
-}
-
-/** チャットの 1 発言。 */
-export interface ChatMessage {
-  role: "user" | "professor";
-  content: string;
-}
-
-/** オーキド博士チャットに与えるクエスト文脈。 */
-export interface ChatContext {
-  description_en: string;
-  description_ja: string;
-  translation: string;
-  score: number;
-  review: string;
-  name_en: string;
-  name_ja: string;
 }

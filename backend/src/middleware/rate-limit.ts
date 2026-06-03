@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
-import type { RateLimitRepository } from "../domain/interfaces.js";
+import type { RateLimitRepository } from "../domain/ports.js";
 import { handleError } from "../handler/error.js";
 
 /** RateLimitRepository を介してリクエストを検証・カウントするミドルウェアを返す。 */

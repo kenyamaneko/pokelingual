@@ -1,20 +1,18 @@
 import type { Request, Response } from "express";
-import type { AIScorer, UserPokemonRepository } from "../domain/interfaces.js";
-import type { QuestService, ChatRequest } from "../service/quest-service.js";
-import { ExternalServiceError } from "../apperror/apperror.js";
+import type { UserPokemonRepository } from "../domain/ports.js";
+import type { QuestService } from "../service/quest-service.js";
+import type { ChatService } from "../service/chat-service.js";
+import type { ChatRequest } from "../../../shared/api-types/quest.js";
+import { ExternalServiceError } from "../domain/errors.js";
 import { handleError } from "./error.js";
 
 /** クエスト関連エンドポイント (出題・採点・名前推測・捕獲・チャット) を束ねるハンドラ。 */
 export class QuestHandler {
-  private questService: QuestService;
-  private repo: UserPokemonRepository;
-  private aiScorer: AIScorer;
-
-  constructor(questService: QuestService, repo: UserPokemonRepository, aiScorer: AIScorer) {
-    this.questService = questService;
-    this.repo = repo;
-    this.aiScorer = aiScorer;
-  }
+  constructor(
+    private questService: QuestService,
+    private chatService: ChatService,
+    private repo: UserPokemonRepository,
+  ) {}
 
   /** GET /quest/new — 新しい出題ポケモンを返す。 */
   newQuest = async (req: Request, res: Response) => {
@@ -27,7 +25,7 @@ export class QuestHandler {
     }
   };
 
-  /** POST /quest/score — ユーザの翻訳文を Gemini で採点しスコアを返す。 */
+  /** POST /quest/score — ユーザの翻訳文を LLM で採点しスコアを返す。 */
   scoreTranslation = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { translation } = req.body;
@@ -83,10 +81,10 @@ export class QuestHandler {
       return;
     }
     try {
-      const reply = await this.aiScorer.replyToChat(body.context, body.messages);
+      const reply = await this.chatService.reply(body.context, body.messages);
       res.json({ reply });
     } catch (err) {
-      handleError(res, new ExternalServiceError("Gemini", err as Error), req.path);
+      handleError(res, err, req.path);
     }
   };
 }

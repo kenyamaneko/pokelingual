@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { RateLimitRepository } from "../domain/interfaces.js";
+import type { RateLimitRepository } from "../domain/ports.js";
 import { handleError } from "./error.js";
 
 /** 当日の API 利用状況を返すエンドポイント用ハンドラ。 */

@@ -5,7 +5,7 @@ import {
   NotFoundError,
   ExternalServiceError,
   RateLimitError,
-} from "../apperror/apperror.js";
+} from "../domain/errors.js";
 
 // HTTP エラー応答の仕様
 function makeRes() {

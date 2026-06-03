@@ -10,54 +10,61 @@ import { corsConfig } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { devAuth } from "./middleware/auth-mock.js";
-import { MockAIScorer } from "./service/ai-scorer-mock.js";
-import { MockPokemonFetcher } from "./service/pokemon-fetcher-mock.js";
-import { GeminiService } from "./service/gemini-service.js";
-import { PokeAPIService, type PokeAPISettings } from "./service/pokeapi-service.js";
+import { MockLLMClient } from "./adapter/llm/mock.js";
+import { GeminiClient } from "./adapter/llm/gemini.js";
+import { MockPokemonClient } from "./adapter/pokemon/mock.js";
+import { PokeAPIClient } from "./adapter/pokemon/pokeapi.js";
+import { SystemRandomSource } from "./adapter/random/system.js";
+import { MockRandomSource } from "./adapter/random/mock.js";
 import { QuestService } from "./service/quest-service.js";
+import { ChatService } from "./service/chat-service.js";
 import { CollectionService } from "./service/collection-service.js";
-import { UserPokemonRepo } from "./repository/user-pokemon-repo.js";
-import { UserSettingsRepo } from "./repository/user-settings-repo.js";
-import { RateLimitRepo } from "./repository/rate-limit-repo.js";
+import { UserPokemonRepo } from "./adapter/firestore/user-pokemon-repo.js";
+import { UserSettingsRepo } from "./adapter/firestore/user-settings-repo.js";
+import { RateLimitRepo } from "./adapter/firestore/rate-limit-repo.js";
 import { QuestHandler } from "./handler/quest-handler.js";
 import { CollectionHandler } from "./handler/collection-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
 import { setupRoutes } from "./router/router.js";
 import type {
-  AIScorer,
-  PokemonFetcher,
+  LLMClient,
+  PokemonClient,
+  PokemonConfig,
+  RandomSource,
   UserPokemonRepository,
   UserSettingsRepository,
   RateLimitRepository,
-} from "./domain/interfaces.js";
+} from "./domain/ports.js";
 import type { RequestHandler } from "express";
 
-/** Firestore の config/app ドキュメントから PokeAPI 設定を読み込む。未設定ならデフォルト値。 */
-const DEFAULT_POKE_API_SETTINGS: PokeAPISettings = {
+/** Firestore の config/app ドキュメントから PokemonConfig を読み込む。未設定ならデフォルト値。 */
+const DEFAULT_POKEMON_CONFIG: PokemonConfig = {
   maxPokemonID: 898,
   defaultExcludedPokemonIDs: [167, 168, 595, 596, 751, 752],
 };
 
-async function loadPokeAPISettings(
+async function loadPokemonConfig(
   firestoreClient: ReturnType<typeof getFirestore>,
-): Promise<PokeAPISettings> {
+): Promise<PokemonConfig> {
   const doc = await firestoreClient.collection("config").doc("app").get();
-  if (!doc.exists) return DEFAULT_POKE_API_SETTINGS;
+  if (!doc.exists) return DEFAULT_POKEMON_CONFIG;
   const data = doc.data();
   const maxPokemonID = typeof data?.max_pokemon_id === "number"
     ? data.max_pokemon_id
-    : DEFAULT_POKE_API_SETTINGS.maxPokemonID;
+    : DEFAULT_POKEMON_CONFIG.maxPokemonID;
   const defaultExcludedPokemonIDs = Array.isArray(data?.default_excluded_pokemon_ids)
     ? (data.default_excluded_pokemon_ids as number[])
-    : DEFAULT_POKE_API_SETTINGS.defaultExcludedPokemonIDs;
+    : DEFAULT_POKEMON_CONFIG.defaultExcludedPokemonIDs;
   return { maxPokemonID, defaultExcludedPokemonIDs };
 }
 
 const cfg = loadConfig();
 
-let pokemonFetcher: PokemonFetcher;
-let aiScorer: AIScorer;
+let pokemonClient: PokemonClient;
+let llmClient: LLMClient;
+let randomSource: RandomSource;
+let pokemonConfig: PokemonConfig;
 let userPokemonRepo: UserPokemonRepository;
 let userSettingsRepo: UserSettingsRepository;
 let rateLimitRepo: RateLimitRepository;
@@ -75,8 +82,10 @@ if (cfg.appMode === "mock") {
   }
   console.log(`Starting in mock mode (Firestore Emulator: ${process.env.FIRESTORE_EMULATOR_HOST})`);
   const firestoreClient = new Firestore({ projectId: cfg.gcpProject });
-  pokemonFetcher = new MockPokemonFetcher();
-  aiScorer = new MockAIScorer();
+  pokemonClient = new MockPokemonClient();
+  llmClient = new MockLLMClient();
+  randomSource = new MockRandomSource();
+  pokemonConfig = DEFAULT_POKEMON_CONFIG;
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -105,13 +114,14 @@ if (cfg.appMode === "mock") {
     console.log(`Loaded ${allowedEmails.length} allowed email(s) from Firestore (whitelist mode)`);
   }
 
-  const pokeApiSettings = await loadPokeAPISettings(firestoreClient);
+  pokemonConfig = await loadPokemonConfig(firestoreClient);
   console.log(
-    `Loaded PokeAPI settings: maxPokemonID=${pokeApiSettings.maxPokemonID}, ` +
-      `defaultExcluded=${pokeApiSettings.defaultExcludedPokemonIDs.length}`,
+    `Loaded Pokemon config: maxPokemonID=${pokemonConfig.maxPokemonID}, ` +
+      `defaultExcluded=${pokemonConfig.defaultExcludedPokemonIDs.length}`,
   );
-  pokemonFetcher = new PokeAPIService(pokeApiSettings);
-  aiScorer = new GeminiService(vertexAI);
+  pokemonClient = new PokeAPIClient(pokemonConfig);
+  llmClient = new GeminiClient(vertexAI);
+  randomSource = new SystemRandomSource();
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -120,12 +130,13 @@ if (cfg.appMode === "mock") {
 
 console.log(`Rate limits: per-user=${cfg.perUserDailyLimit}/day, global=${cfg.globalDailyLimit}/day`);
 
-const questService = new QuestService(pokemonFetcher, aiScorer, userSettingsRepo);
-const collectionService = new CollectionService(userPokemonRepo, pokemonFetcher);
+const questService = new QuestService(pokemonClient, llmClient, pokemonConfig, userSettingsRepo, randomSource);
+const chatService = new ChatService(llmClient);
+const collectionService = new CollectionService(userPokemonRepo, pokemonClient);
 
-const questHandler = new QuestHandler(questService, userPokemonRepo, aiScorer);
-const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo, pokemonFetcher);
-const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonFetcher);
+const questHandler = new QuestHandler(questService, chatService, userPokemonRepo);
+const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo, pokemonConfig);
+const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonConfig);
 const usageHandler = new UsageHandler(rateLimitRepo);
 
 const app = express();

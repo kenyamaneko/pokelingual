@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Request, Response, NextFunction } from "express";
 import { rateLimit } from "./rate-limit.js";
-import { RateLimitError } from "../apperror/apperror.js";
-import type { DailyUsage, RateLimitRepository } from "../domain/interfaces.js";
+import { RateLimitError } from "../domain/errors.js";
+import type { DailyUsage, RateLimitRepository } from "../domain/ports.js";
 
 // HTTP 境界での仕様: 上限以内は通し、超えたら 429 を返す。
 // Repo 自体の挙動はリポジトリ層のコントラクトテストでカバーする前提で、ここではミドルウェアの

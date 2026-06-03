@@ -1,17 +1,11 @@
-import { ExternalServiceError } from "../apperror/apperror.js";
-import type { PokemonFetcher, UserPokemonRepository } from "../domain/interfaces.js";
-import type { FlavorTextPair, UserPokemon } from "../types/index.js";
+import { ExternalServiceError } from "../domain/errors.js";
+import type { PokemonClient, UserPokemonRepository } from "../domain/ports.js";
+import type {
+  CollectionEntry,
+  PokemonDetailResponse,
+} from "../../../shared/api-types/collection.js";
 
-/** 図鑑一覧の 1 エントリ。ユーザ実績と表示用のポケモン基本情報を含む。 */
-export interface CollectionEntry {
-  pokemon_id: number;
-  name_en: string;
-  name_ja: string;
-  sprite_url: string;
-  status: string;
-  total_captures: number;
-  best_score: number;
-}
+// CollectionEntry / PokemonDetailResponse / FlavorTextPair の API 契約型は shared/api-types/collection.d.ts を参照
 
 /** getCollection の戻り値。表示可能なエントリと、PokeAPI 取得失敗で除外された件数を返す。 */
 export interface CollectionResult {
@@ -19,27 +13,14 @@ export interface CollectionResult {
   unavailable_count: number;
 }
 
-/** ポケモン詳細レスポンス。ユーザ実績と PokeAPI 情報を合成して返す。 */
-export interface PokemonDetailResponse extends UserPokemon {
-  name_en: string;
-  name_ja: string;
-  description_en: string;
-  description_ja: string;
-  sprite_url: string;
-  types: string[];
-  height: number;
-  weight: number;
-  flavor_texts?: FlavorTextPair[];
-}
-
 /** 図鑑コレクションの取得・整形ロジックを束ねるサービス。 */
 export class CollectionService {
   private repo: UserPokemonRepository;
-  private pokemonFetcher: PokemonFetcher;
+  private pokemonClient: PokemonClient;
 
-  constructor(repo: UserPokemonRepository, pokemonFetcher: PokemonFetcher) {
+  constructor(repo: UserPokemonRepository, pokemonClient: PokemonClient) {
     this.repo = repo;
-    this.pokemonFetcher = pokemonFetcher;
+    this.pokemonClient = pokemonClient;
   }
 
   /** ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。 */
@@ -50,7 +31,7 @@ export class CollectionService {
 
     for (const up of pokemons) {
       try {
-        const pokemon = await this.pokemonFetcher.getPokemonByID(up.pokemon_id);
+        const pokemon = await this.pokemonClient.getPokemonByID(up.pokemon_id);
         entries.push({
           pokemon_id: up.pokemon_id,
           name_en: pokemon.name_en,
@@ -77,13 +58,20 @@ export class CollectionService {
 
     let pokemon;
     try {
-      pokemon = await this.pokemonFetcher.getPokemonByID(pokemonID);
+      pokemon = await this.pokemonClient.getPokemonByID(pokemonID);
     } catch (err) {
       throw new ExternalServiceError("PokeAPI", err as Error);
     }
 
     return {
-      ...userPokemon,
+      pokemon_id: userPokemon.pokemon_id,
+      status: userPokemon.status,
+      total_captures: userPokemon.total_captures,
+      total_encounters: userPokemon.total_encounters,
+      // HTTP wire 形式 (ISO 8601 文字列) に揃える。JSON.stringify の暗黙変換に頼らず明示する。
+      last_captured_at: userPokemon.last_captured_at?.toISOString() ?? null,
+      last_encountered_at: userPokemon.last_encountered_at.toISOString(),
+      best_score: userPokemon.best_score,
       name_en: pokemon.name_en,
       name_ja: pokemon.name_ja,
       description_en: pokemon.description_en,

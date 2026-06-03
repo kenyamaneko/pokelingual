@@ -1,7 +1,7 @@
 import type { Firestore, DocumentData } from "@google-cloud/firestore";
 import { Timestamp } from "@google-cloud/firestore";
-import type { UserPokemonRepository } from "../domain/interfaces.js";
-import type { UserPokemon } from "../types/index.js";
+import type { UserPokemonRepository } from "../../domain/ports.js";
+import type { UserPokemon } from "../../domain/user.js";
 
 /** ユーザの図鑑進捗を Firestore に永続化する UserPokemonRepository 実装。 */
 export class UserPokemonRepo implements UserPokemonRepository {
