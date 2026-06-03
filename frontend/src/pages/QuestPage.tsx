@@ -1,58 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { questApi } from "../services/questApi";
 import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
 import { ScoreDisplay } from "../components/quest/ScoreDisplay";
 import { NameGuess } from "../components/quest/NameGuess";
 import { CaptureResult } from "../components/quest/CaptureResult";
-import { useUsage } from "../contexts/UsageContext";
-import type {
-  QuestNewResponse,
-  ScoreResponse,
-  GuessResponse,
-  CaptureResponse,
-  ChatContext,
-} from "../types";
-
-type QuestPhase =
-  | "loading"
-  | "translating"
-  | "scored"
-  | "guessing"
-  | "capturing"
-  | "result"
-  | "error";
-
-// 429 は UsageProvider が グローバルにモーダル表示するため、各ページのエラー文言は出さない
-function isRateLimitError(err: unknown): boolean {
-  return axios.isAxiosError(err) && err.response?.status === 429;
-}
-
-function getErrorMessage(err: unknown, fallback: string): string {
-  if (axios.isAxiosError(err)) {
-    if (!err.response) {
-      return "サーバーに　せつぞくできません。ネットワークを　かくにんしてください";
-    }
-    const status = err.response.status;
-    if (status === 401) {
-      return "にんしょうに　しっぱいしました。ログイン　しなおしてください";
-    }
-    if (status === 403) {
-      return "アクセスけんが　ありません";
-    }
-    if (status === 502) {
-      return "がいぶサービス（PokeAPI / Gemini）が　おうとうしません。しばらく　待ってください";
-    }
-    if (status === 404) {
-      return "ぼうけんが　見つかりません。新しい　ぼうけんを　始めてください";
-    }
-    return `${fallback}（${status}）`;
-  }
-  return fallback;
-}
-
-type BallType = "poke" | "great" | "ultra";
+import { useQuest, type BallType } from "../hooks/useQuest";
+import type { ChatContext } from "../../../shared/api-types/quest";
 
 const BALL_SPRITES: Record<BallType, string> = {
   poke: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
@@ -66,84 +18,23 @@ const BALL_NAMES: Record<BallType, string> = {
   ultra: "ハイパーボール",
 };
 
-/** クエストの主要ページ。出題→翻訳→採点→名前推測→捕獲→チャットのフェーズ遷移を司る。 */
+/** クエストの主要ページ。フェーズに応じた UI を描画するだけで、状態は useQuest に委譲する。 */
 export function QuestPage() {
-  const [phase, setPhase] = useState<QuestPhase>("loading");
-  const [quest, setQuest] = useState<QuestNewResponse | null>(null);
-  const [score, setScore] = useState<ScoreResponse | null>(null);
-  const [guessResult, setGuessResult] = useState<GuessResponse | null>(null);
-  const [captureResult, setCaptureResult] = useState<CaptureResponse | null>(
-    null
-  );
-  const [userTranslation, setUserTranslation] = useState("");
-  const [ballType, setBallType] = useState<BallType | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { refresh: refreshUsage } = useUsage();
-
-  const startNewQuest = useCallback(async () => {
-    setPhase("loading");
-    setQuest(null);
-    setScore(null);
-    setGuessResult(null);
-    setCaptureResult(null);
-    setUserTranslation("");
-    setBallType(null);
-    setError(null);
-
-    try {
-      const res = await questApi.newQuest();
-      setQuest(res.data);
-      setPhase("translating");
-    } catch (err) {
-      setError(getErrorMessage(err, "ポケモンの　データを　読みこめません"));
-      setPhase("error");
-    }
-  }, []);
-
-  useEffect(() => {
-    startNewQuest(); // eslint-disable-line react-hooks/set-state-in-effect -- initial data fetch on mount
-  }, [startNewQuest]);
-
-  const handleTranslationSubmit = async (translation: string) => {
-    try {
-      setUserTranslation(translation);
-      const res = await questApi.scoreTranslation(translation);
-      setScore(res.data);
-      setPhase("guessing");
-      refreshUsage();
-    } catch (err) {
-      if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "さいてんに　しっぱいしました"));
-    }
-  };
-
-  const handleGuessSubmit = async (guess: string) => {
-    try {
-      const res = await questApi.guessName(guess);
-      setGuessResult(res.data);
-      if (res.data.ball_type) {
-        setBallType(res.data.ball_type as BallType);
-      }
-    } catch (err) {
-      setError(getErrorMessage(err, "名前の　はんていに　しっぱいしました"));
-    }
-  };
-
-  const handleSkipGuess = () => {
-    // 名前推測スキップ時はポケボール固定で捕獲フェーズへ進む仕様
-    setBallType("poke");
-    setPhase("capturing");
-  };
-
-  const handleCapture = async () => {
-    try {
-      const res = await questApi.attemptCapture();
-      setCaptureResult(res.data);
-      setPhase("result");
-    } catch (err) {
-      setError(getErrorMessage(err, "ほかくの　はんていに　しっぱいしました"));
-    }
-  };
+  const {
+    phase,
+    quest,
+    score,
+    guessResult,
+    captureResult,
+    userTranslation,
+    ballType,
+    error,
+    startNewQuest,
+    submitTranslation,
+    submitGuess,
+    skipGuess,
+    capture,
+  } = useQuest();
 
   const isSpecial = quest?.is_legendary || quest?.is_mythical;
 
@@ -201,7 +92,7 @@ export function QuestPage() {
               </p>
             )}
             <QuestCard description={quest.description_en} />
-            <TranslationInput onSubmit={handleTranslationSubmit} />
+            <TranslationInput onSubmit={submitTranslation} />
           </>
         )}
 
@@ -232,8 +123,8 @@ export function QuestPage() {
             </div>
             <ScoreDisplay score={score} />
             <NameGuess
-              onSubmit={handleGuessSubmit}
-              onSkip={handleSkipGuess}
+              onSubmit={submitGuess}
+              onSkip={skipGuess}
               guessResult={guessResult}
             />
           </>
@@ -250,7 +141,7 @@ export function QuestPage() {
               {BALL_NAMES[ballType]}を　手に　入れた！
             </p>
             <button
-              onClick={handleCapture}
+              onClick={capture}
               className="bg-red-500 text-white py-4 px-12 rounded-2xl font-bold text-xl
                          hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
                          active:scale-95 transform"

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { settingsApi } from "../services/settingsApi";
+import { settingsApi } from "../api/settingsApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
 
 /** 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。 */

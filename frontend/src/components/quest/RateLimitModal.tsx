@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import type { RateLimitDetail } from "../../services/rateLimitEvents";
+import type { RateLimitDetail } from "../../utils/rateLimitEvents";
 
 interface Props {
   detail: RateLimitDetail;
   onDismiss: () => void;
 }
+
+/**
+ * RateLimitModal の仕様文言。テストから import される SSOT。
+ */
+export const RATE_LIMIT_LABELS = {
+  userTitle: "きょうの　しゅぎょうは　ここまで！",
+  globalTitle: "きょうは　たくさんの　トレーナーが…",
+  dismissButton: "また　あした　くる",
+  closeButtonAria: "閉じる",
+} as const;
 
 const MS_PER_SECOND = 1000;
 const MS_PER_MINUTE = 60 * MS_PER_SECOND;
@@ -24,20 +34,27 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  const title = detail.kind === "user" ? "きょうの　しゅぎょうは　ここまで！" : "きょうは　たくさんの　トレーナーが…";
+  const title = detail.kind === "user" ? RATE_LIMIT_LABELS.userTitle : RATE_LIMIT_LABELS.globalTitle;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onDismiss}>
+    <div
+      data-testid="rate-limit-backdrop"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onDismiss}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rate-limit-modal-title"
         className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+          <h2 id="rate-limit-modal-title" className="text-lg font-bold text-gray-800">{title}</h2>
           <button
             onClick={onDismiss}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-            aria-label="閉じる"
+            aria-label={RATE_LIMIT_LABELS.closeButtonAria}
           >
             &times;
           </button>
@@ -55,7 +72,7 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
           className="w-full bg-red-500 text-white py-3 rounded-2xl font-bold
                      hover:bg-red-600 transition-colors shadow"
         >
-          また　あした　くる
+          {RATE_LIMIT_LABELS.dismissButton}
         </button>
       </div>
     </div>

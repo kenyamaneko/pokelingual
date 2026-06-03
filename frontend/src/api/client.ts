@@ -1,10 +1,10 @@
 import axios from "axios";
-import { auth, isDevMode } from "../config/firebase";
+import { auth, isDevMode } from "../firebase";
 import {
   RATE_LIMIT_EVENT,
   rateLimitEvents,
   type RateLimitDetail,
-} from "./rateLimitEvents";
+} from "../utils/rateLimitEvents";
 
 /** バックエンド API への共通 axios クライアント。認証トークン付与とレート制限通知のインターセプタを持つ。 */
 const api = axios.create({

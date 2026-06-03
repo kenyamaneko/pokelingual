@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CaptureResponse, ChatContext } from "../../types";
+import type { CaptureResponse, ChatContext } from "../../../../shared/api-types/quest";
 import { getTypeColor } from "../../utils/pokemonTypes";
 import { ProfessorChat } from "./ProfessorChat";
 
@@ -9,6 +9,20 @@ interface CaptureResultProps {
   chatContext: ChatContext;
   onNewQuest: () => void;
 }
+
+/**
+ * CaptureResult の仕様文言。テストから import される SSOT。
+ * タイトル系はポケモン名を埋め込む関数として export する。
+ */
+export const CAPTURE_RESULT_LABELS = {
+  capturedTitle: (nameJa: string) => `やったー！　${nameJa}を　つかまえたぞ！`,
+  capturedLegendaryTitle: (nameJa: string) => `やったー！　でんせつの　${nameJa}を　つかまえたぞ！`,
+  capturedMythicalTitle: (nameJa: string) => `しんじられない！　まぼろしの　${nameJa}を　つかまえたぞ！`,
+  escapedTitle: (nameJa: string) => `やせいの　${nameJa}は　にげだした！`,
+  chatButton: "はかせに　しつもん",
+  nextButton: "つぎの　ぼうけんへ",
+  backToMenuButton: "メニューに　もどる",
+} as const;
 
 /** 捕獲結果の表示。成否・伝説/幻演出・チャット起動・次のクエスト遷移を提供する。 */
 export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResultProps) {
@@ -39,17 +53,17 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
                   : "text-green-700"
             }`}>
               {result.is_mythical
-                ? `しんじられない！　まぼろしの　${result.name_ja}を　つかまえたぞ！`
+                ? CAPTURE_RESULT_LABELS.capturedMythicalTitle(result.name_ja)
                 : result.is_legendary
-                  ? `やったー！　でんせつの　${result.name_ja}を　つかまえたぞ！`
-                  : `やったー！　${result.name_ja}を　つかまえたぞ！`}
+                  ? CAPTURE_RESULT_LABELS.capturedLegendaryTitle(result.name_ja)
+                  : CAPTURE_RESULT_LABELS.capturedTitle(result.name_ja)}
             </h2>
           </>
         ) : (
           <>
             <div className="text-4xl mb-2">&#128168;</div>
             <h2 className="text-2xl font-bold text-gray-600 mb-4">
-              やせいの　{result.name_ja}は　にげだした！
+              {CAPTURE_RESULT_LABELS.escapedTitle(result.name_ja)}
             </h2>
           </>
         )}
@@ -62,8 +76,12 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
           }`}
         />
 
-        <p className="text-xl font-bold text-gray-800">{result.name_en}</p>
-        <p className="text-gray-500">{result.name_ja}</p>
+        <p className="text-xl font-bold text-gray-800" data-testid="captured-name-en">
+          {result.name_en}
+        </p>
+        <p className="text-gray-500" data-testid="captured-name-ja">
+          {result.name_ja}
+        </p>
         {result.types && result.types.length > 0 && (
           <div className="flex justify-center gap-2 mt-2">
             {result.types.map((t) => (
@@ -105,7 +123,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         className="mt-6 w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-blue-600 transition-colors shadow-lg"
       >
-        はかせに　しつもん
+        {CAPTURE_RESULT_LABELS.chatButton}
       </button>
 
       <button
@@ -113,7 +131,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         className="mt-3 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
-        つぎの　ぼうけんへ
+        {CAPTURE_RESULT_LABELS.nextButton}
       </button>
 
       <button
@@ -121,7 +139,7 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
         className="mt-3 w-full bg-white text-gray-600 py-3 rounded-2xl font-bold text-base
                    border-2 border-gray-200 hover:bg-gray-50 transition-colors"
       >
-        メニューに　もどる
+        {CAPTURE_RESULT_LABELS.backToMenuButton}
       </button>
 
       {showChat && (

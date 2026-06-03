@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { collectionApi } from "../services/collectionApi";
+import { collectionApi } from "../api/collectionApi";
 import { PokemonGrid } from "../components/collection/PokemonGrid";
 import { PokemonDetailCard } from "../components/collection/PokemonDetailCard";
-import type { CollectionEntry, PokemonDetail } from "../types";
+import type { CollectionEntry, PokemonDetailResponse } from "../../../shared/api-types/collection";
 
 /** 図鑑コレクション一覧ページ。捕獲済み数と全ポケモンのカードグリッドを表示する。 */
 export function CollectionPage() {
@@ -10,7 +10,7 @@ export function CollectionPage() {
   const [totalAvailable, setTotalAvailable] = useState(898);
   const [capturedCount, setCapturedCount] = useState(0);
   const [unavailableCount, setUnavailableCount] = useState(0);
-  const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetail | null>(
+  const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetailResponse | null>(
     null
   );
   const [loading, setLoading] = useState(true);

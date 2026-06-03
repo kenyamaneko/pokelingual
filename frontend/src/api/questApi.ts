@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "./client";
 import type {
   QuestNewResponse,
   ScoreResponse,
@@ -7,7 +7,7 @@ import type {
   ChatContext,
   ChatMessage,
   ChatResponse,
-} from "../types";
+} from "../../../shared/api-types/quest";
 
 /** クエスト関連エンドポイント (出題・採点・推測・捕獲・チャット) を呼ぶ API クライアント。 */
 export const questApi = {

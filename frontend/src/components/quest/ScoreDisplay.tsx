@@ -1,4 +1,4 @@
-import type { ScoreResponse } from "../../types";
+import type { ScoreResponse } from "../../../../shared/api-types/quest";
 
 interface ScoreDisplayProps {
   score: ScoreResponse;
@@ -43,12 +43,23 @@ function getHPBarColor(remainingHP: number): string {
   return "bg-red-500";
 }
 
+/**
+ * スコア帯ラベル文言。仕様文字列としてテストから参照されるため export する。
+ * 文言変更時は実装とテストが同時に追従する。
+ */
+export const SCORE_LABELS = {
+  critical: "いちげき　ひっさつ！",
+  superEffective: "こうかは　ばつぐんだ！",
+  notVeryEffective: "こうかは　いまひとつの　ようだ",
+  noEffect: "こうかが　ないみたいだ...",
+} as const;
+
 function getScoreLabel(score: number): string | null {
-  if (score >= SCORE_LABEL_THRESHOLDS.critical) return "いちげき　ひっさつ！";
-  if (score >= SCORE_LABEL_THRESHOLDS.superEffective) return "こうかは　ばつぐんだ！";
+  if (score >= SCORE_LABEL_THRESHOLDS.critical) return SCORE_LABELS.critical;
+  if (score >= SCORE_LABEL_THRESHOLDS.superEffective) return SCORE_LABELS.superEffective;
   if (score >= SCORE_LABEL_THRESHOLDS.noLabelAbove) return null;
-  if (score >= SCORE_LABEL_THRESHOLDS.notVeryEffective) return "こうかは　いまひとつの　ようだ";
-  return "こうかが　ないみたいだ...";
+  if (score >= SCORE_LABEL_THRESHOLDS.notVeryEffective) return SCORE_LABELS.notVeryEffective;
+  return SCORE_LABELS.noEffect;
 }
 
 /** 採点結果をダメージ表現で表示する。HPバーとスコア帯のラベルを含む。 */

@@ -1,13 +1,24 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { questApi } from "../../services/questApi";
+import { questApi } from "../../api/questApi";
 import { useUsage } from "../../contexts/UsageContext";
-import type { ChatContext, ChatMessage } from "../../types";
+import type { ChatContext, ChatMessage } from "../../../../shared/api-types/quest";
 
 interface ProfessorChatProps {
   context: ChatContext;
   onClose: () => void;
 }
+
+/**
+ * ProfessorChat の仕様文言。テストから import される SSOT。
+ */
+export const PROFESSOR_CHAT_LABELS = {
+  header: "はかせに　しつもん",
+  inputPlaceholder: "しつもんを　入力してね",
+  sendButton: "はかせに　聞く",
+  closeButtonAria: "閉じる",
+  errorReply: "すまない、うまく　答えられなかった。もう一度　聞いてくれ。",
+} as const;
 
 /** オーキド博士チャットモーダル。クエスト文脈を渡して質問応答 UI を提供する。 */
 export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
@@ -47,7 +58,7 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
       }
       const errorMessage: ChatMessage = {
         role: "professor",
-        content: "すまない、うまく　答えられなかった。もう一度　聞いてくれ。",
+        content: PROFESSOR_CHAT_LABELS.errorReply,
       };
       setMessages([...updatedMessages, errorMessage]);
     } finally {
@@ -61,13 +72,17 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="professor-chat-title"
         className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">はかせに　しつもん</h2>
+          <h2 id="professor-chat-title" className="text-lg font-bold text-gray-800">{PROFESSOR_CHAT_LABELS.header}</h2>
           <button
             onClick={onClose}
+            aria-label={PROFESSOR_CHAT_LABELS.closeButtonAria}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
           >
             &times;
@@ -113,7 +128,7 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="しつもんを　入力してね"
+              placeholder={PROFESSOR_CHAT_LABELS.inputPlaceholder}
               disabled={loading}
               rows={2}
               className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm resize-none
@@ -127,7 +142,7 @@ export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
                          hover:bg-blue-600 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              はかせに　聞く
+              {PROFESSOR_CHAT_LABELS.sendButton}
             </button>
           </div>
         </div>

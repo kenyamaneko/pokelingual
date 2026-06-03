@@ -7,12 +7,12 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
-import { usageApi, type DailyUsage } from "../services/usageApi";
+import { usageApi, type DailyUsage } from "../api/usageApi";
 import {
   RATE_LIMIT_EVENT,
   rateLimitEvents,
   type RateLimitDetail,
-} from "../services/rateLimitEvents";
+} from "../utils/rateLimitEvents";
 import { RateLimitModal } from "../components/quest/RateLimitModal";
 
 interface UsageContextValue {

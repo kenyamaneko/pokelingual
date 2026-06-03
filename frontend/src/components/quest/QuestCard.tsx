@@ -10,7 +10,10 @@ export function QuestCard({ description }: QuestCardProps) {
         <h2 className="text-lg font-bold text-gray-700">Who's That Pokemon?</h2>
       </div>
       <div className="bg-gray-50 rounded-xl p-4">
-        <p className="text-gray-800 text-base leading-relaxed italic">
+        <p
+          className="text-gray-800 text-base leading-relaxed italic"
+          data-testid="quest-description"
+        >
           "{description}"
         </p>
       </div>

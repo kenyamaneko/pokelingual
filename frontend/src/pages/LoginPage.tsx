@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -109,6 +109,23 @@ export function LoginPage() {
             {loading ? "ログイン中..." : "メールで　ログイン"}
           </button>
         </form>
+
+        <p className="text-gray-400 text-sm mt-6">
+          はじめての　人は{" "}
+          <Link to="/signup" className="text-blue-500 hover:underline" data-testid="goto-signup">
+            アカウントを　つくる
+          </Link>
+        </p>
+        <p className="text-gray-400 text-sm mt-2">
+          パスワードを　わすれた人は{" "}
+          <Link
+            to="/reset-password"
+            className="text-blue-500 hover:underline"
+            data-testid="goto-reset-password"
+          >
+            さいせってい
+          </Link>
+        </p>
       </div>
     </div>
   );

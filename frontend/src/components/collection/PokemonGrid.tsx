@@ -1,4 +1,4 @@
-import type { CollectionEntry } from "../../types";
+import type { CollectionEntry } from "../../../../shared/api-types/collection";
 import { formatPokemonId } from "../../utils/pokemonFormat";
 
 interface PokemonGridProps {
@@ -22,6 +22,7 @@ export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
       {pokemon.map((p) => (
         <button
           key={p.pokemon_id}
+          data-testid="pokemon-card"
           onClick={() => onSelect(p.pokemon_id)}
           className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow
                      p-3 flex flex-col items-center border border-gray-100
