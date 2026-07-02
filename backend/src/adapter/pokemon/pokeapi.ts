@@ -140,6 +140,8 @@ function buildFlavorTextPairs(
       case "en": texts.en = cleaned; break;
       case "ja": texts.ja = cleaned; break;
       case "ja-Hrkt": texts.jaHrkt = cleaned; break;
+      // PokeAPI は fr/de/ko 等 多数の言語を返すが、本アプリの対象は EN/JA のみなので無視する
+      default: break;
     }
   }
 
