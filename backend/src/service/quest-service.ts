@@ -17,7 +17,7 @@ import type {
 } from "../../../shared/api-types/quest.js";
 
 /**
- * 出題抽選のリトライ上限。除外設定の最大数 (MAX_EXCLUDED_POKEMON_COUNT) と
+ * 出題抽選の最大試行回数 (初回を含む)。除外設定の最大数 (MAX_EXCLUDED_POKEMON_COUNT) と
  * maxPokemonID の関係から、この回数で実質衝突確率はゼロに収束する。
  */
 const MAX_RANDOM_PICK_RETRY = 10;
@@ -26,7 +26,7 @@ const MAX_RANDOM_PICK_RETRY = 10;
 const MAX_NAME_GUESS_ATTEMPTS = 3;
 
 /** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
-const FUZZY_MATCH_MIN_NAME_LENGTH = 3;
+const FUZZY_MATCH_MIN_NAME_LENGTH = 4;
 
 /** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
 const FUZZY_MATCH_MAX_DISTANCE = 2;
@@ -176,7 +176,7 @@ export class QuestService {
       return { correct: true, ball_type: "great", language: "ja", attempts_remaining: remaining };
     }
 
-    if (nameENNorm.length > FUZZY_MATCH_MIN_NAME_LENGTH) {
+    if (nameENNorm.length >= FUZZY_MATCH_MIN_NAME_LENGTH) {
       const dist = levenshtein(guessNorm, nameENNorm);
       if (dist <= FUZZY_MATCH_MAX_DISTANCE) {
         session.ball_type = "ultra";
