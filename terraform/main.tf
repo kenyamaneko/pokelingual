@@ -229,7 +229,7 @@ resource "google_project_iam_member" "backend_vertex_ai" {
 }
 
 # ============================================================
-# Workload Identity Federation (GitHub Actions → GCP)
+# Workload Identity Federation (GitHub Actions → Google Cloud)
 # ============================================================
 resource "google_iam_workload_identity_pool" "github" {
   project                   = var.project_id

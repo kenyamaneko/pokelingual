@@ -1,10 +1,10 @@
 variable "project_id" {
-  description = "GCP project ID"
+  description = "Google Cloud project ID"
   type        = string
 }
 
 variable "region" {
-  description = "GCP region"
+  description = "Google Cloud region"
   type        = string
   default     = "asia-northeast1"
 }
@@ -36,7 +36,7 @@ variable "alert_email" {
   default     = "kenya.m.amaoto@gmail.com"
 }
 
-# Google Sign-In 用 OAuth クライアント。GCP コンソールで手動作成し、tfvars または環境変数で注入する
+# Google Sign-In 用 OAuth クライアント。Google Cloud コンソールで手動作成し、tfvars または環境変数で注入する
 variable "google_oauth_client_id" {
   description = "OAuth 2.0 client ID for Google Sign-In (Identity Platform)"
   type        = string
@@ -53,7 +53,7 @@ variable "google_oauth_client_secret" {
 # 請求アカウントの表示名。未設定（空文字）なら Billing Budget は作成しない。
 # 作成には Terraform 実行者が billing.budgets.create 権限を請求アカウントレベルで持つ必要あり
 variable "billing_account_display_name" {
-  description = "GCP billing account display name. Leave empty to skip Billing Budget creation."
+  description = "Google Cloud billing account display name. Leave empty to skip Billing Budget creation."
   type        = string
   default     = ""
 }

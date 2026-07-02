@@ -14,7 +14,7 @@
 | 認証 | Firebase Authentication（メール/パスワード） |
 | AI スコアリング | Gemini（Vertex AI, gemini-2.5-flash） |
 | ポケモンデータ | PokeAPI |
-| インフラ | GCP（Cloud Run, Artifact Registry）, Terraform |
+| インフラ | Google Cloud（Cloud Run, Artifact Registry）, Terraform |
 | CI/CD | GitHub Actions |
 | テスト | Vitest, Testing Library, Playwright |
 
@@ -50,7 +50,7 @@
 │   │   ├── hooks/           # カスタムフック
 │   │   └── config/          # Firebase 設定
 │   └── Dockerfile.dev
-├── terraform/               # GCP インフラ（dev/prod）
+├── terraform/               # Google Cloud インフラ（dev/prod）
 ├── scripts/                 # 結合テストスクリプト
 ├── docs/                    # ドキュメント
 ├── docker-compose.dev.yml   # ローカル開発環境
@@ -59,7 +59,7 @@
 
 ## セットアップ（別環境での構築）
 
-このリポジトリをクローンして別の GCP プロジェクトで動かすための手順。
+このリポジトリをクローンして別の Google Cloud プロジェクトで動かすための手順。
 
 ### 前提条件
 
@@ -71,7 +71,7 @@
 
 ### 1. ローカル開発環境の起動
 
-ローカル開発は GCP リソース不要。外部 API (PokeAPI/Gemini) と認証はモック実装で代替し、永続化は Docker 内の Firestore Emulator を使う。
+ローカル開発は Google Cloud リソース不要。外部 API (PokeAPI/Gemini) と認証はモック実装で代替し、永続化は Docker 内の Firestore Emulator を使う。
 
 ```bash
 git clone <repo-url>
@@ -86,9 +86,9 @@ make dev
 
 mock モードでは認証なし・モックデータで動作する。ヘッダーに「LOCAL」バッジが表示される。
 
-### 2. GCP プロジェクトの準備
+### 2. Google Cloud プロジェクトの準備
 
-dev 環境と prod 環境でそれぞれ GCP プロジェクトを作成する。
+dev 環境と prod 環境でそれぞれ Google Cloud プロジェクトを作成する。
 
 ```bash
 # プロジェクト作成（例）
@@ -129,7 +129,7 @@ Terraform が作成するリソース:
 - Identity Platform（メール/パスワード認証）
 - Artifact Registry（Docker イメージ保管）
 - Secret Manager（Gemini API キー）
-- Workload Identity Federation（GitHub Actions → GCP 認証）
+- Workload Identity Federation（GitHub Actions → Google Cloud 認証）
 - Cloud Monitoring アラート
 - サービスアカウント + IAM
 
@@ -189,7 +189,7 @@ variable "github_repo" {
 |--------|------|----------|
 | `WIF_PROVIDER` | WIF プロバイダーのフルパス | `terraform output wif_provider` |
 | `WIF_SERVICE_ACCOUNT` | deploy SA のメールアドレス | `terraform output wif_service_account` |
-| `GCP_PROJECT_ID` | GCP プロジェクト ID | `my-pokelingual-dev` 等 |
+| `GCP_PROJECT_ID` | Google Cloud プロジェクト ID | `my-pokelingual-dev` 等 |
 | `FIREBASE_API_KEY` | Firebase Web API キー | `terraform output firebase_api_key` |
 | `FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン | `PROJECT_ID.firebaseapp.com` |
 | `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID | = GCP_PROJECT_ID |
@@ -353,7 +353,7 @@ git push origin develop
 
 ## デプロイ
 
-| 環境 | GCP プロジェクト | フロントエンド | バックエンド |
+| 環境 | Google Cloud プロジェクト | フロントエンド | バックエンド |
 |------|----------------|---------------|-------------|
 | dev | pokelingual-dev | Firebase Hosting | Cloud Run |
 | prod | pokelingual-prod | Firebase Hosting | Cloud Run |
@@ -391,7 +391,7 @@ terraform apply -var-file=environments/prod/terraform.tfvars
    - 全体: 1,500 回/日
    - JST 0:00 リセット
    - 上限到達時は 429 + 博士口調モーダル
-2. **GCP Billing Budget アラート（保険）**
+2. **Google Cloud Billing Budget アラート（保険）**
    - 月予算 5,000円 の 50/80/100% でメール通知
    - 自動停止は実装しない（通知遅延があるため、アプリ層の上限が主防御）
 

@@ -130,7 +130,7 @@ Error: Error creating WorkloadIdentityPool: googleapi: Error 409: Requested enti
 
 ### 原因
 
-GCP の Workload Identity Pool は削除後 30 日間 soft-delete 状態になる。
+Google Cloud の Workload Identity Pool は削除後 30 日間 soft-delete 状態になる。
 この間は同名の Pool を作成できず、`terraform import` もできない。
 
 ### 解決
@@ -148,7 +148,7 @@ undelete 後に `terraform import` で state に取り込む。
 
 ### 学び
 
-- GCP の一部リソースは soft-delete がある。`destroy` 前に確認
+- Google Cloud の一部リソースは soft-delete がある。`destroy` 前に確認
 - WIF Pool を壊すと CI/CD が完全に止まるため、慎重に扱う
 
 ---
@@ -208,7 +208,7 @@ AllowMethods: []string{"GET", "POST", "PUT", "OPTIONS"},
 ### 原因
 
 `--allow-unauthenticated` で設定される IAM ポリシー（`allUsers: roles/run.invoker`）は即座に反映されない。
-GCP の IAM ポリシーの伝播に最大数分かかる。
+Google Cloud の IAM ポリシーの伝播に最大数分かかる。
 
 ### 解決
 
@@ -267,7 +267,7 @@ provider "google-beta" {
 
 ### 原因
 
-GCP API の有効化後、内部的な伝播に 30-60 秒かかる場合がある。
+Google Cloud API の有効化後、内部的な伝播に 30-60 秒かかる場合がある。
 Terraform は `google_project_service` 完了後すぐに次のリソースを作成しようとする。
 
 ### 解決

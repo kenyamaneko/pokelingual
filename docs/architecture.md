@@ -188,7 +188,7 @@ Auth middleware → Rate limit middleware → Handler
 - Gemini モデルは `thinkingBudget: 0` で thinking トークンを無効化（4倍コスト削減）
 
 **Billing Budget アラート（二重防御）:**
-- アプリ層レートリミットがバグった時の保険として、GCP Billing Budget で 50/80/100% メール通知
+- アプリ層レートリミットがバグった時の保険として、Google Cloud Billing Budget で 50/80/100% メール通知
 - 自動停止は実装しない（Billing 通知は数時間遅延、アプリ層の上限が実質的な保護）
 
 ### ロギング
@@ -240,7 +240,7 @@ loading → quest → translating → scoring → guessing → result
 
 ## インフラ
 
-### GCP リソース（Terraform 管理）
+### Google Cloud リソース（Terraform 管理）
 
 | リソース | 用途 |
 |---|---|
@@ -249,7 +249,7 @@ loading → quest → translating → scoring → guessing → result
 | Identity Platform | メール/パスワード認証 |
 | Artifact Registry | Docker イメージ保管 |
 | Vertex AI | Gemini（ADC 認証、API キー不要） |
-| WIF Pool + Provider | GitHub Actions → GCP 認証（JSON キー不要） |
+| WIF Pool + Provider | GitHub Actions → Google Cloud 認証（JSON キー不要） |
 | Cloud Monitoring | 5xx アラート、レイテンシアラート、エラーログアラート |
 | Billing Budget | 月次予算アラート（50/80/100% でメール通知） |
 
@@ -279,7 +279,7 @@ system/
 
 ### 環境
 
-| 環境 | GCP Project | ブランチ | フロントエンド | バックエンド |
+| 環境 | Google Cloud Project | ブランチ | フロントエンド | バックエンド |
 |---|---|---|---|---|
 | dev | `pokelingual-dev` | `develop` | Firebase Hosting | Cloud Run |
 | prod | `pokelingual-prod` | `main` | Firebase Hosting | Cloud Run |
