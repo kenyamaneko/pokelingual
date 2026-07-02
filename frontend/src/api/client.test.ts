@@ -62,16 +62,19 @@ describe("api/client の仕様", () => {
     expect(capturedAuth).toBe("Bearer dev-token");
   });
 
-  it("429 + 正しいスキーマで rateLimit イベントが発火する", async () => {
-    installAdapter(statusAdapter(429, { error: "user", message: "上限に たっしました" }));
-    const handler = spyOnRateLimitEvents();
+  it.each(["user", "global"] as const)(
+    "429 + kind=%s の正しいスキーマで rateLimit イベントが発火する",
+    async (kind) => {
+      installAdapter(statusAdapter(429, { error: kind, message: "上限に たっしました" }));
+      const handler = spyOnRateLimitEvents();
 
-    await expect(api.get("/anything")).rejects.toBeDefined();
+      await expect(api.get("/anything")).rejects.toBeDefined();
 
-    expect(handler).toHaveBeenCalledOnce();
-    const detail = (handler.mock.calls[0][0] as CustomEvent<RateLimitDetail>).detail;
-    expect(detail).toEqual({ kind: "user", message: "上限に たっしました" });
-  });
+      expect(handler).toHaveBeenCalledOnce();
+      const detail = (handler.mock.calls[0][0] as CustomEvent<RateLimitDetail>).detail;
+      expect(detail).toEqual({ kind, message: "上限に たっしました" });
+    },
+  );
 
   it.each([
     { name: "error が想定外の値", body: { error: "invalid", message: "x" } },

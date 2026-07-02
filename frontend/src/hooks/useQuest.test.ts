@@ -103,6 +103,32 @@ describe("useQuest の仕様", () => {
     expect(result.current.error).not.toBeNull();
   });
 
+  // ステータスごとにユーザー向け文言が切り替わる仕様。表示される文言 (観測結果) で確かめる。
+  it.each([
+    { status: 401, expected: /にんしょう/ },
+    { status: 403, expected: /アクセスけん/ },
+    { status: 404, expected: /見つかりません/ },
+    { status: 502, expected: /がいぶサービス/ },
+  ])("/quest/new の $status ではステータスに応じた文言を表示する", async ({ status, expected }) => {
+    vi.mocked(questApi.newQuest).mockRejectedValue(makeAxiosError(status));
+
+    const { result } = renderHook(() => useQuest());
+    await waitFor(() => expect(result.current.phase).toBe("error"));
+
+    expect(result.current.error).toMatch(expected);
+  });
+
+  it("ネットワーク断 (レスポンス無し) では接続エラーの文言を表示する", async () => {
+    vi.mocked(questApi.newQuest).mockRejectedValue(
+      new AxiosError("network down", AxiosError.ERR_NETWORK),
+    );
+
+    const { result } = renderHook(() => useQuest());
+    await waitFor(() => expect(result.current.phase).toBe("error"));
+
+    expect(result.current.error).toMatch(/せつぞくできません/);
+  });
+
   it("submitTranslation 成功で guessing フェーズへ遷移し、usage 再取得が走る", async () => {
     vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
     vi.mocked(questApi.scoreTranslation).mockResolvedValue(axiosOk(scoreResp));

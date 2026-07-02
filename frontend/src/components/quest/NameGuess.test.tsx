@@ -54,6 +54,18 @@ describe("NameGuess の仕様", () => {
     ).toBeInTheDocument();
   });
 
+  it("不正解で残り 2 回は「もう一度」を表示する", () => {
+    const guess: GuessResponse = { correct: false, attempts_remaining: 2 };
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    expect(screen.getByText(/もう一度/)).toBeInTheDocument();
+  });
+
+  it("不正解で残り 1 回は「ラストチャンス」を表示する (残数境界)", () => {
+    const guess: GuessResponse = { correct: false, attempts_remaining: 1 };
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    expect(screen.getByText(/ラストチャンス/)).toBeInTheDocument();
+  });
+
   it("不正解で残り 0 のとき正解の名前 (en/ja) を表示し、入力欄を消す", () => {
     const guess: GuessResponse = {
       correct: false,
