@@ -16,7 +16,6 @@ export type { BallType };
 export type QuestPhase =
   | "loading"
   | "translating"
-  | "scored"
   | "guessing"
   | "capturing"
   | "result"

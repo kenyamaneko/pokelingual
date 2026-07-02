@@ -31,19 +31,20 @@
 
 ## クリーンアーキテクチャ
 
-サービス層はインターフェース（`domain/interfaces.ts`）に依存し、具象型には依存しない。
+サービス層はポート（`domain/ports.ts`）に依存し、具象型には依存しない。
 これにより、本番実装とモック実装を差し替え可能にしている。
 
 ```
-Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Interfaces → Repository / 外部API
+Handler（HTTP層）→ Service（ビジネスロジック）→ Domain Ports → Adapter (Repository / 外部API)
 ```
 
-### インターフェースと実装の対応
+### ポートと実装の対応
 
-| インターフェース | 本番実装 | モック実装 |
+| ポート | 本番実装 | モック実装 |
 |---|---|---|
-| `PokemonFetcher` | `PokeAPIService` | `MockPokemonFetcher` |
-| `AIScorer` | `GeminiService` | `MockAIScorer` |
+| `PokemonClient` | `PokeAPIClient` | `MockPokemonClient` |
+| `LLMClient` | `GeminiClient` | `MockLLMClient` |
+| `RandomSource` | `SystemRandomSource` | `MockRandomSource` |
 | `UserPokemonRepository` | `UserPokemonRepo` | - (Firestore Emulator 上の本番実装) |
 | `UserSettingsRepository` | `UserSettingsRepo` | - (Firestore Emulator 上の本番実装) |
 | `RateLimitRepository` | `RateLimitRepo` | - (Firestore Emulator 上の本番実装) |
@@ -63,6 +64,8 @@ Repository 層はモックを持たない。ローカル/テスト共に Firesto
 | 変数名 | 用途 | 値 |
 |---|---|---|
 | `APP_MODE` | バックエンドのサービス切替（mock vs 実API） | `mock`（ローカル）/ `prod`（Cloud Run） |
+| `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` | Firestore / Vertex AI の接続先（本番は必須） | deploy.yml が注入 |
+| `PER_USER_DAILY_LIMIT` / `GLOBAL_DAILY_LIMIT` | AI 呼び出しの日次上限（本番は必須） | deploy.yml が注入 |
 | `VITE_APP_MODE` | フロントエンドのサービス切替（Firebase Auth） | `mock`（ローカル）/ 未設定（デプロイ環境） |
 | `VITE_ENVIRONMENT` | UI の環境バッジ表示 | `local` / `dev` / `prod` |
 
@@ -74,15 +77,15 @@ Repository 層はモックを持たない。ローカル/テスト共に Firesto
 backend/src/
 ├── main.ts                  # エントリーポイント、DI
 ├── config/                  # 環境変数 → Config
-├── types/                   # 型定義（Pokemon, Quest, UserPokemon 等）
-├── domain/                  # インターフェース定義（依存の方向の起点）
+├── domain/                  # ポート定義・ドメイン型・エラー型（依存の方向の起点）
+├── service/                 # ビジネスロジック（Quest, Chat, Collection）
 ├── handler/                 # HTTP リクエスト/レスポンス変換
-├── middleware/              # CORS, Firebase Auth
-├── repository/              # Firestore 実装
-├── router/                  # Express ルーティング定義
-├── service/                 # PokeAPI, Gemini, Quest, Collection
-└── apperror/                # アプリケーション固有エラー型
+├── middleware/              # CORS, Firebase Auth, レートリミット
+├── adapter/                 # ポートの実装（firestore / llm / pokemon / random）
+└── router/                  # Express ルーティング定義
 ```
+
+API 契約型（wire format）は `shared/api-types/*.d.ts` を SSOT とし、backend / frontend の両方が import type する。
 
 ### Quest フロー（状態遷移）
 
@@ -100,8 +103,8 @@ backend/src/
 **博士チャット:**
 - 捕獲結果画面から「博士に 質問」ボタンでモーダルを開く
 - フロントエンドがステートレスにコンテキスト（原文、翻訳、スコア、レビュー、ポケモン名）+ メッセージ履歴を毎回送信
-- `domain.AIScorer` インターフェースの `Chat` メソッドで実装（Gemini/モック差し替え可能）
-- セッションは `AttemptCapture` で削除済みのため、チャットはセッション不参照
+- `ChatService` が `LLMClient.generateText` で実装（Gemini/モック差し替え可能）
+- セッションは `attemptCapture` で削除済みのため、チャットはセッション不参照
 
 **ポケモン名伏せ字:**
 - 出題・スコアリング時: 説明文中のポケモン名を代名詞に置換（名前推測のヒント防止）
@@ -203,38 +206,45 @@ Auth middleware → Rate limit middleware → Handler
 ```
 frontend/src/
 ├── pages/                  # ルートに対応するページコンポーネント
-│   ├── LoginPage.tsx       # メール/パスワードログイン
-│   ├── QuestPage.tsx       # クエストフロー（6フェーズの状態機械）
+│   ├── LoginPage.tsx       # ログイン（Google + メール/パスワード）
+│   ├── SignupPage.tsx      # 新規登録
+│   ├── ResetPasswordPage.tsx # パスワードリセット
+│   ├── QuestPage.tsx       # クエストフロー（状態機械は useQuest に委譲）
 │   ├── CollectionPage.tsx  # 捕獲済みポケモン一覧
 │   ├── SettingsPage.tsx    # 除外ポケモン設定、ログアウト
+│   ├── NotFoundPage.tsx    # 404
 │   └── HomePage.tsx
 ├── components/
-│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, ProfessorChat
+│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, ProfessorChat, RateLimitModal
 │   ├── collection/         # PokemonGrid, PokemonDetailCard
-│   └── layout/             # Header, ProtectedRoute
+│   ├── layout/             # Header, ProtectedRoute
+│   └── auth/               # GoogleLogo
 ├── contexts/
 │   ├── AuthContext.tsx      # Firebase Auth の状態管理
-│   └── DevAuthContext.tsx   # dev モード用モック認証
-├── services/               # API クライアント（axios ベース）
-│   ├── api.ts              # axios インスタンス（Auth トークン自動付与）
-│   ├── questApi.ts
-│   ├── collectionApi.ts
-│   └── settingsApi.ts
-├── config/firebase.ts      # Firebase 初期化、isDevMode 判定
-└── types/index.ts          # TypeScript 型定義
+│   ├── DevAuthContext.tsx   # dev モード用モック認証
+│   └── UsageContext.tsx     # 当日利用状況の購読 + レート制限モーダル表示
+├── hooks/
+│   └── useQuest.ts         # クエストの状態機械 + API 呼び出し
+├── api/                    # API クライアント（axios ベース）
+│   ├── client.ts           # axios インスタンス（Auth トークン自動付与、429 通知）
+│   ├── questApi.ts / collectionApi.ts / settingsApi.ts / usageApi.ts
+├── utils/                  # 表示整形・タイプ色・レート制限イベントハブ
+└── firebase.ts             # Firebase 初期化、isDevMode 判定
 ```
+
+API 契約型は `shared/api-types/*.d.ts`（SSOT）を import type する（frontend 内に契約型定義は持たない）。
 
 ### 認証
 
 - `AuthContext` が Firebase Auth の `onAuthStateChanged` を監視
-- `api.ts` の axios インターセプターが全リクエストに `Authorization: Bearer <idToken>` を付与
+- `api/client.ts` の axios インターセプターが全リクエストに `Authorization: Bearer <idToken>` を付与
 - `ProtectedRoute` がログイン状態を確認し、未認証なら `/login` へリダイレクト
 - dev モードでは `DevAuthContext` がモックユーザーを提供（Firebase 接続不要）
 
-### QuestPage の状態遷移
+### QuestPage の状態遷移（useQuest）
 
 ```
-loading → quest → translating → scoring → guessing → result
+loading → translating → guessing → capturing → result   （失敗時は error）
 ```
 
 各フェーズで対応する API を呼び出し、レスポンスに応じて次のフェーズに遷移。
