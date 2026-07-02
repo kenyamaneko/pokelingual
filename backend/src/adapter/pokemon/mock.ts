@@ -62,10 +62,18 @@ const mockPokemon: Pokemon[] = [
 
 /** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。 */
 export class MockPokemonClient implements PokemonClient {
+  /**
+   * @returns 固定リストからランダムに選んだポケモン。
+   */
   async getRandomPokemon(): Promise<Pokemon> {
     return { ...mockPokemon[Math.floor(Math.random() * mockPokemon.length)] };
   }
 
+  /**
+   * @param id ポケモン ID。
+   * @returns 該当ポケモン。
+   * @throws 固定リストに存在しない場合。
+   */
   async getPokemonByID(id: number): Promise<Pokemon> {
     const found = mockPokemon.find((p) => p.id === id);
     if (!found) throw new Error(`mock pokemon not found: ${id}`);
