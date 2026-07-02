@@ -7,11 +7,20 @@ import type { UserPokemon } from "../../domain/user.js";
 export class UserPokemonRepo implements UserPokemonRepository {
   private db: Firestore;
 
+  /**
+   * @param db Firestore クライアント。
+   */
   constructor(db: Firestore) {
     this.db = db;
   }
 
-  /** 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。 */
+  /**
+   * 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。
+   * @param uid ユーザ ID。
+   * @param pokemonID ポケモン ID。
+   * @param score 今回のスコア。
+   * @param captured 捕獲に成功したか。
+   */
   async upsertEncounter(uid: string, pokemonID: number, score: number, captured: boolean): Promise<void> {
     const ref = this.db
       .collection("users").doc(uid)
@@ -55,7 +64,11 @@ export class UserPokemonRepo implements UserPokemonRepository {
     });
   }
 
-  /** ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。 */
+  /**
+   * ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。
+   * @param uid ユーザ ID。
+   * @returns 遭遇済みポケモンの配列 (ID 昇順)。
+   */
   async getCollection(uid: string): Promise<UserPokemon[]> {
     const snapshot = await this.db
       .collection("users").doc(uid)
@@ -66,7 +79,13 @@ export class UserPokemonRepo implements UserPokemonRepository {
     return snapshot.docs.map((doc) => toUserPokemon(doc.data()));
   }
 
-  /** 特定ポケモンのユーザ実績を取得する。未遭遇ならエラーを投げる。 */
+  /**
+   * 特定ポケモンのユーザ実績を取得する。
+   * @param uid ユーザ ID。
+   * @param pokemonID ポケモン ID。
+   * @returns 該当ポケモンのユーザ実績。
+   * @throws 未遭遇 (ドキュメント不在) の場合。
+   */
   async getPokemon(uid: string, pokemonID: number): Promise<UserPokemon> {
     const doc = await this.db
       .collection("users").doc(uid)
@@ -78,8 +97,12 @@ export class UserPokemonRepo implements UserPokemonRepository {
   }
 }
 
-// Firestore は Date を Timestamp として永続化するため、読み出し時に Date へ戻す。
-// 型定義 (UserPokemon) は Date を約束しているので、型と実体を揃えるために中央集約する。
+/**
+ * Firestore の生データを UserPokemon に変換する。Timestamp を Date へ戻す。
+ * (型定義 UserPokemon は Date を約束しているため、型と実体を揃える変換を中央集約する)
+ * @param data Firestore ドキュメントの生データ。
+ * @returns Date へ復元した UserPokemon。
+ */
 function toUserPokemon(data: DocumentData): UserPokemon {
   return {
     pokemon_id: data.pokemon_id,

@@ -52,13 +52,25 @@ interface PokeAPIPokemonResponse {
 export class PokeAPIClient implements PokemonClient {
   private cache = new Map<number, Pokemon>();
 
+  /**
+   * @param config ポケモン関連のアプリ設定 (maxPokemonID 等)。
+   */
   constructor(private config: PokemonConfig) {}
 
+  /**
+   * 1〜maxPokemonID からランダムに 1 匹取得する。
+   * @returns ランダムに選ばれたポケモン。
+   */
   async getRandomPokemon(): Promise<Pokemon> {
     const id = Math.floor(Math.random() * this.config.maxPokemonID) + 1;
     return this.getPokemonByID(id);
   }
 
+  /**
+   * ID 指定でポケモンを取得する (メモリキャッシュ経由)。
+   * @param id ポケモン ID。
+   * @returns 該当ポケモン。
+   */
   async getPokemonByID(id: number): Promise<Pokemon> {
     const cached = this.cache.get(id);
     if (cached) return cached;
@@ -68,6 +80,12 @@ export class PokeAPIClient implements PokemonClient {
     return pokemon;
   }
 
+  /**
+   * PokeAPI から species/pokemon を取得し内部表現へ変換する。
+   * @param id ポケモン ID。
+   * @returns 変換済みのポケモン情報。
+   * @throws API がエラーを返す、または EN/JA 説明ペアが無い場合。
+   */
   private async fetchFromAPI(id: number): Promise<Pokemon> {
     const [speciesResp, pokemonResp] = await Promise.all([
       fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
@@ -122,6 +140,11 @@ interface FlavorTextsByVersion {
   jaHrkt: string;
 }
 
+/**
+ * flavor_text_entries を version ごとに EN/JA ペアへ整形する。
+ * @param entries PokeAPI species の flavor_text_entries。
+ * @returns version 順に並んだ EN/JA 説明ペアの配列。
+ */
 function buildFlavorTextPairs(
   entries: PokeAPISpeciesResponse["flavor_text_entries"],
 ): FlavorTextPair[] {
@@ -188,6 +211,11 @@ function buildFlavorTextPairs(
   return result;
 }
 
+/**
+ * flavor text の制御文字・連続空白を整形する。
+ * @param text PokeAPI の生の flavor_text。
+ * @returns 整形済みテキスト。
+ */
 function cleanFlavorText(text: string): string {
   return text
     .replace(/\f/g, " ")

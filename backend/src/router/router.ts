@@ -5,7 +5,16 @@ import type { CollectionHandler } from "../handler/collection-handler.js";
 import type { SettingsHandler } from "../handler/settings-handler.js";
 import type { UsageHandler } from "../handler/usage-handler.js";
 
-/** 認証ミドルウェアを噛ませた API ルータを構築して返す。 */
+/**
+ * 認証ミドルウェアを噛ませた API ルータを構築して返す。
+ * @param authMiddleware 認証ミドルウェア。
+ * @param rateLimitMiddleware レート制限ミドルウェア。
+ * @param questHandler クエスト系ハンドラ。
+ * @param collectionHandler 図鑑系ハンドラ。
+ * @param settingsHandler 設定系ハンドラ。
+ * @param usageHandler 利用状況ハンドラ。
+ * @returns 構築済みの Express ルータ。
+ */
 export function setupRoutes(
   authMiddleware: RequestHandler,
   rateLimitMiddleware: RequestHandler,

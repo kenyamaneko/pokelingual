@@ -5,13 +5,23 @@ import type { DailyUsage, RateLimitRepository } from "../../domain/ports.js";
 
 /** Firestore で日次レートリミットを管理する RateLimitRepository 実装。 */
 export class RateLimitRepo implements RateLimitRepository {
+  /**
+   * @param db Firestore クライアント。
+   * @param perUserLimit 1 ユーザ 1 日あたりの上限。
+   * @param globalLimit サービス全体 1 日あたりの上限。
+   */
   constructor(
     private db: Firestore,
     private perUserLimit: number,
     private globalLimit: number,
   ) {}
 
-  /** 当日カウントを検証して上限到達なら RateLimitError、未到達ならインクリメントして返す。 */
+  /**
+   * 当日カウントを検証して上限到達なら RateLimitError、未到達ならインクリメントして返す。
+   * @param uid ユーザ ID。
+   * @returns インクリメント後の当日利用状況。
+   * @throws RateLimitError グローバルまたはユーザ上限に到達した場合。
+   */
   async checkAndIncrement(uid: string): Promise<DailyUsage> {
     const today = jstDate();
     const userRef = this.db.doc(`users/${uid}/daily_usage/${today}`);
@@ -34,7 +44,11 @@ export class RateLimitRepo implements RateLimitRepository {
     });
   }
 
-  /** 当日のユーザ利用カウントと上限を返す。読み取り専用。 */
+  /**
+   * 当日のユーザ利用カウントと上限を返す。読み取り専用。
+   * @param uid ユーザ ID。
+   * @returns 当日の利用カウントと上限。
+   */
   async getUserUsage(uid: string): Promise<DailyUsage> {
     const snap = await this.db.doc(`users/${uid}/daily_usage/${jstDate()}`).get();
     return {
@@ -44,7 +58,11 @@ export class RateLimitRepo implements RateLimitRepository {
   }
 }
 
-// JST 固定。ユーザー現地時刻にすると 23:59 + 0:00 で枠を2倍使える抜け道ができるため
+/**
+ * 当日 (JST) の日付文字列を返す。
+ * (JST 固定。ユーザー現地時刻にすると 23:59 + 0:00 で枠を2倍使える抜け道ができるため)
+ * @returns "YYYY-MM-DD" 形式の JST 日付。
+ */
 function jstDate(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" });
 }

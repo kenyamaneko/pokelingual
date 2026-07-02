@@ -51,6 +51,13 @@ const BALL_MULTIPLIER: Record<string, number> = {
 export class QuestService {
   private sessions = new Map<string, QuestSession>();
 
+  /**
+   * @param pokemonClient ポケモン情報の取得クライアント。
+   * @param llm 採点・講評に用いる LLM クライアント。
+   * @param pokemonConfig ポケモン関連のアプリ設定。
+   * @param settingsRepo ユーザ設定リポジトリ。
+   * @param random 乱数ソース。
+   */
   constructor(
     private pokemonClient: PokemonClient,
     private llm: LLMClient,
@@ -59,7 +66,11 @@ export class QuestService {
     private random: RandomSource,
   ) {}
 
-  /** 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。 */
+  /**
+   * 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。
+   * @param uid ユーザ ID。
+   * @returns マスク済み説明文と伝説/幻フラグを含む出題レスポンス。
+   */
   async newQuest(uid: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(uid);
     const ids = settings.excluded_pokemon_ids ?? this.pokemonConfig.defaultExcludedPokemonIDs;
@@ -118,7 +129,12 @@ export class QuestService {
     };
   }
 
-  /** LLM で翻訳を採点し、結果をセッションへ記録する。 */
+  /**
+   * LLM で翻訳を採点し、結果をセッションへ記録する。
+   * @param uid ユーザ ID。
+   * @param translation ユーザの日本語訳。
+   * @returns スコア・講評・マスク済み日本語説明。
+   */
   async scoreTranslation(uid: string, translation: string): Promise<ScoreResponse> {
     const session = this.getSession(uid);
 
@@ -138,6 +154,13 @@ export class QuestService {
     };
   }
 
+  /**
+   * LLM に採点を依頼し、スコア範囲を検証して返す。
+   * @param englishText 出題の英語原文。
+   * @param translation ユーザの日本語訳。
+   * @returns スコアと講評。
+   * @throws スコアが 0-100 の範囲外の場合。
+   */
   private async scoreWithLLM(englishText: string, translation: string): Promise<ScoreResult> {
     const prompt = buildScorePrompt(englishText, translation);
     const text = await this.llm.generateText(prompt);
@@ -149,7 +172,12 @@ export class QuestService {
     return parsed;
   }
 
-  /** 名前推測を判定し、正解ならボール種別を確定、不正解なら残り試行を返す。 */
+  /**
+   * 名前推測を判定し、正解ならボール種別を確定、不正解なら残り試行を返す。
+   * @param uid ユーザ ID。
+   * @param guess ユーザの推測名 (英語または日本語)。
+   * @returns 正誤・確定ボール種別・残り試行回数を含む判定結果。
+   */
   guessName(uid: string, guess: string): GuessResponse {
     const session = this.getSession(uid);
 
@@ -194,7 +222,11 @@ export class QuestService {
     return { correct: false, attempts_remaining: remaining };
   }
 
-  /** スコア・BST・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。 */
+  /**
+   * スコア・BST・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
+   * @param uid ユーザ ID。
+   * @returns 捕獲成否と表示用ポケモン情報。
+   */
   attemptCapture(uid: string): CaptureResponse {
     const session = this.getSession(uid);
 
@@ -224,6 +256,12 @@ export class QuestService {
     };
   }
 
+  /**
+   * uid のアクティブなセッションを返す。
+   * @param uid ユーザ ID。
+   * @returns アクティブなクエストセッション。
+   * @throws NotFoundError セッションが存在しない場合。
+   */
   private getSession(uid: string): QuestSession {
     const session = this.sessions.get(uid);
     if (!session) throw new NotFoundError("no active quest session");
@@ -231,6 +269,12 @@ export class QuestService {
   }
 }
 
+/**
+ * 翻訳採点用のプロンプトを組み立てる。
+ * @param englishText 出題の英語原文。
+ * @param translation ユーザの日本語訳。
+ * @returns LLM へ渡すプロンプト文字列。
+ */
 function buildScorePrompt(englishText: string, translation: string): string {
   return `You are an English-to-Japanese translation evaluator for a language learning app.
 
@@ -265,7 +309,13 @@ Review guidelines:
 Respond with ONLY the JSON, no other text.`;
 }
 
-/** スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。 */
+/**
+ * スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。
+ * @param score 採点スコア (0-100)。
+ * @param bst 種族値合計 (Base Stat Total)。
+ * @param ballMultiplier ボール種別ごとの捕獲確率倍率。
+ * @returns 0.0〜1.0 の捕獲確率。
+ */
 export function calculateCaptureRate(score: number, bst: number, ballMultiplier: number): number {
   // 種族値とスコアを 0〜10 程度に正規化。ロジット係数のスケールを揃えるため。
   const x = bst / 100.0;
@@ -284,7 +334,12 @@ const pluralHints = new Set([
   "several", "many", "multiple", "few", "these", "those", "numerous",
 ]);
 
-/** 説明文中のポケモン名英語表記を "this Pokémon" / "of these Pokémon" に置換する。 */
+/**
+ * 説明文中のポケモン名英語表記を "this Pokémon" / "of these Pokémon" に置換する。
+ * @param text 元の説明文。
+ * @param name 伏せるポケモンの英語名。
+ * @returns 名前を代名詞に置換した説明文。
+ */
 export function maskPokemonNameEN(text: string, name: string): string {
   if (!name) return text;
 
@@ -330,7 +385,12 @@ export function maskPokemonNameEN(text: string, name: string): string {
   return result;
 }
 
-/** 説明文中のポケモン名日本語表記を "この ポケモン" に置換する。 */
+/**
+ * 説明文中のポケモン名日本語表記を "この ポケモン" に置換する。
+ * @param text 元の説明文。
+ * @param name 伏せるポケモンの日本語名。
+ * @returns 名前を置換した説明文。
+ */
 export function maskPokemonNameJA(text: string, name: string): string {
   if (!name) return text;
   return text.replaceAll(name, "この ポケモン");
