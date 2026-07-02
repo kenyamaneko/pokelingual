@@ -1,6 +1,12 @@
 import { ExternalServiceError } from "../domain/errors.js";
 import { logger } from "../util/logger.js";
-import type { PokemonClient, UserPokemonRepository } from "../domain/ports.js";
+import type {
+  PokemonClient,
+  PokemonConfig,
+  UserPokemonRepository,
+  UserSettingsRepository,
+} from "../domain/ports.js";
+import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import type {
   PokedexEntry,
   PokemonDetailResponse,
@@ -18,27 +24,44 @@ interface PokedexResult {
 export class PokedexService {
   private repo: UserPokemonRepository;
   private pokemonClient: PokemonClient;
+  private settingsRepo: UserSettingsRepository;
+  private pokemonConfig: PokemonConfig;
 
   /**
    * @param repo ユーザの図鑑進捗リポジトリ。
    * @param pokemonClient ポケモンのメタ情報取得クライアント。
+   * @param settingsRepo ユーザ設定リポジトリ (除外の反映に使う)。
+   * @param pokemonConfig ポケモン関連のアプリ設定 (開発者除外 ID を含む)。
    */
-  constructor(repo: UserPokemonRepository, pokemonClient: PokemonClient) {
+  constructor(
+    repo: UserPokemonRepository,
+    pokemonClient: PokemonClient,
+    settingsRepo: UserSettingsRepository,
+    pokemonConfig: PokemonConfig,
+  ) {
     this.repo = repo;
     this.pokemonClient = pokemonClient;
+    this.settingsRepo = settingsRepo;
+    this.pokemonConfig = pokemonConfig;
   }
 
   /**
-   * ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。
+   * ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。除外対象は含めない。
    * @param userId ユーザ ID。
    * @returns 表示可能なエントリと、取得失敗で除外された件数。
    */
   async getPokedex(userId: string): Promise<PokedexResult> {
-    const pokemons = await this.repo.getPokedex(userId);
+    const [pokemons, settings] = await Promise.all([
+      this.repo.getPokedex(userId),
+      this.settingsRepo.getSettings(userId),
+    ]);
+    // per-user 除外 ∪ 開発者除外 は図鑑にも出さない。
+    const excluded = buildExcludedPokemonIDs(settings.excluded_pokemon_ids, this.pokemonConfig.devExcludedPokemonIDs);
     const entries: PokedexEntry[] = [];
     let unavailableCount = 0;
 
     for (const up of pokemons) {
+      if (excluded.has(up.pokemon_id)) continue;
       try {
         const pokemon = await this.pokemonClient.getPokemonByID(up.pokemon_id);
         entries.push({

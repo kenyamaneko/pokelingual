@@ -66,6 +66,7 @@ Repository 層はモックを持たない。ローカル/テスト共に Firesto
 | 変数名 | 用途 | 値 |
 |---|---|---|
 | `APP_MODE` | バックエンドのサービス切替（mock vs 実API）。必須 | `mock`（ローカル）/ `real`（Cloud Run） |
+| `APP_ENV` | バックエンドの実行環境（開発者除外の適用判定） | `local` / `dev` / `stg` / `prod` |
 | `GEMINI_MODEL` | Gemini のモデル名（real モードでは必須） | deploy.yml が注入 |
 | `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` | Firestore / Vertex AI の接続先（本番は必須） | deploy.yml が注入 |
 | `PER_USER_DAILY_LIMIT` / `GLOBAL_DAILY_LIMIT` | AI 呼び出しの日次上限（本番は必須） | deploy.yml が注入 |
@@ -149,11 +150,12 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 
 ### 除外ポケモン
 
-ユーザーごとに設定可能。`UserSettingsRepository` 経由で `users/{uid}/settings/preferences` に保存。
+除外は 2 系統のロジックを**別々に**持ち、出題抽選と図鑑の両方に適用する。
 
-- ユーザーが未設定の場合、`config/app.default_excluded_pokemon_ids` のデフォルト値を使用
-- デフォルト: 開発者が苦手な6匹（#167, #168, #595, #596, #751, #752）
-- ユーザーは設定画面から自由に追加・削除可能
+- **per-user 除外**: `users/{uid}/settings/preferences.excluded_pokemon_ids`（Firestore）。ユーザーが設定画面で自由に追加・削除でき、次の出題から即反映。全環境で有効。未設定なら除外なし。
+- **開発者除外**: コードの固定 ID リスト（開発者が苦手な6匹）。**prod では無効**、`APP_ENV !== "prod"`（local/dev/stg）でのみ有効。開発者が非 prod 環境で作業する際の配慮で、システム側が透過的に適用する（設定画面には表示しない）。
+
+実効除外 = per-user 除外 ∪ 開発者除外（非prod時）。`newQuest`（出題抽選）と `getCollection`（図鑑）の両方で除外する。図鑑の分母 `total_available` は変えない（表示エントリのみ除外）。
 
 ### 認証フロー
 
@@ -278,7 +280,7 @@ loading → translating → guessing → capturing → result   （失敗時は 
 ```
 config/
   auth                          # { allowed_emails: ["email1", "email2"] }
-  app                           # { max_pokemon_id: 898, default_excluded_pokemon_ids: [167, 168, ...] }
+  app                           # { max_pokemon_id: 898 }  （任意。未設定なら既定 898）
 
 users/
   {uid}/

@@ -32,6 +32,7 @@ export class SettingsHandler {
     const userId = res.locals.userId as string;
     try {
       const settings = await this.settingsRepo.getSettings(userId);
+      // 設定画面はユーザー自身の除外だけを表示する (開発者除外はシステム側で透過的に適用)。
       const body: SettingsResponse = {
         excluded_pokemon_ids: settings.excluded_pokemon_ids ?? [],
       };

@@ -33,7 +33,8 @@ export type HttpGet = (url: string) => Promise<HttpResponse>;
 /** ポケモン関連のアプリ設定値。Firestore など外部ソースから組み立てて注入する。 */
 export interface PokemonConfig {
   maxPokemonID: number;
-  defaultExcludedPokemonIDs: readonly number[];
+  /** 非 prod 環境で出題・図鑑から除外する開発者除外 ID (prod では空)。 */
+  devExcludedPokemonIDs: readonly number[];
 }
 
 /** ユーザの図鑑進捗 (遭遇/捕獲) を永続化するリポジトリ。 */

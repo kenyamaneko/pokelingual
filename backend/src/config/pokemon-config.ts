@@ -1,28 +1,18 @@
 import type { getFirestore } from "firebase-admin/firestore";
-import type { PokemonConfig } from "../domain/ports.js";
 
-/** PokemonConfig の既定値 (Firestore の config/app 未設定時に使用)。 */
-export const DEFAULT_POKEMON_CONFIG: PokemonConfig = {
-  maxPokemonID: 898,
-  defaultExcludedPokemonIDs: [167, 168, 595, 596, 751, 752],
-};
+/** 出題プール上限 ID の既定値 (Firestore の config/app.max_pokemon_id 未設定・型不正時に使用)。 */
+export const DEFAULT_MAX_POKEMON_ID = 898;
 
 /**
- * Firestore の config/app ドキュメントから PokemonConfig を読み込む。未設定・型不正ならデフォルト値。
+ * Firestore の config/app から出題プール上限ポケモン ID を読み込む。未設定・型不正なら既定値。
  * @param firestoreClient Firestore クライアント。
- * @returns 読み込んだ (またはデフォルトの) PokemonConfig。
+ * @returns 出題プールの上限ポケモン ID。
  */
-export async function loadPokemonConfig(
+export async function loadMaxPokemonID(
   firestoreClient: ReturnType<typeof getFirestore>,
-): Promise<PokemonConfig> {
+): Promise<number> {
   const doc = await firestoreClient.collection("config").doc("app").get();
-  if (!doc.exists) return DEFAULT_POKEMON_CONFIG;
+  if (!doc.exists) return DEFAULT_MAX_POKEMON_ID;
   const data = doc.data();
-  const maxPokemonID = typeof data?.max_pokemon_id === "number"
-    ? data.max_pokemon_id
-    : DEFAULT_POKEMON_CONFIG.maxPokemonID;
-  const defaultExcludedPokemonIDs = Array.isArray(data?.default_excluded_pokemon_ids)
-    ? (data.default_excluded_pokemon_ids as number[])
-    : DEFAULT_POKEMON_CONFIG.defaultExcludedPokemonIDs;
-  return { maxPokemonID, defaultExcludedPokemonIDs };
+  return typeof data?.max_pokemon_id === "number" ? data.max_pokemon_id : DEFAULT_MAX_POKEMON_ID;
 }
