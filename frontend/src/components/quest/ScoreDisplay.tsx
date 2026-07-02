@@ -29,6 +29,11 @@ const SCORE_LABEL_THRESHOLDS = {
   notVeryEffective: 1,
 } as const;
 
+/**
+ * スコアに応じた文字色クラスを返す。
+ * @param score 採点スコア。
+ * @returns Tailwind の文字色クラス。
+ */
 function getScoreColor(score: number): string {
   if (score >= SCORE_COLOR_THRESHOLDS.green) return "text-green-600";
   if (score >= SCORE_COLOR_THRESHOLDS.blue) return "text-blue-600";
@@ -37,6 +42,11 @@ function getScoreColor(score: number): string {
   return "text-red-600";
 }
 
+/**
+ * 残 HP に応じた HP バーの色クラスを返す。
+ * @param remainingHP 残 HP (100 - score)。
+ * @returns Tailwind の背景色クラス。
+ */
 function getHPBarColor(remainingHP: number): string {
   if (remainingHP > HP_BAR_THRESHOLDS.green) return "bg-green-500";
   if (remainingHP > HP_BAR_THRESHOLDS.yellow) return "bg-yellow-500";
@@ -54,6 +64,11 @@ export const SCORE_LABELS = {
   noEffect: "こうかが　ないみたいだ...",
 } as const;
 
+/**
+ * スコア帯に応じた "こうか" ラベルを返す。
+ * @param score 採点スコア。
+ * @returns スコア帯のラベル。通常帯では null。
+ */
 function getScoreLabel(score: number): string | null {
   if (score >= SCORE_LABEL_THRESHOLDS.critical) return SCORE_LABELS.critical;
   if (score >= SCORE_LABEL_THRESHOLDS.superEffective) return SCORE_LABELS.superEffective;
@@ -62,7 +77,11 @@ function getScoreLabel(score: number): string | null {
   return SCORE_LABELS.noEffect;
 }
 
-/** 採点結果をダメージ表現で表示する。HPバーとスコア帯のラベルを含む。 */
+/**
+ * 採点結果をダメージ表現で表示する。HPバーとスコア帯のラベルを含む。
+ * @param props score を含む props。
+ * @returns スコア表示の要素。
+ */
 export function ScoreDisplay({ score }: ScoreDisplayProps) {
   const remainingHP = MAX_SCORE - score.score;
 

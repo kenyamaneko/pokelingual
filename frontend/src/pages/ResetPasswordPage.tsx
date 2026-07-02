@@ -2,7 +2,10 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useState, type FormEvent } from "react";
 
-/** パスワードリセットページ。入力メールアドレス宛に再設定メールを送る。 */
+/**
+ * パスワードリセットページ。入力メールアドレス宛に再設定メールを送る。
+ * @returns パスワードリセットページの要素。
+ */
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
   const [email, setEmail] = useState("");

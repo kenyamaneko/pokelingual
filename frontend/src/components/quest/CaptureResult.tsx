@@ -24,7 +24,11 @@ export const CAPTURE_RESULT_LABELS = {
   backToMenuButton: "メニューに　もどる",
 } as const;
 
-/** 捕獲結果の表示。成否・伝説/幻演出・チャット起動・次のクエスト遷移を提供する。 */
+/**
+ * 捕獲結果の表示。成否・伝説/幻演出・チャット起動・次のクエスト遷移を提供する。
+ * @param props result / chatContext / onNewQuest を含む props。
+ * @returns 捕獲結果表示の要素。
+ */
 export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResultProps) {
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);

@@ -32,7 +32,11 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const googleProvider = new GoogleAuthProvider();
 
-/** Firebase Auth の状態を購読し、ログイン/ログアウト操作を提供するプロバイダ。 */
+/**
+ * Firebase Auth の状態を購読し、ログイン/ログアウト操作を提供するプロバイダ。
+ * @param props children を含む React props。
+ * @returns AuthContext.Provider でラップした子要素。
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** 現在の認証状態とログイン/ログアウト操作を取得するフック。Provider 外で呼ぶと例外。 */
+/**
+ * 現在の認証状態とログイン/ログアウト操作を取得するフック。Provider 外で呼ぶと例外。
+ * @returns 認証状態とログイン/ログアウト操作。
+ * @throws AuthProvider の外で呼ばれた場合。
+ */
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const ctx = useContext(AuthContext);

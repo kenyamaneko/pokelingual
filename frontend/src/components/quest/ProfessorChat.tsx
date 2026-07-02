@@ -20,7 +20,11 @@ export const PROFESSOR_CHAT_LABELS = {
   errorReply: "すまない、うまく　答えられなかった。もう一度　聞いてくれ。",
 } as const;
 
-/** オーキド博士チャットモーダル。クエスト文脈を渡して質問応答 UI を提供する。 */
+/**
+ * オーキド博士チャットモーダル。クエスト文脈を渡して質問応答 UI を提供する。
+ * @param props context / onClose を含む props。
+ * @returns 教授チャットモーダルの要素。
+ */
 export function ProfessorChat({ context, onClose }: ProfessorChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");

@@ -25,7 +25,11 @@ const JST_OFFSET_MS = 9 * MS_PER_HOUR;
 /** カウントダウン更新間隔。1 秒毎に再計算する。 */
 const COUNTDOWN_TICK_MS = MS_PER_SECOND;
 
-/** レート制限到達を通知し、JST 0:00 までのカウントダウンを表示するモーダル。 */
+/**
+ * レート制限到達を通知し、JST 0:00 までのカウントダウンを表示するモーダル。
+ * @param props detail / onDismiss を含む props。
+ * @returns レート制限モーダルの要素。
+ */
 export function RateLimitModal({ detail, onDismiss }: Props) {
   const [countdown, setCountdown] = useState(formatUntilJstMidnight());
 
@@ -79,6 +83,10 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
   );
 }
 
+/**
+ * 現在時刻から JST 翌日 0:00 までの残時間を hh:mm:ss で返す。
+ * @returns "hh:mm:ss" 形式の残時間。
+ */
 function formatUntilJstMidnight(): string {
   // ローカルTZに依存しないよう UTC ベースで JST 翌日 0:00 までの残時間を hh:mm:ss で返す。
   const nowJstMs = Date.now() + JST_OFFSET_MS;
@@ -92,6 +100,11 @@ function formatUntilJstMidnight(): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
+/**
+ * 数値を 2 桁ゼロパディングする。
+ * @param n 対象の数値。
+ * @returns 2 桁ゼロパディングした文字列。
+ */
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
 }

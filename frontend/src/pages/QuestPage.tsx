@@ -18,7 +18,10 @@ const BALL_NAMES: Record<BallType, string> = {
   ultra: "ハイパーボール",
 };
 
-/** クエストの主要ページ。フェーズに応じた UI を描画するだけで、状態は useQuest に委譲する。 */
+/**
+ * クエストの主要ページ。フェーズに応じた UI を描画するだけで、状態は useQuest に委譲する。
+ * @returns クエストページの要素。
+ */
 export function QuestPage() {
   const {
     phase,

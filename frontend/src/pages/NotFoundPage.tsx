@@ -9,7 +9,10 @@ export const NOT_FOUND_LABELS = {
   backToHome: "ホームに　もどる",
 } as const;
 
-/** 未定義ルート用の 404 ページ。ホームへの導線を提供する。 */
+/**
+ * 未定義ルート用の 404 ページ。ホームへの導線を提供する。
+ * @returns 404 ページの要素。
+ */
 export function NotFoundPage() {
   return (
     <div className="min-h-[calc(100vh-56px)] bg-gray-50 flex items-center justify-center">

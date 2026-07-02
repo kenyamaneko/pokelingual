@@ -4,7 +4,11 @@ interface TranslationInputProps {
   onSubmit: (translation: string) => Promise<void>;
 }
 
-/** 翻訳文を入力して採点へ送信する UI。送信中はスピナーを表示する。 */
+/**
+ * 翻訳文を入力して採点へ送信する UI。送信中はスピナーを表示する。
+ * @param props onSubmit を含む props。
+ * @returns 翻訳入力 UI の要素。
+ */
 export function TranslationInput({ onSubmit }: TranslationInputProps) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);

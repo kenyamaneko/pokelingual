@@ -2,7 +2,11 @@ interface QuestCardProps {
   description: string;
 }
 
-/** 出題の英語説明文を表示するクエストカード。 */
+/**
+ * 出題の英語説明文を表示するクエストカード。
+ * @param props description を含む props。
+ * @returns クエストカードの要素。
+ */
 export function QuestCard({ description }: QuestCardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-red-400">

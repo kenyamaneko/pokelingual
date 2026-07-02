@@ -3,7 +3,10 @@ import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { GoogleLogo } from "../components/auth/GoogleLogo";
 
-/** ログインページ。Email/Password と Google サインインを提供する。 */
+/**
+ * ログインページ。Email/Password と Google サインインを提供する。
+ * @returns ログインページの要素。
+ */
 export function LoginPage() {
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();

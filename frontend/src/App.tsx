@@ -16,6 +16,10 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 
 const Provider = isDevMode ? DevAuthProvider : AuthProvider;
 
+/**
+ * アプリのルート。認証プロバイダとルーティングを構成する。
+ * @returns アプリ全体の要素ツリー。
+ */
 function App() {
   return (
     <Provider>

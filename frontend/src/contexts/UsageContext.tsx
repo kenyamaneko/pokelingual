@@ -22,7 +22,11 @@ interface UsageContextValue {
 
 const UsageContext = createContext<UsageContextValue | undefined>(undefined);
 
-/** 当日のAPI利用状況を購読し、レート制限到達時にモーダルを表示するプロバイダ。 */
+/**
+ * 当日のAPI利用状況を購読し、レート制限到達時にモーダルを表示するプロバイダ。
+ * @param props children を含む React props。
+ * @returns UsageContext.Provider でラップした子要素。
+ */
 export function UsageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [usage, setUsage] = useState<DailyUsage | null>(null);
@@ -67,7 +71,11 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** 当日の利用状況と手動リフレッシュ関数を取得するフック。Provider 外で呼ぶと例外。 */
+/**
+ * 当日の利用状況と手動リフレッシュ関数を取得するフック。Provider 外で呼ぶと例外。
+ * @returns 当日の利用状況と手動リフレッシュ関数。
+ * @throws UsageProvider の外で呼ばれた場合。
+ */
 // eslint-disable-next-line react-refresh/only-export-components
 export const useUsage = (): UsageContextValue => {
   const ctx = useContext(UsageContext);

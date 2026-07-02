@@ -4,7 +4,10 @@ import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
 
-/** 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。 */
+/**
+ * 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。
+ * @returns 設定ページの要素。
+ */
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();

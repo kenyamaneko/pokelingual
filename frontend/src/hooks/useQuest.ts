@@ -40,11 +40,22 @@ export interface UseQuestResult {
   capture: () => Promise<void>;
 }
 
-// 429 は UsageProvider が グローバルにモーダル表示するため、各ページのエラー文言は出さない
+/**
+ * エラーがレート制限 (429) 由来かを判定する。
+ * (429 は UsageProvider がグローバルにモーダル表示するため、各ページのエラー文言は出さない)
+ * @param err 捕捉したエラー。
+ * @returns 429 レスポンスなら true。
+ */
 function isRateLimitError(err: unknown): boolean {
   return axios.isAxiosError(err) && err.response?.status === 429;
 }
 
+/**
+ * エラーをユーザ向けの日本語メッセージに変換する。
+ * @param err 捕捉したエラー。
+ * @param fallback 分類できない場合に使う既定メッセージ。
+ * @returns ユーザ向けエラーメッセージ。
+ */
 function getErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     if (!err.response) {
@@ -68,7 +79,10 @@ function getErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-/** クエストセッションの状態管理 + API 呼び出し + フェーズ遷移をまとめたフック。 */
+/**
+ * クエストセッションの状態管理 + API 呼び出し + フェーズ遷移をまとめたフック。
+ * @returns フェーズ・各種データ・操作関数を含むクエスト状態。
+ */
 export function useQuest(): UseQuestResult {
   const [phase, setPhase] = useState<QuestPhase>("loading");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);
