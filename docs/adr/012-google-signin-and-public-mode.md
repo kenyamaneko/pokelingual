@@ -43,9 +43,12 @@ UI 上は **Google を主、メールを従** とする:
 - 結合テスト（`TEST_USER_EMAIL` でカスタムトークン取得）が無修正で動作するため
 - Google サインインで何か問題が出た場合のフォールバック
 
-Terraform 側では `google_identity_platform_default_supported_idp_config` で google.com IDP を有効化。
-OAuth クライアントは Google Cloud コンソールで手動作成し、Terraform 変数で client_id/secret を注入する設計。
-（OAuth クライアント自体は Terraform で作成不可）
+OAuth クライアントは Google Cloud コンソールで手動作成する（Terraform で作成不可）。
+
+> **更新 (2026-07-02)**: google.com IdP の有効化を Terraform 管理外に変更した。
+> 当初は `google_identity_platform_default_supported_idp_config` を TF 変数 (client_id/secret) で
+> 注入していたが、client_secret が tfstate に平文で残り `rules/lang/iac.md`「機密を state に置かない」に
+> 反するため、IdP 有効化は Google Cloud コンソール/gcloud で行う運用に切り替えた。
 
 ### 3. Anonymous Auth は不採用
 

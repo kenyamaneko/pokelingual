@@ -165,19 +165,9 @@ resource "google_identity_platform_config" "auth" {
   depends_on = [google_project_service.apis]
 }
 
-# Google Sign-In プロバイダ。client_id/secret が空なら無効化し、設定済みなら有効化する
-resource "google_identity_platform_default_supported_idp_config" "google" {
-  count = var.google_oauth_client_id != "" ? 1 : 0
-
-  provider      = google-beta
-  project       = var.project_id
-  idp_id        = "google.com"
-  client_id     = var.google_oauth_client_id
-  client_secret = var.google_oauth_client_secret
-  enabled       = true
-
-  depends_on = [google_identity_platform_config.auth]
-}
+# Google Sign-In (google.com IdP) の有効化は Terraform 管理外。
+# client_secret を TF 変数経由で渡すと tfstate に平文で残り iac.md に反するため、
+# Google Cloud コンソール/gcloud で設定する (ADR-012 参照)。
 
 # ============================================================
 # Artifact Registry (for Docker images)
