@@ -87,9 +87,9 @@ if (cfg.appMode === "mock") {
   }
   console.log(`Starting in mock mode (Firestore Emulator: ${process.env.FIRESTORE_EMULATOR_HOST})`);
   const firestoreClient = new Firestore({ projectId: cfg.googleCloudProject });
-  pokemonClient = new MockPokemonClient();
-  llmClient = new MockLLMClient();
   randomSource = new MockRandomSource();
+  pokemonClient = new MockPokemonClient(randomSource);
+  llmClient = new MockLLMClient();
   pokemonConfig = DEFAULT_POKEMON_CONFIG;
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
@@ -124,9 +124,9 @@ if (cfg.appMode === "mock") {
     `Loaded Pokemon config: maxPokemonID=${pokemonConfig.maxPokemonID}, ` +
       `defaultExcluded=${pokemonConfig.defaultExcludedPokemonIDs.length}`,
   );
-  pokemonClient = new PokeAPIClient(pokemonConfig);
-  llmClient = new GeminiClient(vertexAI);
   randomSource = new SystemRandomSource();
+  pokemonClient = new PokeAPIClient(pokemonConfig, randomSource);
+  llmClient = new GeminiClient(vertexAI);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -147,6 +147,11 @@ const usageHandler = new UsageHandler(rateLimitRepo);
 const app = express();
 app.use(express.json());
 app.use(corsConfig(cfg.frontendURL));
+
+// ヘルスチェック (認証不要)。docker compose の healthcheck と CI の起動待ちが叩く
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 const rateLimitMiddleware = rateLimit(rateLimitRepo);
 const apiRouter = setupRoutes(

@@ -1,4 +1,4 @@
-import type { PokemonClient, PokemonConfig } from "../../domain/ports.js";
+import type { PokemonClient, PokemonConfig, RandomSource } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
 import { toPokemonType } from "../../domain/pokemon.js";
 import type { FlavorTextPair } from "../../../../shared/api-types/collection.js";
@@ -54,15 +54,19 @@ export class PokeAPIClient implements PokemonClient {
 
   /**
    * @param config ポケモン関連のアプリ設定 (maxPokemonID 等)。
+   * @param random 乱数ソース (抽選を RandomSource ポート経由に統一する)。
    */
-  constructor(private config: PokemonConfig) {}
+  constructor(
+    private config: PokemonConfig,
+    private random: RandomSource,
+  ) {}
 
   /**
    * 1〜maxPokemonID からランダムに 1 匹取得する。
    * @returns ランダムに選ばれたポケモン。
    */
   async getRandomPokemon(): Promise<Pokemon> {
-    const id = Math.floor(Math.random() * this.config.maxPokemonID) + 1;
+    const id = Math.floor(this.random.next() * this.config.maxPokemonID) + 1;
     return this.getPokemonByID(id);
   }
 
