@@ -3,6 +3,7 @@
  * バックエンド (Express ハンドラ/サービス) とフロントエンド (API クライアント) の両方が import type する。
  * このファイルが SSOT。バックエンド/フロントエンドで定義を二重持ちしないこと。
  */
+import type { PokemonType } from "./pokemon.js";
 
 /** GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。 */
 export interface QuestNewResponse {
@@ -43,7 +44,7 @@ export interface CaptureResponse {
   description_ja: string;
   base_stat_total: number;
   ball_type: string;
-  types: string[];
+  types: PokemonType[];
   height: number;
   weight: number;
   is_legendary: boolean;

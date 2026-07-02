@@ -1,5 +1,6 @@
 import type { PokemonClient, PokemonConfig } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
+import { toPokemonType } from "../../domain/pokemon.js";
 import type { FlavorTextPair } from "../../../../shared/api-types/collection.js";
 
 const versionOrder = [
@@ -92,7 +93,7 @@ export class PokeAPIClient implements PokemonClient {
     }
 
     const bst = pokemonData.stats.reduce((sum, s) => sum + s.base_stat, 0);
-    const types = pokemonData.types.map((t) => t.type.name);
+    const types = pokemonData.types.map((t) => toPokemonType(t.type.name));
     const spriteURL =
       pokemonData.sprites.other["official-artwork"].front_default ||
       pokemonData.sprites.front_default;

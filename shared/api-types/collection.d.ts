@@ -1,6 +1,7 @@
 /**
  * Pokelingual の図鑑コレクション関連 API 契約型。両側で import type する SSOT。
  */
+import type { PokemonType } from "./pokemon.js";
 
 /** 図鑑説明文の英日ペア。複数バージョンを 1 件にまとめる。 */
 export interface FlavorTextPair {
@@ -45,7 +46,7 @@ export interface PokemonDetailResponse {
   description_en: string;
   description_ja: string;
   sprite_url: string;
-  types: string[];
+  types: PokemonType[];
   height: number;
   weight: number;
   flavor_texts?: FlavorTextPair[];

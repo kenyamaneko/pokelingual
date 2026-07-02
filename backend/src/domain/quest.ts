@@ -1,3 +1,5 @@
+import type { PokemonType } from "../../../shared/api-types/pokemon.js";
+
 /** 進行中のクエストセッション。出題から捕獲までの状態を保持する。 */
 export interface QuestSession {
   pokemon_id: number;
@@ -7,7 +9,7 @@ export interface QuestSession {
   name_ja: string;
   sprite_url: string;
   base_stat_total: number;
-  types: string[];
+  types: PokemonType[];
   height: number;
   weight: number;
   is_legendary: boolean;
