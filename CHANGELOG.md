@@ -94,4 +94,4 @@
 - クエスト（翻訳 → スコアリング → 名前推測 → 捕獲）フロー
 - コレクション（図鑑）機能
 - PokeAPI 連携（Gen 1-5、EN/JA 説明文ペアリング）
-- Terraform による GCP インフラ管理
+- Terraform による Google Cloud インフラ管理
