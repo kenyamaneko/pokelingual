@@ -1,5 +1,8 @@
 /** リソースが存在しないことを表す。handleError で 404 にマップされる。 */
 export class NotFoundError extends Error {
+  /**
+   * @param message エラーメッセージ。
+   */
   constructor(message: string) {
     super(message);
     this.name = "NotFoundError";
@@ -11,6 +14,10 @@ export class ExternalServiceError extends Error {
   service: string;
   cause: Error;
 
+  /**
+   * @param service 失敗した外部サービス名。
+   * @param err 原因となったエラー。
+   */
   constructor(service: string, err: Error) {
     super(`${service}: ${err.message}`);
     this.name = "ExternalServiceError";
@@ -27,6 +34,9 @@ export type { RateLimitKind };
 export class RateLimitError extends Error {
   kind: RateLimitKind;
 
+  /**
+   * @param kind 到達したレート制限の種別。
+   */
   constructor(kind: RateLimitKind) {
     super(`rate limit exceeded: ${kind}`);
     this.name = "RateLimitError";

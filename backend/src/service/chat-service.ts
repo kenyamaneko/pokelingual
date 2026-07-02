@@ -9,9 +9,17 @@ import type {
 
 /** クエストの講評後にオーキド博士キャラとして対話を返すサービス。 */
 export class ChatService {
+  /**
+   * @param llm テキスト生成に用いる LLM クライアント。
+   */
   constructor(private llm: LLMClient) {}
 
-  /** クエスト文脈と会話履歴を踏まえて教授の返信文を生成する。 */
+  /**
+   * クエスト文脈と会話履歴を踏まえて教授の返信文を生成する。
+   * @param ctx クエストの文脈 (原文・翻訳・スコア等)。
+   * @param messages これまでの会話履歴。
+   * @returns 教授キャラの返信文。
+   */
   async reply(ctx: ChatContext, messages: ChatMessage[]): Promise<string> {
     const prompt = buildChatPrompt(ctx, messages);
     try {
@@ -23,6 +31,12 @@ export class ChatService {
   }
 }
 
+/**
+ * 教授チャット用のプロンプトを組み立てる。
+ * @param ctx クエストの文脈。
+ * @param messages 会話履歴。
+ * @returns Gemini へ渡すプロンプト文字列。
+ */
 function buildChatPrompt(ctx: ChatContext, messages: ChatMessage[]): string {
   let history = "";
   for (const m of messages) {

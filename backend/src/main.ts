@@ -38,12 +38,17 @@ import type {
 } from "./domain/ports.js";
 import type { RequestHandler } from "express";
 
-/** Firestore の config/app ドキュメントから PokemonConfig を読み込む。未設定ならデフォルト値。 */
+/** PokemonConfig の既定値 (Firestore の config/app 未設定時に使用)。 */
 const DEFAULT_POKEMON_CONFIG: PokemonConfig = {
   maxPokemonID: 898,
   defaultExcludedPokemonIDs: [167, 168, 595, 596, 751, 752],
 };
 
+/**
+ * Firestore の config/app ドキュメントから PokemonConfig を読み込む。未設定・型不正ならデフォルト値。
+ * @param firestoreClient Firestore クライアント。
+ * @returns 読み込んだ (またはデフォルトの) PokemonConfig。
+ */
 async function loadPokemonConfig(
   firestoreClient: ReturnType<typeof getFirestore>,
 ): Promise<PokemonConfig> {

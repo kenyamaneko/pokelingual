@@ -22,12 +22,23 @@ const MOCK_DEFAULTS = {
   globalDailyLimit: 1500,
 } as const;
 
+/**
+ * 環境変数を取得する。空文字は未設定として扱う。
+ * @param key 環境変数名。
+ * @returns 値。未設定または空文字なら undefined。
+ */
 function getEnv(key: string): string | undefined {
   const v = process.env[key];
   // 空文字を未設定と同一視。空文字をホワイトリスト等に流すと意図しない挙動になるため
   return v === undefined || v === "" ? undefined : v;
 }
 
+/**
+ * 環境変数を正の整数として取得する。
+ * @param key 環境変数名。
+ * @returns 整数値。未設定なら undefined。
+ * @throws 値が正の整数でない場合。
+ */
 function getIntEnv(key: string): number | undefined {
   const v = getEnv(key);
   if (v === undefined) return undefined;
@@ -38,13 +49,22 @@ function getIntEnv(key: string): number | undefined {
   return n;
 }
 
+/**
+ * 必須の環境変数を取得する。
+ * @param key 環境変数名。
+ * @returns 値。
+ * @throws 未設定の場合。
+ */
 function requireEnv(key: string): string {
   const v = getEnv(key);
   if (v === undefined) throw new Error(`required env not set: ${key}`);
   return v;
 }
 
-/** 環境変数から Config を構築する。本番モードでは必須 env (GOOGLE_CLOUD_PROJECT, FRONTEND_URL) が未設定なら起動エラー。 */
+/**
+ * 環境変数から Config を構築する。本番モードでは必須 env (GOOGLE_CLOUD_PROJECT, FRONTEND_URL) が未設定なら起動エラー。
+ * @returns アプリ全体の設定値。
+ */
 export function loadConfig(): Config {
   const appMode = getEnv("APP_MODE") ?? "mock";
   const isMock = appMode === "mock";

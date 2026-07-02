@@ -8,13 +8,22 @@ import { handleError } from "./error.js";
 
 /** クエスト関連エンドポイント (出題・採点・名前推測・捕獲・チャット) を束ねるハンドラ。 */
 export class QuestHandler {
+  /**
+   * @param questService クエストのドメインサービス。
+   * @param chatService 教授チャットのサービス。
+   * @param repo ユーザの図鑑進捗リポジトリ。
+   */
   constructor(
     private questService: QuestService,
     private chatService: ChatService,
     private repo: UserPokemonRepository,
   ) {}
 
-  /** GET /quest/new — 新しい出題ポケモンを返す。 */
+  /**
+   * GET /quest/new — 新しい出題ポケモンを返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   newQuest = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -25,7 +34,11 @@ export class QuestHandler {
     }
   };
 
-  /** POST /quest/score — ユーザの翻訳文を LLM で採点しスコアを返す。 */
+  /**
+   * POST /quest/score — ユーザの翻訳文を LLM で採点しスコアを返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   scoreTranslation = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { translation } = req.body;
@@ -41,7 +54,11 @@ export class QuestHandler {
     }
   };
 
-  /** POST /quest/guess-name — ポケモン名の推測を判定し残り試行回数を返す。 */
+  /**
+   * POST /quest/guess-name — ポケモン名の推測を判定し残り試行回数を返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   guessName = (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { guess } = req.body;
@@ -57,7 +74,11 @@ export class QuestHandler {
     }
   };
 
-  /** POST /quest/capture — 捕獲を試行し結果を永続化する。 */
+  /**
+   * POST /quest/capture — 捕獲を試行し結果を永続化する。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   attemptCapture = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -73,7 +94,11 @@ export class QuestHandler {
     }
   };
 
-  /** POST /quest/chat — オーキド博士キャラクタとのチャット応答を返す。 */
+  /**
+   * POST /quest/chat — オーキド博士キャラクタとのチャット応答を返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   replyToChat = async (req: Request, res: Response) => {
     const body = req.body as ChatRequest;
     if (!body.messages || body.messages.length === 0) {

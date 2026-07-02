@@ -18,12 +18,20 @@ export class CollectionService {
   private repo: UserPokemonRepository;
   private pokemonClient: PokemonClient;
 
+  /**
+   * @param repo ユーザの図鑑進捗リポジトリ。
+   * @param pokemonClient ポケモンのメタ情報取得クライアント。
+   */
   constructor(repo: UserPokemonRepository, pokemonClient: PokemonClient) {
     this.repo = repo;
     this.pokemonClient = pokemonClient;
   }
 
-  /** ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。 */
+  /**
+   * ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。
+   * @param uid ユーザ ID。
+   * @returns 表示可能なエントリと、取得失敗で除外された件数。
+   */
   async getCollection(uid: string): Promise<CollectionResult> {
     const pokemons = await this.repo.getCollection(uid);
     const entries: CollectionEntry[] = [];
@@ -52,7 +60,12 @@ export class CollectionService {
     return { entries, unavailable_count: unavailableCount };
   }
 
-  /** 特定ポケモンのユーザ実績と PokeAPI 詳細を合成して返す。 */
+  /**
+   * 特定ポケモンのユーザ実績と PokeAPI 詳細を合成して返す。
+   * @param uid ユーザ ID。
+   * @param pokemonID ポケモン ID。
+   * @returns ユーザ実績と PokeAPI 詳細を合成したレスポンス。
+   */
   async getPokemonDetail(uid: string, pokemonID: number): Promise<PokemonDetailResponse> {
     const userPokemon = await this.repo.getPokemon(uid, pokemonID);
 

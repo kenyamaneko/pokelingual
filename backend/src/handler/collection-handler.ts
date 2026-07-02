@@ -6,13 +6,22 @@ import { handleError } from "./error.js";
 
 /** ポケモン図鑑 (コレクション) 取得用エンドポイントを束ねるハンドラ。 */
 export class CollectionHandler {
+  /**
+   * @param collectionService 図鑑取得のドメインサービス。
+   * @param settingsRepo ユーザ設定リポジトリ。
+   * @param pokemonConfig ポケモン関連のアプリ設定。
+   */
   constructor(
     private collectionService: CollectionService,
     private settingsRepo: UserSettingsRepository,
     private pokemonConfig: PokemonConfig,
   ) {}
 
-  /** GET /collection — ユーザの図鑑一覧を返す。 */
+  /**
+   * GET /collection — ユーザの図鑑一覧を返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   getCollection = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -30,7 +39,11 @@ export class CollectionHandler {
     }
   };
 
-  /** GET /collection/:id — 特定ポケモンの詳細を返す。 */
+  /**
+   * GET /collection/:id — 特定ポケモンの詳細を返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   getPokemonDetail = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const id = parseInt(String(req.params.id), 10);

@@ -12,12 +12,20 @@ export const MAX_EXCLUDED_POKEMON_COUNT = 30;
 
 /** ユーザ設定 (除外ポケモン等) のエンドポイントを束ねるハンドラ。 */
 export class SettingsHandler {
+  /**
+   * @param settingsRepo ユーザ設定リポジトリ。
+   * @param pokemonConfig ポケモン関連のアプリ設定。
+   */
   constructor(
     private settingsRepo: UserSettingsRepository,
     private pokemonConfig: PokemonConfig,
   ) {}
 
-  /** GET /settings — 除外ポケモンIDと最大ポケモンIDを返す。 */
+  /**
+   * GET /settings — 除外ポケモンIDと最大ポケモンIDを返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   getSettings = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {
@@ -34,7 +42,11 @@ export class SettingsHandler {
     }
   };
 
-  /** PUT /settings/excluded-pokemon — 除外ポケモンIDリストを更新する。 */
+  /**
+   * PUT /settings/excluded-pokemon — 除外ポケモンIDリストを更新する。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   updateExcludedPokemon = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     const { pokemon_ids } = req.body;
