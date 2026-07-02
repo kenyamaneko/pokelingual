@@ -24,7 +24,6 @@ export interface CollectionEntry {
 /** GET /api/collection のレスポンス。 */
 export interface CollectionResponse {
   pokemon: CollectionEntry[];
-  total_available: number;
   captured_count: number;
   unavailable_count: number;
 }

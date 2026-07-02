@@ -10,8 +10,6 @@ import type { CollectionEntry, PokemonDetailResponse } from "../../../shared/api
  */
 export function CollectionPage() {
   const [collection, setCollection] = useState<CollectionEntry[]>([]);
-  // API 応答で上書きされるまでの初期値。ロード中はスピナー表示のため画面には出ない。
-  const [totalAvailable, setTotalAvailable] = useState(0);
   const [capturedCount, setCapturedCount] = useState(0);
   const [unavailableCount, setUnavailableCount] = useState(0);
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetailResponse | null>(
@@ -26,7 +24,6 @@ export function CollectionPage() {
       .getCollection()
       .then((res) => {
         setCollection(res.data.pokemon);
-        setTotalAvailable(res.data.total_available);
         setCapturedCount(res.data.captured_count);
         setUnavailableCount(res.data.unavailable_count);
       })
@@ -56,7 +53,7 @@ export function CollectionPage() {
             ずかん
           </h1>
           <span className="text-gray-400 text-sm">
-            {capturedCount} / {totalAvailable}
+            {capturedCount} 匹
           </span>
         </div>
 

@@ -140,7 +140,7 @@ const chatService = new ChatService(llmClient);
 const collectionService = new CollectionService(userPokemonRepo, pokemonClient);
 
 const questHandler = new QuestHandler(questService, chatService, userPokemonRepo);
-const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo, pokemonConfig);
+const collectionHandler = new CollectionHandler(collectionService);
 const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonConfig);
 const usageHandler = new UsageHandler(rateLimitRepo);
 

@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
 import type { CollectionService } from "../service/collection-service.js";
 import type { CollectionResponse } from "../../../shared/api-types/collection.js";
 import { handleError } from "./error.js";
@@ -8,14 +7,8 @@ import { handleError } from "./error.js";
 export class CollectionHandler {
   /**
    * @param collectionService 図鑑取得のドメインサービス。
-   * @param settingsRepo ユーザ設定リポジトリ。
-   * @param pokemonConfig ポケモン関連のアプリ設定。
    */
-  constructor(
-    private collectionService: CollectionService,
-    private settingsRepo: UserSettingsRepository,
-    private pokemonConfig: PokemonConfig,
-  ) {}
+  constructor(private collectionService: CollectionService) {}
 
   /**
    * GET /collection — ユーザの図鑑一覧を返す。
@@ -29,7 +22,6 @@ export class CollectionHandler {
       const capturedCount = entries.filter((e) => e.status === "captured").length;
       const body: CollectionResponse = {
         pokemon: entries,
-        total_available: this.pokemonConfig.maxPokemonID,
         captured_count: capturedCount,
         unavailable_count,
       };

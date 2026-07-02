@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
 import type { SettingsResponse } from "../../../shared/api-types/settings.js";
+import { validateExcludedPokemonIDs } from "../domain/settings.js";
 import { handleError } from "./error.js";
 
 /**
@@ -22,7 +23,7 @@ export class SettingsHandler {
   ) {}
 
   /**
-   * GET /settings — 除外ポケモンIDと最大ポケモンIDを返す。
+   * GET /settings — ユーザ自身の除外ポケモンIDを返す。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
@@ -30,11 +31,8 @@ export class SettingsHandler {
     const uid = res.locals.uid as string;
     try {
       const settings = await this.settingsRepo.getSettings(uid);
-      const excluded = settings.excluded_pokemon_ids ?? this.pokemonConfig.defaultExcludedPokemonIDs;
       const body: SettingsResponse = {
-        excluded_pokemon_ids: [...excluded],
-        max_pokemon_id: this.pokemonConfig.maxPokemonID,
-        max_excluded_count: MAX_EXCLUDED_POKEMON_COUNT,
+        excluded_pokemon_ids: settings.excluded_pokemon_ids ?? [],
       };
       res.json(body);
     } catch (err) {
@@ -43,23 +41,23 @@ export class SettingsHandler {
   };
 
   /**
-   * PUT /settings/excluded-pokemon — 除外ポケモンIDリストを更新する。
+   * PUT /settings/excluded-pokemon — 除外ポケモンIDリストをバリデーションして更新する。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
   updateExcludedPokemon = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
-    const { pokemon_ids } = req.body;
-    if (!Array.isArray(pokemon_ids)) {
-      res.status(400).json({ error: "invalid request body" });
-      return;
-    }
-    if (pokemon_ids.length > MAX_EXCLUDED_POKEMON_COUNT) {
-      res.status(400).json({ error: `excluded_pokemon_ids exceeds limit (max ${MAX_EXCLUDED_POKEMON_COUNT})` });
+    const result = validateExcludedPokemonIDs(
+      req.body?.pokemon_ids,
+      this.pokemonConfig.maxPokemonID,
+      MAX_EXCLUDED_POKEMON_COUNT,
+    );
+    if (!result.ok) {
+      res.status(400).json({ error: result.message });
       return;
     }
     try {
-      await this.settingsRepo.updateExcludedPokemon(uid, pokemon_ids);
+      await this.settingsRepo.updateExcludedPokemon(uid, result.ids);
       res.json({ status: "ok" });
     } catch (err) {
       handleError(res, err, req.path);

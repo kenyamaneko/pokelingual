@@ -50,8 +50,6 @@ describe("SettingsPage の遷移仕様", () => {
     vi.mocked(settingsApi.getSettings).mockResolvedValue({
       data: {
         excluded_pokemon_ids: [],
-        max_pokemon_id: 898,
-        max_excluded_count: 30,
       },
     } as Awaited<ReturnType<typeof settingsApi.getSettings>>);
   });
