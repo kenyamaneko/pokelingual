@@ -223,7 +223,7 @@ gcloud run deploy pokelingual-api-dev \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
   --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
-  --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app" \
+  --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定

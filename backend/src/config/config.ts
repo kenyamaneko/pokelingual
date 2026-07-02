@@ -62,7 +62,20 @@ function requireEnv(key: string): string {
 }
 
 /**
- * 環境変数から Config を構築する。本番モードでは必須 env (GOOGLE_CLOUD_PROJECT, FRONTEND_URL) が未設定なら起動エラー。
+ * 必須の環境変数を正の整数として取得する。
+ * @param key 環境変数名。
+ * @returns 整数値。
+ * @throws 未設定、または正の整数でない場合。
+ */
+function requireIntEnv(key: string): number {
+  const v = getIntEnv(key);
+  if (v === undefined) throw new Error(`required env not set: ${key}`);
+  return v;
+}
+
+/**
+ * 環境変数から Config を構築する。本番モードでは必須 env (GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION,
+ * FRONTEND_URL, PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
@@ -73,9 +86,9 @@ export function loadConfig(): Config {
     appMode,
     port: getEnv("PORT") ?? MOCK_DEFAULTS.port,
     googleCloudProject: isMock ? (getEnv("GOOGLE_CLOUD_PROJECT") ?? MOCK_DEFAULTS.googleCloudProject) : requireEnv("GOOGLE_CLOUD_PROJECT"),
-    googleCloudLocation: getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation,
+    googleCloudLocation: isMock ? (getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation) : requireEnv("GOOGLE_CLOUD_LOCATION"),
     frontendURL: isMock ? (getEnv("FRONTEND_URL") ?? MOCK_DEFAULTS.frontendURL) : requireEnv("FRONTEND_URL"),
-    perUserDailyLimit: getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit,
-    globalDailyLimit: getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit,
+    perUserDailyLimit: isMock ? (getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit) : requireIntEnv("PER_USER_DAILY_LIMIT"),
+    globalDailyLimit: isMock ? (getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit) : requireIntEnv("GLOBAL_DAILY_LIMIT"),
   };
 }
