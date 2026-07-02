@@ -9,9 +9,9 @@ set -euo pipefail
 #   E2E_USER_EMAIL    - テストユーザのメールアドレス
 #   E2E_USER_PASSWORD - テストユーザのパスワード
 #   FIREBASE_API_KEY  - Firebase Web API キー
-#   GCP_PROJECT_ID    - GCP プロジェクト ID
+#   GOOGLE_CLOUD_PROJECT_ID    - Google Cloud プロジェクト ID
 
-for var in E2E_USER_EMAIL E2E_USER_PASSWORD FIREBASE_API_KEY GCP_PROJECT_ID; do
+for var in E2E_USER_EMAIL E2E_USER_PASSWORD FIREBASE_API_KEY GOOGLE_CLOUD_PROJECT_ID; do
   if [ -z "${!var:-}" ]; then
     echo "ERROR: ${var} is not set"
     exit 1
@@ -30,7 +30,7 @@ if [ -z "${UID}" ]; then
 fi
 
 ACCESS_TOKEN=$(gcloud auth print-access-token)
-BASE="https://firestore.googleapis.com/v1/projects/${GCP_PROJECT_ID}/databases/(default)/documents"
+BASE="https://firestore.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/databases/(default)/documents"
 
 # 1. users/{uid}/pokemon/* を削除
 echo "Deleting pokemon data for uid ${UID}..."
@@ -47,7 +47,7 @@ curl -s -X DELETE -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/users/${UI
 # 3. Firebase Auth ユーザを削除
 echo "Deleting Firebase Auth user ${UID}..."
 curl -s -X POST \
-  "https://identitytoolkit.googleapis.com/v1/projects/${GCP_PROJECT_ID}/accounts:delete" \
+  "https://identitytoolkit.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/accounts:delete" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"localId\":\"${UID}\"}"

@@ -4,8 +4,8 @@ import "dotenv/config";
 export interface Config {
   appMode: string;
   port: string;
-  gcpProject: string;
-  gcpLocation: string;
+  googleCloudProject: string;
+  googleCloudLocation: string;
   frontendURL: string;
   perUserDailyLimit: number;
   globalDailyLimit: number;
@@ -15,8 +15,8 @@ export interface Config {
 const MOCK_DEFAULTS = {
   port: "8080",
   // Firestore Emulator は projectId が非空であることを要求する。本番プロジェクトと混同しないよう専用名にする
-  gcpProject: "pokelingual-mock",
-  gcpLocation: "us-central1",
+  googleCloudProject: "pokelingual-mock",
+  googleCloudLocation: "us-central1",
   frontendURL: "http://localhost:5173",
   perUserDailyLimit: 30,
   globalDailyLimit: 1500,
@@ -44,7 +44,7 @@ function requireEnv(key: string): string {
   return v;
 }
 
-/** 環境変数から Config を構築する。本番モードでは必須 env (GCP_PROJECT, FRONTEND_URL) が未設定なら起動エラー。 */
+/** 環境変数から Config を構築する。本番モードでは必須 env (GOOGLE_CLOUD_PROJECT, FRONTEND_URL) が未設定なら起動エラー。 */
 export function loadConfig(): Config {
   const appMode = getEnv("APP_MODE") ?? "mock";
   const isMock = appMode === "mock";
@@ -52,8 +52,8 @@ export function loadConfig(): Config {
   return {
     appMode,
     port: getEnv("PORT") ?? MOCK_DEFAULTS.port,
-    gcpProject: isMock ? (getEnv("GCP_PROJECT") ?? MOCK_DEFAULTS.gcpProject) : requireEnv("GCP_PROJECT"),
-    gcpLocation: getEnv("GCP_LOCATION") ?? MOCK_DEFAULTS.gcpLocation,
+    googleCloudProject: isMock ? (getEnv("GOOGLE_CLOUD_PROJECT") ?? MOCK_DEFAULTS.googleCloudProject) : requireEnv("GOOGLE_CLOUD_PROJECT"),
+    googleCloudLocation: getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation,
     frontendURL: isMock ? (getEnv("FRONTEND_URL") ?? MOCK_DEFAULTS.frontendURL) : requireEnv("FRONTEND_URL"),
     perUserDailyLimit: getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit,
     globalDailyLimit: getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit,

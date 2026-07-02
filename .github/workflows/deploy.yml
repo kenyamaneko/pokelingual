@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GCP_REGION: asia-northeast1
+  GOOGLE_CLOUD_REGION: asia-northeast1
 
 jobs:
   # Run tests first
@@ -64,14 +64,14 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
 
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker
-        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+        run: gcloud auth configure-docker ${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev
 
       - name: Ensure test user email in allowed_emails (dev only)
         if: github.ref_name == 'develop'
@@ -79,7 +79,7 @@ jobs:
           TEST_USER_EMAIL: test@pokelingual.dev
         run: |
           ACCESS_TOKEN=$(gcloud auth print-access-token)
-          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+          PROJECT_ID="${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
           BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
           DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
           EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
@@ -102,7 +102,7 @@ jobs:
           E2E_USER_EMAIL: e2e@pokelingual.dev
         run: |
           ACCESS_TOKEN=$(gcloud auth print-access-token)
-          PROJECT_ID="${{ secrets.GCP_PROJECT_ID }}"
+          PROJECT_ID="${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
           BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
           DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
           EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
@@ -122,7 +122,7 @@ jobs:
       - name: Build and push Docker image
         working-directory: backend
         run: |
-          IMAGE_BASE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/pokelingual-backend/api"
+          IMAGE_BASE="${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api"
           docker build \
             -t "${IMAGE_BASE}:${{ github.sha }}" \
             -t "${IMAGE_BASE}:${{ needs.determine-version.outputs.version }}" \
@@ -137,15 +137,15 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           FRONTEND_URL: ${{ github.ref_name != 'develop' && 'https://pokelingual-prod.web.app' || 'https://pokelingual-dev.web.app' }}
-          BACKEND_SA: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+          BACKEND_SA: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image "${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
-            --region ${{ env.GCP_REGION }} \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --image "${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --service-account "${{ env.BACKEND_SA }}" \
             --remove-secrets "GEMINI_API_KEY" \
-            --update-env-vars "APP_MODE=prod,FRONTEND_URL=${{ env.FRONTEND_URL }},GCP_PROJECT=${{ secrets.GCP_PROJECT_ID }}" \
+            --update-env-vars "APP_MODE=prod,FRONTEND_URL=${{ env.FRONTEND_URL }},GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }}" \
             --allow-unauthenticated
 
       # ロールバックで --to-revisions を使うとトラフィックが特定リビジョンにピン留めされ、
@@ -154,8 +154,8 @@ jobs:
       - name: Route traffic to latest revision
         run: |
           gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
-            --region ${{ env.GCP_REGION }} \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --to-latest
 
   # Integration tests: run against deployed dev backend with real resources
@@ -179,8 +179,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
 
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
@@ -189,8 +189,8 @@ jobs:
         id: service-url
         run: |
           URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.GCP_REGION }} \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --format 'value(status.url)')
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
@@ -199,7 +199,7 @@ jobs:
         env:
           TEST_USER_EMAIL: test@pokelingual.dev
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
         run: |
           # Try to sign in
           RESPONSE=$(curl -s -X POST \
@@ -240,14 +240,14 @@ jobs:
         env:
           TEST_USER_UID: ${{ steps.firebase-token.outputs.uid }}
           TEST_USER_EMAIL: test@pokelingual.dev
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GOOGLE_CLOUD_PROJECT_ID: ${{ vars.GOOGLE_CLOUD_PROJECT_ID }}
         run: |
           if [ -z "${TEST_USER_UID}" ] || [ "${TEST_USER_UID}" = "null" ]; then
             echo "No test user UID available, skipping cleanup"
             exit 0
           fi
           ACCESS_TOKEN=$(gcloud auth print-access-token)
-          BASE="https://firestore.googleapis.com/v1/projects/${GCP_PROJECT_ID}/databases/(default)/documents"
+          BASE="https://firestore.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/databases/(default)/documents"
 
           # 1. Delete Firestore: users/{uid}/pokemon/*
           echo "Deleting pokemon data..."
@@ -272,7 +272,7 @@ jobs:
           # 3. Delete Firebase Auth user
           echo "Deleting Firebase Auth user..."
           curl -s -X POST \
-            "https://identitytoolkit.googleapis.com/v1/projects/${GCP_PROJECT_ID}/accounts:delete" \
+            "https://identitytoolkit.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/accounts:delete" \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"localId\":\"${TEST_USER_UID}\"}"
@@ -285,15 +285,15 @@ jobs:
           echo "Integration tests failed. Rolling back to previous revision..."
           PREV_REVISION=$(gcloud run revisions list \
             --service ${{ env.SERVICE_NAME }} \
-            --region ${{ env.GCP_REGION }} \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --sort-by "~creationTimestamp" \
             --format "value(REVISION)" \
             --limit 2 | tail -1)
           if [ -n "${PREV_REVISION}" ]; then
             gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
-              --region ${{ env.GCP_REGION }} \
-              --project ${{ secrets.GCP_PROJECT_ID }} \
+              --region ${{ env.GOOGLE_CLOUD_REGION }} \
+              --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
               --to-revisions "${PREV_REVISION}=100"
             echo "Rolled back to revision: ${PREV_REVISION}"
           else
@@ -322,8 +322,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -339,19 +339,19 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
+          VITE_FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
           VITE_BUILD_VERSION: ${{ needs.determine-version.outputs.version }}
           VITE_ENVIRONMENT: ${{ github.ref_name != 'develop' && 'prod' || 'dev' }}
         run: npm run build
 
       - name: Deploy to Firebase Hosting
-        run: npx firebase-tools deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: npx firebase-tools deploy --only hosting --project ${{ vars.FIREBASE_PROJECT_ID }}
 
   # Cloud Dev E2E: 実 Firebase Auth で新規登録し、デプロイ済みフロント/バックエンドに対して
   # フルフローを通す。develop のみ。実行前後でテストユーザを掃除する。
@@ -374,8 +374,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
 
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
@@ -400,8 +400,8 @@ jobs:
       - name: Pre-clean leftover E2E user
         env:
           E2E_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          GOOGLE_CLOUD_PROJECT_ID: ${{ vars.GOOGLE_CLOUD_PROJECT_ID }}
         run: bash scripts/cleanup-e2e-user.sh
 
       - name: Run cloud-dev E2E
@@ -427,6 +427,6 @@ jobs:
         if: always()
         env:
           E2E_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          GOOGLE_CLOUD_PROJECT_ID: ${{ vars.GOOGLE_CLOUD_PROJECT_ID }}
         run: bash scripts/cleanup-e2e-user.sh

@@ -81,7 +81,7 @@ if (cfg.appMode === "mock") {
     );
   }
   console.log(`Starting in mock mode (Firestore Emulator: ${process.env.FIRESTORE_EMULATOR_HOST})`);
-  const firestoreClient = new Firestore({ projectId: cfg.gcpProject });
+  const firestoreClient = new Firestore({ projectId: cfg.googleCloudProject });
   pokemonClient = new MockPokemonClient();
   llmClient = new MockLLMClient();
   randomSource = new MockRandomSource();
@@ -98,8 +98,8 @@ if (cfg.appMode === "mock") {
   const firestoreClient = getFirestore(firebaseApp);
 
   const vertexAI = new VertexAI({
-    project: cfg.gcpProject,
-    location: cfg.gcpLocation,
+    project: cfg.googleCloudProject,
+    location: cfg.googleCloudLocation,
   });
 
   // ホワイトリストは config/auth.allowed_emails で運用。

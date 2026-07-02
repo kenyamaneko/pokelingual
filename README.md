@@ -183,28 +183,31 @@ variable "github_repo" {
 
 #### GitHub Environments を作成
 
-リポジトリの Settings → Environments で `dev` と `prod` を作成し、以下の Secrets を設定:
+リポジトリの Settings → Environments で `dev` と `prod` を作成する。
 
-| Secret | 説明 | 取得方法 |
-|--------|------|----------|
+以下は機密ではない設定値（プロジェクト ID・ブラウザに出荷される Firebase Web 設定・WIF リソース識別子）なので **Variables** に設定する（Secret ではない）:
+
+| Variable | 説明 | 取得方法 |
+|----------|------|----------|
 | `WIF_PROVIDER` | WIF プロバイダーのフルパス | `terraform output wif_provider` |
 | `WIF_SERVICE_ACCOUNT` | deploy SA のメールアドレス | `terraform output wif_service_account` |
-| `GCP_PROJECT_ID` | Google Cloud プロジェクト ID | `my-pokelingual-dev` 等 |
+| `GOOGLE_CLOUD_PROJECT_ID` | Google Cloud プロジェクト ID | `my-pokelingual-dev` 等 |
 | `FIREBASE_API_KEY` | Firebase Web API キー | `terraform output firebase_api_key` |
 | `FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン | `PROJECT_ID.firebaseapp.com` |
-| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID | = GCP_PROJECT_ID |
+| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID | = GOOGLE_CLOUD_PROJECT_ID |
 | `FIREBASE_STORAGE_BUCKET` | Storage バケット | `PROJECT_ID.firebasestorage.app` |
 | `FIREBASE_MESSAGING_SENDER_ID` | FCM Sender ID | `terraform output firebase_messaging_sender_id` |
 | `FIREBASE_APP_ID` | Firebase App ID | `terraform output firebase_app_id` |
 | `API_BASE_URL` | バックエンド URL | Cloud Run デプロイ後に取得 |
 
-dev 環境のみ追加:
+以下は本物の機密なので **Secret** に設定する（dev 環境のみ）:
 
 | Secret | 説明 |
 |--------|------|
 | `TEST_USER_PASSWORD` | 結合テスト用ユーザーのパスワード（任意の文字列） |
 
 > `TEST_USER_EMAIL` は deploy.yml 内でハードコード（`test@pokelingual.dev`）
+> Firebase Web API キー・プロジェクト ID 等はブラウザに出荷される公開値のため、Secret ではなく Variable として扱う。
 
 #### 初回デプロイ
 
@@ -223,7 +226,7 @@ gcloud run deploy pokelingual-api-dev \
   --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app" \
   --allow-unauthenticated
 
-# API_BASE_URL を取得して GitHub Secrets に設定
+# API_BASE_URL を取得して GitHub Variables に設定
 gcloud run services describe pokelingual-api-dev --region asia-northeast1 --format 'value(status.url)'
 ```
 

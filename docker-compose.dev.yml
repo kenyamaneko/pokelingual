@@ -23,7 +23,7 @@ services:
       PORT: "15100"
       FRONTEND_URL: http://localhost:15151
       FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
-      GCP_PROJECT: pokelingual-mock
+      GOOGLE_CLOUD_PROJECT: pokelingual-mock
     depends_on:
       firestore-emulator:
         condition: service_healthy
