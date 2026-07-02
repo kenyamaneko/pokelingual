@@ -2,7 +2,12 @@ import type { Response } from "express";
 import { NotFoundError, ExternalServiceError, RateLimitError } from "../domain/errors.js";
 import type { RateLimitResponse } from "../../../shared/api-types/rate-limit.js";
 
-/** ドメインエラーを HTTP ステータスにマップしてレスポンスを返す共通ハンドラ。 */
+/**
+ * ドメインエラーを HTTP ステータスにマップしてレスポンスを返す共通ハンドラ。
+ * @param res Express のレスポンスオブジェクト。
+ * @param err 捕捉したエラー (ドメインエラーまたは想定外の値)。
+ * @param path リクエストパス (ログ用)。
+ */
 export function handleError(res: Response, err: unknown, path: string): void {
   if (err instanceof NotFoundError) {
     console.warn("resource not found", { error: String(err), path });

@@ -25,6 +25,11 @@ const MOCK_CHAT_REPLY =
  * サービス側のプロンプトを変更する際は、いずれかのキーワードを必ず残すこと。
  */
 export class MockLLMClient implements LLMClient {
+  /**
+   * プロンプト内のキーワードで用途を判定し、固定レスポンスを返す。
+   * @param prompt サービス側が組み立てたプロンプト文字列。
+   * @returns 採点用 JSON 文字列 または 教授チャットの固定文。
+   */
   async generateText(prompt: string): Promise<string> {
     if (prompt.includes("translation evaluator")) {
       const score = MOCK_SCORE_MIN + Math.floor(Math.random() * MOCK_SCORE_RANGE);
@@ -37,6 +42,11 @@ export class MockLLMClient implements LLMClient {
   }
 }
 
+/**
+ * スコア帯に応じたモック講評文を返す。
+ * @param score 採点スコア (0-100)。
+ * @returns スコア帯に対応する日本語の講評文。
+ */
 function mockReview(score: number): string {
   if (score >= REVIEW_THRESHOLDS.excellent) return "素晴らしい！全体の 意味を 正確に 捉えているぞ。自然な 日本語で とても いい 翻訳だ！";
   if (score >= REVIEW_THRESHOLDS.good) return "よく 頑張ったな！意味は しっかり 伝わっているぞ。細かい ニュアンスを もう 少し 工夫すると さらに 良くなるぞ。";

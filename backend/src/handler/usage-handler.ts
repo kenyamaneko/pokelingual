@@ -4,9 +4,16 @@ import { handleError } from "./error.js";
 
 /** 当日の API 利用状況を返すエンドポイント用ハンドラ。 */
 export class UsageHandler {
+  /**
+   * @param repo 日次レート制限カウンタのリポジトリ。
+   */
   constructor(private repo: RateLimitRepository) {}
 
-  /** GET /usage — ユーザの当日リクエスト数と上限を返す。 */
+  /**
+   * GET /usage — ユーザの当日リクエスト数と上限を返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
   getUsage = async (req: Request, res: Response) => {
     const uid = res.locals.uid as string;
     try {

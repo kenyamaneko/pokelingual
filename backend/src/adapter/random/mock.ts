@@ -8,6 +8,9 @@ import type { RandomSource } from "../../domain/ports.js";
  * 出題の flavor text 選択も先頭固定になり、再現性が得られる。
  */
 export class MockRandomSource implements RandomSource {
+  /**
+   * @returns 常に 0 (捕獲抽選などを決定化するため)。
+   */
   next(): number {
     return 0;
   }
