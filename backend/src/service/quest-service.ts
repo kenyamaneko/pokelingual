@@ -339,8 +339,9 @@ export function calculateCaptureRate(score: number, bst: number, ballMultiplier:
   const x = bst / 100.0;
   const s = score / 100.0;
 
-  // ロジット係数は ARCHITECTURE.md の捕獲確率モデル参照。BST 高ほど捕獲難、スコア高ほど易、
-  // 相互作用項で「強いポケモンは高スコアでないと捕まらない」挙動を表現する。
+  // ロジット係数はフィッティング済みモデル (docs/adr/010-bst-capture-formula.md が正典)。
+  // 個々の係数に単独の意味は無いため、定数化せずマジックナンバーの例外としてインラインで持つ。
+  // BST 高ほど捕獲難、スコア高ほど易、相互作用項で「強いポケモンは高スコアでないと捕まらない」を表現する。
   const logit = 2.5 - 0.34 * x - 0.17 * x * x + 14.5 * s - 4.2 * x * s + 0.52 * x * x * s;
   const baseRate = 1.0 / (1.0 + Math.exp(-logit));
 
