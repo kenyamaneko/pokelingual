@@ -145,7 +145,7 @@ interface FlavorTextsByVersion {
  * @param entries PokeAPI species の flavor_text_entries。
  * @returns version 順に並んだ EN/JA 説明ペアの配列。
  */
-function buildFlavorTextPairs(
+export function buildFlavorTextPairs(
   entries: PokeAPISpeciesResponse["flavor_text_entries"],
 ): FlavorTextPair[] {
   const byVersion = new Map<string, FlavorTextsByVersion>();
@@ -216,7 +216,7 @@ function buildFlavorTextPairs(
  * @param text PokeAPI の生の flavor_text。
  * @returns 整形済みテキスト。
  */
-function cleanFlavorText(text: string): string {
+export function cleanFlavorText(text: string): string {
   return text
     .replace(/\f/g, " ")
     .replace(/\n/g, " ")
