@@ -12,8 +12,9 @@ export function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [excludedIDs, setExcludedIDs] = useState<number[]>([]);
-  const [maxPokemonID, setMaxPokemonID] = useState(898);
-  const [maxExcludedCount, setMaxExcludedCount] = useState(30);
+  // API 応答で上書きされるまでの初期値。ロード完了までフォームは描画されないため画面には出ない。
+  const [maxPokemonID, setMaxPokemonID] = useState(0);
+  const [maxExcludedCount, setMaxExcludedCount] = useState(0);
   const [newID, setNewID] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
