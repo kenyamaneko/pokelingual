@@ -8,7 +8,7 @@ import type {
 // CollectionEntry / PokemonDetailResponse / FlavorTextPair の API 契約型は shared/api-types/collection.d.ts を参照
 
 /** getCollection の戻り値。表示可能なエントリと、PokeAPI 取得失敗で除外された件数を返す。 */
-export interface CollectionResult {
+interface CollectionResult {
   entries: CollectionEntry[];
   unavailable_count: number;
 }
