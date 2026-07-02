@@ -126,26 +126,6 @@ resource "google_firebaserules_release" "firestore" {
   depends_on = [google_firebaserules_ruleset.firestore]
 }
 
-# Firestore composite index for collection query
-resource "google_firestore_index" "user_pokemon_captured" {
-  provider   = google-beta
-  project    = var.project_id
-  database   = google_firestore_database.default.name
-  collection = "pokemon"
-
-  fields {
-    field_path = "status"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "pokemon_id"
-    order      = "ASCENDING"
-  }
-
-  depends_on = [google_firestore_database.default]
-}
-
 # ============================================================
 # Firebase Authentication
 # ============================================================
