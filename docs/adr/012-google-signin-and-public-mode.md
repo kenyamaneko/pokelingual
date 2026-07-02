@@ -44,7 +44,7 @@ UI 上は **Google を主、メールを従** とする:
 - Google サインインで何か問題が出た場合のフォールバック
 
 Terraform 側では `google_identity_platform_default_supported_idp_config` で google.com IDP を有効化。
-OAuth クライアントは GCP コンソールで手動作成し、Terraform 変数で client_id/secret を注入する設計。
+OAuth クライアントは Google Cloud コンソールで手動作成し、Terraform 変数で client_id/secret を注入する設計。
 （OAuth クライアント自体は Terraform で作成不可）
 
 ### 3. Anonymous Auth は不採用

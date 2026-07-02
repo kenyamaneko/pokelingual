@@ -14,7 +14,7 @@
 
 1. アプリ層で per-user の日次上限のみ
 2. アプリ層で per-user + 全体（global）の日次上限の二段
-3. GCP Billing Budget で自動停止（Pub/Sub + Cloud Function）
+3. Google Cloud Billing Budget で自動停止（Pub/Sub + Cloud Function）
 4. なし（Billing アラートメールのみ）
 
 ## 決定
