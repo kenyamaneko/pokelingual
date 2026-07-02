@@ -92,6 +92,7 @@ backend/src/
 1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成、説明文のポケモン名を伏せ字
 2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）、JA名も伏せ字
 3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
+   POST /api/quest/skip-guess → 推測をスキップ → poke ボール確定
 4. POST /api/quest/capture    → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
 5. POST /api/quest/chat       → 博士に質問（捕獲後、フロントエンドからコンテキスト+履歴を送信）
 ```

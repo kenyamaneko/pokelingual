@@ -75,6 +75,21 @@ export class QuestHandler {
   };
 
   /**
+   * POST /quest/skip-guess — 名前当てをスキップし poke ボールを確定する。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
+  skipGuess = (req: Request, res: Response) => {
+    const uid = res.locals.uid as string;
+    try {
+      const resp = this.questService.skipGuess(uid);
+      res.json(resp);
+    } catch (err) {
+      handleError(res, err, req.path);
+    }
+  };
+
+  /**
    * POST /quest/capture — 捕獲を試行し結果を永続化する。
    * @param req Express リクエスト。
    * @param res Express レスポンス。

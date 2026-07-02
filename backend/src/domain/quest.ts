@@ -1,4 +1,5 @@
 import type { PokemonType } from "../../../shared/api-types/pokemon.js";
+import type { BallType } from "../../../shared/api-types/quest.js";
 
 /** 進行中のクエストセッション。出題から捕獲までの状態を保持する。 */
 export interface QuestSession {
@@ -15,7 +16,8 @@ export interface QuestSession {
   is_legendary: boolean;
   is_mythical: boolean;
   score: number;
-  ball_type: string;
+  /** 確定したボール種別。名前当て/スキップ前は null。 */
+  ball_type: BallType | null;
   guess_attempts: number;
   name_guessed: boolean;
 }

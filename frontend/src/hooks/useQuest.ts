@@ -7,7 +7,10 @@ import type {
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
+  BallType,
 } from "../../../shared/api-types/quest";
+
+export type { BallType };
 
 /** クエストフェーズの遷移ステート。 */
 export type QuestPhase =
@@ -18,9 +21,6 @@ export type QuestPhase =
   | "capturing"
   | "result"
   | "error";
-
-/** 推測結果から確定したボール種別。 */
-export type BallType = "poke" | "great" | "ultra";
 
 /** useQuest フックの戻り値。フェーズ・各種データ・操作を提供する。 */
 export interface UseQuestResult {
@@ -36,7 +36,7 @@ export interface UseQuestResult {
   startNewQuest: () => Promise<void>;
   submitTranslation: (translation: string) => Promise<void>;
   submitGuess: (guess: string) => Promise<void>;
-  skipGuess: () => void;
+  skipGuess: () => Promise<void>;
   capture: () => Promise<void>;
 }
 
@@ -136,7 +136,7 @@ export function useQuest(): UseQuestResult {
       const res = await questApi.guessName(guess);
       setGuessResult(res.data);
       if (res.data.ball_type) {
-        setBallType(res.data.ball_type as BallType);
+        setBallType(res.data.ball_type);
       }
     } catch (err) {
       if (isRateLimitError(err)) return;
@@ -144,10 +144,16 @@ export function useQuest(): UseQuestResult {
     }
   };
 
-  const skipGuess = () => {
-    // 名前推測スキップ時はポケボール固定で捕獲フェーズへ進む仕様
-    setBallType("poke");
-    setPhase("capturing");
+  const skipGuess = async () => {
+    // 名前推測スキップはサーバに明示し、poke ボールを確定してから捕獲フェーズへ進む。
+    try {
+      const res = await questApi.skipGuess();
+      setBallType(res.data.ball_type);
+      setPhase("capturing");
+    } catch (err) {
+      if (isRateLimitError(err)) return;
+      setError(getErrorMessage(err, "スキップに　しっぱいしました"));
+    }
   };
 
   const capture = async () => {

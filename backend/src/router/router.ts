@@ -30,6 +30,7 @@ export function setupRoutes(
   router.get("/quest/new", questHandler.newQuest);
   router.post("/quest/score", rateLimitMiddleware, questHandler.scoreTranslation);
   router.post("/quest/guess-name", questHandler.guessName);
+  router.post("/quest/skip-guess", questHandler.skipGuess);
   router.post("/quest/capture", questHandler.attemptCapture);
   router.post("/quest/chat", rateLimitMiddleware, questHandler.replyToChat);
 

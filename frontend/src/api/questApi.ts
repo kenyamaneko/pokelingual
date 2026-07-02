@@ -3,6 +3,7 @@ import type {
   QuestNewResponse,
   ScoreResponse,
   GuessResponse,
+  SkipGuessResponse,
   CaptureResponse,
   ChatContext,
   ChatMessage,
@@ -30,6 +31,11 @@ export const questApi = {
    */
   guessName: (guess: string) =>
     api.post<GuessResponse>("/quest/guess-name", { guess }),
+  /**
+   * POST /quest/skip-guess — 名前当てをスキップする。
+   * @returns スキップ結果 (常に poke)。
+   */
+  skipGuess: () => api.post<SkipGuessResponse>("/quest/skip-guess"),
   /**
    * POST /quest/capture — 捕獲を試行する。
    * @returns 捕獲結果レスポンス。

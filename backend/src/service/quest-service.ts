@@ -14,6 +14,8 @@ import type {
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
+  SkipGuessResponse,
+  BallType,
 } from "../../../shared/api-types/quest.js";
 
 /**
@@ -36,7 +38,7 @@ const SCORE_MIN = 0;
 const SCORE_MAX = 100;
 
 /** ボール種別ごとの捕獲確率倍率。great=英語名正解、ultra=日本語名正解、poke=不正解。 */
-const BALL_MULTIPLIER: Record<string, number> = {
+const BALL_MULTIPLIER: Record<BallType, number> = {
   poke: 1.0,
   great: 2.0,
   ultra: 3.0,
@@ -115,7 +117,7 @@ export class QuestService {
       is_legendary: pokemon.is_legendary,
       is_mythical: pokemon.is_mythical,
       score: 0,
-      ball_type: "",
+      ball_type: null,
       guess_attempts: 0,
       name_guessed: false,
     };
@@ -182,7 +184,7 @@ export class QuestService {
     const session = this.getSession(uid);
 
     if (session.name_guessed) {
-      return { correct: true, ball_type: session.ball_type, attempts_remaining: 0 };
+      return { correct: true, ball_type: session.ball_type ?? undefined, attempts_remaining: 0 };
     }
 
     session.guess_attempts++;
@@ -223,6 +225,18 @@ export class QuestService {
   }
 
   /**
+   * 名前当てをスキップし、poke ボールを確定する。
+   * @param uid ユーザ ID。
+   * @returns 確定したボール種別 (常に poke)。
+   */
+  skipGuess(uid: string): SkipGuessResponse {
+    const session = this.getSession(uid);
+    session.ball_type = "poke";
+    session.name_guessed = true;
+    return { ball_type: "poke" };
+  }
+
+  /**
    * スコア・BST・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
    * @param uid ユーザ ID。
    * @returns 捕獲成否と表示用ポケモン情報。
@@ -230,7 +244,11 @@ export class QuestService {
   attemptCapture(uid: string): CaptureResponse {
     const session = this.getSession(uid);
 
-    const ballMultiplier = BALL_MULTIPLIER[session.ball_type] ?? BALL_MULTIPLIER.poke;
+    if (session.ball_type === null) {
+      // 名前当て/スキップを経ずに capture に到達するのは不正な状態 (フォールバックせず失敗させる)。
+      throw new Error("capture attempted before a ball was selected (guess or skip required)");
+    }
+    const ballMultiplier = BALL_MULTIPLIER[session.ball_type];
     const probability = calculateCaptureRate(session.score, session.base_stat_total, ballMultiplier);
     const captured = this.random.next() < probability;
 

@@ -13,6 +13,7 @@ vi.mock("../api/questApi", () => ({
     newQuest: vi.fn(),
     scoreTranslation: vi.fn(),
     guessName: vi.fn(),
+    skipGuess: vi.fn(),
     attemptCapture: vi.fn(),
     replyToChat: vi.fn(),
   },
@@ -220,16 +221,18 @@ describe("useQuest の仕様", () => {
     expect(result.current.ballType).toBe("ultra");
   });
 
-  it("skipGuess は ballType=poke にして capturing フェーズへ遷移する", async () => {
+  it("skipGuess はサーバに明示し ballType=poke にして capturing フェーズへ遷移する", async () => {
     vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
+    vi.mocked(questApi.skipGuess).mockResolvedValue(axiosOk({ ball_type: "poke" }));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
-    act(() => {
-      result.current.skipGuess();
+    await act(async () => {
+      await result.current.skipGuess();
     });
 
+    expect(questApi.skipGuess).toHaveBeenCalledOnce();
     expect(result.current.ballType).toBe("poke");
     expect(result.current.phase).toBe("capturing");
   });
