@@ -1,5 +1,6 @@
-/** レート制限の到達種別。"user" は個人上限、"global" はサービス全体上限。 */
-export type RateLimitKind = "user" | "global";
+// RateLimitKind は 429 レスポンスの error フィールドに乗る wire 値なので、shared/api-types を SSOT として再 export する。
+import type { RateLimitKind } from "../../../shared/api-types/rate-limit";
+export type { RateLimitKind };
 
 /** レート制限通知イベントのペイロード。表示メッセージと種別を含む。 */
 export interface RateLimitDetail {

@@ -19,8 +19,9 @@ export class ExternalServiceError extends Error {
   }
 }
 
-/** レート制限の到達種別。"user" は個人上限、"global" はサービス全体上限。 */
-export type RateLimitKind = "user" | "global";
+// RateLimitKind は 429 レスポンスの error フィールドに乗る wire 値なので、shared/api-types を SSOT として再 export する。
+import type { RateLimitKind } from "../../../shared/api-types/rate-limit.js";
+export type { RateLimitKind };
 
 /** レート制限到達を表す。handleError で 429 にマップされる。 */
 export class RateLimitError extends Error {
