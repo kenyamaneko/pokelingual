@@ -25,9 +25,6 @@ provider "google-beta" {
   billing_project       = var.project_id
 }
 
-# ============================================================
-# Enable required APIs
-# ============================================================
 resource "google_project_service" "apis" {
   for_each = toset([
     "firebase.googleapis.com",
@@ -51,9 +48,6 @@ resource "google_project_service" "apis" {
   disable_on_destroy = false
 }
 
-# ============================================================
-# Firebase
-# ============================================================
 resource "google_firebase_project" "default" {
   provider = google-beta
   project  = var.project_id
@@ -75,9 +69,6 @@ data "google_firebase_web_app_config" "frontend" {
   web_app_id = google_firebase_web_app.frontend.app_id
 }
 
-# ============================================================
-# Firestore
-# ============================================================
 resource "google_firestore_database" "default" {
   provider    = google-beta
   project     = var.project_id
@@ -88,7 +79,6 @@ resource "google_firestore_database" "default" {
   depends_on = [google_project_service.apis]
 }
 
-# Firestore security rules
 resource "google_firebaserules_ruleset" "firestore" {
   provider = google-beta
   project  = var.project_id
@@ -126,9 +116,6 @@ resource "google_firebaserules_release" "firestore" {
   depends_on = [google_firebaserules_ruleset.firestore]
 }
 
-# ============================================================
-# Firebase Authentication
-# ============================================================
 resource "google_identity_platform_config" "auth" {
   provider = google-beta
   project  = var.project_id
@@ -149,9 +136,6 @@ resource "google_identity_platform_config" "auth" {
 # client_secret を TF 変数経由で渡すと tfstate に平文で残り iac.md に反するため、
 # Google Cloud コンソール/gcloud で設定する (ADR-012 参照)。
 
-# ============================================================
-# Artifact Registry (for Docker images)
-# ============================================================
 resource "google_artifact_registry_repository" "backend" {
   provider      = google-beta
   project       = var.project_id
@@ -162,18 +146,12 @@ resource "google_artifact_registry_repository" "backend" {
   depends_on = [google_project_service.apis]
 }
 
-# ============================================================
-# Cloud Run (Backend API)
-# ============================================================
-# NOTE: Cloud Run service is created by the first `gcloud run deploy` in GitHub Actions.
-# After the first deploy, run the following to allow public access:
+# Cloud Run サービス本体は Terraform では作らず、GitHub Actions の初回 `gcloud run deploy` が作成する。
+# 初回デプロイ後に公開アクセスを許可するには以下を実行する:
 #   gcloud run services add-iam-policy-binding pokelingual-api-${environment} \
 #     --region=asia-northeast1 --member="allUsers" --role="roles/run.invoker" \
 #     --project=${project_id}
 
-# ============================================================
-# Service Account for Backend
-# ============================================================
 resource "google_service_account" "backend" {
   project      = var.project_id
   account_id   = "pokelingual-api-${var.environment}"
@@ -198,9 +176,6 @@ resource "google_project_iam_member" "backend_vertex_ai" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
-# ============================================================
-# Workload Identity Federation (GitHub Actions → Google Cloud)
-# ============================================================
 resource "google_iam_workload_identity_pool" "github" {
   project                   = var.project_id
   workload_identity_pool_id = "github-actions"
@@ -228,64 +203,53 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 }
 
-# Service account for GitHub Actions deploy
 resource "google_service_account" "github_actions" {
   project      = var.project_id
   account_id   = "github-actions-deploy"
   display_name = "GitHub Actions Deploy (${var.environment})"
 }
 
-# Allow GitHub Actions to impersonate the deploy service account
 resource "google_service_account_iam_member" "github_actions_wif" {
   service_account_id = google_service_account.github_actions.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repo}"
 }
 
-# Grant deploy SA permissions to push to Artifact Registry
 resource "google_project_iam_member" "github_actions_artifact_registry" {
   project = var.project_id
   role    = "roles/artifactregistry.writer"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant deploy SA permissions to deploy Cloud Run
-# roles/run.admin is required (not run.developer) because --allow-unauthenticated
-# needs run.services.setIamPolicy permission to grant allUsers the invoker role.
+# --allow-unauthenticated で allUsers に invoker を付与するには run.services.setIamPolicy が
+# 必要なため、run.developer ではなく run.admin を使う。
 resource "google_project_iam_member" "github_actions_cloud_run" {
   project = var.project_id
   role    = "roles/run.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant deploy SA permissions to act as the backend service account (required for Cloud Run deploy)
+# Cloud Run のデプロイでは実行サービスアカウント (backend) への actAs が要求されるため付与する。
 resource "google_service_account_iam_member" "github_actions_act_as_backend" {
   service_account_id = google_service_account.backend.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant deploy SA permissions to read/write Firestore
-# Required for integration tests: managing test user's allowed_emails in config/auth
-# and cleaning up test data (users/{uid}/pokemon/*)
+# 統合テストが config/auth の allowed_emails 管理とテストデータ (users/{uid}/pokemon/*) の
+# 掃除を行うため、deploy SA に Firestore の読み書きを許可する。
 resource "google_project_iam_member" "github_actions_firestore" {
   project = var.project_id
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# Grant deploy SA permissions to deploy Firebase Hosting
 resource "google_project_iam_member" "github_actions_firebase_hosting" {
   project = var.project_id
   role    = "roles/firebasehosting.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-# ============================================================
-# Cloud Monitoring
-# ============================================================
-
-# Email notification channel
 resource "google_monitoring_notification_channel" "email" {
   project      = var.project_id
   display_name = "PokeLingual Alert Email (${var.environment})"
@@ -298,7 +262,6 @@ resource "google_monitoring_notification_channel" "email" {
   depends_on = [google_project_service.apis]
 }
 
-# Alert: Cloud Run error rate (5xx responses)
 resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
   project      = var.project_id
   display_name = "Cloud Run 5xx Error Rate (${var.environment})"
@@ -335,7 +298,6 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
   depends_on = [google_project_service.apis]
 }
 
-# Alert: Cloud Run high latency (p95 > 10s)
 resource "google_monitoring_alert_policy" "cloud_run_latency" {
   project      = var.project_id
   display_name = "Cloud Run High Latency (${var.environment})"
@@ -372,7 +334,6 @@ resource "google_monitoring_alert_policy" "cloud_run_latency" {
   depends_on = [google_project_service.apis]
 }
 
-# Alert: Application error logs (severity >= ERROR)
 resource "google_monitoring_alert_policy" "log_error_count" {
   project      = var.project_id
   display_name = "Application Error Logs (${var.environment})"
