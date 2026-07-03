@@ -27,7 +27,7 @@ export interface ScoreResponse {
 export interface GuessResponse {
   correct: boolean;
   ball_type?: BallType;
-  language?: string;
+  language?: "en" | "ja";
   fuzzy?: boolean;
   attempts_remaining: number;
   reveal_name_en?: string;
