@@ -13,6 +13,7 @@ import {
   rateLimitEvents,
   type RateLimitDetail,
 } from "../utils/rateLimitEvents";
+import { logger } from "../utils/logger";
 import { RateLimitModal } from "../components/quest/RateLimitModal";
 
 interface UsageContextValue {
@@ -42,7 +43,7 @@ export function UsageProvider({ children }: { children: ReactNode }) {
       setUsage(res.data);
     } catch (err) {
       // ヘッダーのレート残量表示は補助情報なので UI 上は無視するが、診断のためログは残す
-      console.warn("failed to fetch usage", err);
+      logger.warn("failed to fetch usage", { error: err });
     }
   }, [user]);
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { pokedexApi } from "../api/pokedexApi";
+import { logger } from "../utils/logger";
 import { PokemonGrid } from "../components/pokedex/PokemonGrid";
 import { PokemonDetailCard } from "../components/pokedex/PokemonDetailCard";
 import type { PokedexEntry, PokemonDetailResponse } from "../../../shared/api-types/pokedex";
@@ -28,7 +29,7 @@ export function PokedexPage() {
         setUnavailableCount(res.data.unavailable_count);
       })
       .catch((err) => {
-        console.error("failed to load pokedex", err);
+        logger.error("failed to load pokedex", { error: err });
         setListError("ずかんの　よみこみに　しっぱいしました");
       })
       .finally(() => setLoading(false));
@@ -40,7 +41,7 @@ export function PokedexPage() {
       const res = await pokedexApi.getPokemonDetail(id);
       setSelectedPokemon(res.data);
     } catch (err) {
-      console.error("failed to load pokemon detail", err);
+      logger.error("failed to load pokemon detail", { error: err });
       setDetailError("ポケモンの　しょうさいを　よみこめなかったよ");
     }
   };
