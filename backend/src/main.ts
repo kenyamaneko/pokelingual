@@ -6,6 +6,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { loadConfig } from "./config/config.js";
+import { logger } from "./util/logger.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
@@ -85,7 +86,7 @@ if (cfg.appMode === "mock") {
         "(docker-compose では firestore-emulator サービスが提供する)",
     );
   }
-  console.log(`Starting in mock mode (Firestore Emulator: ${process.env.FIRESTORE_EMULATOR_HOST})`);
+  logger.info("starting in mock mode", { firestore_emulator: process.env.FIRESTORE_EMULATOR_HOST });
   const firestoreClient = new Firestore({ projectId: cfg.googleCloudProject });
   randomSource = new MockRandomSource();
   pokemonClient = new MockPokemonClient(randomSource);
@@ -114,16 +115,18 @@ if (cfg.appMode === "mock") {
     ? (configDoc.data()?.allowed_emails as string[]) ?? []
     : [];
   if (allowedEmails.length === 0) {
-    console.warn("config/auth.allowed_emails is empty — running in PUBLIC mode (any authenticated user allowed)");
+    logger.warn("config/auth.allowed_emails is empty — running in PUBLIC mode (any authenticated user allowed)");
   } else {
-    console.log(`Loaded ${allowedEmails.length} allowed email(s) from Firestore (whitelist mode)`);
+    logger.info("loaded allowed emails from Firestore (whitelist mode)", {
+      allowed_email_count: allowedEmails.length,
+    });
   }
 
   pokemonConfig = await loadPokemonConfig(firestoreClient);
-  console.log(
-    `Loaded Pokemon config: maxPokemonID=${pokemonConfig.maxPokemonID}, ` +
-      `defaultExcluded=${pokemonConfig.defaultExcludedPokemonIDs.length}`,
-  );
+  logger.info("loaded Pokemon config", {
+    max_pokemon_id: pokemonConfig.maxPokemonID,
+    default_excluded_count: pokemonConfig.defaultExcludedPokemonIDs.length,
+  });
   randomSource = new SystemRandomSource();
   pokemonClient = new PokeAPIClient(pokemonConfig, randomSource);
   llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
@@ -133,7 +136,10 @@ if (cfg.appMode === "mock") {
   authMiddleware = firebaseAuth(authClient, allowedEmails);
 }
 
-console.log(`Rate limits: per-user=${cfg.perUserDailyLimit}/day, global=${cfg.globalDailyLimit}/day`);
+logger.info("rate limits configured", {
+  per_user_daily_limit: cfg.perUserDailyLimit,
+  global_daily_limit: cfg.globalDailyLimit,
+});
 
 const questService = new QuestService(pokemonClient, llmClient, pokemonConfig, userSettingsRepo, randomSource);
 const chatService = new ChatService(llmClient);
@@ -165,5 +171,5 @@ const apiRouter = setupRoutes(
 app.use("/api", apiRouter);
 
 app.listen(parseInt(cfg.port), () => {
-  console.log(`Starting server on :${cfg.port}`);
+  logger.info("starting server", { port: cfg.port });
 });

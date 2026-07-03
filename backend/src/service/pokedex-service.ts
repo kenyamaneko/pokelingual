@@ -1,4 +1,5 @@
 import { ExternalServiceError } from "../domain/errors.js";
+import { logger } from "../util/logger.js";
 import type { PokemonClient, UserPokemonRepository } from "../domain/ports.js";
 import type {
   PokedexEntry,
@@ -53,7 +54,7 @@ export class PokedexService {
         // PokeAPI 単体の取得失敗を全体失敗にすると図鑑が完全に開けなくなる。
         // 件数をクライアントに伝えてユーザにフィードバックする方針。
         unavailableCount++;
-        console.error("failed to fetch pokemon data", { pokemon_id: up.pokemon_id, error: String(err) });
+        logger.error("failed to fetch pokemon data", { pokemon_id: up.pokemon_id, error: String(err) });
       }
     }
 
