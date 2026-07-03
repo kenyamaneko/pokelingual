@@ -219,6 +219,18 @@ describe("QuestService.newQuest", () => {
     const res = await service.newQuest("alice");
     expect(res.description_en).toBe("Alpha this Pokémon runs.");
   });
+
+  it("flavor_texts が無ければ基本の説明文で出題する", async () => {
+    const service = makeService({ pokemons: [makePokemon({ flavor_texts: undefined })] });
+    const res = await service.newQuest("alice");
+    expect(res.description_en).toBe("This Pokémon is fast.");
+  });
+
+  it("flavor_texts が空配列でも基本の説明文で出題する", async () => {
+    const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
+    const res = await service.newQuest("alice");
+    expect(res.description_en).toBe("This Pokémon is fast.");
+  });
 });
 
 describe("QuestService.scoreTranslation", () => {
