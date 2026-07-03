@@ -168,7 +168,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
-  const config: PokemonConfig = { maxPokemonID: 10, devExcludedPokemonIDs: [] };
+  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null }),
     updateExcludedPokemon: async () => {},

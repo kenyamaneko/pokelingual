@@ -73,7 +73,7 @@ function makeApp(o: AppOverrides = {}) {
       return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
     },
   };
-  const config: PokemonConfig = { maxPokemonID: 100, devExcludedPokemonIDs: [] };
+  const config: PokemonConfig = { maxPokemonID: 100, environment: "prod" };
   const random: RandomSource = { next: () => 0 };
 
   // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。

@@ -1,18 +1,24 @@
 import type { getFirestore } from "firebase-admin/firestore";
 
-/** 出題プール上限 ID の既定値 (Firestore の config/app.max_pokemon_id 未設定・型不正時に使用)。 */
+// 対象バージョン (X〜ソード/シールド) の EN/JA 説明文が揃うのが第8世代までのため、その全国図鑑上限に合わせる
 export const DEFAULT_MAX_POKEMON_ID = 898;
 
 /**
- * Firestore の config/app から出題プール上限ポケモン ID を読み込む。未設定・型不正なら既定値。
+ * 出題・図鑑の対象とする図鑑番号の上限を返す。運用で変更できるよう Firestore の
+ * config/app ドキュメント (max_pokemon_id) で上書きでき、未設定なら既定値。
  * @param firestoreClient Firestore クライアント。
- * @returns 出題プールの上限ポケモン ID。
+ * @returns 図鑑番号の上限。
+ * @throws max_pokemon_id が正の整数でない場合。
  */
 export async function loadMaxPokemonID(
   firestoreClient: ReturnType<typeof getFirestore>,
 ): Promise<number> {
   const doc = await firestoreClient.collection("config").doc("app").get();
-  if (!doc.exists) return DEFAULT_MAX_POKEMON_ID;
-  const data = doc.data();
-  return typeof data?.max_pokemon_id === "number" ? data.max_pokemon_id : DEFAULT_MAX_POKEMON_ID;
+  const value = doc.data()?.max_pokemon_id;
+  if (value === undefined) return DEFAULT_MAX_POKEMON_ID;
+  // 型不正を既定値に倒すと設定ミスに気づけないため、起動時に失敗させる
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    throw new Error(`invalid config/app.max_pokemon_id: ${JSON.stringify(value)}`);
+  }
+  return value;
 }

@@ -29,7 +29,6 @@ import { PokedexHandler } from "./handler/pokedex-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
 import { setupRoutes } from "./router/router.js";
-import { resolveDevExcludedPokemonIDs } from "./domain/exclusion.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -42,9 +41,6 @@ import type {
 import type { RequestHandler } from "express";
 
 const cfg = loadConfig();
-
-// 開発者除外は環境由来 (非 prod のみ有効)。per-user 除外とは別ロジックで、両者は利用側で合成する。
-const devExcludedPokemonIDs = resolveDevExcludedPokemonIDs(cfg.environment);
 
 let pokemonClient: PokemonClient;
 let llmClient: LLMClient;
@@ -70,7 +66,7 @@ if (cfg.appMode === "mock") {
   randomSource = new MockRandomSource();
   pokemonClient = new MockPokemonClient(randomSource);
   llmClient = new MockLLMClient();
-  pokemonConfig = { maxPokemonID: DEFAULT_MAX_POKEMON_ID, devExcludedPokemonIDs };
+  pokemonConfig = { maxPokemonID: DEFAULT_MAX_POKEMON_ID, environment: cfg.environment };
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -102,10 +98,10 @@ if (cfg.appMode === "mock") {
   }
 
   const maxPokemonID = await loadMaxPokemonID(firestoreClient);
-  pokemonConfig = { maxPokemonID, devExcludedPokemonIDs };
+  pokemonConfig = { maxPokemonID, environment: cfg.environment };
   logger.info("loaded Pokemon config", {
     max_pokemon_id: maxPokemonID,
-    dev_excluded_count: devExcludedPokemonIDs.length,
+    environment: cfg.environment,
   });
   randomSource = new SystemRandomSource();
   pokemonClient = new PokeAPIClient(pokemonConfig, randomSource, (url) => fetch(url));

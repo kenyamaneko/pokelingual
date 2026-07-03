@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PokedexService } from "./pokedex-service.js";
 import { ExternalServiceError } from "../domain/errors.js";
-import type { PokemonClient, UserPokemonRepository } from "../domain/ports.js";
+import type {
+  PokemonClient,
+  PokemonConfig,
+  UserPokemonRepository,
+  UserSettingsRepository,
+} from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
 import type { UserPokemon } from "../domain/user.js";
 
@@ -53,6 +58,8 @@ interface ServiceOverrides {
   records?: UserPokemon[];
   /** メタ情報の取得が失敗するポケモン ID の集合。 */
   failingIDs?: number[];
+  /** ユーザーが設定で除外した図鑑 ID。 */
+  excludedIDs?: number[];
 }
 
 /**
@@ -78,7 +85,13 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     },
     getRandomPokemon: async () => makePokemon(),
   };
-  return new PokedexService(repo, pokemonClient);
+  const settingsRepo: UserSettingsRepository = {
+    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null }),
+    updateExcludedPokemon: async () => {},
+  };
+  // 図鑑表示は環境非依存に確かめたいので prod (開発者除外なし) 固定。maxPokemonID は本サービスでは未使用のためダミー。
+  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
+  return new PokedexService(repo, pokemonClient, settingsRepo, config);
 }
 
 describe("PokedexService.getPokedex", () => {
@@ -129,6 +142,20 @@ describe("PokedexService.getPokedex", () => {
     const res = await service.getPokedex("alice");
     expect(res.entries).toEqual([]);
     expect(res.unavailable_count).toBe(2);
+  });
+
+  it("ユーザーが除外に指定した図鑑 ID は一覧に含めない", async () => {
+    const service = makeService({
+      records: [
+        makeUserPokemon({ pokemon_id: 1 }),
+        makeUserPokemon({ pokemon_id: 2 }),
+        makeUserPokemon({ pokemon_id: 3 }),
+      ],
+      excludedIDs: [2],
+    });
+    const res = await service.getPokedex("alice");
+    expect(res.entries.map((e) => e.pokemon_id)).toEqual([1, 3]);
+    expect(res.unavailable_count).toBe(0);
   });
 });
 

@@ -76,7 +76,7 @@ export class QuestService {
    */
   async newQuest(userId: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
-    const excluded = buildExcludedPokemonIDs(settings.excluded_pokemon_ids, this.pokemonConfig.devExcludedPokemonIDs);
+    const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
 
     let pokemon: Pokemon | undefined;
     for (let i = 0; i < MAX_RANDOM_PICK_RETRY; i++) {

@@ -1,45 +1,54 @@
 import { describe, it, expect } from "vitest";
-import { resolveDevExcludedPokemonIDs, buildExcludedPokemonIDs } from "./exclusion.js";
+import { buildExcludedPokemonIDs } from "./exclusion.js";
 
 /**
- * 除外ロジックの仕様:
- * - 開発者除外は prod では無効 (空)、それ以外の環境では有効 (非空)
- * - 実効除外は per-user 除外と開発者除外の和集合
+ * 出題・図鑑から除外するポケモン ID 集合の仕様:
+ * - ユーザー設定による除外は全環境で適用する
+ * - 開発者除外 (固定 6 匹) は prod 以外の環境でのみ合成する
  */
-describe("resolveDevExcludedPokemonIDs", () => {
-  it("prod では空を返す", () => {
-    expect(resolveDevExcludedPokemonIDs("prod")).toEqual([]);
-  });
-
-  // prod 以外 (境界の両側を含む) では有効。具体的な ID は仕様に埋め込まず、非空であることだけ確かめる。
-  it.each(["local", "dev", "stg"])("%s では有効な除外リストを返す (非空)", (env) => {
-    expect(resolveDevExcludedPokemonIDs(env).length).toBeGreaterThan(0);
-  });
-
-  it("prod と非prod で結果が異なる", () => {
-    expect(resolveDevExcludedPokemonIDs("prod")).not.toEqual(resolveDevExcludedPokemonIDs("dev"));
-  });
-});
-
 describe("buildExcludedPokemonIDs", () => {
-  it("per-user と開発者除外を和集合にする", () => {
-    const result = buildExcludedPokemonIDs([10, 20], [30, 40]);
-    expect(result).toEqual(new Set([10, 20, 30, 40]));
+  // 開発者除外の 6 匹 (exclusion.ts の固定リストが仕様なので具体値で確かめる)
+  const DEVELOPER_EXCLUDED = [167, 168, 595, 596, 751, 752];
+
+  describe("prod 環境", () => {
+    it("ユーザー設定が無ければ何も除外しない", () => {
+      expect(buildExcludedPokemonIDs("prod", null)).toEqual(new Set());
+    });
+
+    it("ユーザー設定が空でも何も除外しない", () => {
+      expect(buildExcludedPokemonIDs("prod", [])).toEqual(new Set());
+    });
+
+    it("ユーザー設定による除外だけを適用する (開発者除外は合成しない)", () => {
+      expect(buildExcludedPokemonIDs("prod", [10, 20])).toEqual(new Set([10, 20]));
+    });
   });
 
-  it("per-user が null なら開発者除外のみ", () => {
-    expect(buildExcludedPokemonIDs(null, [30, 40])).toEqual(new Set([30, 40]));
-  });
+  describe.each(["local", "dev"] as const)("%s 環境", (environment) => {
+    it("ユーザー設定が無ければ開発者除外の 6 匹だけを除外する", () => {
+      expect(buildExcludedPokemonIDs(environment, null)).toEqual(new Set(DEVELOPER_EXCLUDED));
+    });
 
-  it("開発者除外が空なら per-user のみ", () => {
-    expect(buildExcludedPokemonIDs([10, 20], [])).toEqual(new Set([10, 20]));
-  });
+    it("ユーザー設定が空でも開発者除外は適用する", () => {
+      expect(buildExcludedPokemonIDs(environment, [])).toEqual(new Set(DEVELOPER_EXCLUDED));
+    });
 
-  it("両方が空/null なら空集合", () => {
-    expect(buildExcludedPokemonIDs(null, [])).toEqual(new Set());
-  });
+    it("ユーザー設定による除外 1 件と開発者除外を合成する", () => {
+      expect(buildExcludedPokemonIDs(environment, [10])).toEqual(
+        new Set([10, ...DEVELOPER_EXCLUDED]),
+      );
+    });
 
-  it("重複する ID は集約される", () => {
-    expect(buildExcludedPokemonIDs([10, 20], [20, 30])).toEqual(new Set([10, 20, 30]));
+    it("ユーザー設定による除外 複数件と開発者除外を合成する", () => {
+      expect(buildExcludedPokemonIDs(environment, [10, 20])).toEqual(
+        new Set([10, 20, ...DEVELOPER_EXCLUDED]),
+      );
+    });
+
+    it("ユーザー設定が開発者除外と重複しても集合として一つにまとまる", () => {
+      expect(buildExcludedPokemonIDs(environment, [167, 10])).toEqual(
+        new Set([10, ...DEVELOPER_EXCLUDED]),
+      );
+    });
   });
 });

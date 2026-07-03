@@ -55,8 +55,7 @@ export class PokedexService {
       this.repo.getPokedex(userId),
       this.settingsRepo.getSettings(userId),
     ]);
-    // per-user 除外 ∪ 開発者除外 は図鑑にも出さない。
-    const excluded = buildExcludedPokemonIDs(settings.excluded_pokemon_ids, this.pokemonConfig.devExcludedPokemonIDs);
+    const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
     const entries: PokedexEntry[] = [];
     let unavailableCount = 0;
 
