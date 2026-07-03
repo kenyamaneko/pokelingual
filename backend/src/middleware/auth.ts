@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { Auth } from "firebase-admin/auth";
+import { logger } from "../util/logger.js";
 
 /**
  * Firebase ID トークンを検証し、許可メールならば userId を res.locals に格納するミドルウェアを返す。
@@ -36,7 +37,7 @@ export function firebaseAuth(authClient: Auth, allowedEmails: string[]) {
       res.locals.userId = token.uid;
       next();
     } catch (err) {
-      console.warn("token verification failed", { error: String(err) });
+      logger.warn("token verification failed", { error: String(err) });
       res.status(401).json({ error: "invalid token" });
     }
   };
