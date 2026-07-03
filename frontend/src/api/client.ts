@@ -5,6 +5,7 @@ import {
   rateLimitEvents,
   type RateLimitDetail,
 } from "../utils/rateLimitEvents";
+import { logger } from "../utils/logger";
 
 /** バックエンド API への共通 axios クライアント。認証トークン付与とレート制限通知のインターセプタを持つ。 */
 const api = axios.create({
@@ -30,9 +31,9 @@ api.interceptors.response.use(
     if (axios.isAxiosError(err) && err.response?.status === 429) {
       const data = err.response.data as { error?: string; message?: string };
       if (data.error !== "user" && data.error !== "global") {
-        console.error("unexpected 429 response shape from backend", data);
+        logger.error("unexpected 429 response shape from backend", { response_body: data });
       } else if (!data.message) {
-        console.error("429 response missing message field", data);
+        logger.error("429 response missing message field", { response_body: data });
       } else {
         const detail: RateLimitDetail = { kind: data.error, message: data.message };
         rateLimitEvents.dispatchEvent(new CustomEvent(RATE_LIMIT_EVENT, { detail }));
