@@ -87,7 +87,8 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
  * 現在時刻から JST 翌日 0:00 までの残時間を hh:mm:ss で返す。
  * @returns "hh:mm:ss" 形式の残時間。
  */
-function formatUntilJstMidnight(): string {
+// eslint-disable-next-line react-refresh/only-export-components -- JST 0:00 境界の単体テストが直接 import するため export する
+export function formatUntilJstMidnight(): string {
   // ローカルTZに依存しないよう UTC ベースで JST 翌日 0:00 までの残時間を hh:mm:ss で返す。
   const nowJstMs = Date.now() + JST_OFFSET_MS;
   const msSinceJstMidnight = nowJstMs % MS_PER_DAY;
