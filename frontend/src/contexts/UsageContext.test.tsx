@@ -1,5 +1,5 @@
 import { screen, waitFor, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { AxiosResponse } from "axios";
 import { useUsage } from "./UsageContext";
 import { usageApi } from "../api/usageApi";
@@ -37,6 +37,10 @@ describe("UsageProvider のふるまい仕様", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("ログイン後にバックエンドの /usage を取得して表示できる", async () => {
     mockUsage(3, 30);
 
@@ -45,6 +49,18 @@ describe("UsageProvider のふるまい仕様", () => {
     await waitFor(() => {
       expect(screen.getByTestId("usage")).toHaveTextContent("3/30");
     });
+  });
+
+  it("usage の取得に失敗しても画面はクラッシュせず、使用量が無い状態のまま動作する", async () => {
+    // 使用量は補助情報のため取得失敗を UI では無視する仕様。診断ログは検証対象外なので沈黙させる
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(usageApi.get).mockRejectedValue(new Error("network down"));
+
+    renderUsage();
+
+    // 取得の失敗が確定するまで待ってから、使用量なしの表示のままであることを確かめる
+    await waitFor(() => expect(usageApi.get).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("usage")).toHaveTextContent("none");
   });
 
   it("未ログイン時は usage を取得しない", async () => {
