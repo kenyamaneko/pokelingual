@@ -2,13 +2,17 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsage } from "../../contexts/UsageContext";
 
-// prod 環境ではラベルを出さない仕様。VITE_ENVIRONMENT 未設定や想定外の値も同じく非表示扱い。
-const envLabel = (() => {
-  const env = import.meta.env.VITE_ENVIRONMENT;
+/**
+ * 環境ラベルの表示文字列を返す。prod 環境ではラベルを出さない仕様のため、
+ * VITE_ENVIRONMENT 未設定や想定外の値も含めて null (非表示) を返す。
+ * @param env VITE_ENVIRONMENT の値。
+ * @returns 表示するラベル。非表示なら null。
+ */
+function getEnvLabel(env: string | undefined): string | null {
   if (env === "local") return "LOCAL";
   if (env === "dev") return "DEV";
   return null;
-})();
+}
 
 /**
  * ログイン後の全ページ共通ヘッダ。環境ラベルと当日のレート残量を表示する。
@@ -18,6 +22,7 @@ export function Header() {
   const { user } = useAuth();
   const { usage } = useUsage();
   const location = useLocation();
+  const envLabel = getEnvLabel(import.meta.env.VITE_ENVIRONMENT);
 
   if (!user || location.pathname === "/login") {
     return null;
