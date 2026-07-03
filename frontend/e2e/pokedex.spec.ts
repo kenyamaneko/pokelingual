@@ -7,9 +7,9 @@ test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
 test("図鑑ページが表示される", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: LINK.viewCollection }).click();
-  await expect(page).toHaveURL("/collection");
-  await expect(page.getByRole("heading", { name: HEADING.collection })).toBeVisible();
+  await page.getByRole("link", { name: LINK.viewPokedex }).click();
+  await expect(page).toHaveURL("/pokedex");
+  await expect(page.getByRole("heading", { name: HEADING.pokedex })).toBeVisible();
 });
 
 test("クエスト後に捕獲ポケモンが図鑑に表示される", async ({ page }) => {
@@ -17,7 +17,7 @@ test("クエスト後に捕獲ポケモンが図鑑に表示される", async ({
   await completeQuest(page);
 
   // 図鑑に移動
-  await page.goto("/collection");
+  await page.goto("/pokedex");
 
   // 捕獲したポケモン (mock は決定的にピカチュウ) のカードが表示されている
   const pokemonCard = page.getByTestId("pokemon-card").first();

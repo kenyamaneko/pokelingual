@@ -1,20 +1,20 @@
 import { ExternalServiceError } from "../domain/errors.js";
 import type { PokemonClient, UserPokemonRepository } from "../domain/ports.js";
 import type {
-  CollectionEntry,
+  PokedexEntry,
   PokemonDetailResponse,
-} from "../../../shared/api-types/collection.js";
+} from "../../../shared/api-types/pokedex.js";
 
-// CollectionEntry / PokemonDetailResponse / FlavorTextPair の API 契約型は shared/api-types/collection.d.ts を参照
+// PokedexEntry / PokemonDetailResponse / FlavorTextPair の API 契約型は shared/api-types/pokedex.d.ts を参照
 
-/** getCollection の戻り値。表示可能なエントリと、PokeAPI 取得失敗で除外された件数を返す。 */
-interface CollectionResult {
-  entries: CollectionEntry[];
+/** getPokedex の戻り値。表示可能なエントリと、PokeAPI 取得失敗で除外された件数を返す。 */
+interface PokedexResult {
+  entries: PokedexEntry[];
   unavailable_count: number;
 }
 
 /** 図鑑コレクションの取得・整形ロジックを束ねるサービス。 */
-export class CollectionService {
+export class PokedexService {
   private repo: UserPokemonRepository;
   private pokemonClient: PokemonClient;
 
@@ -29,12 +29,12 @@ export class CollectionService {
 
   /**
    * ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @returns 表示可能なエントリと、取得失敗で除外された件数。
    */
-  async getCollection(uid: string): Promise<CollectionResult> {
-    const pokemons = await this.repo.getCollection(uid);
-    const entries: CollectionEntry[] = [];
+  async getPokedex(userId: string): Promise<PokedexResult> {
+    const pokemons = await this.repo.getPokedex(userId);
+    const entries: PokedexEntry[] = [];
     let unavailableCount = 0;
 
     for (const up of pokemons) {
@@ -62,12 +62,12 @@ export class CollectionService {
 
   /**
    * 特定ポケモンのユーザ実績と PokeAPI 詳細を合成して返す。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @param pokemonID ポケモン ID。
    * @returns ユーザ実績と PokeAPI 詳細を合成したレスポンス。
    */
-  async getPokemonDetail(uid: string, pokemonID: number): Promise<PokemonDetailResponse> {
-    const userPokemon = await this.repo.getPokemon(uid, pokemonID);
+  async getPokemonDetail(userId: string, pokemonID: number): Promise<PokemonDetailResponse> {
+    const userPokemon = await this.repo.getPokemon(userId, pokemonID);
 
     let pokemon;
     try {

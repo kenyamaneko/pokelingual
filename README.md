@@ -200,7 +200,7 @@ variable "github_repo" {
 | `FIREBASE_APP_ID` | Firebase App ID | `terraform output firebase_app_id` |
 | `API_BASE_URL` | バックエンド URL | Cloud Run デプロイ後に取得 |
 
-以下は本物の機密なので **Secret** に設定する（dev 環境のみ）:
+以下は機密なので **Secret** に設定する（dev 環境のみ）:
 
 | Secret | 説明 |
 |--------|------|
@@ -223,7 +223,7 @@ gcloud run deploy pokelingual-api-dev \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
   --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
-  --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
+  --update-env-vars "APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定
@@ -340,12 +340,12 @@ git push origin develop
 | POST | `/api/quest/capture` | スコアと名前推測に基づいた確率で捕獲を試みる |
 | POST | `/api/quest/chat` | 博士に質問（コンテキスト + メッセージ履歴を送信） |
 
-### Collection
+### Pokedex
 
 | メソッド | パス | 説明 |
 |---------|------|------|
-| GET | `/api/collection` | 捕獲済みポケモン一覧 |
-| GET | `/api/collection/:id` | ポケモン詳細（EN/JA 説明文ペア含む） |
+| GET | `/api/pokedex` | 捕獲済みポケモン一覧 |
+| GET | `/api/pokedex/:id` | ポケモン詳細（EN/JA 説明文ペア含む） |
 
 ### Settings
 

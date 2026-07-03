@@ -10,7 +10,7 @@ import { handleError } from "./error.js";
 export class QuestHandler {
   /**
    * @param questService クエストのドメインサービス。
-   * @param chatService 教授チャットのサービス。
+   * @param chatService 博士チャットのサービス。
    * @param repo ユーザの図鑑進捗リポジトリ。
    */
   constructor(
@@ -25,9 +25,9 @@ export class QuestHandler {
    * @param res Express レスポンス。
    */
   newQuest = async (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     try {
-      const resp = await this.questService.newQuest(uid);
+      const resp = await this.questService.newQuest(userId);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -40,14 +40,14 @@ export class QuestHandler {
    * @param res Express レスポンス。
    */
   scoreTranslation = async (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     const { translation } = req.body;
     if (!translation) {
       res.status(400).json({ error: "translation is required" });
       return;
     }
     try {
-      const resp = await this.questService.scoreTranslation(uid, translation);
+      const resp = await this.questService.scoreTranslation(userId, translation);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -60,14 +60,14 @@ export class QuestHandler {
    * @param res Express レスポンス。
    */
   guessName = (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     const { guess } = req.body;
     if (!guess) {
       res.status(400).json({ error: "guess is required" });
       return;
     }
     try {
-      const resp = this.questService.guessName(uid, guess);
+      const resp = this.questService.guessName(userId, guess);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -75,14 +75,14 @@ export class QuestHandler {
   };
 
   /**
-   * POST /quest/skip-guess — 名前当てをスキップし poke ボールを確定する。
+   * POST /quest/skip-guess — 名前当てをスキップして、ボールを確定する。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
   skipGuess = (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     try {
-      const resp = this.questService.skipGuess(uid);
+      const resp = this.questService.skipGuess(userId);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -95,11 +95,11 @@ export class QuestHandler {
    * @param res Express レスポンス。
    */
   attemptCapture = async (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     try {
-      const resp = this.questService.attemptCapture(uid);
+      const resp = this.questService.attemptCapture(userId);
       try {
-        await this.repo.upsertEncounter(uid, resp.pokemon_id, resp.score, resp.captured);
+        await this.repo.upsertEncounter(userId, resp.pokemon_id, resp.score, resp.captured);
       } catch (err) {
         throw new ExternalServiceError("Firestore", err as Error);
       }
@@ -110,7 +110,7 @@ export class QuestHandler {
   };
 
   /**
-   * POST /quest/chat — オーキド博士キャラクタとのチャット応答を返す。
+   * POST /quest/chat — 博士キャラクタとのチャット応答を返す。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */

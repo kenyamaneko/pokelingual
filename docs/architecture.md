@@ -9,17 +9,17 @@
 │                      │     │                                                  │
 │  LoginPage           │     │  ┌──────────────────────────────────────┐        │
 │  QuestPage ──────────┼────►│  │  Router + Middleware                 │        │
-│  CollectionPage      │HTTPS│  │  (CORS, Firebase Auth)               │        │
+│  PokedexPage      │HTTPS│  │  (CORS, Firebase Auth)               │        │
 │  SettingsPage        │     │  └──────────┬───────────────────────────┘        │
 │                      │     │             │                                    │
 │  AuthContext          │     │  ┌──────────▼───────────────────────────┐        │
 │  (Firebase Auth SDK) │     │  │  Handlers (HTTP層)                   │        │
-│                      │     │  │  quest / collection / settings       │        │
+│                      │     │  │  quest / pokedex / settings       │        │
 └──────────────────────┘     │  └──────────┬───────────────────────────┘        │
                              │             │                                    │
                              │  ┌──────────▼───────────────────────────┐        │
                              │  │  Services (ビジネスロジック)          │        │
-                             │  │  QuestService, CollectionService     │        │
+                             │  │  QuestService, PokedexService     │        │
                              │  └──────┬───────────┬───────────────────┘        │
                              │         │           │                            │
                              │  ┌──────▼──┐ ┌─────▼──────┐ ┌─────────────┐     │
@@ -57,13 +57,16 @@ Repository 層はモックを持たない。ローカル/テスト共に Firesto
 
 - **`APP_MODE=mock`** → 外部 API (PokeAPI/Gemini) と認証はモック注入、永続化は Firestore Emulator に接続して本番 Repo を使う
   - `FIRESTORE_EMULATOR_HOST` が未設定なら起動エラー
-- **`APP_MODE=prod`**（デフォルト以外）→ 本番実装を注入
+- **`APP_MODE=real`** → 本番実装を注入
+
+`APP_MODE` は必須。未設定・未知値は起動エラーにして、意図しないモードでの起動を防ぐ。
 
 ### 環境変数の使い分け
 
 | 変数名 | 用途 | 値 |
 |---|---|---|
-| `APP_MODE` | バックエンドのサービス切替（mock vs 実API） | `mock`（ローカル）/ `prod`（Cloud Run） |
+| `APP_MODE` | バックエンドのサービス切替（mock vs 実API）。必須 | `mock`（ローカル）/ `real`（Cloud Run） |
+| `GEMINI_MODEL` | Gemini のモデル名（real モードでは必須） | deploy.yml が注入 |
 | `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` | Firestore / Vertex AI の接続先（本番は必須） | deploy.yml が注入 |
 | `PER_USER_DAILY_LIMIT` / `GLOBAL_DAILY_LIMIT` | AI 呼び出しの日次上限（本番は必須） | deploy.yml が注入 |
 | `VITE_APP_MODE` | フロントエンドのサービス切替（Firebase Auth） | `mock`（ローカル）/ 未設定（デプロイ環境） |
@@ -78,7 +81,7 @@ backend/src/
 ├── main.ts                  # エントリーポイント、DI
 ├── config/                  # 環境変数 → Config
 ├── domain/                  # ポート定義・ドメイン型・エラー型（依存の方向の起点）
-├── service/                 # ビジネスロジック（Quest, Chat, Collection）
+├── service/                 # ビジネスロジック（Quest, Chat, Pokedex）
 ├── handler/                 # HTTP リクエスト/レスポンス変換
 ├── middleware/              # CORS, Firebase Auth, レートリミット
 ├── adapter/                 # ポートの実装（firestore / llm / pokemon / random）
@@ -95,7 +98,7 @@ API 契約型（wire format）は `shared/api-types/*.d.ts` を SSOT とし、ba
 1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成、説明文のポケモン名を伏せ字
 2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）、JA名も伏せ字
 3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
-   POST /api/quest/skip-guess → 推測をスキップ → poke ボール確定
+   POST /api/quest/skip-guess → 推測をスキップ → モンスターボール確定
 4. POST /api/quest/capture    → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
 5. POST /api/quest/chat       → 博士に質問（捕獲後、フロントエンドからコンテキスト+履歴を送信）
 ```
@@ -210,13 +213,13 @@ frontend/src/
 │   ├── SignupPage.tsx      # 新規登録
 │   ├── ResetPasswordPage.tsx # パスワードリセット
 │   ├── QuestPage.tsx       # クエストフロー（状態機械は useQuest に委譲）
-│   ├── CollectionPage.tsx  # 捕獲済みポケモン一覧
+│   ├── PokedexPage.tsx  # 捕獲済みポケモン一覧
 │   ├── SettingsPage.tsx    # 除外ポケモン設定、ログアウト
 │   ├── NotFoundPage.tsx    # 404
 │   └── HomePage.tsx
 ├── components/
 │   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, ProfessorChat, RateLimitModal
-│   ├── collection/         # PokemonGrid, PokemonDetailCard
+│   ├── pokedex/         # PokemonGrid, PokemonDetailCard
 │   ├── layout/             # Header, ProtectedRoute
 │   └── auth/               # GoogleLogo
 ├── contexts/
@@ -227,7 +230,7 @@ frontend/src/
 │   └── useQuest.ts         # クエストの状態機械 + API 呼び出し
 ├── api/                    # API クライアント（axios ベース）
 │   ├── client.ts           # axios インスタンス（Auth トークン自動付与、429 通知）
-│   ├── questApi.ts / collectionApi.ts / settingsApi.ts / usageApi.ts
+│   ├── questApi.ts / pokedexApi.ts / settingsApi.ts / usageApi.ts
 ├── utils/                  # 表示整形・タイプ色・レート制限イベントハブ
 └── firebase.ts             # Firebase 初期化、isDevMode 判定
 ```

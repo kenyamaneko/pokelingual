@@ -28,9 +28,9 @@ export class SettingsHandler {
    * @param res Express レスポンス。
    */
   getSettings = async (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     try {
-      const settings = await this.settingsRepo.getSettings(uid);
+      const settings = await this.settingsRepo.getSettings(userId);
       const body: SettingsResponse = {
         excluded_pokemon_ids: settings.excluded_pokemon_ids ?? [],
       };
@@ -46,7 +46,7 @@ export class SettingsHandler {
    * @param res Express レスポンス。
    */
   updateExcludedPokemon = async (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     const result = validateExcludedPokemonIDs(
       req.body?.pokemon_ids,
       this.pokemonConfig.maxPokemonID,
@@ -57,7 +57,7 @@ export class SettingsHandler {
       return;
     }
     try {
-      await this.settingsRepo.updateExcludedPokemon(uid, result.ids);
+      await this.settingsRepo.updateExcludedPokemon(userId, result.ids);
       res.json({ status: "ok" });
     } catch (err) {
       handleError(res, err, req.path);

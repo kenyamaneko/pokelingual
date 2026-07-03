@@ -11,7 +11,7 @@ function makeReqRes() {
   const status = vi.fn().mockReturnThis();
   const json = vi.fn().mockReturnThis();
   const req = { path: "/api/quest/score" } as Request;
-  const res = { status, json, locals: { uid: "alice" } } as unknown as Response;
+  const res = { status, json, locals: { userId: "alice" } } as unknown as Response;
   const next = vi.fn() as NextFunction;
   return { req, res, next, status, json };
 }

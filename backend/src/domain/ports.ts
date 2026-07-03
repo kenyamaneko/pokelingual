@@ -28,19 +28,19 @@ export interface PokemonConfig {
 
 /** ユーザの図鑑進捗 (遭遇/捕獲) を永続化するリポジトリ。 */
 export interface UserPokemonRepository {
-  upsertEncounter(uid: string, pokemonID: number, score: number, captured: boolean): Promise<void>;
-  getCollection(uid: string): Promise<UserPokemon[]>;
-  getPokemon(uid: string, pokemonID: number): Promise<UserPokemon>;
+  upsertEncounter(userId: string, pokemonID: number, score: number, captured: boolean): Promise<void>;
+  getPokedex(userId: string): Promise<UserPokemon[]>;
+  getPokemon(userId: string, pokemonID: number): Promise<UserPokemon>;
 }
 
 /** ユーザ設定 (除外ポケモン等) を永続化するリポジトリ。 */
 export interface UserSettingsRepository {
-  getSettings(uid: string): Promise<UserSettings>;
-  updateExcludedPokemon(uid: string, pokemonIDs: number[]): Promise<void>;
+  getSettings(userId: string): Promise<UserSettings>;
+  updateExcludedPokemon(userId: string, pokemonIDs: number[]): Promise<void>;
 }
 
 /** 日次レート制限カウンタを管理するリポジトリ。Firestore 版とインメモリ版がある。 */
 export interface RateLimitRepository {
-  checkAndIncrement(uid: string): Promise<DailyUsage>;
-  getUserUsage(uid: string): Promise<DailyUsage>;
+  checkAndIncrement(userId: string): Promise<DailyUsage>;
+  getUserUsage(userId: string): Promise<DailyUsage>;
 }

@@ -15,20 +15,20 @@ export class UserSettingsRepo implements UserSettingsRepository {
 
   /**
    * ユーザ設定ドキュメントへの参照を返す。
-   * @param uid ユーザ ID。
-   * @returns users/{uid}/settings/preferences への DocumentReference。
+   * @param userId ユーザ ID。
+   * @returns users/{userId}/settings/preferences への DocumentReference。
    */
-  private getSettingsRef(uid: string) {
-    return this.db.collection("users").doc(uid).collection("settings").doc("preferences");
+  private getSettingsRef(userId: string) {
+    return this.db.collection("users").doc(userId).collection("settings").doc("preferences");
   }
 
   /**
    * ユーザ設定を取得する。未保存なら excluded_pokemon_ids が null の値を返す。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @returns ユーザ設定。
    */
-  async getSettings(uid: string): Promise<UserSettings> {
-    const doc = await this.getSettingsRef(uid).get();
+  async getSettings(userId: string): Promise<UserSettings> {
+    const doc = await this.getSettingsRef(userId).get();
     if (!doc.exists) {
       return { excluded_pokemon_ids: null };
     }
@@ -38,11 +38,11 @@ export class UserSettingsRepo implements UserSettingsRepository {
 
   /**
    * 除外ポケモンID リストを上書き保存する。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @param pokemonIDs 除外するポケモン ID の配列。
    */
-  async updateExcludedPokemon(uid: string, pokemonIDs: number[]): Promise<void> {
-    await this.getSettingsRef(uid).set(
+  async updateExcludedPokemon(userId: string, pokemonIDs: number[]): Promise<void> {
+    await this.getSettingsRef(userId).set(
       { excluded_pokemon_ids: pokemonIDs },
       { merge: true },
     );

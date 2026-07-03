@@ -1,8 +1,8 @@
-import type { CollectionEntry } from "../../../../shared/api-types/collection";
+import type { PokedexEntry } from "../../../../shared/api-types/pokedex";
 import { formatPokemonId } from "../../utils/pokemonFormat";
 
 interface PokemonGridProps {
-  pokemon: CollectionEntry[];
+  pokemon: PokedexEntry[];
   onSelect: (id: number) => void;
 }
 

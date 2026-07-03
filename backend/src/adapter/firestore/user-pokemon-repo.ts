@@ -16,14 +16,14 @@ export class UserPokemonRepo implements UserPokemonRepository {
 
   /**
    * 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @param pokemonID ポケモン ID。
    * @param score 今回のスコア。
    * @param captured 捕獲に成功したか。
    */
-  async upsertEncounter(uid: string, pokemonID: number, score: number, captured: boolean): Promise<void> {
+  async upsertEncounter(userId: string, pokemonID: number, score: number, captured: boolean): Promise<void> {
     const ref = this.db
-      .collection("users").doc(uid)
+      .collection("users").doc(userId)
       .collection("pokemon").doc(String(pokemonID));
 
     await this.db.runTransaction(async (tx) => {
@@ -66,12 +66,12 @@ export class UserPokemonRepo implements UserPokemonRepository {
 
   /**
    * ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @returns 遭遇済みポケモンの配列 (ID 昇順)。
    */
-  async getCollection(uid: string): Promise<UserPokemon[]> {
+  async getPokedex(userId: string): Promise<UserPokemon[]> {
     const snapshot = await this.db
-      .collection("users").doc(uid)
+      .collection("users").doc(userId)
       .collection("pokemon")
       .orderBy("pokemon_id", "asc")
       .get();
@@ -81,14 +81,14 @@ export class UserPokemonRepo implements UserPokemonRepository {
 
   /**
    * 特定ポケモンのユーザ実績を取得する。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @param pokemonID ポケモン ID。
    * @returns 該当ポケモンのユーザ実績。
    * @throws 未遭遇 (ドキュメント不在) の場合。
    */
-  async getPokemon(uid: string, pokemonID: number): Promise<UserPokemon> {
+  async getPokemon(userId: string, pokemonID: number): Promise<UserPokemon> {
     const doc = await this.db
-      .collection("users").doc(uid)
+      .collection("users").doc(userId)
       .collection("pokemon").doc(String(pokemonID))
       .get();
 

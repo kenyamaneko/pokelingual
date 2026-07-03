@@ -15,9 +15,9 @@ export class UsageHandler {
    * @param res Express レスポンス。
    */
   getUsage = async (req: Request, res: Response) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     try {
-      const usage = await this.repo.getUserUsage(uid);
+      const usage = await this.repo.getUserUsage(userId);
       res.json(usage);
     } catch (err) {
       handleError(res, err, req.path);

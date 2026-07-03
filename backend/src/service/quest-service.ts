@@ -24,7 +24,7 @@ import type {
  */
 const MAX_RANDOM_PICK_RETRY = 10;
 
-/** ポケモン名推測の最大試行回数。これを超えるとポケボール固定での捕獲フェーズへ。 */
+/** ポケモン名推測の最大試行回数。これを超えるとモンスターボール固定での捕獲フェーズへ。 */
 const MAX_NAME_GUESS_ATTEMPTS = 3;
 
 /** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
@@ -37,7 +37,7 @@ const FUZZY_MATCH_MAX_DISTANCE = 2;
 const SCORE_MIN = 0;
 const SCORE_MAX = 100;
 
-/** ボール種別ごとの捕獲確率倍率。great=英語名正解、ultra=日本語名正解、poke=不正解。 */
+/** ボール種別ごとの捕獲確率倍率。 */
 const BALL_MULTIPLIER: Record<BallType, number> = {
   poke: 1.0,
   great: 2.0,
@@ -48,7 +48,7 @@ const BALL_MULTIPLIER: Record<BallType, number> = {
 
 /**
  * クエストの出題・採点・名前推測・捕獲のドメインロジックを束ねるサービス。
- * セッションはユーザ uid ごとにメモリ保持する。
+ * セッションはユーザ ID ごとにメモリ保持する。
  */
 export class QuestService {
   private sessions = new Map<string, QuestSession>();
@@ -70,11 +70,11 @@ export class QuestService {
 
   /**
    * 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @returns マスク済み説明文と伝説/幻フラグを含む出題レスポンス。
    */
-  async newQuest(uid: string): Promise<QuestNewResponse> {
-    const settings = await this.settingsRepo.getSettings(uid);
+  async newQuest(userId: string): Promise<QuestNewResponse> {
+    const settings = await this.settingsRepo.getSettings(userId);
     const ids = settings.excluded_pokemon_ids ?? this.pokemonConfig.defaultExcludedPokemonIDs;
     const excluded = new Set<number>(ids);
 
@@ -121,7 +121,7 @@ export class QuestService {
       guess_attempts: 0,
       name_guessed: false,
     };
-    this.sessions.set(uid, session);
+    this.sessions.set(userId, session);
 
     return {
       pokemon_id: pokemon.id,
@@ -133,12 +133,12 @@ export class QuestService {
 
   /**
    * LLM で翻訳を採点し、結果をセッションへ記録する。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @param translation ユーザの日本語訳。
    * @returns スコア・講評・マスク済み日本語説明。
    */
-  async scoreTranslation(uid: string, translation: string): Promise<ScoreResponse> {
-    const session = this.getSession(uid);
+  async scoreTranslation(userId: string, translation: string): Promise<ScoreResponse> {
+    const session = this.getSession(userId);
 
     let result: ScoreResult;
     try {
@@ -157,11 +157,11 @@ export class QuestService {
   }
 
   /**
-   * LLM に採点を依頼し、スコア範囲を検証して返す。
+   * LLM に採点を依頼し、スコアと講評を検証して返す。
    * @param englishText 出題の英語原文。
    * @param translation ユーザの日本語訳。
    * @returns スコアと講評。
-   * @throws スコアが 0-100 の範囲外の場合。
+   * @throws スコアが 0-100 の範囲外、または講評が欠落している場合。
    */
   private async scoreWithLLM(englishText: string, translation: string): Promise<ScoreResult> {
     const prompt = buildScorePrompt(englishText, translation);
@@ -171,17 +171,21 @@ export class QuestService {
     if (!Number.isFinite(parsed.score) || parsed.score < SCORE_MIN || parsed.score > SCORE_MAX) {
       throw new Error(`LLM returned out-of-range score: ${parsed.score}`);
     }
+    // 講評の欠落を undefined のまま通すと画面に空の講評が出る。フォールバックせずエラーにする
+    if (typeof parsed.review !== "string" || parsed.review === "") {
+      throw new Error("LLM returned empty review");
+    }
     return parsed;
   }
 
   /**
    * 名前推測を判定し、正解ならボール種別を確定、不正解なら残り試行を返す。
-   * @param uid ユーザ ID。
+   * @param userId ユーザ ID。
    * @param guess ユーザの推測名 (英語または日本語)。
    * @returns 正誤・確定ボール種別・残り試行回数を含む判定結果。
    */
-  guessName(uid: string, guess: string): GuessResponse {
-    const session = this.getSession(uid);
+  guessName(userId: string, guess: string): GuessResponse {
+    const session = this.getSession(userId);
 
     if (session.name_guessed) {
       return { correct: true, ball_type: session.ball_type ?? undefined, attempts_remaining: 0 };
@@ -225,24 +229,24 @@ export class QuestService {
   }
 
   /**
-   * 名前当てをスキップし、poke ボールを確定する。
-   * @param uid ユーザ ID。
-   * @returns 確定したボール種別 (常に poke)。
+   * 名前当てをスキップして、ボールを確定する。
+   * @param userId ユーザ ID。
+   * @returns 確定したボール種別 (常にモンスターボール)。
    */
-  skipGuess(uid: string): SkipGuessResponse {
-    const session = this.getSession(uid);
+  skipGuess(userId: string): SkipGuessResponse {
+    const session = this.getSession(userId);
     session.ball_type = "poke";
     session.name_guessed = true;
     return { ball_type: "poke" };
   }
 
   /**
-   * スコア・BST・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
-   * @param uid ユーザ ID。
+   * スコア・種族値合計・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
+   * @param userId ユーザ ID。
    * @returns 捕獲成否と表示用ポケモン情報。
    */
-  attemptCapture(uid: string): CaptureResponse {
-    const session = this.getSession(uid);
+  attemptCapture(userId: string): CaptureResponse {
+    const session = this.getSession(userId);
 
     if (session.ball_type === null) {
       // 名前当て/スキップを経ずに capture に到達するのは不正な状態 (フォールバックせず失敗させる)。
@@ -252,7 +256,7 @@ export class QuestService {
     const probability = calculateCaptureRate(session.score, session.base_stat_total, ballMultiplier);
     const captured = this.random.next() < probability;
 
-    this.sessions.delete(uid);
+    this.sessions.delete(userId);
 
     return {
       captured,
@@ -275,13 +279,13 @@ export class QuestService {
   }
 
   /**
-   * uid のアクティブなセッションを返す。
-   * @param uid ユーザ ID。
+   * userId のアクティブなセッションを返す。
+   * @param userId ユーザ ID。
    * @returns アクティブなクエストセッション。
    * @throws NotFoundError セッションが存在しない場合。
    */
-  private getSession(uid: string): QuestSession {
-    const session = this.sessions.get(uid);
+  private getSession(userId: string): QuestSession {
+    const session = this.sessions.get(userId);
     if (!session) throw new NotFoundError("no active quest session");
     return session;
   }
@@ -330,18 +334,18 @@ Respond with ONLY the JSON, no other text.`;
 /**
  * スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。
  * @param score 採点スコア (0-100)。
- * @param bst 種族値合計 (Base Stat Total)。
+ * @param baseStatTotal 種族値合計。
  * @param ballMultiplier ボール種別ごとの捕獲確率倍率。
  * @returns 0.0〜1.0 の捕獲確率。
  */
-export function calculateCaptureRate(score: number, bst: number, ballMultiplier: number): number {
+export function calculateCaptureRate(score: number, baseStatTotal: number, ballMultiplier: number): number {
   // 種族値とスコアを 0〜10 程度に正規化。ロジット係数のスケールを揃えるため。
-  const x = bst / 100.0;
+  const x = baseStatTotal / 100.0;
   const s = score / 100.0;
 
-  // ロジット係数はフィッティング済みモデル (docs/adr/010-bst-capture-formula.md が正典)。
-  // 個々の係数に単独の意味は無いため、定数化せずマジックナンバーの例外としてインラインで持つ。
-  // BST 高ほど捕獲難、スコア高ほど易、相互作用項で「強いポケモンは高スコアでないと捕まらない」を表現する。
+  // ロジット係数はフィッティング済みモデルの値。個々の係数に単独の意味は無いため、
+  // 定数化せずマジックナンバーの例外としてインラインで持つ。
+  // 種族値合計が高いほど捕獲難、スコア高ほど易、相互作用項で「強いポケモンは高スコアでないと捕まらない」を表現する。
   const logit = 2.5 - 0.34 * x - 0.17 * x * x + 14.5 * s - 4.2 * x * s + 0.52 * x * x * s;
   const baseRate = 1.0 / (1.0 + Math.exp(-logit));
 

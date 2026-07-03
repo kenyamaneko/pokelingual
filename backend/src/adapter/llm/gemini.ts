@@ -13,10 +13,11 @@ export class GeminiClient implements LLMClient {
 
   /**
    * @param vertexAI 初期化済みの Vertex AI クライアント。
+   * @param modelName 使用する Gemini モデル名 (GEMINI_MODEL 環境変数由来)。
    */
-  constructor(vertexAI: VertexAI) {
+  constructor(vertexAI: VertexAI, modelName: string) {
     this.model = vertexAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: modelName,
       generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as GenerationConfigWithThinking,
     });
   }

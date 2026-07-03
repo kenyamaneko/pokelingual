@@ -22,12 +22,12 @@ describe("validateExcludedPokemonIDs", () => {
     expect(validateExcludedPokemonIDs(undefined, MAX_ID, MAX_COUNT).ok).toBe(false);
   });
 
-  it("下限の境界: 0 は失敗、1 は成功", () => {
+  it("下限: 0 は失敗、1 は成功", () => {
     expect(validateExcludedPokemonIDs([0], MAX_ID, MAX_COUNT).ok).toBe(false);
     expect(validateExcludedPokemonIDs([1], MAX_ID, MAX_COUNT).ok).toBe(true);
   });
 
-  it("上限の境界: maxPokemonID は成功、+1 は失敗", () => {
+  it("上限: maxPokemonID は成功、+1 は失敗", () => {
     expect(validateExcludedPokemonIDs([MAX_ID], MAX_ID, MAX_COUNT).ok).toBe(true);
     expect(validateExcludedPokemonIDs([MAX_ID + 1], MAX_ID, MAX_COUNT).ok).toBe(false);
   });

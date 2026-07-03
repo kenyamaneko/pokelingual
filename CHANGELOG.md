@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Changed
+- ポケモン図鑑の呼称を collection から pokedex に統一（API パス `/api/collection` → `/api/pokedex`、契約型・画面ルート・ファイル名を含む）
+- `APP_MODE` を必須化（未設定・未知値は起動エラー、mock への暗黙フォールバックを廃止）し、実サービス接続モードの値を `prod` から `real` にリネーム（環境名との混同を避け、mock でないことが読み取れる値にする）
+- LLM 採点レスポンスの `review` 欠落・空文字をエラーとして扱うように変更（無検証で空講評が画面に出るのを防止）
+- Gemini のモデル名をハードコードから `GEMINI_MODEL` 環境変数に外出し（real モードでは必須、deploy.yml が注入）
+- CI / Deploy の全ジョブを Ubicloud ランナー（`ubicloud-standard-2`）で実行するように変更
+- モック LLM の講評・チャット文言を、モックであると分かる文言に変更
+
 ### Added
 - Playwright E2E テスト導入（クエスト全フロー、図鑑、ナビゲーション、6テスト）
 - CI に E2E テストジョブ追加（Docker Compose mock モードで並列実行）

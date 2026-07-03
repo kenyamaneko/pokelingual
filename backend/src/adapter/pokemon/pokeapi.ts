@@ -1,29 +1,30 @@
 import type { PokemonClient, PokemonConfig, RandomSource } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
-import { toPokemonType } from "../../domain/pokemon.js";
-import type { FlavorTextPair } from "../../../../shared/api-types/collection.js";
+import { buildFlavorTextPairs } from "../../domain/flavor-text.js";
+import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
 
-const versionOrder = [
-  "x", "y", "omega-ruby", "alpha-sapphire",
-  "sun", "moon", "ultra-sun", "ultra-moon",
-  "lets-go-pikachu", "lets-go-eevee",
-  "sword", "shield",
-];
+/** PokemonType の全 18 種 (PokeAPI 由来の値の実行時検証用)。shared の PokemonType と一致させる。 */
+const POKEMON_TYPES = [
+  "normal", "fire", "water", "electric", "grass", "ice",
+  "fighting", "poison", "ground", "flying", "psychic", "bug",
+  "rock", "ghost", "dragon", "dark", "steel", "fairy",
+] as const satisfies readonly PokemonType[];
 
-const versionDisplayNames: Record<string, string> = {
-  "x": "X",
-  "y": "Y",
-  "omega-ruby": "Ωルビー",
-  "alpha-sapphire": "αサファイア",
-  "sun": "サン",
-  "moon": "ムーン",
-  "ultra-sun": "Uサン",
-  "ultra-moon": "Uムーン",
-  "lets-go-pikachu": "ピカブイ",
-  "lets-go-eevee": "ピカブイ",
-  "sword": "ソード",
-  "shield": "シールド",
-};
+const POKEMON_TYPE_SET: ReadonlySet<string> = new Set(POKEMON_TYPES);
+
+/**
+ * PokeAPI 由来のタイプ名を PokemonType に検証付きで変換する。
+ * @param name PokeAPI の types[].type.name。
+ * @returns 既知の PokemonType。
+ * @throws 未知のタイプ名の場合。
+ */
+function toPokemonType(name: string): PokemonType {
+  if (!POKEMON_TYPE_SET.has(name)) {
+    // 対象は Gen 1-8 の 18 種で固定。未知が来たら「意図しない値」として境界で失敗させる
+    throw new Error(`unknown pokemon type from PokeAPI: ${name}`);
+  }
+  return name as PokemonType;
+}
 
 interface PokeAPISpeciesResponse {
   id: number;
@@ -109,7 +110,14 @@ export class PokeAPIClient implements PokemonClient {
       if (n.language.name === "ja") nameJA = n.name;
     }
 
-    const flavorTexts = buildFlavorTextPairs(species.flavor_text_entries);
+    // wire 形式を中立形に写像してから、ペア整形は domain の純関数に委ねる
+    const flavorTexts = buildFlavorTextPairs(
+      species.flavor_text_entries.map((entry) => ({
+        version: entry.version.name,
+        language: entry.language.name,
+        text: cleanFlavorText(entry.flavor_text),
+      })),
+    );
     if (flavorTexts.length === 0) {
       throw new Error(`no EN/JA description pair found for pokemon ${id}`);
     }
@@ -136,83 +144,6 @@ export class PokeAPIClient implements PokemonClient {
       flavor_texts: flavorTexts,
     };
   }
-}
-
-interface FlavorTextsByVersion {
-  en: string;
-  ja: string;
-  jaHrkt: string;
-}
-
-/**
- * flavor_text_entries を version ごとに EN/JA ペアへ整形する。
- * @param entries PokeAPI species の flavor_text_entries。
- * @returns version 順に並んだ EN/JA 説明ペアの配列。
- */
-export function buildFlavorTextPairs(
-  entries: PokeAPISpeciesResponse["flavor_text_entries"],
-): FlavorTextPair[] {
-  const byVersion = new Map<string, FlavorTextsByVersion>();
-
-  for (const entry of entries) {
-    const ver = entry.version.name;
-    if (!(ver in versionDisplayNames)) continue;
-
-    if (!byVersion.has(ver)) {
-      byVersion.set(ver, { en: "", ja: "", jaHrkt: "" });
-    }
-    const texts = byVersion.get(ver)!;
-    const cleaned = cleanFlavorText(entry.flavor_text);
-
-    switch (entry.language.name) {
-      case "en": texts.en = cleaned; break;
-      case "ja": texts.ja = cleaned; break;
-      case "ja-Hrkt": texts.jaHrkt = cleaned; break;
-      // PokeAPI は fr/de/ko 等 多数の言語を返すが、本アプリの対象は EN/JA のみなので無視する
-      default: break;
-    }
-  }
-
-  interface VersionPair { version: string; en: string; ja: string }
-  const pairs: VersionPair[] = [];
-
-  for (const [ver, texts] of byVersion) {
-    const ja = texts.ja || texts.jaHrkt;
-    if (!texts.en || !ja) continue;
-    pairs.push({ version: ver, en: texts.en, ja });
-  }
-
-  const orderIndex = new Map(versionOrder.map((v, i) => [v, i]));
-  pairs.sort((a, b) => {
-    // versionDisplayNames を通過した version は versionOrder にも必ず含まれる契約。
-    const aIdx = orderIndex.get(a.version);
-    const bIdx = orderIndex.get(b.version);
-    if (aIdx === undefined || bIdx === undefined) {
-      throw new Error(`version not registered in versionOrder: ${a.version} or ${b.version}`);
-    }
-    return aIdx - bIdx;
-  });
-
-  const result: FlavorTextPair[] = [];
-  for (const p of pairs) {
-    const displayName = versionDisplayNames[p.version];
-    const existing = result.find(
-      (r) => r.description_en === p.en && r.description_ja === p.ja,
-    );
-    if (existing) {
-      if (!existing.version_names.includes(displayName)) {
-        existing.version_names.push(displayName);
-      }
-    } else {
-      result.push({
-        version_names: [displayName],
-        description_en: p.en,
-        description_ja: p.ja,
-      });
-    }
-  }
-
-  return result;
 }
 
 /**

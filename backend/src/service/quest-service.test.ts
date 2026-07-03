@@ -16,7 +16,7 @@ import type {
 import type { Pokemon } from "../domain/pokemon.js";
 
 /**
- * 捕獲確率の仕様 (ADR-010)。式そのものは書き写さず、外から観測できる性質で確かめる。
+ * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
  */
 describe("calculateCaptureRate", () => {
   it("確率は下限 0 以上", () => {
@@ -27,11 +27,11 @@ describe("calculateCaptureRate", () => {
     expect(calculateCaptureRate(100, 100, 3.0)).toBe(1);
   });
 
-  it("スコアが高いほど捕獲確率が上がる (BST/ボール固定)", () => {
+  it("スコアが高いほど捕獲確率が上がる (種族値合計/ボール固定)", () => {
     expect(calculateCaptureRate(90, 300, 1.0)).toBeGreaterThan(calculateCaptureRate(30, 300, 1.0));
   });
 
-  it("BST が高いほど捕獲確率が下がる (スコア/ボール固定)", () => {
+  it("種族値合計が高いほど捕獲確率が下がる (スコア/ボール固定)", () => {
     expect(calculateCaptureRate(50, 300, 1.0)).toBeGreaterThan(calculateCaptureRate(50, 680, 1.0));
   });
 
@@ -39,7 +39,7 @@ describe("calculateCaptureRate", () => {
     expect(calculateCaptureRate(0, 680, 3.0)).toBeGreaterThan(calculateCaptureRate(0, 680, 1.0));
   });
 
-  it("スコア90 + スーパーボールなら高BST(680)でもほぼ確実 (ADR-010)", () => {
+  it("スコア90 + スーパーボールなら種族値合計が高い(680)でもほぼ確実", () => {
     expect(calculateCaptureRate(90, 680, 2.0)).toBeGreaterThan(0.99);
   });
 });
@@ -91,7 +91,7 @@ describe("maskPokemonNameEN", () => {
  * 日本語名の伏せ字仕様。
  */
 describe("maskPokemonNameJA", () => {
-  it("出現を「この ポケモン」に置換する", () => {
+  it("本文中のポケモン名を「この ポケモン」に置換する", () => {
     expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
   });
 
@@ -236,7 +236,7 @@ describe("QuestService.scoreTranslation", () => {
     expect(res.description_ja).toBe("この ポケモンは 速い。");
   });
 
-  it.each([0, 100])("境界スコア %i は受理される", async (score) => {
+  it.each([0, 100])("スコア %i は受理される", async (score) => {
     const service = makeService({ llmText: JSON.stringify({ score, review: "r" }) });
     await service.newQuest("alice");
     const res = await service.scoreTranslation("alice", "訳");
@@ -249,22 +249,29 @@ describe("QuestService.scoreTranslation", () => {
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
   });
 
-  it("LLM が JSON 以外を返したら ExternalServiceError", async () => {
-    const service = makeService({ llmText: "ごめん、わからない" });
+  it.each([
+    { name: "JSON 以外のテキスト", llmText: "ごめん、わからない" },
+    { name: "途中で切れた JSON", llmText: '{"score": 70, "rev' },
+    { name: "score が欠落した JSON", llmText: JSON.stringify({ review: "r" }) },
+    { name: "score が数値でない JSON", llmText: JSON.stringify({ score: "70", review: "r" }) },
+    { name: "review が欠落した JSON", llmText: JSON.stringify({ score: 70 }) },
+    { name: "review が空文字の JSON", llmText: JSON.stringify({ score: 70, review: "" }) },
+  ])("LLM が $name を返したら ExternalServiceError", async ({ llmText }) => {
+    const service = makeService({ llmText });
     await service.newQuest("alice");
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
   });
 });
 
 describe("QuestService.guessName", () => {
-  it("英語名の完全一致は ultra ボール (大文字小文字・前後空白を無視)", async () => {
+  it("英語名の完全一致はハイパーボール (大文字小文字・前後空白を無視)", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "  testmon ");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", language: "en" });
   });
 
-  it("日本語名の一致は great ボール", async () => {
+  it("日本語名の一致はスーパーボール", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "テストモン");
@@ -278,7 +285,7 @@ describe("QuestService.guessName", () => {
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", fuzzy: true });
   });
 
-  it("あいまい一致の境界: 距離3 は不正解", async () => {
+  it("あいまい一致: 距離3 は不正解", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "testxxx");
@@ -304,7 +311,7 @@ describe("QuestService.guessName", () => {
     expect(res).toMatchObject({ correct: false, attempts_remaining: 2 });
   });
 
-  it("3回目の不正解で正解名が公開され poke ボールが確定する", async () => {
+  it("3回目の不正解で正解名が公開されモンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.guessName("alice", "wrong1");
@@ -329,7 +336,7 @@ describe("QuestService.guessName", () => {
 });
 
 describe("QuestService.skipGuess / attemptCapture", () => {
-  it("skip すると poke ボールが確定する", async () => {
+  it("skip するとモンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
     expect(service.skipGuess("alice")).toEqual({ ball_type: "poke" });
@@ -346,7 +353,7 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(() => service.attemptCapture("alice")).toThrow(/before a ball/);
   });
 
-  it("skip 後の capture は poke ボールで捕獲結果を返す (乱数0 = 必ず捕獲)", async () => {
+  it("skip 後の capture はモンスターボールで捕獲結果を返す (乱数0 = 必ず捕獲)", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.skipGuess("alice");
@@ -368,7 +375,7 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(() => service.attemptCapture("alice")).toThrow(NotFoundError);
   });
 
-  it("セッションは uid ごとに分離される", async () => {
+  it("セッションはユーザごとに分離される", async () => {
     const service = makeService();
     await service.newQuest("alice");
     await expect(service.scoreTranslation("bob", "訳")).rejects.toBeInstanceOf(NotFoundError);

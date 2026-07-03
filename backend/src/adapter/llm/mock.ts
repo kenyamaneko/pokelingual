@@ -14,7 +14,7 @@ const REVIEW_THRESHOLDS = {
 } as const;
 
 const MOCK_CHAT_REPLY =
-  "なるほど いい 質問だな！この 文章の ポイントは 主語と 動詞の 関係だ。わからない ところが あれば 何でも 聞いてくれ！";
+  "これは モックの 返信だぞ！本番では 博士が 質問に 答えてくれる。わからない ところが あれば 何でも 聞いてくれ！";
 
 /**
  * Gemini を呼ばずに固定的なレスポンスを返す開発用 LLMClient 実装。
@@ -48,9 +48,9 @@ export class MockLLMClient implements LLMClient {
  * @returns スコア帯に対応する日本語の講評文。
  */
 function buildMockReview(score: number): string {
-  if (score >= REVIEW_THRESHOLDS.excellent) return "素晴らしい！全体の 意味を 正確に 捉えているぞ。自然な 日本語で とても いい 翻訳だ！";
-  if (score >= REVIEW_THRESHOLDS.good) return "よく 頑張ったな！意味は しっかり 伝わっているぞ。細かい ニュアンスを もう 少し 工夫すると さらに 良くなるぞ。";
-  if (score >= REVIEW_THRESHOLDS.partial) return "いい 調子だ！前半は よく 訳せているぞ。「emit」は 放つ という 意味だ。難しい 単語は 博士に 聞いてくれ。";
-  if (score >= REVIEW_THRESHOLDS.attempted) return "挑戦した ことが 大事だぞ！わからない 部分は 一緒に 学んでいこう。「fierce」は 激しい・獰猛な という 意味だ。";
-  return "よく 挑戦したな！まずは 知っている 単語を 手がかりに 全体像を つかんでみよう。博士が 手伝うぞ。";
+  if (score >= REVIEW_THRESHOLDS.excellent) return "これは 最高評価用の モック講評だぞ！素晴らしい！全体の 意味を 正確に 捉えているぞ。";
+  if (score >= REVIEW_THRESHOLDS.good) return "これは 高評価用の モック講評だぞ！意味は しっかり 伝わっているぞ。";
+  if (score >= REVIEW_THRESHOLDS.partial) return "これは 中間評価用の モック講評だぞ！前半は よく 訳せているぞ。";
+  if (score >= REVIEW_THRESHOLDS.attempted) return "これは 低評価用の モック講評だぞ！挑戦した ことが 大事だぞ！";
+  return "これは 最低評価用の モック講評だぞ！まずは 知っている 単語を 手がかりに 全体像を つかんでみよう。";
 }

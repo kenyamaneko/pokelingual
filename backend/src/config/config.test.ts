@@ -12,6 +12,7 @@ function clearConfigEnv(): void {
     "GOOGLE_CLOUD_PROJECT",
     "GOOGLE_CLOUD_LOCATION",
     "FRONTEND_URL",
+    "GEMINI_MODEL",
     "PER_USER_DAILY_LIMIT",
     "GLOBAL_DAILY_LIMIT",
   ]) {
@@ -25,7 +26,17 @@ describe("loadConfig", () => {
     process.env = { ...ORIGINAL_ENV };
   });
 
-  it("env 未設定なら mock モードで既定値になる", () => {
+  it("APP_MODE 未設定は起動エラー (mock への暗黙フォールバックはしない)", () => {
+    expect(() => loadConfig()).toThrow(/required env not set: APP_MODE/);
+  });
+
+  it("APP_MODE が未知の値なら起動エラー", () => {
+    process.env.APP_MODE = "prod";
+    expect(() => loadConfig()).toThrow(/invalid env: APP_MODE/);
+  });
+
+  it("mock モードでは他の env が未設定でも既定値で起動できる", () => {
+    process.env.APP_MODE = "mock";
     const cfg = loadConfig();
     expect(cfg.appMode).toBe("mock");
     expect(cfg.googleCloudProject).toBe("pokelingual-mock");
@@ -33,41 +44,45 @@ describe("loadConfig", () => {
     expect(cfg.globalDailyLimit).toBe(1500);
   });
 
-  it("整数 env の境界: 1 は受理される", () => {
+  it("整数 env の 1 は受理される", () => {
+    process.env.APP_MODE = "mock";
     process.env.PER_USER_DAILY_LIMIT = "1";
     expect(loadConfig().perUserDailyLimit).toBe(1);
   });
 
   it.each(["0", "-1", "abc"])("整数 env の不正値 %s は起動エラー", (v) => {
+    process.env.APP_MODE = "mock";
     process.env.PER_USER_DAILY_LIMIT = v;
     expect(() => loadConfig()).toThrow(/positive integer/);
   });
 
-  it("本番モードで必須 env が無ければ起動エラー", () => {
-    process.env.APP_MODE = "prod";
+  it("real モードで必須 env が無ければ起動エラー", () => {
+    process.env.APP_MODE = "real";
     expect(() => loadConfig()).toThrow(/required env not set/);
   });
 
-  it("本番モードで空文字の必須 env は未設定として起動エラー", () => {
-    process.env.APP_MODE = "prod";
+  it("real モードで空文字の必須 env は未設定として起動エラー", () => {
+    process.env.APP_MODE = "real";
     process.env.GOOGLE_CLOUD_PROJECT = "";
     expect(() => loadConfig()).toThrow(/required env not set/);
   });
 
-  it("本番モードで必須 env が揃えば値が反映される", () => {
-    process.env.APP_MODE = "prod";
+  it("real モードで必須 env が揃えば値が反映される", () => {
+    process.env.APP_MODE = "real";
     process.env.GOOGLE_CLOUD_PROJECT = "proj";
     process.env.GOOGLE_CLOUD_LOCATION = "loc";
     process.env.FRONTEND_URL = "https://example.com";
+    process.env.GEMINI_MODEL = "gemini-test";
     process.env.PER_USER_DAILY_LIMIT = "10";
     process.env.GLOBAL_DAILY_LIMIT = "100";
 
     const cfg = loadConfig();
     expect(cfg).toMatchObject({
-      appMode: "prod",
+      appMode: "real",
       googleCloudProject: "proj",
       googleCloudLocation: "loc",
       frontendURL: "https://example.com",
+      geminiModel: "gemini-test",
       perUserDailyLimit: 10,
       globalDailyLimit: 100,
     });

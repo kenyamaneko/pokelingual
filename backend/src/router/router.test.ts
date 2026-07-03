@@ -6,9 +6,9 @@ import { devAuth } from "../middleware/auth-mock.js";
 import { rateLimit } from "../middleware/rate-limit.js";
 import { QuestService } from "../service/quest-service.js";
 import { ChatService } from "../service/chat-service.js";
-import { CollectionService } from "../service/collection-service.js";
+import { PokedexService } from "../service/pokedex-service.js";
 import { QuestHandler } from "../handler/quest-handler.js";
-import { CollectionHandler } from "../handler/collection-handler.js";
+import { PokedexHandler } from "../handler/pokedex-handler.js";
 import { SettingsHandler } from "../handler/settings-handler.js";
 import { UsageHandler } from "../handler/usage-handler.js";
 import { RateLimitError } from "../domain/errors.js";
@@ -82,7 +82,7 @@ function makeApp(o: AppOverrides = {}) {
   const config: PokemonConfig = { maxPokemonID: 100, defaultExcludedPokemonIDs: [] };
   const random: RandomSource = { next: () => 0 };
 
-  // インメモリの Firestore 代替。保存された値を公開 API (GET /collection 等) から観測するために状態を持つ。
+  // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
   const pokemonStore = new Map<number, UserPokemon>();
   const userPokemonRepo: UserPokemonRepository = {
     upsertEncounter: async (_uid, pokemonID, score, captured) => {
@@ -96,7 +96,7 @@ function makeApp(o: AppOverrides = {}) {
         best_score: score,
       });
     },
-    getCollection: async () => [...pokemonStore.values()],
+    getPokedex: async () => [...pokemonStore.values()],
     getPokemon: async (_uid, pokemonID) => {
       const p = pokemonStore.get(pokemonID);
       if (!p) throw new Error(`not found: ${pokemonID}`);
@@ -125,7 +125,7 @@ function makeApp(o: AppOverrides = {}) {
 
   const questService = new QuestService(pokemonClient, llm, config, settingsRepo, random);
   const chatService = new ChatService(llm);
-  const collectionService = new CollectionService(userPokemonRepo, pokemonClient);
+  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient);
 
   const app = express();
   app.use(express.json());
@@ -135,7 +135,7 @@ function makeApp(o: AppOverrides = {}) {
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, chatService, userPokemonRepo),
-      new CollectionHandler(collectionService),
+      new PokedexHandler(pokedexService),
       new SettingsHandler(settingsRepo, config),
       new UsageHandler(rateLimitRepo),
     ),
@@ -203,7 +203,7 @@ describe("入力バリデーションの 400 (公開入口経由)", () => {
   });
 
   it("数値でない図鑑 ID は 400", async () => {
-    const res = await request(makeApp()).get("/api/collection/abc");
+    const res = await request(makeApp()).get("/api/pokedex/abc");
     expect(res.status).toBe(400);
   });
 
@@ -246,11 +246,11 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(capture.body.ball_type).toBe("poke");
 
     // 操作の結果まで確かめる: 捕獲したポケモンが公開 API 経由で図鑑に現れる
-    const collection = await request(app).get("/api/collection");
-    expect(collection.status).toBe(200);
-    expect(collection.body.pokemon).toHaveLength(1);
-    expect(collection.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
-    expect(collection.body.captured_count).toBe(1);
+    const pokedex = await request(app).get("/api/pokedex");
+    expect(pokedex.status).toBe(200);
+    expect(pokedex.body.pokemon).toHaveLength(1);
+    expect(pokedex.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
+    expect(pokedex.body.captured_count).toBe(1);
   });
 
   it("除外設定の保存内容が GET で読み戻せる", async () => {

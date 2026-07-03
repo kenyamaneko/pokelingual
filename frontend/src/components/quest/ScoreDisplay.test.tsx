@@ -50,7 +50,7 @@ describe("ScoreDisplay の仕様", () => {
   });
 });
 
-describe("スコア帯の境界 (両側を確かめる)", () => {
+describe("スコア帯ごとのラベル表示", () => {
   it.each([
     { score: 99, label: SCORE_LABELS.superEffective },
     { score: 80, label: SCORE_LABELS.superEffective },

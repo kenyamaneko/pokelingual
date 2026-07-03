@@ -51,6 +51,11 @@ describe("SettingsPage の遷移仕様", () => {
       data: {
         excluded_pokemon_ids: [],
       },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      // テスト用のダミー config。実装で参照されないため最小構成。
+      config: { headers: {} } as Awaited<ReturnType<typeof settingsApi.getSettings>>["config"],
     } as Awaited<ReturnType<typeof settingsApi.getSettings>>);
   });
 

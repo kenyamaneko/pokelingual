@@ -7,7 +7,7 @@ import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { Header } from "./components/layout/Header";
 import { HomePage } from "./pages/HomePage";
 import { QuestPage } from "./pages/QuestPage";
-import { CollectionPage } from "./pages/CollectionPage";
+import { PokedexPage } from "./pages/PokedexPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -47,10 +47,10 @@ function App() {
               }
             />
             <Route
-              path="/collection"
+              path="/pokedex"
               element={
                 <ProtectedRoute>
-                  <CollectionPage />
+                  <PokedexPage />
                 </ProtectedRoute>
               }
             />

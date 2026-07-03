@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { collectionApi } from "../api/collectionApi";
-import { PokemonGrid } from "../components/collection/PokemonGrid";
-import { PokemonDetailCard } from "../components/collection/PokemonDetailCard";
-import type { CollectionEntry, PokemonDetailResponse } from "../../../shared/api-types/collection";
+import { pokedexApi } from "../api/pokedexApi";
+import { PokemonGrid } from "../components/pokedex/PokemonGrid";
+import { PokemonDetailCard } from "../components/pokedex/PokemonDetailCard";
+import type { PokedexEntry, PokemonDetailResponse } from "../../../shared/api-types/pokedex";
 
 /**
  * 図鑑コレクション一覧ページ。捕獲済み数と全ポケモンのカードグリッドを表示する。
  * @returns 図鑑ページの要素。
  */
-export function CollectionPage() {
-  const [collection, setCollection] = useState<CollectionEntry[]>([]);
+export function PokedexPage() {
+  const [pokedex, setPokedex] = useState<PokedexEntry[]>([]);
   const [capturedCount, setCapturedCount] = useState(0);
   const [unavailableCount, setUnavailableCount] = useState(0);
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonDetailResponse | null>(
@@ -20,15 +20,15 @@ export function CollectionPage() {
   const [detailError, setDetailError] = useState<string | null>(null);
 
   useEffect(() => {
-    collectionApi
-      .getCollection()
+    pokedexApi
+      .getPokedex()
       .then((res) => {
-        setCollection(res.data.pokemon);
+        setPokedex(res.data.pokemon);
         setCapturedCount(res.data.captured_count);
         setUnavailableCount(res.data.unavailable_count);
       })
       .catch((err) => {
-        console.error("failed to load collection", err);
+        console.error("failed to load pokedex", err);
         setListError("ずかんの　よみこみに　しっぱいしました");
       })
       .finally(() => setLoading(false));
@@ -37,7 +37,7 @@ export function CollectionPage() {
   const handleSelect = async (id: number) => {
     setDetailError(null);
     try {
-      const res = await collectionApi.getPokemonDetail(id);
+      const res = await pokedexApi.getPokemonDetail(id);
       setSelectedPokemon(res.data);
     } catch (err) {
       console.error("failed to load pokemon detail", err);
@@ -76,7 +76,7 @@ export function CollectionPage() {
         ) : listError ? (
           <p className="text-center text-red-500 py-20">{listError}</p>
         ) : (
-          <PokemonGrid pokemon={collection} onSelect={handleSelect} />
+          <PokemonGrid pokemon={pokedex} onSelect={handleSelect} />
         )}
 
         {selectedPokemon && (

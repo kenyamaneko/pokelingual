@@ -18,12 +18,12 @@ import { SystemRandomSource } from "./adapter/random/system.js";
 import { MockRandomSource } from "./adapter/random/mock.js";
 import { QuestService } from "./service/quest-service.js";
 import { ChatService } from "./service/chat-service.js";
-import { CollectionService } from "./service/collection-service.js";
+import { PokedexService } from "./service/pokedex-service.js";
 import { UserPokemonRepo } from "./adapter/firestore/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./adapter/firestore/user-settings-repo.js";
 import { RateLimitRepo } from "./adapter/firestore/rate-limit-repo.js";
 import { QuestHandler } from "./handler/quest-handler.js";
-import { CollectionHandler } from "./handler/collection-handler.js";
+import { PokedexHandler } from "./handler/pokedex-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
 import { setupRoutes } from "./router/router.js";
@@ -126,7 +126,7 @@ if (cfg.appMode === "mock") {
   );
   randomSource = new SystemRandomSource();
   pokemonClient = new PokeAPIClient(pokemonConfig, randomSource);
-  llmClient = new GeminiClient(vertexAI);
+  llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -137,10 +137,10 @@ console.log(`Rate limits: per-user=${cfg.perUserDailyLimit}/day, global=${cfg.gl
 
 const questService = new QuestService(pokemonClient, llmClient, pokemonConfig, userSettingsRepo, randomSource);
 const chatService = new ChatService(llmClient);
-const collectionService = new CollectionService(userPokemonRepo, pokemonClient);
+const pokedexService = new PokedexService(userPokemonRepo, pokemonClient);
 
 const questHandler = new QuestHandler(questService, chatService, userPokemonRepo);
-const collectionHandler = new CollectionHandler(collectionService);
+const pokedexHandler = new PokedexHandler(pokedexService);
 const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonConfig);
 const usageHandler = new UsageHandler(rateLimitRepo);
 
@@ -158,7 +158,7 @@ const apiRouter = setupRoutes(
   authMiddleware,
   rateLimitMiddleware,
   questHandler,
-  collectionHandler,
+  pokedexHandler,
   settingsHandler,
   usageHandler,
 );

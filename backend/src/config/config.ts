@@ -1,23 +1,31 @@
 import "dotenv/config";
 
+/** アプリの動作モード。mock は外部 API をモックに差し替え、real は実サービスに接続する。 */
+export type AppMode = "mock" | "real";
+
+const APP_MODES: readonly AppMode[] = ["mock", "real"];
+
 /** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
-  appMode: string;
+  appMode: AppMode;
   port: string;
   googleCloudProject: string;
   googleCloudLocation: string;
   frontendURL: string;
+  geminiModel: string;
   perUserDailyLimit: number;
   globalDailyLimit: number;
 }
 
-/** mock モード時に許容するデフォルト値。本番モードでは必須 env が未設定なら起動エラーにする。 */
+/** mock モード時に許容するデフォルト値。real モードでは必須 env が未設定なら起動エラーにする。 */
 const MOCK_DEFAULTS = {
   port: "8080",
   // Firestore Emulator は projectId が非空であることを要求する。本番プロジェクトと混同しないよう専用名にする
   googleCloudProject: "pokelingual-mock",
   googleCloudLocation: "us-central1",
   frontendURL: "http://localhost:5173",
+  // mock モードでは GeminiClient を構築しないため参照されない (Config の形を揃えるためだけの値)
+  geminiModel: "gemini-2.5-flash",
   perUserDailyLimit: 30,
   globalDailyLimit: 1500,
 } as const;
@@ -74,12 +82,27 @@ function requireIntEnv(key: string): number {
 }
 
 /**
- * 環境変数から Config を構築する。本番モードでは必須 env (GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION,
- * FRONTEND_URL, PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。
+ * APP_MODE を取得し、定義済みモードであることを検証する。
+ * @returns 検証済みのアプリ動作モード。
+ * @throws 未設定、または未知のモードの場合。
+ */
+function requireAppMode(): AppMode {
+  const v = requireEnv("APP_MODE");
+  // 未知値を real 扱いなどに倒すと意図しないモードで起動しうるため、ここで失敗させる
+  if (!APP_MODES.includes(v as AppMode)) {
+    throw new Error(`invalid env: APP_MODE=${v} (must be "mock" or "real")`);
+  }
+  return v as AppMode;
+}
+
+/**
+ * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
+ * (GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
+ * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
-  const appMode = getEnv("APP_MODE") ?? "mock";
+  const appMode = requireAppMode();
   const isMock = appMode === "mock";
 
   return {
@@ -88,6 +111,7 @@ export function loadConfig(): Config {
     googleCloudProject: isMock ? (getEnv("GOOGLE_CLOUD_PROJECT") ?? MOCK_DEFAULTS.googleCloudProject) : requireEnv("GOOGLE_CLOUD_PROJECT"),
     googleCloudLocation: isMock ? (getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation) : requireEnv("GOOGLE_CLOUD_LOCATION"),
     frontendURL: isMock ? (getEnv("FRONTEND_URL") ?? MOCK_DEFAULTS.frontendURL) : requireEnv("FRONTEND_URL"),
+    geminiModel: isMock ? (getEnv("GEMINI_MODEL") ?? MOCK_DEFAULTS.geminiModel) : requireEnv("GEMINI_MODEL"),
     perUserDailyLimit: isMock ? (getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit) : requireIntEnv("PER_USER_DAILY_LIMIT"),
     globalDailyLimit: isMock ? (getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit) : requireIntEnv("GLOBAL_DAILY_LIMIT"),
   };

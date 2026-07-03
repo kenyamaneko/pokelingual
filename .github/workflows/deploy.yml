@@ -30,7 +30,7 @@ jobs:
   # Determine version from git tags (runs in parallel with tests)
   determine-version:
     name: Determine Version
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -49,7 +49,7 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Cloud Run
     needs: [test, determine-version]
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 20
     environment: ${{ github.ref_name != 'develop' && 'prod' || 'dev' }}
     permissions:
@@ -145,7 +145,7 @@ jobs:
             --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --service-account "${{ env.BACKEND_SA }}" \
             --remove-secrets "GEMINI_API_KEY" \
-            --update-env-vars "APP_MODE=prod,FRONTEND_URL=${{ env.FRONTEND_URL }},GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
+            --update-env-vars "APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=${{ env.FRONTEND_URL }},GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
             --allow-unauthenticated
 
       # ロールバックで --to-revisions を使うとトラフィックが特定リビジョンにピン留めされ、
@@ -164,8 +164,9 @@ jobs:
     name: Integration Tests
     needs: deploy-backend
     if: github.ref_name == 'develop'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubicloud-standard-2
+    # 実測 1 分弱 (テストユーザ準備 + API 数往復) なので、ハング検出用に 5 分あれば十分
+    timeout-minutes: 5
     environment: dev
     permissions:
       contents: read
@@ -309,7 +310,7 @@ jobs:
       needs.deploy-backend.result == 'success' &&
       needs.determine-version.result == 'success' &&
       (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 15
     environment: ${{ github.ref_name != 'develop' && 'prod' || 'dev' }}
     permissions:
@@ -359,7 +360,7 @@ jobs:
     name: Cloud Dev E2E
     needs: deploy-frontend
     if: github.ref_name == 'develop'
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 30
     environment: dev
     permissions:

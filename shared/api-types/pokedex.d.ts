@@ -11,7 +11,7 @@ export interface FlavorTextPair {
 }
 
 /** 図鑑一覧の 1 エントリ。 */
-export interface CollectionEntry {
+export interface PokedexEntry {
   pokemon_id: number;
   name_en: string;
   name_ja: string;
@@ -21,15 +21,15 @@ export interface CollectionEntry {
   best_score: number;
 }
 
-/** GET /api/collection のレスポンス。 */
-export interface CollectionResponse {
-  pokemon: CollectionEntry[];
+/** GET /api/pokedex のレスポンス。 */
+export interface PokedexResponse {
+  pokemon: PokedexEntry[];
   captured_count: number;
   unavailable_count: number;
 }
 
 /**
- * GET /api/collection/:id のレスポンス。
+ * GET /api/pokedex/:id のレスポンス。
  * タイムスタンプは ISO 8601 文字列で表現する (HTTP の wire 形式に合わせる)。
  */
 export interface PokemonDetailResponse {

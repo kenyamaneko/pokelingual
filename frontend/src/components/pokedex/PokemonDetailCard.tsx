@@ -1,4 +1,4 @@
-import type { PokemonDetailResponse } from "../../../../shared/api-types/collection";
+import type { PokemonDetailResponse } from "../../../../shared/api-types/pokedex";
 import { getTypeColor } from "../../utils/pokemonTypes";
 import { formatPokemonId, formatHeightMeters, formatWeightKilograms } from "../../utils/pokemonFormat";
 

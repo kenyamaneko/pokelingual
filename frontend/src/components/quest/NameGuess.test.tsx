@@ -60,7 +60,7 @@ describe("NameGuess の仕様", () => {
     expect(screen.getByText(/もう一度/)).toBeInTheDocument();
   });
 
-  it("不正解で残り 1 回は「ラストチャンス」を表示する (残数境界)", () => {
+  it("不正解で残り 1 回は「ラストチャンス」を表示する", () => {
     const guess: GuessResponse = { correct: false, attempts_remaining: 1 };
     render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
     expect(screen.getByText(/ラストチャンス/)).toBeInTheDocument();

@@ -9,9 +9,9 @@ import { handleError } from "../handler/error.js";
  */
 export function rateLimit(repo: RateLimitRepository): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const uid = res.locals.uid as string;
+    const userId = res.locals.userId as string;
     try {
-      await repo.checkAndIncrement(uid);
+      await repo.checkAndIncrement(userId);
       next();
     } catch (err) {
       handleError(res, err, req.path);

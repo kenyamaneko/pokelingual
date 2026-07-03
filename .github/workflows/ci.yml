@@ -20,7 +20,7 @@ concurrency:
 jobs:
   backend-test:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 10
     defaults:
       run:
@@ -47,7 +47,7 @@ jobs:
 
   frontend-test:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 10
     defaults:
       run:
@@ -80,7 +80,7 @@ jobs:
 
   e2e-test:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:
       - name: Checkout repository
@@ -132,7 +132,7 @@ jobs:
 
   terraform-check:
     name: Terraform Format Check
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
       run:

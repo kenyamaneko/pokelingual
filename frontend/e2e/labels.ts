@@ -9,10 +9,10 @@
 /** getByRole("link", { name }) で参照するリンク名。 */
 export const LINK = {
   startQuest: /ぼうけんに.出かける/,
-  viewCollection: /ずかんを.見る/,
+  viewPokedex: /ずかんを.見る/,
   logo: "PokeLingual",
   navQuest: "ぼうけん",
-  navCollection: "ずかん",
+  navPokedex: "ずかん",
   settings: "せってい",
 } as const;
 
@@ -51,5 +51,5 @@ export const PLACEHOLDER = {
 
 /** getByRole("heading", { name }) で参照する見出し。 */
 export const HEADING = {
-  collection: "ずかん",
+  pokedex: "ずかん",
 } as const;

@@ -3,22 +3,26 @@ import type { VertexAI } from "@google-cloud/vertexai";
 import { GeminiClient } from "./gemini.js";
 
 /**
- * 指定テキストを返すフェイク VertexAI で GeminiClient を組み立てる。
- * @param text モデルが返すテキスト。undefined なら候補なし (空レスポンス)。
+ * 指定の candidates を返すフェイク VertexAI で GeminiClient を組み立てる。
+ * @param candidates Vertex AI レスポンスの candidates 配列。
  * @returns テスト対象のクライアント。
  */
-function makeClient(text: string | undefined): GeminiClient {
+function makeClientWithCandidates(candidates: unknown[]): GeminiClient {
   const vertexAI = {
     getGenerativeModel: () => ({
-      generateContent: async () => ({
-        response: {
-          candidates:
-            text === undefined ? [] : [{ content: { parts: [{ text }] } }],
-        },
-      }),
+      generateContent: async () => ({ response: { candidates } }),
     }),
   } as unknown as VertexAI;
-  return new GeminiClient(vertexAI);
+  return new GeminiClient(vertexAI, "gemini-test");
+}
+
+/**
+ * 指定テキストを返すフェイク VertexAI で GeminiClient を組み立てる。
+ * @param text モデルが返すテキスト。
+ * @returns テスト対象のクライアント。
+ */
+function makeClient(text: string): GeminiClient {
+  return makeClientWithCandidates([{ content: { parts: [{ text }] } }]);
 }
 
 /**
@@ -35,7 +39,17 @@ describe("GeminiClient.generateText", () => {
     expect(await makeClient(input).generateText("p")).toBe(expected);
   });
 
-  it("空レスポンスはエラーにする", async () => {
-    await expect(makeClient(undefined).generateText("p")).rejects.toThrow(/empty response/);
+  // JSON として解釈できないテキストの扱いは、JSON を解釈する側 (quest-service) の
+  // テストで確かめる。ここではクライアント自身が検出すべき欠落レスポンスを網羅する。
+  it.each([
+    { name: "candidates が空", candidates: [] },
+    { name: "content が欠落", candidates: [{}] },
+    { name: "parts が欠落", candidates: [{ content: {} }] },
+    { name: "parts が空", candidates: [{ content: { parts: [] } }] },
+    { name: "text が空文字", candidates: [{ content: { parts: [{ text: "" }] } }] },
+  ])("$name のレスポンスはエラーにする", async ({ candidates }) => {
+    await expect(makeClientWithCandidates(candidates).generateText("p")).rejects.toThrow(
+      /empty response/,
+    );
   });
 });

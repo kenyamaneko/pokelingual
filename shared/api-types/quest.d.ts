@@ -5,7 +5,7 @@
  */
 import type { PokemonType } from "./pokemon.js";
 
-/** 捕獲に使うボール種別。poke=不正解/スキップ, great=日本語名正解, ultra=英語名正解。 */
+/** 捕獲に使うボール種別。 */
 export type BallType = "poke" | "great" | "ultra";
 
 /** GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。 */
@@ -34,7 +34,7 @@ export interface GuessResponse {
   reveal_name_ja?: string;
 }
 
-/** POST /api/quest/skip-guess のレスポンス。スキップ時は常に poke ボール。 */
+/** POST /api/quest/skip-guess のレスポンス。スキップ時は常にモンスターボール。 */
 export interface SkipGuessResponse {
   ball_type: BallType;
 }

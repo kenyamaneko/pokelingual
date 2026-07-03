@@ -61,9 +61,9 @@ export function Header() {
             ぼうけん
           </Link>
           <Link
-            to="/collection"
+            to="/pokedex"
             className={`hover:text-red-100 transition-colors ${
-              location.pathname === "/collection"
+              location.pathname === "/pokedex"
                 ? "underline underline-offset-4"
                 : ""
             }`}

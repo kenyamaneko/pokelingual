@@ -15,9 +15,9 @@ test("ホームページのリンクが全て機能する", async ({ page }) => 
   await page.getByRole("link", { name: LINK.logo }).click();
   await expect(page).toHaveURL("/");
 
-  // ずかんを見る → /collection
-  await page.getByRole("link", { name: LINK.viewCollection }).click();
-  await expect(page).toHaveURL("/collection");
+  // ずかんを見る → /pokedex
+  await page.getByRole("link", { name: LINK.viewPokedex }).click();
+  await expect(page).toHaveURL("/pokedex");
 
   // ヘッダーロゴ → /
   await page.getByRole("link", { name: LINK.logo }).click();
@@ -36,8 +36,8 @@ test("ヘッダーナビゲーション", async ({ page }) => {
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーの「ずかん」リンク
-  await page.getByRole("link", { name: LINK.navCollection, exact: true }).click();
-  await expect(page).toHaveURL("/collection");
+  await page.getByRole("link", { name: LINK.navPokedex, exact: true }).click();
+  await expect(page).toHaveURL("/pokedex");
 
   // ヘッダーの「せってい」リンク
   await page.getByRole("link", { name: LINK.settings, exact: true }).click();

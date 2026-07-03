@@ -29,7 +29,7 @@ export function HomePage() {
             ぼうけんに　出かける
           </Link>
           <Link
-            to="/collection"
+            to="/pokedex"
             className="block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow border border-gray-200"
           >

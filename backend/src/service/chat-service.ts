@@ -7,7 +7,7 @@ import type {
 
 // ChatRequest / ChatResponse の API 契約型は shared/api-types/quest.d.ts を参照
 
-/** クエストの講評後にオーキド博士キャラとして対話を返すサービス。 */
+/** クエストの講評後に博士キャラとして対話を返すサービス。 */
 export class ChatService {
   /**
    * @param llm テキスト生成に用いる LLM クライアント。
@@ -15,10 +15,10 @@ export class ChatService {
   constructor(private llm: LLMClient) {}
 
   /**
-   * クエスト文脈と会話履歴を踏まえて教授の返信文を生成する。
+   * クエスト文脈と会話履歴を踏まえて博士の返信文を生成する。
    * @param ctx クエストの文脈 (原文・翻訳・スコア等)。
    * @param messages これまでの会話履歴。
-   * @returns 教授キャラの返信文。
+   * @returns 博士キャラの返信文。
    */
   async reply(ctx: ChatContext, messages: ChatMessage[]): Promise<string> {
     const prompt = buildChatPrompt(ctx, messages);
@@ -32,10 +32,10 @@ export class ChatService {
 }
 
 /**
- * 教授チャット用のプロンプトを組み立てる。
+ * 博士チャット用のプロンプトを組み立てる。
  * @param ctx クエストの文脈。
  * @param messages 会話履歴。
- * @returns Gemini へ渡すプロンプト文字列。
+ * @returns LLM へ渡すプロンプト文字列。
  */
 function buildChatPrompt(ctx: ChatContext, messages: ChatMessage[]): string {
   let history = "";
