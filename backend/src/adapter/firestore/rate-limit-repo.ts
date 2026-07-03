@@ -23,7 +23,7 @@ export class RateLimitRepo implements RateLimitRepository {
    * @throws RateLimitError グローバルまたはユーザ上限に到達した場合。
    */
   async checkAndIncrement(uid: string): Promise<DailyUsage> {
-    const today = jstDate();
+    const today = getJstToday();
     const userRef = this.db.doc(`users/${uid}/daily_usage/${today}`);
     // users/{uid}/daily_usage/{date} と階層を揃え、Firestore の doc は偶数階層必須という制約を満たす
     const globalRef = this.db.doc(`system/global/daily_usage/${today}`);
@@ -50,7 +50,7 @@ export class RateLimitRepo implements RateLimitRepository {
    * @returns 当日の利用カウントと上限。
    */
   async getUserUsage(uid: string): Promise<DailyUsage> {
-    const snap = await this.db.doc(`users/${uid}/daily_usage/${jstDate()}`).get();
+    const snap = await this.db.doc(`users/${uid}/daily_usage/${getJstToday()}`).get();
     return {
       count: (snap.data()?.count as number) ?? 0,
       limit: this.perUserLimit,
@@ -63,6 +63,6 @@ export class RateLimitRepo implements RateLimitRepository {
  * (JST 固定。ユーザー現地時刻にすると 23:59 + 0:00 で枠を2倍使える抜け道ができるため)
  * @returns "YYYY-MM-DD" 形式の JST 日付。
  */
-function jstDate(): string {
+function getJstToday(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" });
 }

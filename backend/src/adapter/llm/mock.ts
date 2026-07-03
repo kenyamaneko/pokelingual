@@ -33,7 +33,7 @@ export class MockLLMClient implements LLMClient {
   async generateText(prompt: string): Promise<string> {
     if (prompt.includes("translation evaluator")) {
       const score = MOCK_SCORE_MIN + Math.floor(Math.random() * MOCK_SCORE_RANGE);
-      return JSON.stringify({ score, review: mockReview(score) });
+      return JSON.stringify({ score, review: buildMockReview(score) });
     }
     if (prompt.includes("Pokemon professor")) {
       return MOCK_CHAT_REPLY;
@@ -47,7 +47,7 @@ export class MockLLMClient implements LLMClient {
  * @param score 採点スコア (0-100)。
  * @returns スコア帯に対応する日本語の講評文。
  */
-function mockReview(score: number): string {
+function buildMockReview(score: number): string {
   if (score >= REVIEW_THRESHOLDS.excellent) return "素晴らしい！全体の 意味を 正確に 捉えているぞ。自然な 日本語で とても いい 翻訳だ！";
   if (score >= REVIEW_THRESHOLDS.good) return "よく 頑張ったな！意味は しっかり 伝わっているぞ。細かい ニュアンスを もう 少し 工夫すると さらに 良くなるぞ。";
   if (score >= REVIEW_THRESHOLDS.partial) return "いい 調子だ！前半は よく 訳せているぞ。「emit」は 放つ という 意味だ。難しい 単語は 博士に 聞いてくれ。";

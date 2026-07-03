@@ -6,7 +6,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { loadConfig } from "./config/config.js";
-import { corsConfig } from "./middleware/cors.js";
+import { createCorsMiddleware } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { devAuth } from "./middleware/auth-mock.js";
@@ -146,7 +146,7 @@ const usageHandler = new UsageHandler(rateLimitRepo);
 
 const app = express();
 app.use(express.json());
-app.use(corsConfig(cfg.frontendURL));
+app.use(createCorsMiddleware(cfg.frontendURL));
 
 // ヘルスチェック (認証不要)。docker compose の healthcheck と CI の起動待ちが叩く
 app.get("/health", (_req, res) => {

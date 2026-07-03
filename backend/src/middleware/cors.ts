@@ -5,7 +5,7 @@ import cors from "cors";
  * @param frontendURL 許可するフロントエンドのオリジン。
  * @returns 設定済みの CORS ミドルウェア。
  */
-export function corsConfig(frontendURL: string) {
+export function createCorsMiddleware(frontendURL: string) {
   return cors({
     origin: frontendURL,
     methods: ["GET", "POST", "PUT", "OPTIONS"],

@@ -18,7 +18,7 @@ export class UserSettingsRepo implements UserSettingsRepository {
    * @param uid ユーザ ID。
    * @returns users/{uid}/settings/preferences への DocumentReference。
    */
-  private settingsRef(uid: string) {
+  private getSettingsRef(uid: string) {
     return this.db.collection("users").doc(uid).collection("settings").doc("preferences");
   }
 
@@ -28,7 +28,7 @@ export class UserSettingsRepo implements UserSettingsRepository {
    * @returns ユーザ設定。
    */
   async getSettings(uid: string): Promise<UserSettings> {
-    const doc = await this.settingsRef(uid).get();
+    const doc = await this.getSettingsRef(uid).get();
     if (!doc.exists) {
       return { excluded_pokemon_ids: null };
     }
@@ -42,7 +42,7 @@ export class UserSettingsRepo implements UserSettingsRepository {
    * @param pokemonIDs 除外するポケモン ID の配列。
    */
   async updateExcludedPokemon(uid: string, pokemonIDs: number[]): Promise<void> {
-    await this.settingsRef(uid).set(
+    await this.getSettingsRef(uid).set(
       { excluded_pokemon_ids: pokemonIDs },
       { merge: true },
     );
