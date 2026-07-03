@@ -200,7 +200,11 @@ Auth middleware → Rate limit middleware → Handler
 
 ### ロギング
 
-- `console.log` / `console.error` で出力（Cloud Run が Cloud Logging に自動転送）
+- 自前の小さなロガー util を通し、Info / Warn / Error の 3 レベル (principles.md のログ方針と 1:1) で出力する
+- backend (`backend/src/util/logger.ts`): `severity` / `message` / `time` + 任意フィールドの 1 行 JSON を stdout (Info) / stderr (Warn/Error) に書き、Cloud Run が Cloud Logging へ自動転送する。JSON は構造化フィールドとして取り込まれ、severity での絞り込みとフィールド検索ができる。可変値は message に埋め込まず fields に分離する（message を固定文字列に保ち検索性を確保するため）
+- frontend (`frontend/src/utils/logger.ts`): 収集基盤が無くブラウザ devtools でしか見ないため、JSON 文字列化はせず console に message + fields のまま渡す（ツリー展開・スタックトレース表示を保つ）
+- 既製ロガー (pino 等) を使わない理由: 3 レベル・十数箇所という規模に対し、依存ゼロで全挙動を単体テストで固定できることを優先した（裁定は Issue #14）
+- リクエストログは実装しない（Cloud Run が標準で出力するため）
 
 ## フロントエンド詳細
 
