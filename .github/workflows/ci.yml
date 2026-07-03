@@ -36,6 +36,13 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
+      # Firestore Emulator は Java ランタイムを必要とする。firebase-tools が emulator jar を担うため gcloud は不要。
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
       - name: Install dependencies
         run: npm ci
 
@@ -44,6 +51,11 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Firestore Emulator を必須化した結合テストを含む全テストを実行する。
+      # emulators:exec が Emulator 起動 → FIRESTORE_EMULATOR_HOST 注入 → 終了まで面倒を見る (Makefile: test-backend と同一経路)。
+      - name: Run tests (Firestore emulator)
+        run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
 
   frontend-test:
     name: Frontend Tests
