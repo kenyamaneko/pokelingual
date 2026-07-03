@@ -8,7 +8,7 @@ WORKDIR /app/backend
 RUN npm ci
 
 WORKDIR /app
-COPY backend/tsconfig.json ./backend/
+COPY backend/tsconfig.json backend/tsconfig.build.json ./backend/
 COPY backend/src ./backend/src
 COPY shared/api-types ./shared/api-types
 
