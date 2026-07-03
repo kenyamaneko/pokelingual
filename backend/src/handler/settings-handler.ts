@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
 import type { SettingsResponse } from "../../../shared/api-types/settings.js";
+import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import { validateExcludedPokemonIDs } from "../domain/settings.js";
 import { handleError } from "./error.js";
 
@@ -53,7 +54,7 @@ export class SettingsHandler {
       MAX_EXCLUDED_POKEMON_COUNT,
     );
     if (!result.ok) {
-      res.status(400).json({ error: result.message });
+      res.status(400).json({ error: result.message } satisfies ErrorResponse);
       return;
     }
     try {
