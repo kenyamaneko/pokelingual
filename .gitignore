@@ -1,5 +1,5 @@
-# Dependencies
-node_modules/
+# Dependencies (末尾スラッシュを付けない: dir だけでなく node_modules への symlink も無視するため)
+node_modules
 
 # Build
 dist/
