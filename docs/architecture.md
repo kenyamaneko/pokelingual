@@ -70,6 +70,7 @@ Repository 層はモックを持たない。ローカル/テスト共に Firesto
 | `GEMINI_MODEL` | Gemini のモデル名（real モードでは必須） | deploy.yml が注入 |
 | `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` | Firestore / Vertex AI の接続先（本番は必須） | deploy.yml が注入 |
 | `PER_USER_DAILY_LIMIT` / `GLOBAL_DAILY_LIMIT` | AI 呼び出しの日次上限（本番は必須） | deploy.yml が注入 |
+| `MAX_POKEMON_ID` | 出題・図鑑の対象とする図鑑番号の上限（本番は必須） | deploy.yml が注入（mock 既定 898） |
 | `VITE_APP_MODE` | フロントエンドのサービス切替（Firebase Auth） | `mock`（ローカル）/ 未設定（デプロイ環境） |
 | `VITE_ENVIRONMENT` | UI の環境バッジ表示 | `local` / `dev` / `prod` |
 
@@ -134,7 +135,7 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 
 ### PokeAPI データ取得
 
-- 対象: Gen 1-8（ID 1-898、環境変数 `MAX_POKEMON_ID` で上書き可。未設定なら既定 898）
+- 対象: Gen 1-8（ID 1-898、環境変数 `MAX_POKEMON_ID` で指定。mock は既定 898 / real は deploy.yml が注入）
   - #899-905（Legends: Arceus）は対象バージョンに説明文がないため範囲外
   - Gen 9（#906+）は PokeAPI に未収録
 - EN/JA 説明文: Gen 6（XY）以降のゲームから取得

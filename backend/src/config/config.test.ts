@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { loadConfig, DEFAULT_MAX_POKEMON_ID } from "./config.js";
+import { loadConfig } from "./config.js";
 
 // loadConfig は process.env を読むため、テストごとに退避・復元する。
 const ORIGINAL_ENV = { ...process.env };
@@ -44,6 +44,7 @@ describe("loadConfig", () => {
     expect(cfg.googleCloudProject).toBe("pokelingual-mock");
     expect(cfg.perUserDailyLimit).toBe(30);
     expect(cfg.globalDailyLimit).toBe(1500);
+    expect(cfg.maxPokemonID).toBe(898);
   });
 
   it("整数 env の 1 は受理される", () => {
@@ -56,17 +57,6 @@ describe("loadConfig", () => {
     process.env.APP_MODE = "mock";
     process.env.PER_USER_DAILY_LIMIT = v;
     expect(() => loadConfig()).toThrow(/positive integer/);
-  });
-
-  it("MAX_POKEMON_ID 未設定なら既定値になる", () => {
-    process.env.APP_MODE = "mock";
-    expect(loadConfig().maxPokemonID).toBe(DEFAULT_MAX_POKEMON_ID);
-  });
-
-  it("MAX_POKEMON_ID を設定するとその値で上書きされる", () => {
-    process.env.APP_MODE = "mock";
-    process.env.MAX_POKEMON_ID = "12345";
-    expect(loadConfig().maxPokemonID).toBe(12345);
   });
 
   it("real モードで必須 env が無ければ起動エラー", () => {
@@ -89,6 +79,7 @@ describe("loadConfig", () => {
     process.env.GEMINI_MODEL = "gemini-test";
     process.env.PER_USER_DAILY_LIMIT = "10";
     process.env.GLOBAL_DAILY_LIMIT = "100";
+    process.env.MAX_POKEMON_ID = "12345";
 
     const cfg = loadConfig();
     expect(cfg).toMatchObject({
@@ -100,6 +91,7 @@ describe("loadConfig", () => {
       geminiModel: "gemini-test",
       perUserDailyLimit: 10,
       globalDailyLimit: 100,
+      maxPokemonID: 12345,
     });
   });
 });
