@@ -15,14 +15,15 @@ const baseURL = process.env.E2E_BASE_URL ?? LOCAL_BASE_URL;
 export default defineConfig({
   testDir: "./e2e",
   timeout: isDev ? DEV_TIMEOUT_MS : LOCAL_TIMEOUT_MS,
-  retries: 1,
+  // mock モードの出題・捕獲を RandomSource で決定化したため、flaky を retry で吸収しない (非決定性を隠さない)。
+  retries: 0,
   // mock 認証は全リクエストが同一 uid のため、backend の in-memory クエストセッションを
   // 全テストが共有する。並列実行だと他テストの capture がセッションを消して 404 になるため直列に固定する。
   workers: 1,
   use: {
     baseURL,
     screenshot: "only-on-failure",
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
   },
   projects: [{ name: E2E_MODE, use: { browserName: "chromium" } }],
   // dev はデプロイ済み Hosting に対して実行するため webServer は起動しない。
