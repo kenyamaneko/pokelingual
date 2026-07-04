@@ -85,7 +85,7 @@ backend/src/
 ├── service/                 # ビジネスロジック（Quest, Chat, Pokedex）
 ├── handler/                 # HTTP リクエスト/レスポンス変換
 ├── middleware/              # CORS, Firebase Auth, レートリミット
-├── adapter/                 # ポートの実装（firestore / llm / pokemon / random）
+├── adapter/                 # ポートの実装（repository / llm / pokemon / random）
 └── router/                  # Express ルーティング定義
 ```
 
