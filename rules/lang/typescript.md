@@ -2,8 +2,6 @@
 
 # pokelingual TypeScript 固有ルール (overlay)
 
-共通ルール (`keyandnotes-rules` の `rules/lang/typescript.md`) を土台に、pokelingual 固有分を定義する。CLAUDE.md の「ファイル編集前のルール適用手順」に従い、TS/TSX 編集時に共通とあわせて Read する。
-
 ## [lang/typescript] API 契約 (wire format)
 
 - backend↔frontend の API 契約型は `shared/api-types/*.d.ts` を SSoT とし、backend / frontend で二重定義しない

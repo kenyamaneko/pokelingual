@@ -2,7 +2,7 @@
 
 > NOTE: このファイルは原則として人間が運用する。例外的に許可があった場合のみClaude Codeが修正しても良い。
 
-共通開発ルールは Key and Notes 共通の `keyandnotes-rules` リポ (兄弟リポとして配置) を SSoT とし、@import で参照する。pokelingual 固有分は `rules/` の overlay に置く。
+共通開発ルールは Key and Notes 共通の `keyandnotes-rules` リポ (`../keyandnotes-rules`) を SSoT とし、@import で参照する。pokelingual 固有分は `rules/` の overlay に置く。
 
 @../keyandnotes-rules/rules/principles.md
 @rules/principles.md
@@ -17,4 +17,4 @@
 - テストコードを書くとき → `../keyandnotes-rules/rules/testing.md` + `rules/testing.md`
 - ブランチ運用・リリース → `rules/flow.md`
 
-共通 principles (`../keyandnotes-rules/rules/principles.md`) と pokelingual overlay (`rules/principles.md`) は本ファイルから @import 済みなので常に適用される。keyandnotes-rules を兄弟リポとして配置していない場合、共通ルールは読み込まれない。
+共通 principles (`../keyandnotes-rules/rules/principles.md`) と pokelingual overlay (`rules/principles.md`) は本ファイルから @import 済みなので常に適用される。`../keyandnotes-rules` が存在しない場合、共通ルールは読み込まれない。
