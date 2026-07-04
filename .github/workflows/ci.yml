@@ -56,7 +56,6 @@ jobs:
       - name: Run tests (Firestore emulator)
         run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
 
-      # テスト成否に関わらず JUnit XML を artifact 化する (レポート収集がテスト結果を隠さないよう always)。
       - name: Upload backend test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -95,7 +94,6 @@ jobs:
       - name: Run tests
         run: npx vitest run
 
-      # テスト成否に関わらず JUnit XML を artifact 化する (レポート収集がテスト結果を隠さないよう always)。
       - name: Upload frontend test report
         if: always()
         uses: actions/upload-artifact@v4
