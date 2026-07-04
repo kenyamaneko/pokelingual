@@ -17,7 +17,6 @@ export default defineConfig({
     env: {
       VITE_APP_MODE: 'mock',
     },
-    // CI ではテスト結果を JUnit XML でも出力し、レポートとして収集可能にする (ローカルは既定のコンソール出力のまま)。
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: { junit: './test-results/junit.xml' },
   },

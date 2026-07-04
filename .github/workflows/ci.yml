@@ -52,8 +52,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Firestore Emulator を必須化した結合テストを含む全テストを実行する。
-      # emulators:exec が Emulator 起動 → FIRESTORE_EMULATOR_HOST 注入 → 終了まで面倒を見る (Makefile: test-backend と同一経路)。
+      # ローカル (Makefile:test-backend) と同一コマンドにし、CI とテスト実行経路を乖離させない。
       - name: Run tests (Firestore emulator)
         run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
 
