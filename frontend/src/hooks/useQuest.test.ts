@@ -1,23 +1,13 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AxiosError, type AxiosResponse } from "axios";
+import { http, HttpResponse } from "msw";
 import type {
   QuestNewResponse,
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
 } from "../../../shared/api-types/quest";
-
-vi.mock("../api/questApi", () => ({
-  questApi: {
-    newQuest: vi.fn(),
-    scoreTranslation: vi.fn(),
-    guessName: vi.fn(),
-    skipGuess: vi.fn(),
-    attemptCapture: vi.fn(),
-    replyToChat: vi.fn(),
-  },
-}));
+import { server, apiUrl, countRequests } from "../test/mswServer";
 
 const refreshUsageMock = vi.fn();
 vi.mock("../contexts/UsageContext", () => ({
@@ -25,7 +15,6 @@ vi.mock("../contexts/UsageContext", () => ({
 }));
 
 import { useQuest } from "./useQuest";
-import { questApi } from "../api/questApi";
 
 const questResp: QuestNewResponse = {
   pokemon_id: 25,
@@ -40,31 +29,12 @@ const scoreResp: ScoreResponse = {
   description_ja: "ja desc",
 };
 
-function axiosOk<T>(data: T): AxiosResponse<T> {
-  return {
-    data,
-    status: 200,
-    statusText: "OK",
-    headers: {},
-    // テスト用のダミー config。実装で参照されないため最小構成。
-    config: { headers: {} } as AxiosResponse<T>["config"],
-  };
-}
-
-function makeAxiosError(status: number): AxiosError {
-  return new AxiosError(
-    "test error",
-    AxiosError.ERR_BAD_RESPONSE,
-    undefined,
-    undefined,
-    {
-      data: {},
-      status,
-      statusText: "",
-      headers: {},
-      config: { headers: {} } as AxiosResponse["config"],
-    },
-  );
+/**
+ * GET /quest/new が指定の出題を返す状態をモックする。
+ * @param resp 返す出題レスポンス。
+ */
+function mockNewQuest(resp: QuestNewResponse = questResp) {
+  server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json(resp)));
 }
 
 /**
@@ -74,6 +44,7 @@ function makeAxiosError(status: number): AxiosError {
  * - 全 API 呼び出しで 5xx (および 401/403/404 等) は error メッセージを保持しつつフェーズは保留
  *
  * フェーズ遷移と副作用 (refreshUsage) の整合性、エラー処理の振り分けを検証する。
+ * API 境界は MSW でモックし、UsageContext だけは別コンテキストの境界としてスタブする。
  */
 describe("useQuest の仕様", () => {
   beforeEach(() => {
@@ -81,7 +52,7 @@ describe("useQuest の仕様", () => {
   });
 
   it("マウント時に /quest/new を呼び、成功で translating フェーズへ遷移する", async () => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
+    mockNewQuest();
 
     const { result } = renderHook(() => useQuest());
 
@@ -90,11 +61,10 @@ describe("useQuest の仕様", () => {
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     expect(result.current.quest).toEqual(questResp);
-    expect(questApi.newQuest).toHaveBeenCalledOnce();
   });
 
   it("/quest/new が失敗すると error フェーズに遷移し、メッセージを保持する", async () => {
-    vi.mocked(questApi.newQuest).mockRejectedValue(makeAxiosError(500));
+    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })));
 
     const { result } = renderHook(() => useQuest());
 
@@ -110,7 +80,7 @@ describe("useQuest の仕様", () => {
     { status: 404, expected: /見つかりません/ },
     { status: 502, expected: /がいぶサービス/ },
   ])("/quest/new の $status ではステータスに応じた文言を表示する", async ({ status, expected }) => {
-    vi.mocked(questApi.newQuest).mockRejectedValue(makeAxiosError(status));
+    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("error"));
@@ -119,9 +89,7 @@ describe("useQuest の仕様", () => {
   });
 
   it("ネットワーク断 (レスポンス無し) では接続エラーの文言を表示する", async () => {
-    vi.mocked(questApi.newQuest).mockRejectedValue(
-      new AxiosError("network down", AxiosError.ERR_NETWORK),
-    );
+    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.error()));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("error"));
@@ -130,8 +98,8 @@ describe("useQuest の仕様", () => {
   });
 
   it("submitTranslation 成功で guessing フェーズへ遷移し、usage 再取得が走る", async () => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
-    vi.mocked(questApi.scoreTranslation).mockResolvedValue(axiosOk(scoreResp));
+    mockNewQuest();
+    server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -151,32 +119,29 @@ describe("useQuest の仕様", () => {
   it.each([
     {
       api: "submitTranslation",
-      mock: () =>
-        vi.mocked(questApi.scoreTranslation).mockRejectedValue(makeAxiosError(429)),
+      path: "/quest/score",
       call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
-      expectedPhase: "translating",
     },
     {
       api: "submitGuess",
-      mock: () =>
-        vi.mocked(questApi.guessName).mockRejectedValue(makeAxiosError(429)),
+      path: "/quest/guess-name",
       call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
-      expectedPhase: "translating",
     },
     {
       api: "capture",
-      mock: () =>
-        vi.mocked(questApi.attemptCapture).mockRejectedValue(makeAxiosError(429)),
+      path: "/quest/capture",
       call: (r: ReturnType<typeof useQuest>) => r.capture(),
-      expectedPhase: "translating",
     },
   ])("$api の 429 では error 文言を出さず、フェーズも変えない (UsageProvider に委譲)", async ({
-    mock,
+    path,
     call,
-    expectedPhase,
   }) => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
-    mock();
+    mockNewQuest();
+    server.use(
+      http.post(apiUrl(path), () =>
+        HttpResponse.json({ error: "user", message: "x" }, { status: 429 }),
+      ),
+    );
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -186,34 +151,31 @@ describe("useQuest の仕様", () => {
     });
 
     expect(result.current.error).toBeNull();
-    expect(result.current.phase).toBe(expectedPhase);
+    expect(result.current.phase).toBe("translating");
   });
 
   it.each([
     {
       api: "submitTranslation",
-      mock: () =>
-        vi.mocked(questApi.scoreTranslation).mockRejectedValue(makeAxiosError(502)),
+      path: "/quest/score",
       call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
     },
     {
       api: "submitGuess",
-      mock: () =>
-        vi.mocked(questApi.guessName).mockRejectedValue(makeAxiosError(502)),
+      path: "/quest/guess-name",
       call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
     },
     {
       api: "capture",
-      mock: () =>
-        vi.mocked(questApi.attemptCapture).mockRejectedValue(makeAxiosError(502)),
+      path: "/quest/capture",
       call: (r: ReturnType<typeof useQuest>) => r.capture(),
     },
   ])("$api の 5xx エラーでは error メッセージを保持しつつフェーズは保留", async ({
-    mock,
+    path,
     call,
   }) => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
-    mock();
+    mockNewQuest();
+    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 502 })));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -227,14 +189,14 @@ describe("useQuest の仕様", () => {
   });
 
   it("submitGuess で ball_type が返れば ballType に保存する", async () => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
+    mockNewQuest();
     const guess: GuessResponse = {
       correct: true,
       ball_type: "ultra",
       language: "en",
       attempts_remaining: 2,
     };
-    vi.mocked(questApi.guessName).mockResolvedValue(axiosOk(guess));
+    server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guess)));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -248,8 +210,10 @@ describe("useQuest の仕様", () => {
   });
 
   it("skipGuess はサーバに明示し ballType=poke にして capturing フェーズへ遷移する", async () => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
-    vi.mocked(questApi.skipGuess).mockResolvedValue(axiosOk({ ball_type: "poke" }));
+    mockNewQuest();
+    server.use(
+      http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
+    );
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -258,13 +222,14 @@ describe("useQuest の仕様", () => {
       await result.current.skipGuess();
     });
 
-    expect(questApi.skipGuess).toHaveBeenCalledOnce();
+    // スキップはクライアント内で完結せず、サーバの /quest/skip-guess を叩く
+    expect(countRequests("/quest/skip-guess")).toBe(1);
     expect(result.current.ballType).toBe("poke");
     expect(result.current.phase).toBe("capturing");
   });
 
   it("capture 成功で result フェーズに遷移し captureResult を保持する", async () => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
+    mockNewQuest();
     const captured: CaptureResponse = {
       captured: true,
       probability: 0.9,
@@ -283,7 +248,7 @@ describe("useQuest の仕様", () => {
       is_legendary: false,
       is_mythical: false,
     };
-    vi.mocked(questApi.attemptCapture).mockResolvedValue(axiosOk(captured));
+    server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captured)));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -297,8 +262,8 @@ describe("useQuest の仕様", () => {
   });
 
   it("startNewQuest で全 state がリセットされ、loading→translating になる", async () => {
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(questResp));
-    vi.mocked(questApi.scoreTranslation).mockResolvedValue(axiosOk(scoreResp));
+    mockNewQuest();
+    server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("translating"));
@@ -311,7 +276,7 @@ describe("useQuest の仕様", () => {
 
     // 新しいクエストを開始すると state がリセットされる
     const second: QuestNewResponse = { ...questResp, pokemon_id: 1 };
-    vi.mocked(questApi.newQuest).mockResolvedValue(axiosOk(second));
+    mockNewQuest(second);
 
     await act(async () => {
       await result.current.startNewQuest();

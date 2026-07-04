@@ -1,20 +1,12 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AxiosError, type AxiosResponse } from "axios";
+import { describe, it, expect, vi } from "vitest";
+import { http, HttpResponse } from "msw";
 import { ProfessorChat, PROFESSOR_CHAT_LABELS } from "./ProfessorChat";
-import { questApi } from "../../api/questApi";
+import { server, apiUrl } from "../../test/mswServer";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
-import type { ChatContext, ChatResponse } from "../../../../shared/api-types/quest";
-
-vi.mock("../../api/questApi", () => ({
-  questApi: { replyToChat: vi.fn() },
-}));
-
-vi.mock("../../api/usageApi", () => ({
-  usageApi: { get: vi.fn().mockResolvedValue({ data: { count: 0, limit: 30 } }) },
-}));
+import type { ChatContext } from "../../../../shared/api-types/quest";
 
 const chatContext: ChatContext = {
   description_en: "desc en",
@@ -27,35 +19,11 @@ const chatContext: ChatContext = {
 };
 
 /**
- * replyToChat が成功して教授の返答を返す状態をモックする。
+ * POST /quest/chat が成功して教授の返答を返す状態をモックする。
  * @param reply 教授の返答文。
  */
 function mockReply(reply: string) {
-  vi.mocked(questApi.replyToChat).mockResolvedValue({
-    data: { reply },
-  } as AxiosResponse<ChatResponse>);
-}
-
-/**
- * 指定ステータスの response を持つ AxiosError を作る。
- * @param status HTTP ステータスコード。
- * @returns response 付きの AxiosError。
- */
-function makeAxiosError(status: number): AxiosError {
-  return new AxiosError(
-    "test error",
-    AxiosError.ERR_BAD_RESPONSE,
-    undefined,
-    undefined,
-    {
-      data: {},
-      status,
-      statusText: "",
-      headers: {},
-      // テスト用のダミー config。実装で参照されないため最小構成。
-      config: { headers: {} } as AxiosResponse["config"],
-    },
-  );
+  server.use(http.post(apiUrl("/quest/chat"), () => HttpResponse.json({ reply })));
 }
 
 /**
@@ -84,10 +52,6 @@ async function sendQuestion(
  * 個別の文言テストは書かない (LABELS で SSOT 化済み)。
  */
 describe("ProfessorChat の仕様", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("質問を送信するとユーザメッセージと教授の返答が表示される", async () => {
     mockReply("テスト用の 博士の 返答だよ。");
     const user = userEvent.setup();
@@ -104,7 +68,11 @@ describe("ProfessorChat の仕様", () => {
   });
 
   it("送信が 429 で拒否されると直前に足したユーザメッセージが巻き戻る", async () => {
-    vi.mocked(questApi.replyToChat).mockRejectedValue(makeAxiosError(429));
+    server.use(
+      http.post(apiUrl("/quest/chat"), () =>
+        HttpResponse.json({ error: "user", message: "上限に たっしました" }, { status: 429 }),
+      ),
+    );
     const user = userEvent.setup();
     renderWithProviders(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
 
@@ -121,7 +89,11 @@ describe("ProfessorChat の仕様", () => {
   });
 
   it("送信が 429 以外で失敗するとエラーの返答がチャットに表示される", async () => {
-    vi.mocked(questApi.replyToChat).mockRejectedValue(makeAxiosError(500));
+    // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    server.use(
+      http.post(apiUrl("/quest/chat"), () => HttpResponse.json({}, { status: 500 })),
+    );
     const user = userEvent.setup();
     renderWithProviders(<ProfessorChat context={chatContext} onClose={vi.fn()} />);
 
@@ -132,6 +104,7 @@ describe("ProfessorChat の仕様", () => {
     ).toBeInTheDocument();
     // ユーザの質問は巻き戻さず履歴に残る
     expect(screen.getByText("しつもんです")).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it("閉じるボタンで onClose が呼ばれる", async () => {

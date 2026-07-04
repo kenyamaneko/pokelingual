@@ -10,10 +10,7 @@ import type {
   ChatContext,
 } from "../../../../shared/api-types/quest";
 
-// ProfessorChat 内で UsageContext / Auth を要求するため、最小モックを準備
-vi.mock("../../api/usageApi", () => ({
-  usageApi: { get: vi.fn().mockResolvedValue({ data: { count: 0, limit: 30 } }) },
-}));
+// API モックは MSW の既定ハンドラで賄う (このコンポーネントは未ログイン描画のため /usage も飛ばない)。
 
 function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   return {

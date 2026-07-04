@@ -1,32 +1,49 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { http, HttpResponse } from "msw";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { User } from "firebase/auth";
-import type { AxiosResponse } from "axios";
 import { AuthContext } from "../contexts/AuthContext";
-import { settingsApi } from "../api/settingsApi";
+import { server, apiUrl } from "../test/mswServer";
 import { SettingsPage } from "./SettingsPage";
 import { spec } from "../test/labels";
-import type { SettingsResponse } from "../../../shared/api-types/settings";
-
-vi.mock("../api/settingsApi", () => ({
-  settingsApi: {
-    getSettings: vi.fn(),
-    updateExcludedPokemon: vi.fn(),
-  },
-}));
 
 const fakeUser = { uid: "alice", email: "alice@example.com" } as unknown as User;
+
+// PUT /settings/excluded-pokemon で実際に送られたボディ (保存内容) を HTTP 境界で捕捉する。
+let lastSavedIDs: number[] | null = null;
 
 /**
  * GET /settings が指定の除外 ID 一覧を返す状態をモックする。
  * @param ids 除外ポケモン ID の一覧。
  */
 function mockGetSettings(ids: number[]) {
-  vi.mocked(settingsApi.getSettings).mockResolvedValue({
-    data: { excluded_pokemon_ids: ids },
-  } as AxiosResponse<SettingsResponse>);
+  server.use(
+    http.get(apiUrl("/settings"), () =>
+      HttpResponse.json({ excluded_pokemon_ids: ids }),
+    ),
+  );
+}
+
+/** PUT /settings/excluded-pokemon を成功させ、送られた pokemon_ids を lastSavedIDs に記録する。 */
+function mockUpdateSuccess() {
+  server.use(
+    http.put(apiUrl("/settings/excluded-pokemon"), async ({ request }) => {
+      const body = (await request.json()) as { pokemon_ids: number[] };
+      lastSavedIDs = body.pokemon_ids;
+      return HttpResponse.json({});
+    }),
+  );
+}
+
+/** PUT /settings/excluded-pokemon を 400 で失敗させる (不正な ID 相当)。 */
+function mockUpdateFailure() {
+  server.use(
+    http.put(apiUrl("/settings/excluded-pokemon"), () =>
+      HttpResponse.json({ error: "invalid id" }, { status: 400 }),
+    ),
+  );
 }
 
 /**
@@ -62,7 +79,6 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
  */
 describe("SettingsPage の遷移仕様", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     mockGetSettings([]);
   });
 
@@ -93,23 +109,24 @@ describe("SettingsPage の遷移仕様", () => {
  */
 describe("SettingsPage の除外ポケモン管理仕様", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    lastSavedIDs = null;
   });
 
   it("設定の読み込みに失敗するとエラーメッセージが表示される", async () => {
-    vi.mocked(settingsApi.getSettings).mockRejectedValue(new Error("network down"));
+    // エラー経路の診断ログは検証対象外のため沈黙させる
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    server.use(http.get(apiUrl("/settings"), () => HttpResponse.error()));
     renderSettings();
 
     expect(
       await screen.findByText(spec("せっていの　読みこみに　しっぱいしました")),
     ).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it("ポケモン ID を追加すると保存され、一覧に表示される", async () => {
     mockGetSettings([]);
-    vi.mocked(settingsApi.updateExcludedPokemon).mockResolvedValue(
-      {} as AxiosResponse,
-    );
+    mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
@@ -121,15 +138,13 @@ describe("SettingsPage の除外ポケモン管理仕様", () => {
     expect(
       screen.queryByText(spec("じょがい　ポケモンは　いません")),
     ).not.toBeInTheDocument();
-    // 保存 API には追加後の ID 一覧が渡る (保存された内容の確認)
-    expect(settingsApi.updateExcludedPokemon).toHaveBeenCalledWith([42]);
+    // 保存 API には追加後の ID 一覧が渡る (実際に送られた HTTP ボディで確認)
+    await waitFor(() => expect(lastSavedIDs).toEqual([42]));
   });
 
   it("さくじょを押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
     mockGetSettings([42]);
-    vi.mocked(settingsApi.updateExcludedPokemon).mockResolvedValue(
-      {} as AxiosResponse,
-    );
+    mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
@@ -140,15 +155,15 @@ describe("SettingsPage の除外ポケモン管理仕様", () => {
       await screen.findByText(spec("じょがい　ポケモンは　いません")),
     ).toBeInTheDocument();
     expect(screen.queryByText("#042")).not.toBeInTheDocument();
-    // 保存 API には削除後の空一覧が渡る (保存された内容の確認)
-    expect(settingsApi.updateExcludedPokemon).toHaveBeenCalledWith([]);
+    // 保存 API には削除後の空一覧が渡る (実際に送られた HTTP ボディで確認)
+    await waitFor(() => expect(lastSavedIDs).toEqual([]));
   });
 
   it("保存に失敗するとエラーメッセージが表示され、一覧は変わらない", async () => {
+    // エラー経路の診断ログは検証対象外のため沈黙させる
+    vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSettings([]);
-    vi.mocked(settingsApi.updateExcludedPokemon).mockRejectedValue(
-      new Error("invalid id"),
-    );
+    mockUpdateFailure();
     const user = userEvent.setup();
     renderSettings();
 
@@ -165,5 +180,6 @@ describe("SettingsPage の除外ポケモン管理仕様", () => {
     expect(
       screen.getByText(spec("じょがい　ポケモンは　いません")),
     ).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 });

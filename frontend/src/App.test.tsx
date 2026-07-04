@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import App from "./App";
 
 /**
@@ -8,19 +8,9 @@ import App from "./App";
  * - 定義済み URL では NotFound を表示しない
  *
  * テスト環境は VITE_APP_MODE=mock のため DevAuthProvider (ログイン済み) で動作する。
- * Header が UsageProvider 経由で /usage を引くため usageApi をモックする。
+ * Header が UsageProvider 経由で /usage を引くため、MSW の既定ハンドラが応答する。
  */
-vi.mock("./api/usageApi", () => ({
-  usageApi: {
-    get: vi.fn().mockResolvedValue({ data: { count: 0, limit: 30 } }),
-  },
-}));
-
 describe("ルーティングの 404 仕様", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("未定義 URL では NotFound ページを表示する", async () => {
     window.history.pushState({}, "", "/no-such-page");
     render(<App />);

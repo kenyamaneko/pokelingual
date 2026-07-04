@@ -1,22 +1,15 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { AxiosResponse } from "axios";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { http, HttpResponse } from "msw";
 import { PokedexPage } from "./PokedexPage";
-import { pokedexApi } from "../api/pokedexApi";
+import { server, apiUrl } from "../test/mswServer";
 import { spec } from "../test/labels";
 import type {
   PokedexEntry,
   PokedexResponse,
   PokemonDetailResponse,
 } from "../../../shared/api-types/pokedex";
-
-vi.mock("../api/pokedexApi", () => ({
-  pokedexApi: {
-    getPokedex: vi.fn(),
-    getPokemonDetail: vi.fn(),
-  },
-}));
 
 /**
  * 図鑑一覧のダミーエントリを作る。
@@ -47,13 +40,12 @@ function mockPokedex(
   capturedCount: number,
   unavailableCount: number,
 ) {
-  vi.mocked(pokedexApi.getPokedex).mockResolvedValue({
-    data: {
-      pokemon,
-      captured_count: capturedCount,
-      unavailable_count: unavailableCount,
-    },
-  } as AxiosResponse<PokedexResponse>);
+  const body: PokedexResponse = {
+    pokemon,
+    captured_count: capturedCount,
+    unavailable_count: unavailableCount,
+  };
+  server.use(http.get(apiUrl("/pokedex"), () => HttpResponse.json(body)));
 }
 
 const dummyDetail: PokemonDetailResponse = {
@@ -75,6 +67,14 @@ const dummyDetail: PokemonDetailResponse = {
 };
 
 /**
+ * GET /pokedex/:id の成功レスポンスをモックする。
+ * @param detail 返す詳細レスポンス。
+ */
+function mockDetail(detail: PokemonDetailResponse) {
+  server.use(http.get(apiUrl("/pokedex/:id"), () => HttpResponse.json(detail)));
+}
+
+/**
  * PokedexPage の仕様:
  * - 一覧取得に成功すると全ポケモンのカードと捕獲済み数を表示する
  * - 読み込めなかったポケモンが 1 匹以上あるときだけ警告バナーを表示する
@@ -82,13 +82,9 @@ const dummyDetail: PokemonDetailResponse = {
  * - 一覧・詳細の取得に失敗したらエラーメッセージを表示する
  * - カードを選ぶと詳細モーダルを表示する
  *
- * API 境界 (pokedexApi) のみモックし、グリッド・詳細カードは実部品で組み立てる。
+ * API 境界 (HTTP) のみ MSW でモックし、グリッド・詳細カードは実部品で組み立てる。
  */
 describe("PokedexPage の仕様", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -138,7 +134,7 @@ describe("PokedexPage の仕様", () => {
   it("一覧の取得に失敗するとエラーメッセージが表示される", async () => {
     // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.mocked(pokedexApi.getPokedex).mockRejectedValue(new Error("network down"));
+    server.use(http.get(apiUrl("/pokedex"), () => HttpResponse.error()));
 
     render(<PokedexPage />);
 
@@ -150,9 +146,7 @@ describe("PokedexPage の仕様", () => {
 
   it("カードを選ぶと詳細モーダルが表示される", async () => {
     mockPokedex([makeEntry(11, "ダミーモンA")], 1, 0);
-    vi.mocked(pokedexApi.getPokemonDetail).mockResolvedValue({
-      data: dummyDetail,
-    } as AxiosResponse<PokemonDetailResponse>);
+    mockDetail(dummyDetail);
     const user = userEvent.setup();
 
     render(<PokedexPage />);
@@ -169,9 +163,7 @@ describe("PokedexPage の仕様", () => {
 
   it("詳細モーダルの とじる を押すと一覧へ戻る", async () => {
     mockPokedex([makeEntry(11, "ダミーモンA")], 1, 0);
-    vi.mocked(pokedexApi.getPokemonDetail).mockResolvedValue({
-      data: dummyDetail,
-    } as AxiosResponse<PokemonDetailResponse>);
+    mockDetail(dummyDetail);
     const user = userEvent.setup();
 
     render(<PokedexPage />);
@@ -192,7 +184,7 @@ describe("PokedexPage の仕様", () => {
     // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockPokedex([makeEntry(11, "ダミーモンA")], 1, 0);
-    vi.mocked(pokedexApi.getPokemonDetail).mockRejectedValue(new Error("network down"));
+    server.use(http.get(apiUrl("/pokedex/:id"), () => HttpResponse.error()));
     const user = userEvent.setup();
 
     render(<PokedexPage />);
