@@ -47,7 +47,7 @@ function makeClientWithTypes(typeNames: string[]): PokeAPIClient {
     status: 200,
     json: async () => (url.includes("pokemon-species") ? speciesBody : pokemonBody),
   });
-  const config: PokemonConfig = { maxPokemonID: 10, defaultExcludedPokemonIDs: [] };
+  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
   const random: RandomSource = { next: () => 0 };
   return new PokeAPIClient(config, random, httpGet);
 }

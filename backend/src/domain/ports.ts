@@ -1,4 +1,5 @@
 import type { Pokemon } from "./pokemon.js";
+import type { AppEnvironment } from "./environment.js";
 import type { UserPokemon, UserSettings } from "./user.js";
 // DailyUsage は API レスポンスにそのまま乗る形なので、shared/api-types/usage.d.ts を SSOT として再 export する。
 import type { DailyUsage } from "../../../shared/api-types/usage.js";
@@ -33,7 +34,8 @@ export type HttpGet = (url: string) => Promise<HttpResponse>;
 /** ポケモン関連のアプリ設定値。Firestore など外部ソースから組み立てて注入する。 */
 export interface PokemonConfig {
   maxPokemonID: number;
-  defaultExcludedPokemonIDs: readonly number[];
+  /** 実行環境。開発者除外 (prod 以外で適用) の判定に使う。 */
+  environment: AppEnvironment;
 }
 
 /** ユーザの図鑑進捗 (遭遇/捕獲) を永続化するリポジトリ。 */

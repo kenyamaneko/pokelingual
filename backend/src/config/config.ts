@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { parseAppEnvironment, type AppEnvironment } from "../domain/environment.js";
 
 /** アプリの動作モード。mock は外部 API をモックに差し替え、real は実サービスに接続する。 */
 export type AppMode = "mock" | "real";
@@ -8,6 +9,8 @@ const APP_MODES: readonly AppMode[] = ["mock", "real"];
 /** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
   appMode: AppMode;
+  /** 実行環境。開発者除外の適用判定に使う。 */
+  environment: AppEnvironment;
   port: string;
   googleCloudProject: string;
   googleCloudLocation: string;
@@ -99,7 +102,7 @@ function requireAppMode(): AppMode {
 
 /**
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
- * (GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
+ * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
  * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。
  * @returns アプリ全体の設定値。
  */
@@ -109,6 +112,7 @@ export function loadConfig(): Config {
 
   return {
     appMode,
+    environment: parseAppEnvironment(isMock ? (getEnv("APP_ENV") ?? "local") : requireEnv("APP_ENV")),
     port: getEnv("PORT") ?? MOCK_DEFAULTS.port,
     googleCloudProject: isMock ? (getEnv("GOOGLE_CLOUD_PROJECT") ?? MOCK_DEFAULTS.googleCloudProject) : requireEnv("GOOGLE_CLOUD_PROJECT"),
     googleCloudLocation: isMock ? (getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation) : requireEnv("GOOGLE_CLOUD_LOCATION"),

@@ -7,7 +7,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 import { loadConfig } from "./config/config.js";
 import { logger } from "./util/logger.js";
-import { DEFAULT_POKEMON_CONFIG, loadPokemonConfig } from "./config/pokemon-config.js";
+import { DEFAULT_MAX_POKEMON_ID, loadMaxPokemonID } from "./config/pokemon-config.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
@@ -66,7 +66,7 @@ if (cfg.appMode === "mock") {
   randomSource = new MockRandomSource();
   pokemonClient = new MockPokemonClient(randomSource);
   llmClient = new MockLLMClient();
-  pokemonConfig = DEFAULT_POKEMON_CONFIG;
+  pokemonConfig = { maxPokemonID: DEFAULT_MAX_POKEMON_ID, environment: cfg.environment };
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -97,10 +97,11 @@ if (cfg.appMode === "mock") {
     });
   }
 
-  pokemonConfig = await loadPokemonConfig(firestoreClient);
+  const maxPokemonID = await loadMaxPokemonID(firestoreClient);
+  pokemonConfig = { maxPokemonID, environment: cfg.environment };
   logger.info("loaded Pokemon config", {
-    max_pokemon_id: pokemonConfig.maxPokemonID,
-    default_excluded_count: pokemonConfig.defaultExcludedPokemonIDs.length,
+    max_pokemon_id: maxPokemonID,
+    environment: cfg.environment,
   });
   randomSource = new SystemRandomSource();
   pokemonClient = new PokeAPIClient(pokemonConfig, randomSource, (url) => fetch(url));
@@ -118,7 +119,7 @@ logger.info("rate limits configured", {
 
 const questService = new QuestService(pokemonClient, llmClient, pokemonConfig, userSettingsRepo, randomSource);
 const chatService = new ChatService(llmClient);
-const pokedexService = new PokedexService(userPokemonRepo, pokemonClient);
+const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, pokemonConfig);
 
 const questHandler = new QuestHandler(questService, chatService, userPokemonRepo);
 const pokedexHandler = new PokedexHandler(pokedexService);

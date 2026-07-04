@@ -73,7 +73,7 @@ function makeApp(o: AppOverrides = {}) {
       return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
     },
   };
-  const config: PokemonConfig = { maxPokemonID: 100, defaultExcludedPokemonIDs: [] };
+  const config: PokemonConfig = { maxPokemonID: 100, environment: "prod" };
   const random: RandomSource = { next: () => 0 };
 
   // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
@@ -119,7 +119,7 @@ function makeApp(o: AppOverrides = {}) {
 
   const questService = new QuestService(pokemonClient, llm, config, settingsRepo, random);
   const chatService = new ChatService(llm);
-  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient);
+  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, config);
 
   const app = express();
   app.use(express.json());

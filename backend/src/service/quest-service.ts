@@ -1,5 +1,6 @@
 import levenshtein from "js-levenshtein";
 import { NotFoundError, ExternalServiceError } from "../domain/errors.js";
+import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -75,8 +76,7 @@ export class QuestService {
    */
   async newQuest(userId: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
-    const ids = settings.excluded_pokemon_ids ?? this.pokemonConfig.defaultExcludedPokemonIDs;
-    const excluded = new Set<number>(ids);
+    const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
 
     let pokemon: Pokemon | undefined;
     for (let i = 0; i < MAX_RANDOM_PICK_RETRY; i++) {
