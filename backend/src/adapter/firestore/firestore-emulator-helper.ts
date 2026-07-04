@@ -7,6 +7,8 @@ const TEST_PROJECT_ID = "pokelingual-test";
  * Firestore Emulator への接続を必須化して Firestore クライアントを返す。
  * 環境変数 FIRESTORE_EMULATOR_HOST が未設定なら明示的に停止し、
  * 本番 Firestore への誤接続や Emulator 未起動での silent-pass を防ぐ。
+ * @returns Emulator に接続した Firestore クライアント。
+ * @throws FIRESTORE_EMULATOR_HOST が未設定の場合。
  */
 export function requireFirestoreEmulator(): Firestore {
   if (!process.env.FIRESTORE_EMULATOR_HOST) {

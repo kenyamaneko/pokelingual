@@ -49,3 +49,23 @@ describe("ScoreDisplay の仕様", () => {
     expect(screen.getByText("65/100")).toBeInTheDocument();
   });
 });
+
+describe("スコア帯ごとのラベル表示", () => {
+  it.each([
+    { score: 99, label: SCORE_LABELS.superEffective },
+    { score: 80, label: SCORE_LABELS.superEffective },
+    { score: 40, label: SCORE_LABELS.notVeryEffective },
+    { score: 1, label: SCORE_LABELS.notVeryEffective },
+  ])("score=$score は該当帯のラベルを出す", ({ score, label }) => {
+    render(<ScoreDisplay score={withScore(score)} />);
+    expect(screen.getByText(spec(label))).toBeInTheDocument();
+  });
+
+  it.each([79, 41])("score=%i は通常帯でラベルを出さない", (score) => {
+    render(<ScoreDisplay score={withScore(score)} />);
+    expect(screen.queryByText(spec(SCORE_LABELS.critical))).not.toBeInTheDocument();
+    expect(screen.queryByText(spec(SCORE_LABELS.superEffective))).not.toBeInTheDocument();
+    expect(screen.queryByText(spec(SCORE_LABELS.notVeryEffective))).not.toBeInTheDocument();
+    expect(screen.queryByText(spec(SCORE_LABELS.noEffect))).not.toBeInTheDocument();
+  });
+});

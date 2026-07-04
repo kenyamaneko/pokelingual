@@ -7,10 +7,10 @@
 ## コンテキスト
 
 Cloud Run はデフォルトで IAM ベースの認証を要求する。
-リクエストに GCP IAM トークン（サービスアカウントキーや Workload Identity トークン）がないと 401 を返す。
+リクエストに Google Cloud IAM トークン（サービスアカウントキーや Workload Identity トークン）がないと 401 を返す。
 
 PokeLingual のフロントエンドは Firebase Auth を使い、リクエストに Firebase ID トークンを付与する。
-しかし、Firebase ID トークンは GCP IAM トークンではないため、Cloud Run の IAM レイヤーで拒否される。
+しかし、Firebase ID トークンは Google Cloud IAM トークンではないため、Cloud Run の IAM レイヤーで拒否される。
 
 ## 決定
 

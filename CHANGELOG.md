@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Changed
+- ポケモン図鑑の呼称を collection から pokedex に統一（API パス `/api/collection` → `/api/pokedex`、契約型・画面ルート・ファイル名を含む）
+- `APP_MODE` を必須化（未設定・未知値は起動エラー、mock への暗黙フォールバックを廃止）し、実サービス接続モードの値を `prod` から `real` にリネーム（環境名との混同を避け、mock でないことが読み取れる値にする）
+- LLM 採点レスポンスの `review` 欠落・空文字をエラーとして扱うように変更（無検証で空講評が画面に出るのを防止）
+- Gemini のモデル名をハードコードから `GEMINI_MODEL` 環境変数に外出し（real モードでは必須、deploy.yml が注入）
+- CI / Deploy の全ジョブを Ubicloud ランナー（`ubicloud-standard-2`）で実行するように変更
+- モック LLM の講評・チャット文言を、モックであると分かる文言に変更
+
 ### Added
 - Playwright E2E テスト導入（クエスト全フロー、図鑑、ナビゲーション、6テスト）
 - CI に E2E テストジョブ追加（Docker Compose mock モードで並列実行）
@@ -21,7 +29,7 @@
 - Docker イメージにバージョンタグを付与
 - 対象ポケモンを Gen 8 まで拡張（MaxPokemonID: 649 → 898）
 - MaxPokemonID を Firestore `config/app` で管理可能に（ハードコード廃止）
-- クモ系除外ポケモンに #751 Dewpider, #752 Araquanid を追加
+- 開発者が苦手な除外ポケモンに #751, #752 を追加
 - 種族値（BST）ベースの捕獲率計算（シグモイド関数、強いポケモンほど捕まえにくい）
 - 名前当て結果でボール種類が決定（EN正解→ハイパー、JA正解→スーパー、失敗→モンスター）
 - 出題時にポケモン名を伏せ字（EN: "this/these Pokémon"、JA: "この ポケモン"）
@@ -94,4 +102,4 @@
 - クエスト（翻訳 → スコアリング → 名前推測 → 捕獲）フロー
 - コレクション（図鑑）機能
 - PokeAPI 連携（Gen 1-5、EN/JA 説明文ペアリング）
-- Terraform による GCP インフラ管理
+- Terraform による Google Cloud インフラ管理

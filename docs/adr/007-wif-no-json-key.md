@@ -6,14 +6,14 @@
 
 ## コンテキスト
 
-GitHub Actions から GCP にデプロイするには認証が必要。
+GitHub Actions から Google Cloud にデプロイするには認証が必要。
 従来の方法はサービスアカウントの JSON キーを GitHub Secrets に保存する方式だが、以下のリスクがある:
 - キーの漏洩リスク（永続的なクレデンシャル）
 - キーのローテーション管理が必要
 
 ## 決定
 
-Workload Identity Federation（WIF）を使い、GitHub Actions の OIDC トークンで直接 GCP に認証する。
+Workload Identity Federation（WIF）を使い、GitHub Actions の OIDC トークンで直接 Google Cloud に認証する。
 
 ### 構成
 

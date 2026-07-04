@@ -20,7 +20,11 @@ export const NAME_GUESS_LABELS = {
   wrongFinalTitle: "ざんねん！",
 } as const;
 
-/** ポケモン名の推測入力 UI。残り試行数・正誤・最終正解の表示を担う。 */
+/**
+ * ポケモン名の推測入力 UI。残り試行数・正誤・最終正解の表示を担う。
+ * @param props onSubmit / onSkip / guessResult を含む props。
+ * @returns 名前推測 UI の要素。
+ */
 export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
   const [guess, setGuess] = useState("");
   const [submitting, setSubmitting] = useState(false);

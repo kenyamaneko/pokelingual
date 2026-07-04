@@ -1,33 +1,52 @@
 import "dotenv/config";
 
+/** アプリの動作モード。mock は外部 API をモックに差し替え、real は実サービスに接続する。 */
+export type AppMode = "mock" | "real";
+
+const APP_MODES: readonly AppMode[] = ["mock", "real"];
+
 /** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
-  appMode: string;
+  appMode: AppMode;
   port: string;
-  gcpProject: string;
-  gcpLocation: string;
+  googleCloudProject: string;
+  googleCloudLocation: string;
   frontendURL: string;
+  geminiModel: string;
   perUserDailyLimit: number;
   globalDailyLimit: number;
 }
 
-/** mock モード時に許容するデフォルト値。本番モードでは必須 env が未設定なら起動エラーにする。 */
+/** mock モード時に許容するデフォルト値。real モードでは必須 env が未設定なら起動エラーにする。 */
 const MOCK_DEFAULTS = {
   port: "8080",
   // Firestore Emulator は projectId が非空であることを要求する。本番プロジェクトと混同しないよう専用名にする
-  gcpProject: "pokelingual-mock",
-  gcpLocation: "us-central1",
+  googleCloudProject: "pokelingual-mock",
+  googleCloudLocation: "us-central1",
   frontendURL: "http://localhost:5173",
+  // mock モードでは GeminiClient を構築しないため参照されない (Config の形を揃えるためだけの値)
+  geminiModel: "gemini-2.5-flash",
   perUserDailyLimit: 30,
   globalDailyLimit: 1500,
 } as const;
 
+/**
+ * 環境変数を取得する。空文字は未設定として扱う。
+ * @param key 環境変数名。
+ * @returns 値。未設定または空文字なら undefined。
+ */
 function getEnv(key: string): string | undefined {
   const v = process.env[key];
   // 空文字を未設定と同一視。空文字をホワイトリスト等に流すと意図しない挙動になるため
   return v === undefined || v === "" ? undefined : v;
 }
 
+/**
+ * 環境変数を正の整数として取得する。
+ * @param key 環境変数名。
+ * @returns 整数値。未設定なら undefined。
+ * @throws 値が正の整数でない場合。
+ */
 function getIntEnv(key: string): number | undefined {
   const v = getEnv(key);
   if (v === undefined) return undefined;
@@ -38,24 +57,62 @@ function getIntEnv(key: string): number | undefined {
   return n;
 }
 
+/**
+ * 必須の環境変数を取得する。
+ * @param key 環境変数名。
+ * @returns 値。
+ * @throws 未設定の場合。
+ */
 function requireEnv(key: string): string {
   const v = getEnv(key);
   if (v === undefined) throw new Error(`required env not set: ${key}`);
   return v;
 }
 
-/** 環境変数から Config を構築する。本番モードでは必須 env (GCP_PROJECT, FRONTEND_URL) が未設定なら起動エラー。 */
+/**
+ * 必須の環境変数を正の整数として取得する。
+ * @param key 環境変数名。
+ * @returns 整数値。
+ * @throws 未設定、または正の整数でない場合。
+ */
+function requireIntEnv(key: string): number {
+  const v = getIntEnv(key);
+  if (v === undefined) throw new Error(`required env not set: ${key}`);
+  return v;
+}
+
+/**
+ * APP_MODE を取得し、定義済みモードであることを検証する。
+ * @returns 検証済みのアプリ動作モード。
+ * @throws 未設定、または未知のモードの場合。
+ */
+function requireAppMode(): AppMode {
+  const v = requireEnv("APP_MODE");
+  // 未知値を real 扱いなどに倒すと意図しないモードで起動しうるため、ここで失敗させる
+  if (!APP_MODES.includes(v as AppMode)) {
+    throw new Error(`invalid env: APP_MODE=${v} (must be "mock" or "real")`);
+  }
+  return v as AppMode;
+}
+
+/**
+ * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
+ * (GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
+ * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。
+ * @returns アプリ全体の設定値。
+ */
 export function loadConfig(): Config {
-  const appMode = getEnv("APP_MODE") ?? "mock";
+  const appMode = requireAppMode();
   const isMock = appMode === "mock";
 
   return {
     appMode,
     port: getEnv("PORT") ?? MOCK_DEFAULTS.port,
-    gcpProject: isMock ? (getEnv("GCP_PROJECT") ?? MOCK_DEFAULTS.gcpProject) : requireEnv("GCP_PROJECT"),
-    gcpLocation: getEnv("GCP_LOCATION") ?? MOCK_DEFAULTS.gcpLocation,
+    googleCloudProject: isMock ? (getEnv("GOOGLE_CLOUD_PROJECT") ?? MOCK_DEFAULTS.googleCloudProject) : requireEnv("GOOGLE_CLOUD_PROJECT"),
+    googleCloudLocation: isMock ? (getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation) : requireEnv("GOOGLE_CLOUD_LOCATION"),
     frontendURL: isMock ? (getEnv("FRONTEND_URL") ?? MOCK_DEFAULTS.frontendURL) : requireEnv("FRONTEND_URL"),
-    perUserDailyLimit: getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit,
-    globalDailyLimit: getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit,
+    geminiModel: isMock ? (getEnv("GEMINI_MODEL") ?? MOCK_DEFAULTS.geminiModel) : requireEnv("GEMINI_MODEL"),
+    perUserDailyLimit: isMock ? (getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit) : requireIntEnv("PER_USER_DAILY_LIMIT"),
+    globalDailyLimit: isMock ? (getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit) : requireIntEnv("GLOBAL_DAILY_LIMIT"),
   };
 }

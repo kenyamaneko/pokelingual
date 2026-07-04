@@ -4,13 +4,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
 
-/** 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。 */
+/**
+ * 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。
+ * @returns 設定ページの要素。
+ */
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [excludedIDs, setExcludedIDs] = useState<number[]>([]);
-  const [maxPokemonID, setMaxPokemonID] = useState(898);
-  const [maxExcludedCount, setMaxExcludedCount] = useState(30);
   const [newID, setNewID] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -21,8 +22,6 @@ export function SettingsPage() {
       .getSettings()
       .then((res) => {
         setExcludedIDs(res.data.excluded_pokemon_ids);
-        setMaxPokemonID(res.data.max_pokemon_id);
-        setMaxExcludedCount(res.data.max_excluded_count);
       })
       .catch(() => {
         setError("せっていの　読みこみに　しっぱいしました");
@@ -30,44 +29,29 @@ export function SettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const isLimitReached = excludedIDs.length >= maxExcludedCount;
-
-  const handleAdd = () => {
-    if (isLimitReached) {
-      setError(`じょがいは　${maxExcludedCount}びきまでだよ`);
-      return;
-    }
-    const id = parseInt(newID, 10);
-    if (isNaN(id) || id < 1 || id > maxPokemonID) {
-      setError(`1から${maxPokemonID}の　かずを　いれてね`);
-      return;
-    }
-    if (excludedIDs.includes(id)) {
-      setError("もう　ついかされているよ");
-      return;
-    }
-    setError(null);
-    const updated = [...excludedIDs, id].sort((a, b) => a - b);
-    setExcludedIDs(updated);
-    setNewID("");
-    saveExcluded(updated);
-  };
-
-  const handleRemove = (id: number) => {
-    const updated = excludedIDs.filter((x) => x !== id);
-    setExcludedIDs(updated);
-    saveExcluded(updated);
-  };
-
+  // バリデーション (範囲・重複・上限) はサーバが行う。フロントは送信し、失敗時にエラー表示する。成功したら反映。
   const saveExcluded = async (ids: number[]) => {
     setSaving(true);
+    setError(null);
     try {
       await settingsApi.updateExcludedPokemon(ids);
+      setExcludedIDs(ids);
     } catch {
-      setError("ほぞんに　しっぱいしました");
+      setError("せっていを　ほぞんできなかったよ。ポケモン ID を　かくにんしてね");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAdd = () => {
+    const id = parseInt(newID, 10);
+    if (isNaN(id)) return;
+    setNewID("");
+    saveExcluded([...excludedIDs, id].sort((a, b) => a - b));
+  };
+
+  const handleRemove = (id: number) => {
+    saveExcluded(excludedIDs.filter((x) => x !== id));
   };
 
   const handleLogout = async () => {
@@ -119,7 +103,7 @@ export function SettingsPage() {
               にがて　ポケモン　せってい
             </h2>
             <span className="text-xs text-gray-400 font-mono">
-              {excludedIDs.length} / {maxExcludedCount}
+              {excludedIDs.length}
             </span>
           </div>
           <p className="text-gray-500 text-sm mb-4">
@@ -134,17 +118,16 @@ export function SettingsPage() {
             <input
               type="number"
               min="1"
-              max={maxPokemonID}
               value={newID}
               onChange={(e) => setNewID(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              placeholder={`ポケモン ID (1-${maxPokemonID})`}
+              placeholder="ポケモン ID"
               className="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm
                          focus:outline-none focus:ring-2 focus:ring-red-300"
             />
             <button
               onClick={handleAdd}
-              disabled={saving || isLimitReached}
+              disabled={saving}
               className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm
                          hover:bg-red-600 transition-colors disabled:opacity-50"
             >

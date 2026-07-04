@@ -7,20 +7,19 @@ import type {
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
+  BallType,
 } from "../../../shared/api-types/quest";
+
+export type { BallType };
 
 /** クエストフェーズの遷移ステート。 */
 export type QuestPhase =
   | "loading"
   | "translating"
-  | "scored"
   | "guessing"
   | "capturing"
   | "result"
   | "error";
-
-/** 推測結果から確定したボール種別。 */
-export type BallType = "poke" | "great" | "ultra";
 
 /** useQuest フックの戻り値。フェーズ・各種データ・操作を提供する。 */
 export interface UseQuestResult {
@@ -36,15 +35,26 @@ export interface UseQuestResult {
   startNewQuest: () => Promise<void>;
   submitTranslation: (translation: string) => Promise<void>;
   submitGuess: (guess: string) => Promise<void>;
-  skipGuess: () => void;
+  skipGuess: () => Promise<void>;
   capture: () => Promise<void>;
 }
 
-// 429 は UsageProvider が グローバルにモーダル表示するため、各ページのエラー文言は出さない
+/**
+ * エラーがレート制限 (429) 由来かを判定する。
+ * (429 は UsageProvider がグローバルにモーダル表示するため、各ページのエラー文言は出さない)
+ * @param err 捕捉したエラー。
+ * @returns 429 レスポンスなら true。
+ */
 function isRateLimitError(err: unknown): boolean {
   return axios.isAxiosError(err) && err.response?.status === 429;
 }
 
+/**
+ * エラーをユーザ向けの日本語メッセージに変換する。
+ * @param err 捕捉したエラー。
+ * @param fallback 分類できない場合に使う既定メッセージ。
+ * @returns ユーザ向けエラーメッセージ。
+ */
 function getErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     if (!err.response) {
@@ -68,7 +78,10 @@ function getErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-/** クエストセッションの状態管理 + API 呼び出し + フェーズ遷移をまとめたフック。 */
+/**
+ * クエストセッションの状態管理 + API 呼び出し + フェーズ遷移をまとめたフック。
+ * @returns フェーズ・各種データ・操作関数を含むクエスト状態。
+ */
 export function useQuest(): UseQuestResult {
   const [phase, setPhase] = useState<QuestPhase>("loading");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);
@@ -122,7 +135,7 @@ export function useQuest(): UseQuestResult {
       const res = await questApi.guessName(guess);
       setGuessResult(res.data);
       if (res.data.ball_type) {
-        setBallType(res.data.ball_type as BallType);
+        setBallType(res.data.ball_type);
       }
     } catch (err) {
       if (isRateLimitError(err)) return;
@@ -130,10 +143,16 @@ export function useQuest(): UseQuestResult {
     }
   };
 
-  const skipGuess = () => {
-    // 名前推測スキップ時はポケボール固定で捕獲フェーズへ進む仕様
-    setBallType("poke");
-    setPhase("capturing");
+  const skipGuess = async () => {
+    // 名前推測スキップはサーバに明示し、poke ボールを確定してから捕獲フェーズへ進む。
+    try {
+      const res = await questApi.skipGuess();
+      setBallType(res.data.ball_type);
+      setPhase("capturing");
+    } catch (err) {
+      if (isRateLimitError(err)) return;
+      setError(getErrorMessage(err, "スキップに　しっぱいしました"));
+    }
   };
 
   const capture = async () => {

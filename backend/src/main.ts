@@ -6,7 +6,8 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
 import { loadConfig } from "./config/config.js";
-import { corsConfig } from "./middleware/cors.js";
+import { DEFAULT_POKEMON_CONFIG, loadPokemonConfig } from "./config/pokemon-config.js";
+import { createCorsMiddleware } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { devAuth } from "./middleware/auth-mock.js";
@@ -18,12 +19,12 @@ import { SystemRandomSource } from "./adapter/random/system.js";
 import { MockRandomSource } from "./adapter/random/mock.js";
 import { QuestService } from "./service/quest-service.js";
 import { ChatService } from "./service/chat-service.js";
-import { CollectionService } from "./service/collection-service.js";
+import { PokedexService } from "./service/pokedex-service.js";
 import { UserPokemonRepo } from "./adapter/firestore/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./adapter/firestore/user-settings-repo.js";
 import { RateLimitRepo } from "./adapter/firestore/rate-limit-repo.js";
 import { QuestHandler } from "./handler/quest-handler.js";
-import { CollectionHandler } from "./handler/collection-handler.js";
+import { PokedexHandler } from "./handler/pokedex-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
 import { setupRoutes } from "./router/router.js";
@@ -37,27 +38,6 @@ import type {
   RateLimitRepository,
 } from "./domain/ports.js";
 import type { RequestHandler } from "express";
-
-/** Firestore の config/app ドキュメントから PokemonConfig を読み込む。未設定ならデフォルト値。 */
-const DEFAULT_POKEMON_CONFIG: PokemonConfig = {
-  maxPokemonID: 898,
-  defaultExcludedPokemonIDs: [167, 168, 595, 596, 751, 752],
-};
-
-async function loadPokemonConfig(
-  firestoreClient: ReturnType<typeof getFirestore>,
-): Promise<PokemonConfig> {
-  const doc = await firestoreClient.collection("config").doc("app").get();
-  if (!doc.exists) return DEFAULT_POKEMON_CONFIG;
-  const data = doc.data();
-  const maxPokemonID = typeof data?.max_pokemon_id === "number"
-    ? data.max_pokemon_id
-    : DEFAULT_POKEMON_CONFIG.maxPokemonID;
-  const defaultExcludedPokemonIDs = Array.isArray(data?.default_excluded_pokemon_ids)
-    ? (data.default_excluded_pokemon_ids as number[])
-    : DEFAULT_POKEMON_CONFIG.defaultExcludedPokemonIDs;
-  return { maxPokemonID, defaultExcludedPokemonIDs };
-}
 
 const cfg = loadConfig();
 
@@ -81,10 +61,10 @@ if (cfg.appMode === "mock") {
     );
   }
   console.log(`Starting in mock mode (Firestore Emulator: ${process.env.FIRESTORE_EMULATOR_HOST})`);
-  const firestoreClient = new Firestore({ projectId: cfg.gcpProject });
-  pokemonClient = new MockPokemonClient();
-  llmClient = new MockLLMClient();
+  const firestoreClient = new Firestore({ projectId: cfg.googleCloudProject });
   randomSource = new MockRandomSource();
+  pokemonClient = new MockPokemonClient(randomSource);
+  llmClient = new MockLLMClient();
   pokemonConfig = DEFAULT_POKEMON_CONFIG;
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
@@ -98,8 +78,8 @@ if (cfg.appMode === "mock") {
   const firestoreClient = getFirestore(firebaseApp);
 
   const vertexAI = new VertexAI({
-    project: cfg.gcpProject,
-    location: cfg.gcpLocation,
+    project: cfg.googleCloudProject,
+    location: cfg.googleCloudLocation,
   });
 
   // ホワイトリストは config/auth.allowed_emails で運用。
@@ -119,9 +99,9 @@ if (cfg.appMode === "mock") {
     `Loaded Pokemon config: maxPokemonID=${pokemonConfig.maxPokemonID}, ` +
       `defaultExcluded=${pokemonConfig.defaultExcludedPokemonIDs.length}`,
   );
-  pokemonClient = new PokeAPIClient(pokemonConfig);
-  llmClient = new GeminiClient(vertexAI);
   randomSource = new SystemRandomSource();
+  pokemonClient = new PokeAPIClient(pokemonConfig, randomSource, (url) => fetch(url));
+  llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -132,23 +112,28 @@ console.log(`Rate limits: per-user=${cfg.perUserDailyLimit}/day, global=${cfg.gl
 
 const questService = new QuestService(pokemonClient, llmClient, pokemonConfig, userSettingsRepo, randomSource);
 const chatService = new ChatService(llmClient);
-const collectionService = new CollectionService(userPokemonRepo, pokemonClient);
+const pokedexService = new PokedexService(userPokemonRepo, pokemonClient);
 
 const questHandler = new QuestHandler(questService, chatService, userPokemonRepo);
-const collectionHandler = new CollectionHandler(collectionService, userSettingsRepo, pokemonConfig);
+const pokedexHandler = new PokedexHandler(pokedexService);
 const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonConfig);
 const usageHandler = new UsageHandler(rateLimitRepo);
 
 const app = express();
 app.use(express.json());
-app.use(corsConfig(cfg.frontendURL));
+app.use(createCorsMiddleware(cfg.frontendURL));
+
+// ヘルスチェック (認証不要)。docker compose の healthcheck と CI の起動待ちが叩く
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 const rateLimitMiddleware = rateLimit(rateLimitRepo);
 const apiRouter = setupRoutes(
   authMiddleware,
   rateLimitMiddleware,
   questHandler,
-  collectionHandler,
+  pokedexHandler,
   settingsHandler,
   usageHandler,
 );

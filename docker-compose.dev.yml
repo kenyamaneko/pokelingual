@@ -3,8 +3,8 @@ services:
     # Firestore Emulator は Java を必要とする。alpine タグは Java を含まないため emulators タグを使う
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
     command: gcloud emulators firestore start --host-port=0.0.0.0:8080 --project=pokelingual-mock
-    ports:
-      - "8080:8080"
+    # ホストへは公開しない。利用者は backend (compose ネットワーク経由) のみで、
+    # host 8080 の公開は他プロジェクトの emulator とポート衝突する火種にしかならないため
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/ || exit 1"]
       interval: 2s
@@ -23,10 +23,17 @@ services:
       PORT: "15100"
       FRONTEND_URL: http://localhost:15151
       FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
-      GCP_PROJECT: pokelingual-mock
+      GOOGLE_CLOUD_PROJECT: pokelingual-mock
     depends_on:
       firestore-emulator:
         condition: service_healthy
+    healthcheck:
+      # alpine に curl は無いため node の fetch で /health を叩く
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:15100/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
 
   frontend:
     build:
@@ -34,6 +41,11 @@ services:
       dockerfile: frontend/Dockerfile.dev
     ports:
       - "15151:15151"
+    # backend が healthy になってから起動する。E2E が frontend の応答を起動完了の合図に
+    # 使うため、この依存で「frontend が応答する = backend も準備済み」を保証する
+    depends_on:
+      backend:
+        condition: service_healthy
     environment:
       VITE_APP_MODE: mock
       VITE_ENVIRONMENT: local

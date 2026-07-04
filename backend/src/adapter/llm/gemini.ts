@@ -11,13 +11,22 @@ type GenerationConfigWithThinking = GenerationConfig & {
 export class GeminiClient implements LLMClient {
   private model: GenerativeModel;
 
-  constructor(vertexAI: VertexAI) {
+  /**
+   * @param vertexAI 初期化済みの Vertex AI クライアント。
+   * @param modelName 使用する Gemini モデル名 (GEMINI_MODEL 環境変数由来)。
+   */
+  constructor(vertexAI: VertexAI, modelName: string) {
     this.model = vertexAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: modelName,
       generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as GenerationConfigWithThinking,
     });
   }
 
+  /**
+   * プロンプトを Gemini に投げ、生成テキストを返す。
+   * @param prompt LLM へ渡すプロンプト文字列。
+   * @returns 生成されたテキスト (コードフェンス除去済み)。
+   */
   async generateText(prompt: string): Promise<string> {
     const result = await this.model.generateContent(prompt);
     const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -28,7 +37,12 @@ export class GeminiClient implements LLMClient {
   }
 }
 
-// Gemini は JSON 出力を指示しても ```json ... ``` で囲んで返すことがある。サービス側で JSON.parse する前に剥がす。
+/**
+ * Gemini が付けることのある ```json ... ``` コードフェンスを剥がす。
+ * (JSON 出力を指示しても囲んで返すことがあるため、JSON.parse 前に除去する)
+ * @param text Gemini の生レスポンステキスト。
+ * @returns コードフェンスを除去したテキスト。
+ */
 function stripCodeFences(text: string): string {
   let cleaned = text.trim();
   if (cleaned.startsWith("```json")) {

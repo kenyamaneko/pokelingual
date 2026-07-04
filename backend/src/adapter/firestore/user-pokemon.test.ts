@@ -78,28 +78,28 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.best_score).toBe(90);
   });
 
-  it("getCollection は pokemon_id 昇順で返す", async () => {
+  it("getPokedex は pokemon_id 昇順で返す", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 150, 80, true);
     await repo.upsertEncounter("alice", 1, 70, false);
     await repo.upsertEncounter("alice", 25, 90, true);
 
-    const collection = await repo.getCollection("alice");
-    expect(collection.map((p) => p.pokemon_id)).toEqual([1, 25, 150]);
+    const pokedex = await repo.getPokedex("alice");
+    expect(pokedex.map((p) => p.pokemon_id)).toEqual([1, 25, 150]);
   });
 
-  it("未遭遇ユーザーの getCollection は空配列", async () => {
+  it("未遭遇ユーザーの getPokedex は空配列", async () => {
     const repo = new UserPokemonRepo(db);
-    const collection = await repo.getCollection("newcomer");
-    expect(collection).toEqual([]);
+    const pokedex = await repo.getPokedex("newcomer");
+    expect(pokedex).toEqual([]);
   });
 
   it("あるユーザーの記録は別ユーザーから見えない", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 90, true);
 
-    const bobCollection = await repo.getCollection("bob");
-    expect(bobCollection).toEqual([]);
+    const bobPokedex = await repo.getPokedex("bob");
+    expect(bobPokedex).toEqual([]);
   });
 
   it("未遭遇ポケモンへの getPokemon はエラー", async () => {

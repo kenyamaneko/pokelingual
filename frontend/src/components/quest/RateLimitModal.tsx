@@ -25,7 +25,11 @@ const JST_OFFSET_MS = 9 * MS_PER_HOUR;
 /** カウントダウン更新間隔。1 秒毎に再計算する。 */
 const COUNTDOWN_TICK_MS = MS_PER_SECOND;
 
-/** レート制限到達を通知し、JST 0:00 までのカウントダウンを表示するモーダル。 */
+/**
+ * レート制限到達を通知し、JST 0:00 までのカウントダウンを表示するモーダル。
+ * @param props detail / onDismiss を含む props。
+ * @returns レート制限モーダルの要素。
+ */
 export function RateLimitModal({ detail, onDismiss }: Props) {
   const [countdown, setCountdown] = useState(formatUntilJstMidnight());
 
@@ -79,11 +83,17 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
   );
 }
 
-function formatUntilJstMidnight(): string {
+/**
+ * 現在時刻から次の JST 0:00 までの残時間を hh:mm:ss で返す (0:00 ちょうどは 00:00:00)。
+ * @returns "hh:mm:ss" 形式の残時間。
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- JST 0:00 境界の単体テストが直接 import するため export する
+export function formatUntilJstMidnight(): string {
   // ローカルTZに依存しないよう UTC ベースで JST 翌日 0:00 までの残時間を hh:mm:ss で返す。
   const nowJstMs = Date.now() + JST_OFFSET_MS;
   const msSinceJstMidnight = nowJstMs % MS_PER_DAY;
-  const remaining = MS_PER_DAY - msSinceJstMidnight;
+  // JST 0:00 ちょうどはリセット済み (再挑戦可能) のため、残りまる一日ではなく残 0 として表示する (#29)
+  const remaining = (MS_PER_DAY - msSinceJstMidnight) % MS_PER_DAY;
 
   const h = Math.floor(remaining / MS_PER_HOUR);
   const m = Math.floor((remaining % MS_PER_HOUR) / MS_PER_MINUTE);
@@ -92,6 +102,11 @@ function formatUntilJstMidnight(): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
+/**
+ * 数値を 2 桁ゼロパディングする。
+ * @param n 対象の数値。
+ * @returns 2 桁ゼロパディングした文字列。
+ */
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
 }

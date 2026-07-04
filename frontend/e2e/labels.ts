@@ -9,10 +9,10 @@
 /** getByRole("link", { name }) で参照するリンク名。 */
 export const LINK = {
   startQuest: /ぼうけんに.出かける/,
-  viewCollection: /ずかんを.見る/,
+  viewPokedex: /ずかんを.見る/,
   logo: "PokeLingual",
   navQuest: "ぼうけん",
-  navCollection: "ずかん",
+  navPokedex: "ずかん",
   settings: "せってい",
 } as const;
 
@@ -21,7 +21,7 @@ export const BUTTON = {
   submitTranslation: /この.ほんやくで/,
   decideName: /きみに.きめた/,
   skip: /スキップ/,
-  proceedOrSkip: /次へ.すすむ|スキップ/,
+  proceed: /次へ.すすむ/,
   useBall: /を.使う/,
   nextQuest: /つぎの.ぼうけんへ/,
   close: "とじる",
@@ -34,6 +34,9 @@ export const TEXT = {
   professorComment: /はかせからの.コメント/,
   correct: "せいかい！",
   wrong: /はずれ/,
+  wrongFinal: /ざんねん/,
+  ultraBall: /ハイパーボール/,
+  pokeBall: /モンスターボール/,
   captured: /つかまえたぞ/,
   escaped: /にげだした/,
   bestScore: /さいこう.スコア/,
@@ -48,5 +51,5 @@ export const PLACEHOLDER = {
 
 /** getByRole("heading", { name }) で参照する見出し。 */
 export const HEADING = {
-  collection: "ずかん",
+  pokedex: "ずかん",
 } as const;

@@ -3,19 +3,34 @@ name: CI
 on:
   pull_request:
     branches: [main, develop]
+    # コード・CI 設定に影響しない変更では実行しない (コスト削減)
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "rules/**"
+      - ".claude/**"
+      - ".vscode/**"
   workflow_call:
+
+# 同一 ref での連続実行は最新のみ残す (コスト削減)
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-test:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -32,14 +47,17 @@ jobs:
 
   frontend-test:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -62,11 +80,14 @@ jobs:
 
   e2e-test:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -88,7 +109,7 @@ jobs:
           echo "Waiting for frontend..."
           timeout 60 bash -c 'until curl -sf http://localhost:15151 > /dev/null 2>&1; do sleep 2; done'
           echo "Waiting for backend..."
-          timeout 60 bash -c 'until curl -sf http://localhost:15100/api/quest/new > /dev/null 2>&1; do sleep 2; done'
+          timeout 60 bash -c 'until curl -sf http://localhost:15100/health > /dev/null 2>&1; do sleep 2; done'
           echo "Services ready"
 
       - name: Run E2E tests
@@ -111,14 +132,17 @@ jobs:
 
   terraform-check:
     name: Terraform Format Check
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
     defaults:
       run:
         working-directory: terraform
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Format check
         run: terraform fmt -check -recursive .

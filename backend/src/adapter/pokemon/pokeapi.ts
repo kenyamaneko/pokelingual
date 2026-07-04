@@ -1,28 +1,30 @@
-import type { PokemonClient, PokemonConfig } from "../../domain/ports.js";
+import type { HttpGet, PokemonClient, PokemonConfig, RandomSource } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
-import type { FlavorTextPair } from "../../../../shared/api-types/collection.js";
+import { buildFlavorTextPairs } from "../../domain/flavor-text.js";
+import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
 
-const versionOrder = [
-  "x", "y", "omega-ruby", "alpha-sapphire",
-  "sun", "moon", "ultra-sun", "ultra-moon",
-  "lets-go-pikachu", "lets-go-eevee",
-  "sword", "shield",
-];
+/** PokemonType の全 18 種 (PokeAPI 由来の値の実行時検証用)。shared の PokemonType と一致させる。 */
+const POKEMON_TYPES = [
+  "normal", "fire", "water", "electric", "grass", "ice",
+  "fighting", "poison", "ground", "flying", "psychic", "bug",
+  "rock", "ghost", "dragon", "dark", "steel", "fairy",
+] as const satisfies readonly PokemonType[];
 
-const versionDisplayNames: Record<string, string> = {
-  "x": "X",
-  "y": "Y",
-  "omega-ruby": "Ωルビー",
-  "alpha-sapphire": "αサファイア",
-  "sun": "サン",
-  "moon": "ムーン",
-  "ultra-sun": "Uサン",
-  "ultra-moon": "Uムーン",
-  "lets-go-pikachu": "ピカブイ",
-  "lets-go-eevee": "ピカブイ",
-  "sword": "ソード",
-  "shield": "シールド",
-};
+const POKEMON_TYPE_SET: ReadonlySet<string> = new Set(POKEMON_TYPES);
+
+/**
+ * PokeAPI 由来のタイプ名を PokemonType に検証付きで変換する。
+ * @param name PokeAPI の types[].type.name。
+ * @returns 既知の PokemonType。
+ * @throws 未知のタイプ名の場合。
+ */
+function toPokemonType(name: string): PokemonType {
+  if (!POKEMON_TYPE_SET.has(name)) {
+    // 対象は Gen 1-8 の 18 種で固定。未知が来たら「意図しない値」として境界で失敗させる
+    throw new Error(`unknown pokemon type from PokeAPI: ${name}`);
+  }
+  return name as PokemonType;
+}
 
 interface PokeAPISpeciesResponse {
   id: number;
@@ -51,13 +53,31 @@ interface PokeAPIPokemonResponse {
 export class PokeAPIClient implements PokemonClient {
   private cache = new Map<number, Pokemon>();
 
-  constructor(private config: PokemonConfig) {}
+  /**
+   * @param config ポケモン関連のアプリ設定 (maxPokemonID 等)。
+   * @param random 乱数ソース (抽選を RandomSource ポート経由に統一する)。
+   * @param httpGet HTTP トランスポート。本番は fetch、テストは fake を注入する。
+   */
+  constructor(
+    private config: PokemonConfig,
+    private random: RandomSource,
+    private httpGet: HttpGet,
+  ) {}
 
+  /**
+   * 1〜maxPokemonID からランダムに 1 匹取得する。
+   * @returns ランダムに選ばれたポケモン。
+   */
   async getRandomPokemon(): Promise<Pokemon> {
-    const id = Math.floor(Math.random() * this.config.maxPokemonID) + 1;
+    const id = Math.floor(this.random.next() * this.config.maxPokemonID) + 1;
     return this.getPokemonByID(id);
   }
 
+  /**
+   * ID 指定でポケモンを取得する (メモリキャッシュ経由)。
+   * @param id ポケモン ID。
+   * @returns 該当ポケモン。
+   */
   async getPokemonByID(id: number): Promise<Pokemon> {
     const cached = this.cache.get(id);
     if (cached) return cached;
@@ -67,17 +87,23 @@ export class PokeAPIClient implements PokemonClient {
     return pokemon;
   }
 
+  /**
+   * PokeAPI から species/pokemon を取得し内部表現へ変換する。
+   * @param id ポケモン ID。
+   * @returns 変換済みのポケモン情報。
+   * @throws API がエラーを返す、または EN/JA 説明ペアが無い場合。
+   */
   private async fetchFromAPI(id: number): Promise<Pokemon> {
     const [speciesResp, pokemonResp] = await Promise.all([
-      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`),
+      this.httpGet(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
+      this.httpGet(`https://pokeapi.co/api/v2/pokemon/${id}`),
     ]);
 
     if (!speciesResp.ok) throw new Error(`species API returned status ${speciesResp.status}`);
     if (!pokemonResp.ok) throw new Error(`pokemon API returned status ${pokemonResp.status}`);
 
-    const species: PokeAPISpeciesResponse = await speciesResp.json();
-    const pokemonData: PokeAPIPokemonResponse = await pokemonResp.json();
+    const species = (await speciesResp.json()) as PokeAPISpeciesResponse;
+    const pokemonData = (await pokemonResp.json()) as PokeAPIPokemonResponse;
 
     let nameEN = "";
     let nameJA = "";
@@ -86,13 +112,20 @@ export class PokeAPIClient implements PokemonClient {
       if (n.language.name === "ja") nameJA = n.name;
     }
 
-    const flavorTexts = buildFlavorTextPairs(species.flavor_text_entries);
+    // wire 形式を中立形に写像してから、ペア整形は domain の純関数に委ねる
+    const flavorTexts = buildFlavorTextPairs(
+      species.flavor_text_entries.map((entry) => ({
+        version: entry.version.name,
+        language: entry.language.name,
+        text: cleanFlavorText(entry.flavor_text),
+      })),
+    );
     if (flavorTexts.length === 0) {
       throw new Error(`no EN/JA description pair found for pokemon ${id}`);
     }
 
     const bst = pokemonData.stats.reduce((sum, s) => sum + s.base_stat, 0);
-    const types = pokemonData.types.map((t) => t.type.name);
+    const types = pokemonData.types.map((t) => toPokemonType(t.type.name));
     const spriteURL =
       pokemonData.sprites.other["official-artwork"].front_default ||
       pokemonData.sprites.front_default;
@@ -115,77 +148,12 @@ export class PokeAPIClient implements PokemonClient {
   }
 }
 
-interface FlavorTextsByVersion {
-  en: string;
-  ja: string;
-  jaHrkt: string;
-}
-
-function buildFlavorTextPairs(
-  entries: PokeAPISpeciesResponse["flavor_text_entries"],
-): FlavorTextPair[] {
-  const byVersion = new Map<string, FlavorTextsByVersion>();
-
-  for (const entry of entries) {
-    const ver = entry.version.name;
-    if (!(ver in versionDisplayNames)) continue;
-
-    if (!byVersion.has(ver)) {
-      byVersion.set(ver, { en: "", ja: "", jaHrkt: "" });
-    }
-    const texts = byVersion.get(ver)!;
-    const cleaned = cleanFlavorText(entry.flavor_text);
-
-    switch (entry.language.name) {
-      case "en": texts.en = cleaned; break;
-      case "ja": texts.ja = cleaned; break;
-      case "ja-Hrkt": texts.jaHrkt = cleaned; break;
-    }
-  }
-
-  interface VersionPair { version: string; en: string; ja: string }
-  const pairs: VersionPair[] = [];
-
-  for (const [ver, texts] of byVersion) {
-    const ja = texts.ja || texts.jaHrkt;
-    if (!texts.en || !ja) continue;
-    pairs.push({ version: ver, en: texts.en, ja });
-  }
-
-  const orderIndex = new Map(versionOrder.map((v, i) => [v, i]));
-  pairs.sort((a, b) => {
-    // versionDisplayNames を通過した version は versionOrder にも必ず含まれる契約。
-    const aIdx = orderIndex.get(a.version);
-    const bIdx = orderIndex.get(b.version);
-    if (aIdx === undefined || bIdx === undefined) {
-      throw new Error(`version not registered in versionOrder: ${a.version} or ${b.version}`);
-    }
-    return aIdx - bIdx;
-  });
-
-  const result: FlavorTextPair[] = [];
-  for (const p of pairs) {
-    const displayName = versionDisplayNames[p.version];
-    const existing = result.find(
-      (r) => r.description_en === p.en && r.description_ja === p.ja,
-    );
-    if (existing) {
-      if (!existing.version_names.includes(displayName)) {
-        existing.version_names.push(displayName);
-      }
-    } else {
-      result.push({
-        version_names: [displayName],
-        description_en: p.en,
-        description_ja: p.ja,
-      });
-    }
-  }
-
-  return result;
-}
-
-function cleanFlavorText(text: string): string {
+/**
+ * flavor text の制御文字・連続空白を整形する。
+ * @param text PokeAPI の生の flavor_text。
+ * @returns 整形済みテキスト。
+ */
+export function cleanFlavorText(text: string): string {
   return text
     .replace(/\f/g, " ")
     .replace(/\n/g, " ")

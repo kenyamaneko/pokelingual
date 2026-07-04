@@ -1,12 +1,16 @@
-import type { CollectionEntry } from "../../../../shared/api-types/collection";
+import type { PokedexEntry } from "../../../../shared/api-types/pokedex";
 import { formatPokemonId } from "../../utils/pokemonFormat";
 
 interface PokemonGridProps {
-  pokemon: CollectionEntry[];
+  pokemon: PokedexEntry[];
   onSelect: (id: number) => void;
 }
 
-/** 図鑑のグリッド表示。未捕獲はグレースケールで描画し、クリックで詳細を開く。 */
+/**
+ * 図鑑のグリッド表示。未捕獲はグレースケールで描画し、クリックで詳細を開く。
+ * @param props pokemon / onSelect を含む props。
+ * @returns 図鑑グリッドの要素。
+ */
 export function PokemonGrid({ pokemon, onSelect }: PokemonGridProps) {
   if (pokemon.length === 0) {
     return (

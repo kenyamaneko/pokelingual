@@ -1,4 +1,4 @@
-import type { PokemonClient } from "../../domain/ports.js";
+import type { PokemonClient, RandomSource } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
 
 const mockPokemon: Pokemon[] = [
@@ -62,10 +62,23 @@ const mockPokemon: Pokemon[] = [
 
 /** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。 */
 export class MockPokemonClient implements PokemonClient {
+  /**
+   * @param random 乱数ソース。MockRandomSource を渡すと毎回同じポケモンが出題され、e2e が同じ結果を再現できる。
+   */
+  constructor(private random: RandomSource) {}
+
+  /**
+   * @returns 乱数ソースで選んだ固定リストのポケモン。
+   */
   async getRandomPokemon(): Promise<Pokemon> {
-    return { ...mockPokemon[Math.floor(Math.random() * mockPokemon.length)] };
+    return { ...mockPokemon[Math.floor(this.random.next() * mockPokemon.length)] };
   }
 
+  /**
+   * @param id ポケモン ID。
+   * @returns 該当ポケモン。
+   * @throws 固定リストに存在しない場合。
+   */
   async getPokemonByID(id: number): Promise<Pokemon> {
     const found = mockPokemon.find((p) => p.id === id);
     if (!found) throw new Error(`mock pokemon not found: ${id}`);

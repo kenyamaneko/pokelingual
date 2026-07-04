@@ -14,7 +14,7 @@
 | 認証 | Firebase Authentication（メール/パスワード） |
 | AI スコアリング | Gemini（Vertex AI, gemini-2.5-flash） |
 | ポケモンデータ | PokeAPI |
-| インフラ | GCP（Cloud Run, Artifact Registry）, Terraform |
+| インフラ | Google Cloud（Cloud Run, Artifact Registry）, Terraform |
 | CI/CD | GitHub Actions |
 | テスト | Vitest, Testing Library, Playwright |
 
@@ -50,7 +50,7 @@
 │   │   ├── hooks/           # カスタムフック
 │   │   └── config/          # Firebase 設定
 │   └── Dockerfile.dev
-├── terraform/               # GCP インフラ（dev/prod）
+├── terraform/               # Google Cloud インフラ（dev/prod）
 ├── scripts/                 # 結合テストスクリプト
 ├── docs/                    # ドキュメント
 ├── docker-compose.dev.yml   # ローカル開発環境
@@ -59,7 +59,7 @@
 
 ## セットアップ（別環境での構築）
 
-このリポジトリをクローンして別の GCP プロジェクトで動かすための手順。
+このリポジトリをクローンして別の Google Cloud プロジェクトで動かすための手順。
 
 ### 前提条件
 
@@ -71,7 +71,7 @@
 
 ### 1. ローカル開発環境の起動
 
-ローカル開発は GCP リソース不要。外部 API (PokeAPI/Gemini) と認証はモック実装で代替し、永続化は Docker 内の Firestore Emulator を使う。
+ローカル開発は Google Cloud リソース不要。外部 API (PokeAPI/Gemini) と認証はモック実装で代替し、永続化は Docker 内の Firestore Emulator を使う。
 
 ```bash
 git clone <repo-url>
@@ -86,9 +86,9 @@ make dev
 
 mock モードでは認証なし・モックデータで動作する。ヘッダーに「LOCAL」バッジが表示される。
 
-### 2. GCP プロジェクトの準備
+### 2. Google Cloud プロジェクトの準備
 
-dev 環境と prod 環境でそれぞれ GCP プロジェクトを作成する。
+dev 環境と prod 環境でそれぞれ Google Cloud プロジェクトを作成する。
 
 ```bash
 # プロジェクト作成（例）
@@ -129,7 +129,7 @@ Terraform が作成するリソース:
 - Identity Platform（メール/パスワード認証）
 - Artifact Registry（Docker イメージ保管）
 - Secret Manager（Gemini API キー）
-- Workload Identity Federation（GitHub Actions → GCP 認証）
+- Workload Identity Federation（GitHub Actions → Google Cloud 認証）
 - Cloud Monitoring アラート
 - サービスアカウント + IAM
 
@@ -183,28 +183,31 @@ variable "github_repo" {
 
 #### GitHub Environments を作成
 
-リポジトリの Settings → Environments で `dev` と `prod` を作成し、以下の Secrets を設定:
+リポジトリの Settings → Environments で `dev` と `prod` を作成する。
 
-| Secret | 説明 | 取得方法 |
-|--------|------|----------|
+以下は機密ではない設定値（プロジェクト ID・ブラウザに出荷される Firebase Web 設定・WIF リソース識別子）なので **Variables** に設定する（Secret ではない）:
+
+| Variable | 説明 | 取得方法 |
+|----------|------|----------|
 | `WIF_PROVIDER` | WIF プロバイダーのフルパス | `terraform output wif_provider` |
 | `WIF_SERVICE_ACCOUNT` | deploy SA のメールアドレス | `terraform output wif_service_account` |
-| `GCP_PROJECT_ID` | GCP プロジェクト ID | `my-pokelingual-dev` 等 |
+| `GOOGLE_CLOUD_PROJECT_ID` | Google Cloud プロジェクト ID | `my-pokelingual-dev` 等 |
 | `FIREBASE_API_KEY` | Firebase Web API キー | `terraform output firebase_api_key` |
 | `FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン | `PROJECT_ID.firebaseapp.com` |
-| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID | = GCP_PROJECT_ID |
+| `FIREBASE_PROJECT_ID` | Firebase プロジェクト ID | = GOOGLE_CLOUD_PROJECT_ID |
 | `FIREBASE_STORAGE_BUCKET` | Storage バケット | `PROJECT_ID.firebasestorage.app` |
 | `FIREBASE_MESSAGING_SENDER_ID` | FCM Sender ID | `terraform output firebase_messaging_sender_id` |
 | `FIREBASE_APP_ID` | Firebase App ID | `terraform output firebase_app_id` |
 | `API_BASE_URL` | バックエンド URL | Cloud Run デプロイ後に取得 |
 
-dev 環境のみ追加:
+以下は機密なので **Secret** に設定する（dev 環境のみ）:
 
 | Secret | 説明 |
 |--------|------|
 | `TEST_USER_PASSWORD` | 結合テスト用ユーザーのパスワード（任意の文字列） |
 
 > `TEST_USER_EMAIL` は deploy.yml 内でハードコード（`test@pokelingual.dev`）
+> Firebase Web API キー・プロジェクト ID 等はブラウザに出荷される公開値のため、Secret ではなく Variable として扱う。
 
 #### 初回デプロイ
 
@@ -220,10 +223,10 @@ gcloud run deploy pokelingual-api-dev \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
   --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
-  --update-env-vars "APP_MODE=prod,FRONTEND_URL=https://PROJECT_ID.web.app" \
+  --update-env-vars "APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
   --allow-unauthenticated
 
-# API_BASE_URL を取得して GitHub Secrets に設定
+# API_BASE_URL を取得して GitHub Variables に設定
 gcloud run services describe pokelingual-api-dev --region asia-northeast1 --format 'value(status.url)'
 ```
 
@@ -337,12 +340,12 @@ git push origin develop
 | POST | `/api/quest/capture` | スコアと名前推測に基づいた確率で捕獲を試みる |
 | POST | `/api/quest/chat` | 博士に質問（コンテキスト + メッセージ履歴を送信） |
 
-### Collection
+### Pokedex
 
 | メソッド | パス | 説明 |
 |---------|------|------|
-| GET | `/api/collection` | 捕獲済みポケモン一覧 |
-| GET | `/api/collection/:id` | ポケモン詳細（EN/JA 説明文ペア含む） |
+| GET | `/api/pokedex` | 捕獲済みポケモン一覧 |
+| GET | `/api/pokedex/:id` | ポケモン詳細（EN/JA 説明文ペア含む） |
 
 ### Settings
 
@@ -353,7 +356,7 @@ git push origin develop
 
 ## デプロイ
 
-| 環境 | GCP プロジェクト | フロントエンド | バックエンド |
+| 環境 | Google Cloud プロジェクト | フロントエンド | バックエンド |
 |------|----------------|---------------|-------------|
 | dev | pokelingual-dev | Firebase Hosting | Cloud Run |
 | prod | pokelingual-prod | Firebase Hosting | Cloud Run |
@@ -391,7 +394,7 @@ terraform apply -var-file=environments/prod/terraform.tfvars
    - 全体: 1,500 回/日
    - JST 0:00 リセット
    - 上限到達時は 429 + 博士口調モーダル
-2. **GCP Billing Budget アラート（保険）**
+2. **Google Cloud Billing Budget アラート（保険）**
    - 月予算 5,000円 の 50/80/100% でメール通知
    - 自動停止は実装しない（通知遅延があるため、アプリ層の上限が主防御）
 

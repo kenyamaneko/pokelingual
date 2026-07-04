@@ -3,6 +3,10 @@
  * バックエンド (Express ハンドラ/サービス) とフロントエンド (API クライアント) の両方が import type する。
  * このファイルが SSOT。バックエンド/フロントエンドで定義を二重持ちしないこと。
  */
+import type { PokemonType } from "./pokemon.js";
+
+/** 捕獲に使うボール種別。 */
+export type BallType = "poke" | "great" | "ultra";
 
 /** GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。 */
 export interface QuestNewResponse {
@@ -22,12 +26,17 @@ export interface ScoreResponse {
 /** POST /api/quest/guess-name のレスポンス。正解時はボール種別、不正解時は残り試行回数を返す。 */
 export interface GuessResponse {
   correct: boolean;
-  ball_type?: string;
-  language?: string;
+  ball_type?: BallType;
+  language?: "en" | "ja";
   fuzzy?: boolean;
   attempts_remaining: number;
   reveal_name_en?: string;
   reveal_name_ja?: string;
+}
+
+/** POST /api/quest/skip-guess のレスポンス。スキップ時は常にモンスターボール。 */
+export interface SkipGuessResponse {
+  ball_type: BallType;
 }
 
 /** POST /api/quest/capture のレスポンス。捕獲成否と表示用のポケモン情報を含む。 */
@@ -42,8 +51,8 @@ export interface CaptureResponse {
   description_en: string;
   description_ja: string;
   base_stat_total: number;
-  ball_type: string;
-  types: string[];
+  ball_type: BallType;
+  types: PokemonType[];
   height: number;
   weight: number;
   is_legendary: boolean;

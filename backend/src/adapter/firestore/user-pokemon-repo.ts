@@ -7,14 +7,23 @@ import type { UserPokemon } from "../../domain/user.js";
 export class UserPokemonRepo implements UserPokemonRepository {
   private db: Firestore;
 
+  /**
+   * @param db Firestore クライアント。
+   */
   constructor(db: Firestore) {
     this.db = db;
   }
 
-  /** 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。 */
-  async upsertEncounter(uid: string, pokemonID: number, score: number, captured: boolean): Promise<void> {
+  /**
+   * 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。
+   * @param userId ユーザ ID。
+   * @param pokemonID ポケモン ID。
+   * @param score 今回のスコア。
+   * @param isCaptured 捕獲に成功したか。
+   */
+  async upsertEncounter(userId: string, pokemonID: number, score: number, isCaptured: boolean): Promise<void> {
     const ref = this.db
-      .collection("users").doc(uid)
+      .collection("users").doc(userId)
       .collection("pokemon").doc(String(pokemonID));
 
     await this.db.runTransaction(async (tx) => {
@@ -24,10 +33,10 @@ export class UserPokemonRepo implements UserPokemonRepository {
         const now = new Date();
         const data: UserPokemon = {
           pokemon_id: pokemonID,
-          status: captured ? "captured" : "seen",
-          total_captures: captured ? 1 : 0,
+          status: isCaptured ? "captured" : "seen",
+          total_captures: isCaptured ? 1 : 0,
           total_encounters: 1,
-          last_captured_at: captured ? now : null,
+          last_captured_at: isCaptured ? now : null,
           last_encountered_at: now,
           best_score: score,
         };
@@ -41,7 +50,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
       existing.total_encounters++;
       existing.last_encountered_at = now;
 
-      if (captured) {
+      if (isCaptured) {
         existing.total_captures++;
         existing.status = "captured";
         existing.last_captured_at = now;
@@ -55,10 +64,14 @@ export class UserPokemonRepo implements UserPokemonRepository {
     });
   }
 
-  /** ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。 */
-  async getCollection(uid: string): Promise<UserPokemon[]> {
+  /**
+   * ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。
+   * @param userId ユーザ ID。
+   * @returns 遭遇済みポケモンの配列 (ID 昇順)。
+   */
+  async getPokedex(userId: string): Promise<UserPokemon[]> {
     const snapshot = await this.db
-      .collection("users").doc(uid)
+      .collection("users").doc(userId)
       .collection("pokemon")
       .orderBy("pokemon_id", "asc")
       .get();
@@ -66,10 +79,16 @@ export class UserPokemonRepo implements UserPokemonRepository {
     return snapshot.docs.map((doc) => toUserPokemon(doc.data()));
   }
 
-  /** 特定ポケモンのユーザ実績を取得する。未遭遇ならエラーを投げる。 */
-  async getPokemon(uid: string, pokemonID: number): Promise<UserPokemon> {
+  /**
+   * 特定ポケモンのユーザ実績を取得する。
+   * @param userId ユーザ ID。
+   * @param pokemonID ポケモン ID。
+   * @returns 該当ポケモンのユーザ実績。
+   * @throws 未遭遇 (ドキュメント不在) の場合。
+   */
+  async getPokemon(userId: string, pokemonID: number): Promise<UserPokemon> {
     const doc = await this.db
-      .collection("users").doc(uid)
+      .collection("users").doc(userId)
       .collection("pokemon").doc(String(pokemonID))
       .get();
 
@@ -78,8 +97,12 @@ export class UserPokemonRepo implements UserPokemonRepository {
   }
 }
 
-// Firestore は Date を Timestamp として永続化するため、読み出し時に Date へ戻す。
-// 型定義 (UserPokemon) は Date を約束しているので、型と実体を揃えるために中央集約する。
+/**
+ * Firestore の生データを UserPokemon に変換する。Timestamp を Date へ戻す。
+ * (型定義 UserPokemon は Date を約束しているため、型と実体を揃える変換を中央集約する)
+ * @param data Firestore ドキュメントの生データ。
+ * @returns Date へ復元した UserPokemon。
+ */
 function toUserPokemon(data: DocumentData): UserPokemon {
   return {
     pokemon_id: data.pokemon_id,

@@ -5,17 +5,27 @@ import type { DailyUsage, RateLimitRepository } from "../../domain/ports.js";
 
 /** Firestore で日次レートリミットを管理する RateLimitRepository 実装。 */
 export class RateLimitRepo implements RateLimitRepository {
+  /**
+   * @param db Firestore クライアント。
+   * @param perUserLimit 1 ユーザ 1 日あたりの上限。
+   * @param globalLimit サービス全体 1 日あたりの上限。
+   */
   constructor(
     private db: Firestore,
     private perUserLimit: number,
     private globalLimit: number,
   ) {}
 
-  /** 当日カウントを検証して上限到達なら RateLimitError、未到達ならインクリメントして返す。 */
-  async checkAndIncrement(uid: string): Promise<DailyUsage> {
-    const today = jstDate();
-    const userRef = this.db.doc(`users/${uid}/daily_usage/${today}`);
-    // users/{uid}/daily_usage/{date} と階層を揃え、Firestore の doc は偶数階層必須という制約を満たす
+  /**
+   * 当日カウントを検証して上限到達なら RateLimitError、未到達ならインクリメントして返す。
+   * @param userId ユーザ ID。
+   * @returns インクリメント後の当日利用状況。
+   * @throws RateLimitError グローバルまたはユーザ上限に到達した場合。
+   */
+  async checkAndIncrement(userId: string): Promise<DailyUsage> {
+    const today = getJstToday();
+    const userRef = this.db.doc(`users/${userId}/daily_usage/${today}`);
+    // users/{userId}/daily_usage/{date} と階層を揃え、Firestore の doc は偶数階層必須という制約を満たす
     const globalRef = this.db.doc(`system/global/daily_usage/${today}`);
 
     return await this.db.runTransaction(async (tx) => {
@@ -34,9 +44,13 @@ export class RateLimitRepo implements RateLimitRepository {
     });
   }
 
-  /** 当日のユーザ利用カウントと上限を返す。読み取り専用。 */
-  async getUserUsage(uid: string): Promise<DailyUsage> {
-    const snap = await this.db.doc(`users/${uid}/daily_usage/${jstDate()}`).get();
+  /**
+   * 当日のユーザ利用カウントと上限を返す。読み取り専用。
+   * @param userId ユーザ ID。
+   * @returns 当日の利用カウントと上限。
+   */
+  async getUserUsage(userId: string): Promise<DailyUsage> {
+    const snap = await this.db.doc(`users/${userId}/daily_usage/${getJstToday()}`).get();
     return {
       count: (snap.data()?.count as number) ?? 0,
       limit: this.perUserLimit,
@@ -44,7 +58,11 @@ export class RateLimitRepo implements RateLimitRepository {
   }
 }
 
-// JST 固定。ユーザー現地時刻にすると 23:59 + 0:00 で枠を2倍使える抜け道ができるため
-function jstDate(): string {
+/**
+ * 当日 (JST) の日付文字列を返す。
+ * @returns "YYYY-MM-DD" 形式の JST 日付。
+ */
+function getJstToday(): string {
+  // JST 固定。ユーザー現地時刻にすると 23:59 + 0:00 で枠を2倍使える抜け道ができるため
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" });
 }

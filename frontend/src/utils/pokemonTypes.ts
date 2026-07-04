@@ -1,5 +1,7 @@
-/** ポケモンタイプ名から Tailwind 背景色クラスへのマップ。18種全てを網羅する想定。 */
-const typeColors: Record<string, string> = {
+import type { PokemonType } from "../../../shared/api-types/pokemon";
+
+/** ポケモンタイプ名から Tailwind 背景色クラスへのマップ。全 18 種を網羅する (Record が網羅性を保証)。 */
+const typeColors: Record<PokemonType, string> = {
   normal: "bg-gray-400",
   fire: "bg-red-500",
   water: "bg-blue-500",
@@ -22,14 +24,9 @@ const typeColors: Record<string, string> = {
 
 /**
  * ポケモンタイプ名に対応する Tailwind 背景色クラスを返す。
- * 未知のタイプ名は本来発生しないため、検出時は console.error でアラート。
- * 表示崩れを避けるためフォールバック色は返すが、これは "想定しないが UI を守る" 用途。
+ * @param type ポケモンのタイプ (18 種の PokemonType)。未知の値は backend 境界 (toPokemonType) で排除済み。
+ * @returns Tailwind 背景色クラス。
  */
-export function getTypeColor(type: string): string {
-  const color = typeColors[type];
-  if (!color) {
-    console.error("unknown pokemon type encountered", type);
-    return "bg-gray-400";
-  }
-  return color;
+export function getTypeColor(type: PokemonType): string {
+  return typeColors[type];
 }

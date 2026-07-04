@@ -1,4 +1,5 @@
-import type { FlavorTextPair } from "../../../shared/api-types/collection.js";
+import type { FlavorTextPair } from "../../../shared/api-types/pokedex.js";
+import type { PokemonType } from "../../../shared/api-types/pokemon.js";
 
 /** PokeAPI から取得したポケモン情報を内部表現に変換した型。 */
 export interface Pokemon {
@@ -9,7 +10,7 @@ export interface Pokemon {
   description_ja: string;
   sprite_url: string;
   base_stat_total: number;
-  types: string[];
+  types: PokemonType[];
   height: number;
   weight: number;
   is_legendary: boolean;

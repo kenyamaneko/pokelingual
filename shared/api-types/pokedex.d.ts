@@ -1,6 +1,7 @@
 /**
  * Pokelingual の図鑑コレクション関連 API 契約型。両側で import type する SSOT。
  */
+import type { PokemonType } from "./pokemon.js";
 
 /** 図鑑説明文の英日ペア。複数バージョンを 1 件にまとめる。 */
 export interface FlavorTextPair {
@@ -10,7 +11,7 @@ export interface FlavorTextPair {
 }
 
 /** 図鑑一覧の 1 エントリ。 */
-export interface CollectionEntry {
+export interface PokedexEntry {
   pokemon_id: number;
   name_en: string;
   name_ja: string;
@@ -20,16 +21,15 @@ export interface CollectionEntry {
   best_score: number;
 }
 
-/** GET /api/collection のレスポンス。 */
-export interface CollectionResponse {
-  pokemon: CollectionEntry[];
-  total_available: number;
+/** GET /api/pokedex のレスポンス。 */
+export interface PokedexResponse {
+  pokemon: PokedexEntry[];
   captured_count: number;
   unavailable_count: number;
 }
 
 /**
- * GET /api/collection/:id のレスポンス。
+ * GET /api/pokedex/:id のレスポンス。
  * タイムスタンプは ISO 8601 文字列で表現する (HTTP の wire 形式に合わせる)。
  */
 export interface PokemonDetailResponse {
@@ -45,7 +45,7 @@ export interface PokemonDetailResponse {
   description_en: string;
   description_ja: string;
   sprite_url: string;
-  types: string[];
+  types: PokemonType[];
   height: number;
   weight: number;
   flavor_texts?: FlavorTextPair[];

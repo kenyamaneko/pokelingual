@@ -1,0 +1,12 @@
+{
+  // 本番ビルド専用の tsconfig。dist は Dockerfile が本番イメージへ丸ごと COPY するため、
+  // テスト専用コード (*.test.ts / Firestore emulator helper) を成果物に混入させない。
+  // 型検査 (tsc --noEmit) と vitest はテストを含む tsconfig.json の方を使う。
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/adapter/firestore/firestore-emulator-helper.ts"
+  ]
+}
