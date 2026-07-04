@@ -1,5 +1,5 @@
 import axios from "axios";
-import { auth, isDevMode } from "../firebase";
+import { requireAuth, isDevMode } from "../firebase";
 import {
   RATE_LIMIT_EVENT,
   rateLimitEvents,
@@ -7,9 +7,15 @@ import {
 } from "../utils/rateLimitEvents";
 import { logger } from "../utils/logger";
 
+// 未設定を "undefined/api" として黙って叩かないよう、起動時に存在を強制する。
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
+if (!apiBaseURL) {
+  throw new Error("VITE_API_BASE_URL is not set");
+}
+
 /** バックエンド API への共通 axios クライアント。認証トークン付与とレート制限通知のインターセプタを持つ。 */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL + "/api",
+  baseURL: `${apiBaseURL}/api`,
 });
 
 api.interceptors.request.use(async (config) => {
@@ -17,7 +23,7 @@ api.interceptors.request.use(async (config) => {
     config.headers.Authorization = "Bearer dev-token";
     return config;
   }
-  const user = auth.currentUser;
+  const user = requireAuth().currentUser;
   if (user) {
     const token = await user.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;

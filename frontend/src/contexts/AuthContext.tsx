@@ -15,7 +15,7 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { requireAuth } from "../firebase";
 
 interface AuthContextType {
   user: User | null;
@@ -38,6 +38,8 @@ const googleProvider = new GoogleAuthProvider();
  * @returns AuthContext.Provider でラップした子要素。
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // AuthProvider は本番モードでのみマウントされる (dev は DevAuthProvider)。ここで実体を確定させる。
+  const auth = requireAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [auth]);
 
   const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
