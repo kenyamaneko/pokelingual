@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { AxiosResponse } from "axios";
@@ -165,6 +165,27 @@ describe("PokedexPage の仕様", () => {
     // タイプバッジまで描画される (詳細カードを実部品で組み立てた結果の観測)
     expect(screen.getByText("grass")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "とじる" })).toBeInTheDocument();
+  });
+
+  it("詳細モーダルの とじる を押すと一覧へ戻る", async () => {
+    mockPokedex([makeEntry(11, "ダミーモンA")], 1, 0);
+    vi.mocked(pokedexApi.getPokemonDetail).mockResolvedValue({
+      data: dummyDetail,
+    } as AxiosResponse<PokemonDetailResponse>);
+    const user = userEvent.setup();
+
+    render(<PokedexPage />);
+
+    await user.click(await screen.findByRole("button", { name: /ダミーモンA/ }));
+    await user.click(await screen.findByRole("button", { name: "とじる" }));
+
+    // モーダルが閉じ、詳細説明が消えて一覧のカードだけが残る
+    await waitFor(() =>
+      expect(
+        screen.queryByText(spec("「テストのための　ダミーポケモン。」")),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: /ダミーモンA/ })).toBeInTheDocument();
   });
 
   it("詳細の取得に失敗するとエラーメッセージが表示され、モーダルは開かない", async () => {

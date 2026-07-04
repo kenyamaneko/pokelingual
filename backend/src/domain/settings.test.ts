@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { validateExcludedPokemonIDs } from "./settings.js";
 
-// ダミーの上限値 (本番の実データ ID/上限は使わない)。
+// 実データの仕様変更でテストが壊れないよう、本番の ID/上限ではなくダミー値を使う。
 const MAX_ID = 10;
 const MAX_COUNT = 3;
 

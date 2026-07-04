@@ -63,7 +63,7 @@ const mockPokemon: Pokemon[] = [
 /** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。 */
 export class MockPokemonClient implements PokemonClient {
   /**
-   * @param random 乱数ソース。MockRandomSource を渡すと出題が先頭固定になる (e2e の決定化)。
+   * @param random 乱数ソース。MockRandomSource を渡すと毎回同じポケモンが出題され、e2e が同じ結果を再現できる。
    */
   constructor(private random: RandomSource) {}
 

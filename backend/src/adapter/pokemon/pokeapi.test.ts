@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { cleanFlavorText, PokeAPIClient } from "./pokeapi.js";
-import type { PokemonConfig, RandomSource } from "../../domain/ports.js";
+import type { HttpGet, PokemonConfig, RandomSource } from "../../domain/ports.js";
 
 describe("cleanFlavorText", () => {
   it("改行・改ページ・復帰をスペースに置換する", () => {
@@ -13,7 +13,7 @@ describe("cleanFlavorText", () => {
 });
 
 /**
- * PokeAPI の species / pokemon エンドポイントを偽装した fetch に差し替え、クライアントを組み立てる。
+ * PokeAPI の species / pokemon エンドポイントを模した fake トランスポートを注入したクライアントを組み立てる。
  * @param typeNames pokemon エンドポイントが返すタイプ名の一覧。
  * @returns テスト対象のクライアント。
  */
@@ -41,21 +41,18 @@ function makeClientWithTypes(typeNames: string[]): PokeAPIClient {
     height: 4,
     weight: 60,
   };
-  // PokeAPI への HTTP アクセスは外部境界なので fetch ごと偽装する
-  vi.stubGlobal("fetch", async (url: string | URL) => ({
+  // HTTP トランスポート (外部境界) を fake に差し替えて注入する
+  const httpGet: HttpGet = async (url) => ({
     ok: true,
-    json: async () => (String(url).includes("pokemon-species") ? speciesBody : pokemonBody),
-  }));
+    status: 200,
+    json: async () => (url.includes("pokemon-species") ? speciesBody : pokemonBody),
+  });
   const config: PokemonConfig = { maxPokemonID: 10, defaultExcludedPokemonIDs: [] };
   const random: RandomSource = { next: () => 0 };
-  return new PokeAPIClient(config, random);
+  return new PokeAPIClient(config, random, httpGet);
 }
 
 describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("既知のタイプ名は受理され types に反映される", async () => {
     const pokemon = await makeClientWithTypes(["grass", "poison"]).getPokemonByID(1);
     expect(pokemon.types).toEqual(["grass", "poison"]);

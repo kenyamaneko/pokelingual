@@ -74,7 +74,8 @@ export function buildFlavorTextPairs(entries: FlavorTextSource[]): FlavorTextPai
 
   const orderIndex = new Map(versionOrder.map((v, i) => [v, i]));
   pairs.sort((a, b) => {
-    // versionDisplayNames を通過した version は versionOrder にも必ず含まれる契約。
+    // versionDisplayNames と versionOrder は同じ version 集合を二重管理している。
+    // 片方に追加し忘れると並び順が壊れるため、未登録を検知して早期に失敗させる。
     const aIdx = orderIndex.get(a.version);
     const bIdx = orderIndex.get(b.version);
     if (aIdx === undefined || bIdx === undefined) {

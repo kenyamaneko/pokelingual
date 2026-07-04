@@ -1,4 +1,4 @@
-import type { PokemonClient, PokemonConfig, RandomSource } from "../../domain/ports.js";
+import type { HttpGet, PokemonClient, PokemonConfig, RandomSource } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
 import { buildFlavorTextPairs } from "../../domain/flavor-text.js";
 import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
@@ -56,10 +56,12 @@ export class PokeAPIClient implements PokemonClient {
   /**
    * @param config ポケモン関連のアプリ設定 (maxPokemonID 等)。
    * @param random 乱数ソース (抽選を RandomSource ポート経由に統一する)。
+   * @param httpGet HTTP トランスポート。本番は fetch、テストは fake を注入する。
    */
   constructor(
     private config: PokemonConfig,
     private random: RandomSource,
+    private httpGet: HttpGet,
   ) {}
 
   /**
@@ -93,15 +95,15 @@ export class PokeAPIClient implements PokemonClient {
    */
   private async fetchFromAPI(id: number): Promise<Pokemon> {
     const [speciesResp, pokemonResp] = await Promise.all([
-      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`),
+      this.httpGet(`https://pokeapi.co/api/v2/pokemon-species/${id}`),
+      this.httpGet(`https://pokeapi.co/api/v2/pokemon/${id}`),
     ]);
 
     if (!speciesResp.ok) throw new Error(`species API returned status ${speciesResp.status}`);
     if (!pokemonResp.ok) throw new Error(`pokemon API returned status ${pokemonResp.status}`);
 
-    const species: PokeAPISpeciesResponse = await speciesResp.json();
-    const pokemonData: PokeAPIPokemonResponse = await pokemonResp.json();
+    const species = (await speciesResp.json()) as PokeAPISpeciesResponse;
+    const pokemonData = (await pokemonResp.json()) as PokeAPIPokemonResponse;
 
     let nameEN = "";
     let nameJA = "";

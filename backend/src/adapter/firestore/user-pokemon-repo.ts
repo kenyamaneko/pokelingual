@@ -19,9 +19,9 @@ export class UserPokemonRepo implements UserPokemonRepository {
    * @param userId ユーザ ID。
    * @param pokemonID ポケモン ID。
    * @param score 今回のスコア。
-   * @param captured 捕獲に成功したか。
+   * @param isCaptured 捕獲に成功したか。
    */
-  async upsertEncounter(userId: string, pokemonID: number, score: number, captured: boolean): Promise<void> {
+  async upsertEncounter(userId: string, pokemonID: number, score: number, isCaptured: boolean): Promise<void> {
     const ref = this.db
       .collection("users").doc(userId)
       .collection("pokemon").doc(String(pokemonID));
@@ -33,10 +33,10 @@ export class UserPokemonRepo implements UserPokemonRepository {
         const now = new Date();
         const data: UserPokemon = {
           pokemon_id: pokemonID,
-          status: captured ? "captured" : "seen",
-          total_captures: captured ? 1 : 0,
+          status: isCaptured ? "captured" : "seen",
+          total_captures: isCaptured ? 1 : 0,
           total_encounters: 1,
-          last_captured_at: captured ? now : null,
+          last_captured_at: isCaptured ? now : null,
           last_encountered_at: now,
           best_score: score,
         };
@@ -50,7 +50,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
       existing.total_encounters++;
       existing.last_encountered_at = now;
 
-      if (captured) {
+      if (isCaptured) {
         existing.total_captures++;
         existing.status = "captured";
         existing.last_captured_at = now;

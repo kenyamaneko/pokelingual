@@ -100,7 +100,7 @@ if (cfg.appMode === "mock") {
       `defaultExcluded=${pokemonConfig.defaultExcludedPokemonIDs.length}`,
   );
   randomSource = new SystemRandomSource();
-  pokemonClient = new PokeAPIClient(pokemonConfig, randomSource);
+  pokemonClient = new PokeAPIClient(pokemonConfig, randomSource, (url) => fetch(url));
   llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);

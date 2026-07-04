@@ -20,6 +20,16 @@ export interface PokemonClient {
   getRandomPokemon(): Promise<Pokemon>;
 }
 
+/** HTTP レスポンスのうち外部 API アダプタが参照する最小要素。 */
+export interface HttpResponse {
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}
+
+/** URL を GET する最小トランスポートポート。外部 REST API アダプタにテスト差し替え可能な境界を与える。 */
+export type HttpGet = (url: string) => Promise<HttpResponse>;
+
 /** ポケモン関連のアプリ設定値。Firestore など外部ソースから組み立てて注入する。 */
 export interface PokemonConfig {
   maxPokemonID: number;
@@ -28,7 +38,7 @@ export interface PokemonConfig {
 
 /** ユーザの図鑑進捗 (遭遇/捕獲) を永続化するリポジトリ。 */
 export interface UserPokemonRepository {
-  upsertEncounter(userId: string, pokemonID: number, score: number, captured: boolean): Promise<void>;
+  upsertEncounter(userId: string, pokemonID: number, score: number, isCaptured: boolean): Promise<void>;
   getPokedex(userId: string): Promise<UserPokemon[]>;
   getPokemon(userId: string, pokemonID: number): Promise<UserPokemon>;
 }

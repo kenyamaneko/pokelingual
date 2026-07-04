@@ -25,12 +25,6 @@ import type { Pokemon } from "../domain/pokemon.js";
 import type { UserPokemon, UserSettings } from "../domain/user.js";
 import type { RateLimitKind } from "../domain/errors.js";
 
-// ============================================================
-// 公開入口 (HTTP) からの結合テスト。router → handler → service → error 変換を
-// 本物で通し、スタブにするのは外部境界 (LLM / PokeAPI / Firestore / 乱数) のみ。
-// エラー→HTTP マッピングは変換関数を直接呼ばず、実レスポンスで確かめる。
-// ============================================================
-
 /**
  * テスト用のダミーポケモンを作る。
  * @param overrides 上書きするフィールド。
@@ -85,13 +79,13 @@ function makeApp(o: AppOverrides = {}) {
   // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
   const pokemonStore = new Map<number, UserPokemon>();
   const userPokemonRepo: UserPokemonRepository = {
-    upsertEncounter: async (_uid, pokemonID, score, captured) => {
+    upsertEncounter: async (_uid, pokemonID, score, isCaptured) => {
       pokemonStore.set(pokemonID, {
         pokemon_id: pokemonID,
-        status: captured ? "captured" : "seen",
-        total_captures: captured ? 1 : 0,
+        status: isCaptured ? "captured" : "seen",
+        total_captures: isCaptured ? 1 : 0,
         total_encounters: 1,
-        last_captured_at: captured ? new Date() : null,
+        last_captured_at: isCaptured ? new Date() : null,
         last_encountered_at: new Date(),
         best_score: score,
       });

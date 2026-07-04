@@ -2,7 +2,7 @@ import type { LLMClient } from "../../domain/ports.js";
 
 /** モック採点で返すスコアの下限値。 */
 const MOCK_SCORE_MIN = 20;
-/** モック採点で返すスコアの幅 (上限は MOCK_SCORE_MIN + MOCK_SCORE_RANGE - 1 = 95)。 */
+/** モック採点で返すスコアの幅 (下限 MOCK_SCORE_MIN からの加算幅)。 */
 const MOCK_SCORE_RANGE = 76;
 
 /** 講評文を切り替えるスコア帯閾値。本番 Gemini の scoring guidelines と合わせている。 */
