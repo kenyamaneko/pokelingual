@@ -17,9 +17,6 @@ firebase-service-account.json
 firestore-debug.log
 firebase-debug.log
 
-# Test artifacts (JUnit XML / Playwright report 等の生成物)
-test-results/
-
 # Binary / shared libs
 *.exe
 *.dll

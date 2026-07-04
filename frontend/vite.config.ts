@@ -17,7 +17,5 @@ export default defineConfig({
     env: {
       VITE_APP_MODE: 'mock',
     },
-    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
-    outputFile: { junit: './test-results/junit.xml' },
   },
 })

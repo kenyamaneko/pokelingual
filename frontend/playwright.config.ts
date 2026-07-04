@@ -15,7 +15,6 @@ const baseURL = process.env.E2E_BASE_URL ?? LOCAL_BASE_URL;
 export default defineConfig({
   testDir: "./e2e",
   timeout: isDev ? DEV_TIMEOUT_MS : LOCAL_TIMEOUT_MS,
-  reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
   retries: 1,
   // mock 認証は全リクエストが同一 uid のため、backend の in-memory クエストセッションを
   // 全テストが共有する。並列実行だと他テストの capture がセッションを消して 404 になるため直列に固定する。
