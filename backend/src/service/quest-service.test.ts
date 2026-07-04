@@ -19,8 +19,8 @@ import type { Pokemon } from "../domain/pokemon.js";
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
  */
 describe("calculateCaptureRate", () => {
-  it("確率は下限 0 以上", () => {
-    expect(calculateCaptureRate(0, 900, 1.0)).toBeGreaterThanOrEqual(0);
+  it("種族値合計が高くスコア0 + モンスターボールなら捕獲は困難 (確率は低い)", () => {
+    expect(calculateCaptureRate(0, 680, 1.0)).toBeLessThan(0.05);
   });
 
   it("倍率で 1.0 を超える場合は 1.0 にクランプされる", () => {
@@ -377,6 +377,17 @@ describe("QuestService.skipGuess / attemptCapture", () => {
       ball_type: "poke",
     });
     expect(res.probability).toBeGreaterThan(0);
+  });
+
+  it("乱数が捕獲確率を上回れば捕獲は失敗する (種族値680/スコア0/モンスターボールで確率は極小)", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ base_stat_total: 680 })],
+      randomValue: 0.5,
+    });
+    await service.newQuest("alice");
+    service.skipGuess("alice");
+    const res = service.attemptCapture("alice");
+    expect(res.captured).toBe(false);
   });
 
   it("capture でセッションが消費され、2回目は NotFoundError", async () => {
