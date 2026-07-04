@@ -1,28 +1,22 @@
 import type { FlavorTextPair } from "../../../shared/api-types/pokedex.js";
 
-/** 図鑑に表示する対象バージョンとその表示順。 */
-const versionOrder = [
-  "x", "y", "omega-ruby", "alpha-sapphire",
-  "sun", "moon", "ultra-sun", "ultra-moon",
-  "lets-go-pikachu", "lets-go-eevee",
-  "sword", "shield",
+/** 図鑑に表示する対象バージョンと表示名。配列の並び順がそのまま図鑑での表示順を兼ねる。 */
+const displayVersions: readonly { id: string; displayName: string }[] = [
+  { id: "x", displayName: "X" },
+  { id: "y", displayName: "Y" },
+  { id: "omega-ruby", displayName: "Ωルビー" },
+  { id: "alpha-sapphire", displayName: "αサファイア" },
+  { id: "sun", displayName: "サン" },
+  { id: "moon", displayName: "ムーン" },
+  { id: "ultra-sun", displayName: "Uサン" },
+  { id: "ultra-moon", displayName: "Uムーン" },
+  { id: "lets-go-pikachu", displayName: "ピカブイ" },
+  { id: "lets-go-eevee", displayName: "ピカブイ" },
+  { id: "sword", displayName: "ソード" },
+  { id: "shield", displayName: "シールド" },
 ];
 
-/** version 識別子 → 図鑑に表示するバージョン名。 */
-const versionDisplayNames: Record<string, string> = {
-  "x": "X",
-  "y": "Y",
-  "omega-ruby": "Ωルビー",
-  "alpha-sapphire": "αサファイア",
-  "sun": "サン",
-  "moon": "ムーン",
-  "ultra-sun": "Uサン",
-  "ultra-moon": "Uムーン",
-  "lets-go-pikachu": "ピカブイ",
-  "lets-go-eevee": "ピカブイ",
-  "sword": "ソード",
-  "shield": "シールド",
-};
+const targetVersionIds = new Set(displayVersions.map((v) => v.id));
 
 /** 説明文 1 件 (バージョン・言語・整形済みテキスト)。データソース非依存の中立形。 */
 export interface FlavorTextSource {
@@ -47,7 +41,7 @@ export function buildFlavorTextPairs(entries: FlavorTextSource[]): FlavorTextPai
 
   for (const entry of entries) {
     const ver = entry.version;
-    if (!(ver in versionDisplayNames)) continue;
+    if (!targetVersionIds.has(ver)) continue;
 
     if (!byVersion.has(ver)) {
       byVersion.set(ver, { en: "", ja: "", jaHrkt: "" });
@@ -63,32 +57,17 @@ export function buildFlavorTextPairs(entries: FlavorTextSource[]): FlavorTextPai
     }
   }
 
-  interface VersionPair { version: string; en: string; ja: string }
-  const pairs: VersionPair[] = [];
+  // displayVersions の並び順で走査するため、出力は表示順に揃い別途の並べ替えが要らない。
+  const result: FlavorTextPair[] = [];
+  for (const { id, displayName } of displayVersions) {
+    const texts = byVersion.get(id);
+    if (!texts) continue;
 
-  for (const [ver, texts] of byVersion) {
     const ja = texts.ja || texts.jaHrkt;
     if (!texts.en || !ja) continue;
-    pairs.push({ version: ver, en: texts.en, ja });
-  }
 
-  const orderIndex = new Map(versionOrder.map((v, i) => [v, i]));
-  pairs.sort((a, b) => {
-    // versionDisplayNames と versionOrder は同じ version 集合を二重管理している。
-    // 片方に追加し忘れると並び順が壊れるため、未登録を検知して早期に失敗させる。
-    const aIdx = orderIndex.get(a.version);
-    const bIdx = orderIndex.get(b.version);
-    if (aIdx === undefined || bIdx === undefined) {
-      throw new Error(`version not registered in versionOrder: ${a.version} or ${b.version}`);
-    }
-    return aIdx - bIdx;
-  });
-
-  const result: FlavorTextPair[] = [];
-  for (const p of pairs) {
-    const displayName = versionDisplayNames[p.version];
     const existing = result.find(
-      (r) => r.description_en === p.en && r.description_ja === p.ja,
+      (r) => r.description_en === texts.en && r.description_ja === ja,
     );
     if (existing) {
       if (!existing.version_names.includes(displayName)) {
@@ -97,8 +76,8 @@ export function buildFlavorTextPairs(entries: FlavorTextSource[]): FlavorTextPai
     } else {
       result.push({
         version_names: [displayName],
-        description_en: p.en,
-        description_ja: p.ja,
+        description_en: texts.en,
+        description_ja: ja,
       });
     }
   }
