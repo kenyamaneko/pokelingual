@@ -6,6 +6,9 @@ export type AppMode = "mock" | "real";
 
 const APP_MODES: readonly AppMode[] = ["mock", "real"];
 
+// 対象バージョン (X〜ソード/シールド) の EN/JA 説明文が揃うのが第8世代までのため、その全国図鑑上限に合わせる
+export const DEFAULT_MAX_POKEMON_ID = 898;
+
 /** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
   appMode: AppMode;
@@ -18,6 +21,8 @@ export interface Config {
   geminiModel: string;
   perUserDailyLimit: number;
   globalDailyLimit: number;
+  /** 出題・図鑑の対象とする図鑑番号の上限。 */
+  maxPokemonID: number;
 }
 
 /** mock モード時に許容するデフォルト値。real モードでは必須 env が未設定なら起動エラーにする。 */
@@ -103,7 +108,8 @@ function requireAppMode(): AppMode {
 /**
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
  * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
- * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。
+ * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT) が未設定なら起動エラー。MAX_POKEMON_ID は
+ * 任意で、未設定なら既定値 (DEFAULT_MAX_POKEMON_ID)。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
@@ -120,5 +126,6 @@ export function loadConfig(): Config {
     geminiModel: isMock ? (getEnv("GEMINI_MODEL") ?? MOCK_DEFAULTS.geminiModel) : requireEnv("GEMINI_MODEL"),
     perUserDailyLimit: isMock ? (getIntEnv("PER_USER_DAILY_LIMIT") ?? MOCK_DEFAULTS.perUserDailyLimit) : requireIntEnv("PER_USER_DAILY_LIMIT"),
     globalDailyLimit: isMock ? (getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit) : requireIntEnv("GLOBAL_DAILY_LIMIT"),
+    maxPokemonID: getIntEnv("MAX_POKEMON_ID") ?? DEFAULT_MAX_POKEMON_ID,
   };
 }

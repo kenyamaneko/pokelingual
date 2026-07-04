@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { loadConfig } from "./config.js";
+import { loadConfig, DEFAULT_MAX_POKEMON_ID } from "./config.js";
 
 // loadConfig は process.env を読むため、テストごとに退避・復元する。
 const ORIGINAL_ENV = { ...process.env };
@@ -16,6 +16,7 @@ function clearConfigEnv(): void {
     "GEMINI_MODEL",
     "PER_USER_DAILY_LIMIT",
     "GLOBAL_DAILY_LIMIT",
+    "MAX_POKEMON_ID",
   ]) {
     delete process.env[key];
   }
@@ -55,6 +56,17 @@ describe("loadConfig", () => {
     process.env.APP_MODE = "mock";
     process.env.PER_USER_DAILY_LIMIT = v;
     expect(() => loadConfig()).toThrow(/positive integer/);
+  });
+
+  it("MAX_POKEMON_ID 未設定なら既定値になる", () => {
+    process.env.APP_MODE = "mock";
+    expect(loadConfig().maxPokemonID).toBe(DEFAULT_MAX_POKEMON_ID);
+  });
+
+  it("MAX_POKEMON_ID を設定するとその値で上書きされる", () => {
+    process.env.APP_MODE = "mock";
+    process.env.MAX_POKEMON_ID = "12345";
+    expect(loadConfig().maxPokemonID).toBe(12345);
   });
 
   it("real モードで必須 env が無ければ起動エラー", () => {

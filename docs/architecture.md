@@ -134,7 +134,7 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 
 ### PokeAPI データ取得
 
-- 対象: Gen 1-8（ID 1-898、Firestore `config/app.max_pokemon_id` で管理）
+- 対象: Gen 1-8（ID 1-898、環境変数 `MAX_POKEMON_ID` で上書き可。未設定なら既定 898）
   - #899-905（Legends: Arceus）は対象バージョンに説明文がないため範囲外
   - Gen 9（#906+）は PokeAPI に未収録
 - EN/JA 説明文: Gen 6（XY）以降のゲームから取得
@@ -280,7 +280,6 @@ loading → translating → guessing → capturing → result   （失敗時は 
 ```
 config/
   auth                          # { allowed_emails: ["email1", "email2"] }
-  app                           # { max_pokemon_id: 898 }  （任意。未設定なら既定 898）
 
 users/
   {uid}/
