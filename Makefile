@@ -1,4 +1,4 @@
-.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend emulator-up emulator-down
+.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down
 
 # ローカル開発環境（Docker Compose）
 dev: dev-up
@@ -35,3 +35,13 @@ test-backend:
 
 test-frontend:
 	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
+
+# カバレッジ計測
+coverage: coverage-backend coverage-frontend
+
+# backend テストと同じく Firestore Emulator を必須とするため emulators:exec で包む。
+coverage-backend:
+	cd backend && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage"
+
+coverage-frontend:
+	cd frontend && npm run test:coverage
