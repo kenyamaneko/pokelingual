@@ -1,15 +1,11 @@
 import { screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import type { AxiosResponse } from "axios";
+import { http, HttpResponse } from "msw";
 import type { User } from "firebase/auth";
 import type { DailyUsage } from "../../../../shared/api-types/usage";
-import { usageApi } from "../../api/usageApi";
+import { server, apiUrl, countRequests } from "../../test/mswServer";
 import { renderWithProviders } from "../../test/render";
 import { Header } from "./Header";
-
-vi.mock("../../api/usageApi", () => ({
-  usageApi: { get: vi.fn() },
-}));
 
 /**
  * Header の仕様:
@@ -21,9 +17,7 @@ vi.mock("../../api/usageApi", () => ({
 const fakeUser = { uid: "alice" } as unknown as User;
 
 function mockUsage(usage: DailyUsage) {
-  vi.mocked(usageApi.get).mockResolvedValue({
-    data: usage,
-  } as AxiosResponse<DailyUsage>);
+  server.use(http.get(apiUrl("/usage"), () => HttpResponse.json(usage)));
 }
 
 function renderHeader(user: User | null = fakeUser) {
@@ -33,7 +27,7 @@ function renderHeader(user: User | null = fakeUser) {
 describe("Header の仕様", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe("環境ラベルの出し分け", () => {
@@ -96,19 +90,20 @@ describe("Header の仕様", () => {
     );
 
     it("usage が取得できないあいだは残量バッジを表示しない", async () => {
-      vi.mocked(usageApi.get).mockRejectedValue(new Error("network error"));
+      // 使用量取得失敗時の診断ログは検証対象外なので沈黙させる
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
 
       renderHeader();
 
-      await waitFor(() => expect(usageApi.get).toHaveBeenCalledOnce());
+      // /usage の取得が試みられたことを確かめてから、残量バッジの不在を確認する
+      await waitFor(() => expect(countRequests("/usage")).toBe(1));
       expect(screen.getByText("PokeLingual")).toBeInTheDocument();
       expect(screen.queryByText(/のこり/)).not.toBeInTheDocument();
     });
   });
 
   it("未ログイン時はヘッダを描画しない", () => {
-    mockUsage({ count: 0, limit: 30 });
-
     renderHeader(null);
 
     expect(screen.queryByRole("banner")).not.toBeInTheDocument();

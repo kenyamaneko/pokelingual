@@ -16,6 +16,8 @@ export default defineConfig({
     exclude: ['e2e/**', 'node_modules/**'],
     env: {
       VITE_APP_MODE: 'mock',
+      // MSW が絶対 URL でマッチできるよう API のベース URL を固定する (client.ts の baseURL 前置に使われる)。
+      VITE_API_BASE_URL: 'http://localhost:3000',
     },
   },
 })
