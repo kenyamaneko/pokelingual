@@ -3,6 +3,7 @@ import type { UserPokemonRepository } from "../domain/ports.js";
 import type { QuestService } from "../service/quest-service.js";
 import type { ChatService } from "../service/chat-service.js";
 import type { ChatRequest } from "../../../shared/api-types/quest.js";
+import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import { ExternalServiceError } from "../domain/errors.js";
 import { handleError } from "./error.js";
 
@@ -43,7 +44,7 @@ export class QuestHandler {
     const userId = res.locals.userId as string;
     const { translation } = req.body;
     if (!translation) {
-      res.status(400).json({ error: "translation is required" });
+      res.status(400).json({ error: "translation is required" } satisfies ErrorResponse);
       return;
     }
     try {
@@ -63,7 +64,7 @@ export class QuestHandler {
     const userId = res.locals.userId as string;
     const { guess } = req.body;
     if (!guess) {
-      res.status(400).json({ error: "guess is required" });
+      res.status(400).json({ error: "guess is required" } satisfies ErrorResponse);
       return;
     }
     try {
@@ -117,7 +118,7 @@ export class QuestHandler {
   replyToChat = async (req: Request, res: Response) => {
     const body = req.body as ChatRequest;
     if (!body.messages || body.messages.length === 0) {
-      res.status(400).json({ error: "messages are required" });
+      res.status(400).json({ error: "messages are required" } satisfies ErrorResponse);
       return;
     }
     try {

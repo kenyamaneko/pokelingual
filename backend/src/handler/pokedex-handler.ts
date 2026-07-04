@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { PokedexService } from "../service/pokedex-service.js";
 import type { PokedexResponse } from "../../../shared/api-types/pokedex.js";
+import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import { handleError } from "./error.js";
 
 /** ポケモン図鑑 (pokedex) 取得用エンドポイントを束ねるハンドラ。 */
@@ -40,7 +41,7 @@ export class PokedexHandler {
     const userId = res.locals.userId as string;
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) {
-      res.status(400).json({ error: "invalid pokemon id" });
+      res.status(400).json({ error: "invalid pokemon id" } satisfies ErrorResponse);
       return;
     }
     try {
