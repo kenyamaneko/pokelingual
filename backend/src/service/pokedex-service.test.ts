@@ -81,7 +81,13 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   const pokemonClient: PokemonClient = {
     getPokemonByID: async (id) => {
       if (failing.has(id)) throw new Error("pokeapi down");
-      return makePokemon({ id });
+      // メタ情報を id ごとに区別可能にし、どの図鑑レコードにどのポケモンの情報が乗ったかを検証できるようにする。
+      return makePokemon({
+        id,
+        name_en: `Testmon-${id}`,
+        name_ja: `テストモン${id}`,
+        sprite_url: `https://example.com/${id}.png`,
+      });
     },
     getRandomPokemon: async () => makePokemon(),
   };
@@ -109,12 +115,43 @@ describe("PokedexService.getPokedex", () => {
     expect(res.entries).toEqual([
       {
         pokemon_id: 7,
-        name_en: "Testmon",
-        name_ja: "テストモン",
-        sprite_url: "https://example.com/1.png",
+        name_en: "Testmon-7",
+        name_ja: "テストモン7",
+        sprite_url: "https://example.com/7.png",
         status: "captured",
         total_captures: 2,
         best_score: 90,
+      },
+    ]);
+    expect(res.unavailable_count).toBe(0);
+  });
+
+  it("複数件の図鑑レコードそれぞれにメタ情報を付与し、順序を保って返す", async () => {
+    const service = makeService({
+      records: [
+        makeUserPokemon({ pokemon_id: 7, status: "captured", total_captures: 5, best_score: 90 }),
+        makeUserPokemon({ pokemon_id: 8, status: "seen", total_captures: 0, best_score: 40 }),
+      ],
+    });
+    const res = await service.getPokedex("alice");
+    expect(res.entries).toEqual([
+      {
+        pokemon_id: 7,
+        name_en: "Testmon-7",
+        name_ja: "テストモン7",
+        sprite_url: "https://example.com/7.png",
+        status: "captured",
+        total_captures: 5,
+        best_score: 90,
+      },
+      {
+        pokemon_id: 8,
+        name_en: "Testmon-8",
+        name_ja: "テストモン8",
+        sprite_url: "https://example.com/8.png",
+        status: "seen",
+        total_captures: 0,
+        best_score: 40,
       },
     ]);
     expect(res.unavailable_count).toBe(0);
@@ -179,8 +216,8 @@ describe("PokedexService.getPokemonDetail", () => {
       last_captured_at: "2026-03-04T05:06:07.000Z",
       last_encountered_at: "2026-03-05T06:07:08.000Z",
       best_score: 80,
-      name_en: "Testmon",
-      name_ja: "テストモン",
+      name_en: "Testmon-7",
+      name_ja: "テストモン7",
       types: ["normal"],
     });
   });
