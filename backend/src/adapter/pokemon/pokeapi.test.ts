@@ -64,3 +64,20 @@ describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
     );
   });
 });
+
+/**
+ * 出題抽選は allowedIds の中の図鑑番号を取得する。返り値の id は取得した図鑑番号をそのまま持つ。
+ */
+describe("PokeAPIClient.getRandomPokemon", () => {
+  it("allowedIds の中の図鑑番号を取得する (乱数0 = 集合の先頭)", async () => {
+    const pokemon = await makeClientWithTypes(["normal"]).getRandomPokemon(new Set([7, 3, 9]));
+    // 乱数0 で集合の先頭 (挿入順) の 7 が選ばれる
+    expect(pokemon.id).toBe(7);
+  });
+
+  it("許可された図鑑番号が無ければエラー", async () => {
+    await expect(makeClientWithTypes(["normal"]).getRandomPokemon(new Set())).rejects.toThrow(
+      /no pokemon id/,
+    );
+  });
+});
