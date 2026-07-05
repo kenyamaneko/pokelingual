@@ -69,7 +69,7 @@
 - gcloud CLI（認証済み）
 - GitHub リポジトリ
 
-### 1. ローカル開発環境の起動
+### ローカル開発環境の起動
 
 ローカル開発は Google Cloud リソース不要。外部 API (PokeAPI/Gemini) と認証はモック実装で代替し、永続化は Docker 内の Firestore Emulator を使う。
 
@@ -86,7 +86,7 @@ make dev
 
 mock モードでは認証なし・モックデータで動作する。ヘッダーに「LOCAL」バッジが表示される。
 
-### 2. Google Cloud プロジェクトの準備
+### Google Cloud プロジェクトの準備
 
 dev 環境と prod 環境でそれぞれ Google Cloud プロジェクトを作成する。
 
@@ -101,7 +101,7 @@ gcloud billing projects link my-pokelingual-dev --billing-account=BILLING_ACCOUN
 gcloud billing projects link my-pokelingual-prod --billing-account=BILLING_ACCOUNT_ID
 ```
 
-### 3. Terraform でインフラ構築
+### Terraform でインフラ構築
 
 ```bash
 cd terraform
@@ -135,7 +135,7 @@ Terraform が作成するリソース:
 
 > API 有効化直後にリソース作成が失敗する場合がある。その場合は再度 `terraform apply` を実行。
 
-### 4. Gemini API キーの設定
+### Gemini API キーの設定
 
 ```bash
 # Gemini API キーを取得（https://aistudio.google.com/apikey）
@@ -147,7 +147,7 @@ echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key \
   --project=my-pokelingual-prod --data-file=-
 ```
 
-### 5. Firebase ユーザーの作成
+### Firebase ユーザーの作成
 
 サインアップ UI はないため、Firebase Console で手動作成する。
 
@@ -155,7 +155,7 @@ echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key \
 2. Authentication → Users → Add user
 3. メールアドレスとパスワードを入力
 
-### 6. Firestore のホワイトリスト設定
+### Firestore のホワイトリスト設定
 
 バックエンドは起動時に Firestore `config/auth` ドキュメントの `allowed_emails` を読み込む。
 このドキュメントがないとサーバーは起動を拒否する。
@@ -170,7 +170,7 @@ Firebase Console → Firestore で以下のドキュメントを手動作成:
     - "your-email@example.com"
 ```
 
-### 7. GitHub Actions の設定
+### GitHub Actions の設定
 
 #### リポジトリの variables.tf を更新
 
@@ -232,7 +232,7 @@ gcloud run services describe pokelingual-api-dev --region asia-northeast1 --form
 
 以降は `develop` / `main` ブランチへの push で自動デプロイされる。
 
-### 8. deploy.yml の環境固有値を更新
+### deploy.yml の環境固有値を更新
 
 `.github/workflows/deploy.yml` 内の以下の値を自分の環境に合わせて変更:
 
