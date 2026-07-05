@@ -61,6 +61,32 @@ function mockUpdateFailure() {
 }
 
 /**
+ * GET /pokedex が指定のエントリを返す状態をモックする (名前検索・名前併記の元データ)。
+ * @param entries pokemon_id と name_ja を持つダミーエントリ。
+ */
+function mockPokedexEntries(
+  entries: { pokemon_id: number; name_ja: string; name_en?: string }[],
+) {
+  server.use(
+    http.get(apiUrl("/pokedex"), () =>
+      HttpResponse.json({
+        pokemon: entries.map((e) => ({
+          pokemon_id: e.pokemon_id,
+          name_en: e.name_en ?? `Dummymon${e.pokemon_id}`,
+          name_ja: e.name_ja,
+          sprite_url: "",
+          status: "unknown",
+          total_captures: 0,
+          best_score: 0,
+        })),
+        captured_count: 0,
+        unavailable_count: 0,
+      }),
+    ),
+  );
+}
+
+/**
  * ログイン済みの AuthContext と /settings ルートで SettingsPage を描画する。
  * @param logout ログアウト操作のスタブ。
  * @returns Testing Library の RenderResult。
@@ -113,15 +139,18 @@ describe("SettingsPage の遷移", () => {
 });
 
 /**
- * SettingsPage の除外ポケモン管理仕様:
+ * SettingsPage の苦手ポケモン管理仕様 (名前検索):
  * - 設定の読み込みに失敗したらエラーメッセージを表示する
- * - ID を追加すると保存され、一覧に反映される
+ * - 名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される
+ * - 検索語に一致するポケモンがなければ候補が出ない
+ * - すでに除外済みのポケモンは候補に出ない
  * - さくじょを押すと一覧から取り除かれ、空状態の文言に戻る
  * - 保存に失敗したらエラーメッセージを表示し、一覧は変わらない
+ * - 図鑑一覧の取得に失敗したら名前で探せない旨を表示する
  *
  * ID の範囲・件数上限・重複のバリデーションは backend の責務のため、ここでは検証しない。
  */
-describe("SettingsPage の除外ポケモン管理", () => {
+describe("SettingsPage の苦手ポケモン管理", () => {
   beforeEach(() => {
     lastSavedIDs = null;
   });
@@ -138,31 +167,58 @@ describe("SettingsPage の除外ポケモン管理", () => {
     vi.restoreAllMocks();
   });
 
-  it("ポケモン ID を追加すると保存され、一覧に表示される", async () => {
+  it("名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される", async () => {
     mockGetSettings([]);
+    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
     mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
-    await user.type(await screen.findByPlaceholderText("ポケモン ID"), "42");
-    await user.click(screen.getByRole("button", { name: "追加" }));
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
+    await user.click(await screen.findByRole("button", { name: /ダミラス/ }));
 
-    // 追加した ID が 3 桁 0 埋めで一覧に現れ、空状態の文言が消える
+    // 一覧に #042 と名前が現れ、空状態の文言が消え、保存 API に [42] が渡る
     expect(await screen.findByText("#042")).toBeInTheDocument();
+    expect(screen.getByText("ダミラス")).toBeInTheDocument();
     expect(
       screen.queryByText(spec("除外ポケモンはいません")),
     ).not.toBeInTheDocument();
-    // 保存 API には追加後の ID 一覧が渡る (実際に送られた HTTP ボディで確認)
     await waitFor(() => expect(lastSavedIDs).toEqual([42]));
+  });
+
+  it("検索語に一致するポケモンがなければ候補が出ない", async () => {
+    mockGetSettings([]);
+    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "いない");
+    expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
+  });
+
+  it("すでに除外済みのポケモンは検索候補に出ない", async () => {
+    mockGetSettings([42]);
+    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    const user = userEvent.setup();
+    renderSettings();
+
+    // 読み込み完了 (登録済みが一覧に出る) を待つ
+    await screen.findByText("#042");
+    await user.type(screen.getByPlaceholderText("ポケモンの名前で探す"), "ダミ");
+    // 候補ボタン (名前を含む button) は出ない
+    expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
   });
 
   it("さくじょを押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
     mockGetSettings([42]);
+    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
     mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
+    // 一覧には #042 と名前が併記される
     expect(await screen.findByText("#042")).toBeInTheDocument();
+    expect(screen.getByText("ダミラス")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "削除" }));
 
     expect(
@@ -177,23 +233,36 @@ describe("SettingsPage の除外ポケモン管理", () => {
     // エラー経路の診断ログは検証対象外のため沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSettings([]);
+    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
     mockUpdateFailure();
     const user = userEvent.setup();
     renderSettings();
 
-    await user.type(await screen.findByPlaceholderText("ポケモン ID"), "42");
-    await user.click(screen.getByRole("button", { name: "追加" }));
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
+    await user.click(await screen.findByRole("button", { name: /ダミラス/ }));
 
     expect(
-      await screen.findByText(
-        spec("設定の保存に失敗しました"),
-      ),
+      await screen.findByText(spec("設定の保存に失敗しました")),
     ).toBeInTheDocument();
     // 保存に失敗した ID は一覧に反映されず、空状態のまま
     expect(screen.queryByText("#042")).not.toBeInTheDocument();
     expect(
       screen.getByText(spec("除外ポケモンはいません")),
     ).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it("図鑑一覧の取得に失敗すると、名前で探せない旨を表示する", async () => {
+    // エラー経路の診断ログは検証対象外のため沈黙させる
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetSettings([]);
+    server.use(http.get(apiUrl("/pokedex"), () => HttpResponse.error()));
+    renderSettings();
+
+    expect(
+      await screen.findByText(spec("ポケモン一覧を読み込めなかったため、名前で探せません")),
+    ).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("ポケモンの名前で探す")).not.toBeInTheDocument();
     vi.restoreAllMocks();
   });
 });
