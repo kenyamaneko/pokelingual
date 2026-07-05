@@ -7,7 +7,6 @@ import { getFirestore } from "firebase-admin/firestore";
 
 import { loadConfig } from "./config/config.js";
 import { logger } from "./util/logger.js";
-import { DEFAULT_MAX_POKEMON_ID, loadMaxPokemonID } from "./config/pokemon-config.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { firebaseAuth } from "./middleware/auth.js";
 import { rateLimit } from "./middleware/rate-limit.js";
@@ -66,7 +65,7 @@ if (cfg.appMode === "mock") {
   randomSource = new MockRandomSource();
   pokemonClient = new MockPokemonClient(randomSource);
   llmClient = new MockLLMClient();
-  pokemonConfig = { maxPokemonID: DEFAULT_MAX_POKEMON_ID, environment: cfg.environment };
+  pokemonConfig = { maxPokemonID: cfg.maxPokemonID, environment: cfg.environment };
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
@@ -97,12 +96,7 @@ if (cfg.appMode === "mock") {
     });
   }
 
-  const maxPokemonID = await loadMaxPokemonID(firestoreClient);
-  pokemonConfig = { maxPokemonID, environment: cfg.environment };
-  logger.info("loaded Pokemon config", {
-    max_pokemon_id: maxPokemonID,
-    environment: cfg.environment,
-  });
+  pokemonConfig = { maxPokemonID: cfg.maxPokemonID, environment: cfg.environment };
   randomSource = new SystemRandomSource();
   pokemonClient = new PokeAPIClient(pokemonConfig, randomSource, (url) => fetch(url));
   llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
