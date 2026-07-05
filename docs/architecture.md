@@ -314,4 +314,4 @@ push → ci.yml（テスト・lint） → deploy-backend + deploy-frontend + dep
 結合テスト（dev のみ）: デプロイ済み Cloud Run に対して実際の API リクエスト。
 Firebase Auth テストユーザーを自動作成し、テスト後に全リソースをクリーンアップ。
 
-振る舞いカタログ: 全テストの JUnit XML からテスト名を集約した仕様ドキュメント。PR では job summary に出力し、main では GitHub Pages に公開する（docs/adr/014）。
+振る舞いカタログ: テスト済みの振る舞いを一覧できる仕様ドキュメント。PR では job summary に出力し、main では GitHub Pages に公開する。

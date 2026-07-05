@@ -300,7 +300,7 @@ push → 単体テスト・lint → バックエンドデプロイ → 結合テ
 push → 単体テスト・lint → バックエンドデプロイ + フロントエンドデプロイ + 振る舞いカタログ公開（並列）
 ```
 
-振る舞いカタログは全テストの JUnit XML からテスト名を集約した仕様ドキュメントで、main の CI が [GitHub Pages](https://kenyamaneko.github.io/pokelingual/) に公開する。PR では job summary に同じ一覧が出る（`docs/adr/014`）。
+振る舞いカタログはテスト済みの振る舞いを一覧できる仕様ドキュメントで、main の CI が [GitHub Pages](https://kenyamaneko.github.io/pokelingual/) に公開する。PR では job summary に同じ一覧が出る。
 
 ### ワークフロー
 

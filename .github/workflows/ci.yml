@@ -56,7 +56,7 @@ jobs:
       - name: Run tests (Firestore emulator)
         run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
 
-      # 振る舞いカタログ (docs/adr/014) の生成元。同一 run 内でのみ使うため保持は最短にする。
+      # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML
         uses: actions/upload-artifact@v4
         with:
@@ -94,7 +94,7 @@ jobs:
       - name: Run tests
         run: npx vitest run
 
-      # 振る舞いカタログ (docs/adr/014) の生成元。同一 run 内でのみ使うため保持は最短にする。
+      # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML
         uses: actions/upload-artifact@v4
         with:
@@ -145,7 +145,7 @@ jobs:
           E2E_MODE: local
         run: npx playwright test
 
-      # 振る舞いカタログ (docs/adr/014) の生成元。同一 run 内でのみ使うため保持は最短にする。
+      # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML
         uses: actions/upload-artifact@v4
         with:
@@ -165,8 +165,6 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.dev.yml down
 
-  # 全テストの JUnit XML からテスト済みの振る舞い一覧を組み、job summary に出す (docs/adr/014)。
-  # PR レビューで振る舞いの増減を確認できるようにする。
   behavior-catalog:
     name: Behavior Catalog
     needs: [backend-test, frontend-test, e2e-test]

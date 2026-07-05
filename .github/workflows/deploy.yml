@@ -27,8 +27,6 @@ jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
-  # main のテスト実行後、テスト名から組んだ振る舞いカタログを GitHub Pages に公開する (docs/adr/014)。
-  # JUnit XML は test ジョブ (ci.yml) が同一 run にアップロードしたものを使う。
   deploy-behavior-catalog:
     name: Deploy Behavior Catalog to GitHub Pages
     needs: test
