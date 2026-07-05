@@ -92,8 +92,9 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     getRandomPokemon: async () => makePokemon(),
   };
   const settingsRepo: UserSettingsRepository = {
-    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null }),
+    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null, enabled_generations: null }),
     updateExcludedPokemon: async () => {},
+    updateEnabledGenerations: async () => {},
   };
   // 図鑑表示は環境非依存に確かめたいので prod (開発者除外なし) 固定。maxPokemonID は本サービスでは未使用のためダミー。
   const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };

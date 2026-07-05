@@ -38,6 +38,7 @@ export function setupRoutes(
 
   router.get("/settings", settingsHandler.getSettings);
   router.put("/settings/excluded-pokemon", settingsHandler.updateExcludedPokemon);
+  router.put("/settings/generations", settingsHandler.updateEnabledGenerations);
 
   router.get("/usage", usageHandler.getUsage);
 

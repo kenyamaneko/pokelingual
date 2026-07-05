@@ -30,10 +30,14 @@ export class UserSettingsRepo implements UserSettingsRepository {
   async getSettings(userId: string): Promise<UserSettings> {
     const doc = await this.getSettingsRef(userId).get();
     if (!doc.exists) {
-      return { excluded_pokemon_ids: null };
+      return { excluded_pokemon_ids: null, enabled_generations: null };
     }
-    const data = doc.data() as UserSettings;
-    return data;
+    const data = doc.data() as Partial<UserSettings>;
+    // 旧ドキュメントには enabled_generations が無いため、未設定 (null) として正規化する
+    return {
+      excluded_pokemon_ids: data.excluded_pokemon_ids ?? null,
+      enabled_generations: data.enabled_generations ?? null,
+    };
   }
 
   /**
@@ -44,6 +48,18 @@ export class UserSettingsRepo implements UserSettingsRepository {
   async updateExcludedPokemon(userId: string, pokemonIDs: number[]): Promise<void> {
     await this.getSettingsRef(userId).set(
       { excluded_pokemon_ids: pokemonIDs },
+      { merge: true },
+    );
+  }
+
+  /**
+   * 出題対象の世代リストを上書き保存する。
+   * @param userId ユーザ ID。
+   * @param generations 出題対象の世代番号の配列。
+   */
+  async updateEnabledGenerations(userId: string, generations: number[]): Promise<void> {
+    await this.getSettingsRef(userId).set(
+      { enabled_generations: generations },
       { merge: true },
     );
   }

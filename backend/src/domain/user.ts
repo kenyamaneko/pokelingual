@@ -10,7 +10,9 @@ export interface UserPokemon {
   best_score: number;
 }
 
-/** ユーザ設定。Firestore 永続化対象。excluded_pokemon_ids が null なら未設定。 */
+/** ユーザ設定。Firestore 永続化対象。各フィールドは null なら未設定。 */
 export interface UserSettings {
   excluded_pokemon_ids: number[] | null;
+  /** 出題対象の世代。null なら未設定 (= 全世代)。 */
+  enabled_generations: number[] | null;
 }

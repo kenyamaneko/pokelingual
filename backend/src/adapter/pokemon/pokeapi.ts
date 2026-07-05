@@ -65,11 +65,17 @@ export class PokeAPIClient implements PokemonClient {
   ) {}
 
   /**
-   * 1〜maxPokemonID からランダムに 1 匹取得する。
+   * 許可された図鑑番号の中からランダムに 1 匹取得する。
+   * @param allowedIds 出題を許可する図鑑番号の集合 (選択世代 ∩ 上限 − 除外)。
    * @returns ランダムに選ばれたポケモン。
+   * @throws 許可された図鑑番号が無い場合。
    */
-  async getRandomPokemon(): Promise<Pokemon> {
-    const id = Math.floor(this.random.next() * this.config.maxPokemonID) + 1;
+  async getRandomPokemon(allowedIds: ReadonlySet<number>): Promise<Pokemon> {
+    const ids = [...allowedIds];
+    if (ids.length === 0) {
+      throw new Error("no pokemon id available in the allowed pool");
+    }
+    const id = ids[Math.floor(this.random.next() * ids.length)];
     return this.getPokemonByID(id);
   }
 

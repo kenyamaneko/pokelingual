@@ -58,6 +58,17 @@ const mockPokemon: Pokemon[] = [
       { version_names: ["ソード"], description_en: "A Pokémon that was created by genetic manipulation. However, even though the scientific power of humans made its body, they failed to give it a warm heart.", description_ja: "遺伝子 操作に よって つくられた ポケモン。人間の 科学力で 体は つくれても 優しい 心を つくることは できなかった。" },
     ],
   },
+  {
+    id: 445, name_en: "Garchomp", name_ja: "ガブリアス",
+    description_en: "When it folds up its body and extends its wings, it looks like a jet plane. It loves to fly at supersonic speeds.",
+    description_ja: "体を 折りたたみ 翼を 広げると ジェット機の ような 姿に なる。音速で 飛ぶのが 大好き。",
+    sprite_url: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/445.png",
+    base_stat_total: 600, types: ["dragon", "ground"], height: 19, weight: 950, is_legendary: false, is_mythical: false,
+    flavor_texts: [
+      { version_names: ["X"], description_en: "When it folds up its body and extends its wings, it looks like a jet plane. It loves to fly at supersonic speeds.", description_ja: "体を 折りたたみ 翼を 広げると ジェット機の ような 姿に なる。音速で 飛ぶのが 大好き。" },
+      { version_names: ["ソード"], description_en: "It flies at speeds equal to a jet fighter. It never allows its prey to escape.", description_ja: "戦闘機 なみの スピードで 飛ぶ。獲物を 決して 逃がさない。" },
+    ],
+  },
 ];
 
 /** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。 */
@@ -68,10 +79,16 @@ export class MockPokemonClient implements PokemonClient {
   constructor(private random: RandomSource) {}
 
   /**
-   * @returns 乱数ソースで選んだ固定リストのポケモン。
+   * @param allowedIds 出題を許可する図鑑番号の集合。固定リストのうちこれに含まれるものから抽選する。
+   * @returns 乱数ソースで選んだポケモン。
+   * @throws 固定リストに許可された図鑑番号が無い場合 (mock データは第1世代中心のため他世代のみ選択時に起こりうる)。
    */
-  async getRandomPokemon(): Promise<Pokemon> {
-    return { ...mockPokemon[Math.floor(this.random.next() * mockPokemon.length)] };
+  async getRandomPokemon(allowedIds: ReadonlySet<number>): Promise<Pokemon> {
+    const available = mockPokemon.filter((p) => allowedIds.has(p.id));
+    if (available.length === 0) {
+      throw new Error("no mock pokemon available in the allowed pool");
+    }
+    return { ...available[Math.floor(this.random.next() * available.length)] };
   }
 
   /**

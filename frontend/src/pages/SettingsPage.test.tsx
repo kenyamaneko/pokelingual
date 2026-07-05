@@ -13,16 +13,30 @@ const fakeUser = { uid: "alice", email: "alice@example.com" } as unknown as User
 
 // PUT /settings/excluded-pokemon で実際に送られたボディ (保存内容) を HTTP 境界で捕捉する。
 let lastSavedIDs: number[] | null = null;
+// PUT /settings/generations で実際に送られた世代一覧を HTTP 境界で捕捉する。
+let lastSavedGenerations: number[] | null = null;
 
 /**
- * GET /settings が指定の除外 ID 一覧を返す状態をモックする。
+ * GET /settings が指定の除外 ID・出題世代を返す状態をモックする。
  * @param ids 除外ポケモン ID の一覧。
+ * @param generations 出題対象の世代 (既定は全世代)。
  */
-function mockGetSettings(ids: number[]) {
+function mockGetSettings(ids: number[], generations: number[] = [1, 2, 3, 4, 5, 6, 7, 8]) {
   server.use(
     http.get(apiUrl("/settings"), () =>
-      HttpResponse.json({ excluded_pokemon_ids: ids }),
+      HttpResponse.json({ excluded_pokemon_ids: ids, enabled_generations: generations }),
     ),
+  );
+}
+
+/** PUT /settings/generations を成功させ、送られた generations を lastSavedGenerations に記録する。 */
+function mockUpdateGenerationsSuccess() {
+  server.use(
+    http.put(apiUrl("/settings/generations"), async ({ request }) => {
+      const body = (await request.json()) as { generations: number[] };
+      lastSavedGenerations = body.generations;
+      return HttpResponse.json({});
+    }),
   );
 }
 
@@ -181,5 +195,70 @@ describe("SettingsPage の除外ポケモン管理", () => {
       screen.getByText(spec("除外ポケモンはいません")),
     ).toBeInTheDocument();
     vi.restoreAllMocks();
+  });
+});
+
+/**
+ * SettingsPage の出題世代の設定仕様:
+ * - GET の enabled_generations でチェック状態が復元される
+ * - チェックを付け外しすると、その世代を加減した一覧が保存される
+ * - 最低1世代必須のため、選択が1つだけのときはその世代を外せない
+ *
+ * 世代番号・未知値のバリデーションは backend の責務のため、ここでは検証しない。
+ */
+describe("SettingsPage の出題世代", () => {
+  beforeEach(() => {
+    lastSavedGenerations = null;
+  });
+
+  it("GET の enabled_generations に応じてチェック状態が復元される", async () => {
+    mockGetSettings([], [1, 3]);
+    renderSettings();
+
+    expect(await screen.findByRole("checkbox", { name: "第1世代" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "第2世代" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "第3世代" })).toBeChecked();
+  });
+
+  it("世代のチェックを外すと、その世代を除いた一覧が保存される", async () => {
+    mockGetSettings([], [1, 2, 3]);
+    mockUpdateGenerationsSuccess();
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(await screen.findByRole("checkbox", { name: "第2世代" }));
+
+    // 第2世代を外した [1, 3] が保存され、チェックも外れる
+    await waitFor(() => expect(lastSavedGenerations).toEqual([1, 3]));
+    expect(screen.getByRole("checkbox", { name: "第2世代" })).not.toBeChecked();
+  });
+
+  it("世代のチェックを付けると、その世代を加えた一覧が保存される", async () => {
+    mockGetSettings([], [1]);
+    mockUpdateGenerationsSuccess();
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(await screen.findByRole("checkbox", { name: "第4世代" }));
+
+    // 第4世代を加えた [1, 4] が保存され、チェックが付く
+    await waitFor(() => expect(lastSavedGenerations).toEqual([1, 4]));
+    expect(screen.getByRole("checkbox", { name: "第4世代" })).toBeChecked();
+  });
+
+  it("最後の1世代は外せない (最低1世代必須で保存も走らない)", async () => {
+    mockGetSettings([], [5]);
+    mockUpdateGenerationsSuccess();
+    const user = userEvent.setup();
+    renderSettings();
+
+    const only = await screen.findByRole("checkbox", { name: "第5世代" });
+    expect(only).toBeChecked();
+    expect(only).toBeDisabled();
+
+    await user.click(only);
+
+    expect(only).toBeChecked();
+    expect(lastSavedGenerations).toBeNull();
   });
 });

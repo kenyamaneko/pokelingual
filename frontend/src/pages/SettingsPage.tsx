@@ -4,14 +4,18 @@ import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
 
+/** 選択可能な世代 (第1〜8世代)。図鑑上限 898 に対応し、backend の GENERATION_RANGES と対応する。 */
+const SELECTABLE_GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+
 /**
- * 設定ページ。除外ポケモンの追加・削除とログアウトを提供する。
+ * 設定ページ。出題世代の選択・除外ポケモンの追加削除・ログアウトを提供する。
  * @returns 設定ページの要素。
  */
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [excludedIDs, setExcludedIDs] = useState<number[]>([]);
+  const [enabledGenerations, setEnabledGenerations] = useState<number[]>([]);
   const [newID, setNewID] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,6 +26,7 @@ export function SettingsPage() {
       .getSettings()
       .then((res) => {
         setExcludedIDs(res.data.excluded_pokemon_ids);
+        setEnabledGenerations(res.data.enabled_generations);
       })
       .catch(() => {
         setError("設定の読み込みに失敗しました");
@@ -43,6 +48,19 @@ export function SettingsPage() {
     }
   };
 
+  const saveGenerations = async (generations: number[]) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await settingsApi.updateEnabledGenerations(generations);
+      setEnabledGenerations(generations);
+    } catch {
+      setError("設定の保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleAdd = () => {
     const id = parseInt(newID, 10);
     if (isNaN(id)) return;
@@ -52,6 +70,16 @@ export function SettingsPage() {
 
   const handleRemove = (id: number) => {
     saveExcluded(excludedIDs.filter((x) => x !== id));
+  };
+
+  // 最低1世代は必須のため、選択が1つだけのときはその世代を外せない。
+  const toggleGeneration = (generation: number) => {
+    const isEnabled = enabledGenerations.includes(generation);
+    if (isEnabled && enabledGenerations.length === 1) return;
+    const next = isEnabled
+      ? enabledGenerations.filter((g) => g !== generation)
+      : [...enabledGenerations, generation].sort((a, b) => a - b);
+    saveGenerations(next);
   };
 
   const handleLogout = async () => {
@@ -71,6 +99,10 @@ export function SettingsPage() {
     <div className="min-h-[calc(100vh-56px)] bg-gray-50 py-8">
       <div className="max-w-md mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">設定</h1>
+
+        {error && (
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+        )}
 
         <div className="bg-white rounded-2xl shadow p-6 mb-6">
           <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
@@ -97,6 +129,36 @@ export function SettingsPage() {
           </p>
         </div>
 
+        <div className="bg-white rounded-2xl shadow p-6 mb-6">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
+            出題する世代
+          </h2>
+          <p className="text-gray-500 text-sm mb-4">
+            選んだ世代のポケモンだけが登場します（図鑑の数は変わりません）
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {SELECTABLE_GENERATIONS.map((generation) => {
+              const checked = enabledGenerations.includes(generation);
+              const isOnlyChecked = checked && enabledGenerations.length === 1;
+              return (
+                <label
+                  key={generation}
+                  className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={saving || isOnlyChecked}
+                    onChange={() => toggleGeneration(generation)}
+                    className="accent-red-500"
+                  />
+                  <span className="text-gray-700 text-sm">第{generation}世代</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="bg-white rounded-2xl shadow p-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-400 uppercase">
@@ -109,10 +171,6 @@ export function SettingsPage() {
           <p className="text-gray-500 text-sm mb-4">
             出てきてほしくないポケモンを設定できます
           </p>
-
-          {error && (
-            <p className="text-red-500 text-sm mb-3">{error}</p>
-          )}
 
           <div className="flex gap-2 mb-4">
             <input

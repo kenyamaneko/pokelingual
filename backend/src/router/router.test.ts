@@ -97,14 +97,17 @@ function makeApp(o: AppOverrides = {}) {
     },
   };
 
-  let savedSettings: UserSettings = { excluded_pokemon_ids: null };
+  let savedSettings: UserSettings = { excluded_pokemon_ids: null, enabled_generations: null };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => {
       if (o.settingsError) throw o.settingsError;
       return savedSettings;
     },
     updateExcludedPokemon: async (_uid, ids) => {
-      savedSettings = { excluded_pokemon_ids: ids };
+      savedSettings = { ...savedSettings, excluded_pokemon_ids: ids };
+    },
+    updateEnabledGenerations: async (_uid, generations) => {
+      savedSettings = { ...savedSettings, enabled_generations: generations };
     },
   };
 
@@ -209,6 +212,16 @@ describe("入力バリデーションの 400 (公開入口経由)", () => {
     const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: ids });
     expect(res.status).toBe(400);
   });
+
+  it("空の世代設定は 400 (最低1世代必須)", async () => {
+    const res = await request(makeApp()).put("/api/settings/generations").send({ generations: [] });
+    expect(res.status).toBe(400);
+  });
+
+  it("未知の世代番号を含む世代設定は 400", async () => {
+    const res = await request(makeApp()).put("/api/settings/generations").send({ generations: [99] });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("正常系フロー (公開入口経由)", () => {
@@ -245,10 +258,21 @@ describe("正常系フロー (公開入口経由)", () => {
     const put = await request(app).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [7, 3, 3] });
     expect(put.status).toBe(200);
 
-    // 重複排除・昇順に正規化されて保存される
+    // 重複排除・昇順に正規化されて保存される。世代は未設定なので全世代が返る
     const got = await request(app).get("/api/settings");
     expect(got.status).toBe(200);
-    expect(got.body).toEqual({ excluded_pokemon_ids: [3, 7] });
+    expect(got.body).toEqual({ excluded_pokemon_ids: [3, 7], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] });
+  });
+
+  it("世代設定の保存内容が GET で読み戻せる", async () => {
+    const app = makeApp();
+    const put = await request(app).put("/api/settings/generations").send({ generations: [3, 1, 1] });
+    expect(put.status).toBe(200);
+
+    // 重複排除・昇順に正規化され、除外は未設定なので空で返る
+    const got = await request(app).get("/api/settings");
+    expect(got.status).toBe(200);
+    expect(got.body).toEqual({ excluded_pokemon_ids: [], enabled_generations: [1, 3] });
   });
 
   it("利用状況が取得できる", async () => {
