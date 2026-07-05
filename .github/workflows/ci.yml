@@ -56,6 +56,14 @@ jobs:
       - name: Run tests (Firestore emulator)
         run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
 
+      # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
+      - name: Upload JUnit XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-backend
+          path: backend/test-results/junit.xml
+          retention-days: 1
+
   frontend-test:
     name: Frontend Tests
     runs-on: ubicloud-standard-2
@@ -85,6 +93,14 @@ jobs:
 
       - name: Run tests
         run: npx vitest run
+
+      # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
+      - name: Upload JUnit XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-frontend
+          path: frontend/test-results/vitest-junit.xml
+          retention-days: 1
 
       - name: Build
         run: npm run build
@@ -129,6 +145,14 @@ jobs:
           E2E_MODE: local
         run: npx playwright test
 
+      # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
+      - name: Upload JUnit XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-e2e
+          path: frontend/test-results/e2e-junit.xml
+          retention-days: 1
+
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
@@ -140,6 +164,41 @@ jobs:
       - name: Stop services
         if: always()
         run: docker compose -f docker-compose.dev.yml down
+
+  behavior-catalog:
+    name: Behavior Catalog
+    needs: [backend-test, frontend-test, e2e-test]
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run catalog generator unit tests
+        run: python -m pytest scripts
+
+      - name: Download JUnit XML
+        uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit-artifacts
+
+      - name: Generate catalog and publish to job summary
+        run: |
+          python scripts/generate_behavior_catalog.py \
+            --format markdown \
+            --section "backend:junit-artifacts/junit-backend/junit.xml" \
+            --section "frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
+            --section "E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
+            >> "$GITHUB_STEP_SUMMARY"
 
   terraform-check:
     name: Terraform Format Check

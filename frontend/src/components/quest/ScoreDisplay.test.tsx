@@ -15,7 +15,7 @@ function withScore(score: number): ScoreResponse {
   return { score, review: "", description_ja: "" };
 }
 
-describe("ScoreDisplay の仕様", () => {
+describe("ScoreDisplay", () => {
   it("score=100 のとき 'いちげき ひっさつ' ラベルを出す", () => {
     render(<ScoreDisplay score={withScore(100)} />);
     expect(screen.getByText(spec(SCORE_LABELS.critical))).toBeInTheDocument();

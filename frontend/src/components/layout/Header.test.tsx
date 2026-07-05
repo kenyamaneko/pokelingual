@@ -24,7 +24,7 @@ function renderHeader(user: User | null = fakeUser) {
   return renderWithProviders(<Header />, { user, withRouter: true });
 }
 
-describe("Header の仕様", () => {
+describe("Header", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();

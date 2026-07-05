@@ -25,6 +25,7 @@
 | [アーキテクチャ](docs/architecture.md) | 全体構成、バックエンド/フロントエンド詳細、インフラ |
 | [技術判断記録（ADR）](docs/adr/) | 各設計判断の背景・理由・結果 |
 | [トラブルシューティング](docs/troubleshooting.md) | 開発中に遭遇した問題と解決策 |
+| [振る舞いカタログ](https://kenyamaneko.github.io/pokelingual/) | テスト名から自動生成したテスト済みの振る舞い一覧（main の CI が更新） |
 
 ## ディレクトリ構成
 
@@ -296,15 +297,17 @@ push → 単体テスト・lint → バックエンドデプロイ → 結合テ
 ### main ブランチ（prod 環境）
 
 ```
-push → 単体テスト・lint → バックエンドデプロイ + フロントエンドデプロイ（並列）
+push → 単体テスト・lint → バックエンドデプロイ + フロントエンドデプロイ + 振る舞いカタログ公開（並列）
 ```
+
+振る舞いカタログはテスト済みの振る舞いを一覧できる仕様ドキュメントで、main の CI が [GitHub Pages](https://kenyamaneko.github.io/pokelingual/) に公開する。PR では job summary に同じ一覧が出る。
 
 ### ワークフロー
 
 | ファイル | トリガー | 内容 |
 |---------|---------|------|
-| `ci.yml` | PR, workflow_call | Go テスト・lint、フロントエンドテスト・lint・型チェック、Terraform fmt |
-| `deploy.yml` | push to main/develop, v* tag | CI → デプロイ → 結合テスト（dev のみ） |
+| `ci.yml` | PR, workflow_call | バックエンド/フロントエンドテスト・lint・型チェック、E2E、Terraform fmt、振る舞いカタログの job summary 出力 |
+| `deploy.yml` | push to main/develop, v* tag | CI → デプロイ → 結合テスト（dev のみ）、振る舞いカタログ公開（main のみ） |
 
 ### prod リリース手順
 

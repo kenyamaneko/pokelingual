@@ -34,12 +34,14 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
 /**
  * CaptureResult の仕様:
  * - captured=true なら捕獲タイトル、false なら逃走タイトルを表示する
- * - 「つぎの ぼうけんへ」ボタンで onNewQuest が呼ばれる
+ * - 「メニューに もどる」でホーム (/) へ遷移する
  *
+ * 「つぎの ぼうけんへ」で次の出題が始まる結合は、実際に新しい出題画面が出る結果を
+ * 観測するため QuestPage.test.tsx (公開入口からのフロー) で確かめる。
  * テスト対象外: 画像 src/ポケモン名/スコア の "props 透過" 表示は仕様ではなく、
  * Render が動けば成立するため検証しない。
  */
-describe("CaptureResult の仕様", () => {
+describe("CaptureResult", () => {
   it("captured=true で捕獲タイトル (ポケモン名入り) を表示する", () => {
     renderWithProviders(
       <CaptureResult result={baseResult()} onNewQuest={vi.fn()} />,
@@ -61,24 +63,6 @@ describe("CaptureResult の仕様", () => {
     expect(
       screen.getByText(spec(CAPTURE_RESULT_LABELS.escapedTitle("ピカチュウ"))),
     ).toBeInTheDocument();
-  });
-
-  it("「つぎの ぼうけんへ」ボタンで onNewQuest が呼ばれる", async () => {
-    const user = userEvent.setup();
-    const onNewQuest = vi.fn();
-    renderWithProviders(
-      <CaptureResult
-        result={baseResult()}
-        onNewQuest={onNewQuest}
-      />,
-      { withRouter: true },
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.nextButton }),
-    );
-
-    expect(onNewQuest).toHaveBeenCalledOnce();
   });
 
   it("「メニューに もどる」ボタンでホーム (/) へ遷移する", async () => {

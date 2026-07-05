@@ -27,6 +27,54 @@ jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
+  deploy-behavior-catalog:
+    name: Deploy Behavior Catalog to GitHub Pages
+    needs: test
+    # カタログは prod の仕様を表すため、main への push のみ公開する (タグ push は同一コミットのため対象外)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Download JUnit XML
+        uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit-artifacts
+
+      - name: Generate catalog HTML
+        run: |
+          mkdir -p _site
+          python scripts/generate_behavior_catalog.py \
+            --format html \
+            --commit "${GITHUB_SHA}" \
+            --section "backend:junit-artifacts/junit-backend/junit.xml" \
+            --section "frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
+            --section "E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
+            > _site/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   # Determine version from git tags (runs in parallel with tests)
   determine-version:
     name: Determine Version

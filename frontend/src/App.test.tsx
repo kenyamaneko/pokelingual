@@ -10,7 +10,7 @@ import App from "./App";
  * テスト環境は VITE_APP_MODE=mock のため DevAuthProvider (ログイン済み) で動作する。
  * Header が UsageProvider 経由で /usage を引くため、MSW の既定ハンドラが応答する。
  */
-describe("ルーティングの 404 仕様", () => {
+describe("ルーティングの 404", () => {
   it("未定義 URL では NotFound ページを表示する", async () => {
     window.history.pushState({}, "", "/no-such-page");
     render(<App />);

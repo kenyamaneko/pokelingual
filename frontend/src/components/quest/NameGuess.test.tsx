@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { spec } from "../../test/labels";
 import { NameGuess, NAME_GUESS_LABELS } from "./NameGuess";
@@ -7,14 +6,15 @@ import type { GuessResponse } from "../../../../shared/api-types/quest";
 
 /**
  * NameGuess の仕様:
- * - guessResult が null のときは編集可、submit/skip ボタンが押せる
- * - submit で onSubmit に入力値が渡る
+ * - guessResult が null のときは入力欄と submit/skip ボタンが描画される
  * - 不正解 + 残りあり → 入力継続可
  * - 不正解 + 残り 0 → 入力欄消失、名前が公開される
  * - 正解 → 入力欄消失、進む系のボタンに切り替わる
- * - 進む/スキップボタンで onSkip が呼ばれる
+ *
+ * submit で入力名が渡り判定へ進む・スキップで捕獲へ進む結合は、実際に判定結果や
+ * 捕獲画面が出る結果を観測するため QuestPage.test.tsx (公開入口からのフロー) で確かめる。
  */
-describe("NameGuess の仕様", () => {
+describe("NameGuess", () => {
   it("guessResult が null のとき入力欄と送信ボタンが描画される", () => {
     render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={null} />);
 
@@ -29,19 +29,6 @@ describe("NameGuess の仕様", () => {
     expect(
       screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
     ).toBeDisabled();
-  });
-
-  it("入力して送信すると onSubmit に入力値が渡る", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<NameGuess onSubmit={onSubmit} onSkip={vi.fn()} guessResult={null} />);
-
-    await user.type(screen.getByRole("textbox"), "Pikachu");
-    await user.click(
-      screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
-    );
-
-    expect(onSubmit).toHaveBeenCalledWith("Pikachu");
   });
 
   it("不正解で残り試行があるときは入力欄を維持する", () => {
@@ -95,17 +82,5 @@ describe("NameGuess の仕様", () => {
     expect(
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     ).toBeInTheDocument();
-  });
-
-  it("スキップ/進むボタン押下で onSkip が呼ばれる", async () => {
-    const user = userEvent.setup();
-    const onSkip = vi.fn();
-    render(<NameGuess onSubmit={vi.fn()} onSkip={onSkip} guessResult={null} />);
-
-    await user.click(
-      screen.getByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
-    );
-
-    expect(onSkip).toHaveBeenCalledOnce();
   });
 });

@@ -31,7 +31,7 @@ function makeReqRes(authorization?: string) {
   return { req, res, next, status, json };
 }
 
-describe("firebaseAuth ミドルウェアの仕様", () => {
+describe("firebaseAuth ミドルウェア", () => {
   it("Authorization ヘッダが無ければ 401 で拒否する", async () => {
     const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })), []);
     const { req, res, next, status } = makeReqRes();

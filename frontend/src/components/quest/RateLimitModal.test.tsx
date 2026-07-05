@@ -1,5 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { spec } from "../../test/labels";
 import {
@@ -11,13 +10,14 @@ import {
 /**
  * RateLimitModal の仕様:
  * - kind ("user" / "global") に応じてタイトルが切り替わる
- * - 閉じるボタン (×) と「また あした くる」ボタンで onDismiss が呼ばれる
- * - 背景 (バックドロップ) クリックで onDismiss が呼ばれる
  *
+ * 各操作 (× / 「また あした くる」 / バックドロップ) でモーダルを閉じる振る舞いは、
+ * 実際にモーダルが画面から消える結果を観測するため rateLimitFlow.test.tsx (公開入口からの
+ * 結合) で確かめる。
  * カウントダウンの表示文字列は GUI では検証しない (画面上の見せ方は変わりうる)。
  * 残時間計算のロジックは formatUntilJstMidnight の単体テストで境界を固定する。
  */
-describe("RateLimitModal の仕様", () => {
+describe("RateLimitModal", () => {
   it("kind=user のときユーザ向けタイトルを出す", () => {
     render(
       <RateLimitModal
@@ -37,46 +37,6 @@ describe("RateLimitModal の仕様", () => {
     );
     expect(screen.getByText(spec(RATE_LIMIT_LABELS.globalTitle))).toBeInTheDocument();
   });
-
-  it("閉じる (×) ボタンで onDismiss が呼ばれる", async () => {
-    const user = userEvent.setup();
-    const onDismiss = vi.fn();
-    render(
-      <RateLimitModal detail={{ kind: "user", message: "x" }} onDismiss={onDismiss} />,
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: RATE_LIMIT_LABELS.closeButtonAria }),
-    );
-
-    expect(onDismiss).toHaveBeenCalledOnce();
-  });
-
-  it("「また あした くる」ボタンで onDismiss が呼ばれる", async () => {
-    const user = userEvent.setup();
-    const onDismiss = vi.fn();
-    render(
-      <RateLimitModal detail={{ kind: "user", message: "x" }} onDismiss={onDismiss} />,
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: RATE_LIMIT_LABELS.dismissButton }),
-    );
-
-    expect(onDismiss).toHaveBeenCalledOnce();
-  });
-
-  it("バックドロップ (ダイアログ外) クリックで onDismiss が呼ばれる", () => {
-    const onDismiss = vi.fn();
-    render(
-      <RateLimitModal detail={{ kind: "user", message: "x" }} onDismiss={onDismiss} />,
-    );
-
-    // バックドロップを直接クリックする。dialog 内のクリックは伝播停止される仕様。
-    fireEvent.click(screen.getByTestId("rate-limit-backdrop"));
-
-    expect(onDismiss).toHaveBeenCalledOnce();
-  });
 });
 
 /**
@@ -84,7 +44,7 @@ describe("RateLimitModal の仕様", () => {
  * - ローカルタイムゾーンに依存せず、JST 翌日 0:00 までの残時間を hh:mm:ss で返す
  * - JST 0:00 ちょうどの瞬間はリセット済み (再挑戦可能) として 00:00:00 を返す
  */
-describe("formatUntilJstMidnight の仕様 (JST 0:00 境界)", () => {
+describe("formatUntilJstMidnight (JST 0:00 境界)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
