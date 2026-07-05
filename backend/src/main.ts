@@ -18,7 +18,6 @@ import { PokeAPIClient } from "./adapter/pokemon/pokeapi.js";
 import { SystemRandomSource } from "./adapter/random/system.js";
 import { MockRandomSource } from "./adapter/random/mock.js";
 import { QuestService } from "./service/quest-service.js";
-import { ChatService } from "./service/chat-service.js";
 import { PokedexService } from "./service/pokedex-service.js";
 import { UserPokemonRepo } from "./adapter/repository/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./adapter/repository/user-settings-repo.js";
@@ -112,10 +111,9 @@ logger.info("rate limits configured", {
 });
 
 const questService = new QuestService(pokemonClient, llmClient, pokemonConfig, userSettingsRepo, randomSource);
-const chatService = new ChatService(llmClient);
 const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, pokemonConfig);
 
-const questHandler = new QuestHandler(questService, chatService, userPokemonRepo);
+const questHandler = new QuestHandler(questService, userPokemonRepo);
 const pokedexHandler = new PokedexHandler(pokedexService);
 const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonConfig);
 const usageHandler = new UsageHandler(rateLimitRepo);

@@ -4,7 +4,6 @@ import { ScoreDisplay } from "../components/quest/ScoreDisplay";
 import { NameGuess } from "../components/quest/NameGuess";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { useQuest, type BallType } from "../hooks/useQuest";
-import type { ChatContext } from "../../../shared/api-types/quest";
 
 const BALL_SPRITES: Record<BallType, string> = {
   poke: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
@@ -154,18 +153,9 @@ export function QuestPage() {
           </div>
         )}
 
-        {phase === "result" && captureResult && quest && score && (
+        {phase === "result" && captureResult && (
           <CaptureResult
             result={captureResult}
-            chatContext={{
-              description_en: quest.description_en,
-              description_ja: score.description_ja,
-              translation: userTranslation,
-              score: score.score,
-              review: score.review,
-              name_en: captureResult.name_en,
-              name_ja: captureResult.name_ja,
-            } satisfies ChatContext}
             onNewQuest={startNewQuest}
           />
         )}

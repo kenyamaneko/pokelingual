@@ -13,30 +13,23 @@ const REVIEW_THRESHOLDS = {
   attempted: 30,
 } as const;
 
-const MOCK_CHAT_REPLY =
-  "これは モックの 返信だぞ！本番では 博士が 質問に 答えてくれる。わからない ところが あれば 何でも 聞いてくれ！";
-
 /**
  * Gemini を呼ばずに固定的なレスポンスを返す開発用 LLMClient 実装。
  *
  * モック仕様: プロンプトに含まれる識別子で用途を判定する。
  * - "translation evaluator" を含む → ScoreResult 形式の JSON を返す
- * - "Pokemon professor" を含む → 教授チャット風の固定文を返す
- * サービス側のプロンプトを変更する際は、いずれかのキーワードを必ず残すこと。
+ * サービス側のプロンプトを変更する際は、キーワードを必ず残すこと。
  */
 export class MockLLMClient implements LLMClient {
   /**
    * プロンプト内のキーワードで用途を判定し、固定レスポンスを返す。
    * @param prompt サービス側が組み立てたプロンプト文字列。
-   * @returns 採点用 JSON 文字列 または 教授チャットの固定文。
+   * @returns 採点用 JSON 文字列。
    */
   async generateText(prompt: string): Promise<string> {
     if (prompt.includes("translation evaluator")) {
       const score = MOCK_SCORE_MIN + Math.floor(Math.random() * MOCK_SCORE_RANGE);
       return JSON.stringify({ score, review: buildMockReview(score) });
-    }
-    if (prompt.includes("Pokemon professor")) {
-      return MOCK_CHAT_REPLY;
     }
     throw new Error("MockLLMClient: prompt does not match any known task marker");
   }

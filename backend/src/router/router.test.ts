@@ -5,7 +5,6 @@ import { setupRoutes } from "./router.js";
 import { devAuth } from "../middleware/auth-mock.js";
 import { rateLimit } from "../middleware/rate-limit.js";
 import { QuestService } from "../service/quest-service.js";
-import { ChatService } from "../service/chat-service.js";
 import { PokedexService } from "../service/pokedex-service.js";
 import { QuestHandler } from "../handler/quest-handler.js";
 import { PokedexHandler } from "../handler/pokedex-handler.js";
@@ -118,7 +117,6 @@ function makeApp(o: AppOverrides = {}) {
   };
 
   const questService = new QuestService(pokemonClient, llm, config, settingsRepo, random);
-  const chatService = new ChatService(llm);
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, config);
 
   const app = express();
@@ -128,7 +126,7 @@ function makeApp(o: AppOverrides = {}) {
     setupRoutes(
       devAuth(),
       rateLimit(rateLimitRepo),
-      new QuestHandler(questService, chatService, userPokemonRepo),
+      new QuestHandler(questService, userPokemonRepo),
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsRepo, config),
       new UsageHandler(rateLimitRepo),
@@ -188,11 +186,6 @@ describe("入力バリデーションの 400 (公開入口経由)", () => {
 
   it("guess 欠落の名前推測は 400", async () => {
     const res = await request(makeApp()).post("/api/quest/guess-name").send({});
-    expect(res.status).toBe(400);
-  });
-
-  it("messages 空のチャットは 400", async () => {
-    const res = await request(makeApp()).post("/api/quest/chat").send({ context: {}, messages: [] });
     expect(res.status).toBe(400);
   });
 

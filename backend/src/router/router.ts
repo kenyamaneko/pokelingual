@@ -26,13 +26,12 @@ export function setupRoutes(
   const router = Router();
   router.use(authMiddleware);
 
-  // Quest routes — Gemini を呼ぶ score/chat のみレートリミット対象
+  // Quest routes — Gemini を呼ぶ score のみレートリミット対象
   router.get("/quest/new", questHandler.newQuest);
   router.post("/quest/score", rateLimitMiddleware, questHandler.scoreTranslation);
   router.post("/quest/guess-name", questHandler.guessName);
   router.post("/quest/skip-guess", questHandler.skipGuess);
   router.post("/quest/capture", questHandler.attemptCapture);
-  router.post("/quest/chat", rateLimitMiddleware, questHandler.replyToChat);
 
   router.get("/pokedex", pokedexHandler.getPokedex);
   router.get("/pokedex/:id", pokedexHandler.getPokemonDetail);

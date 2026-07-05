@@ -5,10 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { spec } from "../../test/labels";
 import { CaptureResult, CAPTURE_RESULT_LABELS } from "./CaptureResult";
 import { renderWithProviders } from "../../test/render";
-import type {
-  CaptureResponse,
-  ChatContext,
-} from "../../../../shared/api-types/quest";
+import type { CaptureResponse } from "../../../../shared/api-types/quest";
 
 // API モックは MSW の既定ハンドラで賄う (このコンポーネントは未ログイン描画のため /usage も飛ばない)。
 
@@ -34,22 +31,10 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   };
 }
 
-const chatContext: ChatContext = {
-  description_en: "desc en",
-  description_ja: "desc ja",
-  translation: "yaku",
-  score: 90,
-  review: "review",
-  name_en: "Pikachu",
-  name_ja: "ピカチュウ",
-};
-
-
 /**
  * CaptureResult の仕様:
  * - captured=true なら捕獲タイトル、false なら逃走タイトルを表示する
  * - 「つぎの ぼうけんへ」ボタンで onNewQuest が呼ばれる
- * - 「はかせに しつもん」ボタンでチャットモーダルが開く
  *
  * テスト対象外: 画像 src/ポケモン名/スコア の "props 透過" 表示は仕様ではなく、
  * Render が動けば成立するため検証しない。
@@ -57,7 +42,7 @@ const chatContext: ChatContext = {
 describe("CaptureResult の仕様", () => {
   it("captured=true で捕獲タイトル (ポケモン名入り) を表示する", () => {
     renderWithProviders(
-      <CaptureResult result={baseResult()} chatContext={chatContext} onNewQuest={vi.fn()} />,
+      <CaptureResult result={baseResult()} onNewQuest={vi.fn()} />,
       { withRouter: true },
     );
     expect(
@@ -69,7 +54,6 @@ describe("CaptureResult の仕様", () => {
     renderWithProviders(
       <CaptureResult
         result={baseResult({ captured: false })}
-        chatContext={chatContext}
         onNewQuest={vi.fn()}
       />,
       { withRouter: true },
@@ -85,7 +69,6 @@ describe("CaptureResult の仕様", () => {
     renderWithProviders(
       <CaptureResult
         result={baseResult()}
-        chatContext={chatContext}
         onNewQuest={onNewQuest}
       />,
       { withRouter: true },
@@ -108,7 +91,6 @@ describe("CaptureResult の仕様", () => {
             element={
               <CaptureResult
                 result={baseResult()}
-                chatContext={chatContext}
                 onNewQuest={vi.fn()}
               />
             }
@@ -123,23 +105,5 @@ describe("CaptureResult の仕様", () => {
     );
 
     expect(screen.getByTestId("home-page")).toBeInTheDocument();
-  });
-
-  it("「はかせに しつもん」ボタンでチャットモーダルが開く", async () => {
-    const user = userEvent.setup();
-    renderWithProviders(
-      <CaptureResult result={baseResult()} chatContext={chatContext} onNewQuest={vi.fn()} />,
-      { withRouter: true },
-    );
-
-    // 初期状態ではチャットダイアログは存在しない
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.chatButton }),
-    );
-
-    // クリック後はチャットダイアログ (ProfessorChat) が出現する
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 });
