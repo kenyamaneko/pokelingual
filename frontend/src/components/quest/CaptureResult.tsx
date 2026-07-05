@@ -1,12 +1,9 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CaptureResponse, ChatContext } from "../../../../shared/api-types/quest";
+import type { CaptureResponse } from "../../../../shared/api-types/quest";
 import { getTypeColor } from "../../utils/pokemonTypes";
-import { ProfessorChat } from "./ProfessorChat";
 
 interface CaptureResultProps {
   result: CaptureResponse;
-  chatContext: ChatContext;
   onNewQuest: () => void;
 }
 
@@ -19,19 +16,17 @@ export const CAPTURE_RESULT_LABELS = {
   capturedLegendaryTitle: (nameJa: string) => `やったー！　でんせつの　${nameJa}を　つかまえたぞ！`,
   capturedMythicalTitle: (nameJa: string) => `しんじられない！　まぼろしの　${nameJa}を　つかまえたぞ！`,
   escapedTitle: (nameJa: string) => `やせいの　${nameJa}は　にげだした！`,
-  chatButton: "はかせに　しつもん",
   nextButton: "つぎの　ぼうけんへ",
   backToMenuButton: "メニューに　もどる",
 } as const;
 
 /**
- * 捕獲結果の表示。成否・伝説/幻演出・チャット起動・次のクエスト遷移を提供する。
- * @param props result / chatContext / onNewQuest を含む props。
+ * 捕獲結果の表示。成否・伝説/幻演出・次のクエスト遷移を提供する。
+ * @param props result / onNewQuest を含む props。
  * @returns 捕獲結果表示の要素。
  */
-export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResultProps) {
+export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
   const navigate = useNavigate();
-  const [showChat, setShowChat] = useState(false);
 
   return (
     <div className="mt-4 text-center">
@@ -123,16 +118,8 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
       </div>
 
       <button
-        onClick={() => setShowChat(true)}
-        className="mt-6 w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg
-                   hover:bg-blue-600 transition-colors shadow-lg"
-      >
-        {CAPTURE_RESULT_LABELS.chatButton}
-      </button>
-
-      <button
         onClick={onNewQuest}
-        className="mt-3 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
+        className="mt-6 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
         {CAPTURE_RESULT_LABELS.nextButton}
@@ -145,13 +132,6 @@ export function CaptureResult({ result, chatContext, onNewQuest }: CaptureResult
       >
         {CAPTURE_RESULT_LABELS.backToMenuButton}
       </button>
-
-      {showChat && (
-        <ProfessorChat
-          context={chatContext}
-          onClose={() => setShowChat(false)}
-        />
-      )}
     </div>
   );
 }

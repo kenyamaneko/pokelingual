@@ -338,7 +338,6 @@ git push origin develop
 | POST | `/api/quest/score` | 翻訳を送信し、AI スコアを取得 |
 | POST | `/api/quest/guess-name` | ポケモンの名前を推測（EN/JA対応、ファジーマッチ有り） |
 | POST | `/api/quest/capture` | スコアと名前推測に基づいた確率で捕獲を試みる |
-| POST | `/api/quest/chat` | 博士に質問（コンテキスト + メッセージ履歴を送信） |
 
 ### Pokedex
 

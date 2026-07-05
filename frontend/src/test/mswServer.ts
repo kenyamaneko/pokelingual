@@ -49,7 +49,6 @@ const defaultHandlers = [
   ),
   http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
   http.post(apiUrl("/quest/capture"), () => HttpResponse.json({})),
-  http.post(apiUrl("/quest/chat"), () => HttpResponse.json({ reply: "" })),
   http.get(apiUrl("/settings"), () => HttpResponse.json({ excluded_pokemon_ids: [] })),
   http.put(apiUrl("/settings/excluded-pokemon"), () => HttpResponse.json({})),
 ];

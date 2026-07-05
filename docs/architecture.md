@@ -102,14 +102,7 @@ API 契約型（wire format）は `shared/api-types/*.d.ts` を SSOT とし、ba
 3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
    POST /api/quest/skip-guess → 推測をスキップ → モンスターボール確定
 4. POST /api/quest/capture    → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
-5. POST /api/quest/chat       → 博士に質問（捕獲後、フロントエンドからコンテキスト+履歴を送信）
 ```
-
-**博士チャット:**
-- 捕獲結果画面から「博士に 質問」ボタンでモーダルを開く
-- フロントエンドがステートレスにコンテキスト（原文、翻訳、スコア、レビュー、ポケモン名）+ メッセージ履歴を毎回送信
-- `ChatService` が `LLMClient.generateText` で実装（Gemini/モック差し替え可能）
-- セッションは `attemptCapture` で削除済みのため、チャットはセッション不参照
 
 **ポケモン名伏せ字:**
 - 出題・スコアリング時：説明文中のポケモン名を代名詞に置換（名前推測のヒント防止）
@@ -191,7 +184,7 @@ Auth middleware → Rate limit middleware → Handler
 | 全体1日あたり | 1,500回（環境変数 `GLOBAL_DAILY_LIMIT`） | AI 呼び出し |
 | リセット時刻 | JST 0:00 | 固定 |
 
-- カウント対象：`/api/quest/score` と `/api/quest/chat`（Gemini を呼ぶエンドポイント）
+- カウント対象：`/api/quest/score`（Gemini を呼ぶ唯一のエンドポイント）
 - グローバル上限を先に判定（混雑時に「混雑」と「あなたが使い切った」を区別可能）
 - 上限到達時は HTTP 429 + `kind: "user" | "global"` を返す
 - Firestore トランザクションで原子的にチェック+インクリメント
@@ -225,7 +218,7 @@ frontend/src/
 │   ├── NotFoundPage.tsx    # 404
 │   └── HomePage.tsx
 ├── components/
-│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, ProfessorChat, RateLimitModal
+│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, RateLimitModal
 │   ├── pokedex/         # PokemonGrid, PokemonDetailCard
 │   ├── layout/             # Header, ProtectedRoute
 │   └── auth/               # GoogleLogo

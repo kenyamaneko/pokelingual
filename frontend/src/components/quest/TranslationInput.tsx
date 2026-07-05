@@ -5,6 +5,13 @@ interface TranslationInputProps {
 }
 
 /**
+ * TranslationInput の仕様文言。テストから import される SSOT。
+ */
+export const TRANSLATION_INPUT_LABELS = {
+  submitButton: "この　ほんやくで　たたかう！",
+} as const;
+
+/**
  * 翻訳文を入力して採点へ送信する UI。送信中はスピナーを表示する。
  * @param props onSubmit を含む props。
  * @returns 翻訳入力 UI の要素。
@@ -47,7 +54,7 @@ export function TranslationInput({ onSubmit }: TranslationInputProps) {
             さいてん　しています…
           </span>
         ) : (
-          "この　ほんやくで　たたかう！"
+          TRANSLATION_INPUT_LABELS.submitButton
         )}
       </button>
     </div>

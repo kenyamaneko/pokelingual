@@ -5,12 +5,9 @@ import type {
   GuessResponse,
   SkipGuessResponse,
   CaptureResponse,
-  ChatContext,
-  ChatMessage,
-  ChatResponse,
 } from "../../../shared/api-types/quest";
 
-/** クエスト関連エンドポイント (出題・採点・推測・捕獲・チャット) を呼ぶ API クライアント。 */
+/** クエスト関連エンドポイント (出題・採点・推測・捕獲) を呼ぶ API クライアント。 */
 export const questApi = {
   /**
    * GET /quest/new — 新しい出題ポケモンを取得する。
@@ -41,12 +38,4 @@ export const questApi = {
    * @returns 捕獲結果レスポンス。
    */
   attemptCapture: () => api.post<CaptureResponse>("/quest/capture"),
-  /**
-   * POST /quest/chat — 教授チャットの応答を取得する。
-   * @param context クエストの文脈。
-   * @param messages 会話履歴。
-   * @returns チャット応答レスポンス。
-   */
-  replyToChat: (context: ChatContext, messages: ChatMessage[]) =>
-    api.post<ChatResponse>("/quest/chat", { context, messages }),
 };

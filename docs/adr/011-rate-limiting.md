@@ -54,3 +54,7 @@ system/daily_usage/{YYYY-MM-DD}       → { count, updated_at }
 ## Amendment: 2026-05-30 global カウンタのパス修正
 
 設計時の global カウンタのパス `system/daily_usage/{YYYY-MM-DD}` は、実装で `system/global/daily_usage/{YYYY-MM-DD}` に修正した。Firestore のドキュメントパスは collection/doc の交互で偶数階層が必須のため、3 階層の元案は無効パスだった（Firestore Emulator テストで顕在化）。意味的な変更はなく、global カウンタの永続化先として機能する。
+
+## Amendment: 2026-07-05 博士チャット廃止に伴うカウント対象の縮小
+
+博士チャット機能（`/api/quest/chat`）を廃止した（Issue #52）。チャットが採点と同じカウンタを消費するため「枠 = クエスト回数」の直感と実態がズレる、という UX 上の判断であり、コスト超過が理由ではない。これによりカウント対象は `/api/quest/score` のみとなった。二段日次上限の設計と上限値は変更しない。

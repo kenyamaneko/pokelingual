@@ -1,22 +1,18 @@
 import type { Request, Response } from "express";
 import type { UserPokemonRepository } from "../domain/ports.js";
 import type { QuestService } from "../service/quest-service.js";
-import type { ChatService } from "../service/chat-service.js";
-import type { ChatRequest } from "../../../shared/api-types/quest.js";
 import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import { ExternalServiceError } from "../domain/errors.js";
 import { handleError } from "./error.js";
 
-/** クエスト関連エンドポイント (出題・採点・名前推測・捕獲・チャット) を束ねるハンドラ。 */
+/** クエスト関連エンドポイント (出題・採点・名前推測・捕獲) を束ねるハンドラ。 */
 export class QuestHandler {
   /**
    * @param questService クエストのドメインサービス。
-   * @param chatService 博士チャットのサービス。
    * @param repo ユーザの図鑑進捗リポジトリ。
    */
   constructor(
     private questService: QuestService,
-    private chatService: ChatService,
     private repo: UserPokemonRepository,
   ) {}
 
@@ -105,25 +101,6 @@ export class QuestHandler {
         throw new ExternalServiceError("Firestore", err as Error);
       }
       res.json(resp);
-    } catch (err) {
-      handleError(res, err, req.path);
-    }
-  };
-
-  /**
-   * POST /quest/chat — 博士キャラクタとのチャット応答を返す。
-   * @param req Express リクエスト。
-   * @param res Express レスポンス。
-   */
-  replyToChat = async (req: Request, res: Response) => {
-    const body = req.body as ChatRequest;
-    if (!body.messages || body.messages.length === 0) {
-      res.status(400).json({ error: "messages are required" } satisfies ErrorResponse);
-      return;
-    }
-    try {
-      const reply = await this.chatService.reply(body.context, body.messages);
-      res.json({ reply });
     } catch (err) {
       handleError(res, err, req.path);
     }

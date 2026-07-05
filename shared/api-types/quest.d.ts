@@ -58,31 +58,3 @@ export interface CaptureResponse {
   is_legendary: boolean;
   is_mythical: boolean;
 }
-
-/** チャットの 1 発言。 */
-export interface ChatMessage {
-  role: "user" | "professor";
-  content: string;
-}
-
-/** POST /api/quest/chat に渡すクエスト文脈。 */
-export interface ChatContext {
-  description_en: string;
-  description_ja: string;
-  translation: string;
-  score: number;
-  review: string;
-  name_en: string;
-  name_ja: string;
-}
-
-/** POST /api/quest/chat のリクエストボディ。 */
-export interface ChatRequest {
-  context: ChatContext;
-  messages: ChatMessage[];
-}
-
-/** POST /api/quest/chat のレスポンス。 */
-export interface ChatResponse {
-  reply: string;
-}
