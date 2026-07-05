@@ -28,7 +28,7 @@ export function SignupPage() {
     setError("");
     // パスワード確認の不一致はバックエンドに送る前にクライアントで弾く
     if (password !== passwordConfirm) {
-      setError("パスワードが　いっちしません");
+      setError("パスワードが一致しません");
       return;
     }
     setLoading(true);
@@ -47,7 +47,7 @@ export function SignupPage() {
     try {
       await loginWithGoogle();
     } catch {
-      setError("Google とうろくに　しっぱいしました");
+      setError("Googleでの登録に失敗しました");
     } finally {
       setGoogleLoading(false);
     }
@@ -65,7 +65,7 @@ export function SignupPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">PokeLingual</h1>
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
-        <p className="text-gray-400 text-sm mb-8">あたらしく　はじめよう！</p>
+        <p className="text-gray-400 text-sm mb-8">登録する</p>
 
         <button
           type="button"
@@ -76,7 +76,7 @@ export function SignupPage() {
                      disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <GoogleLogo />
-          {googleLoading ? "とうろく中..." : "Google で　はじめる"}
+          {googleLoading ? "登録中..." : "Google で　はじめる"}
         </button>
 
         <div className="flex items-center gap-3 my-6 text-gray-400 text-xs">
@@ -110,7 +110,7 @@ export function SignupPage() {
             type="password"
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
-            placeholder="パスワード（かくにん）"
+            placeholder="パスワード（確認）"
             required
             data-testid="signup-password-confirm"
             className="w-full border-2 border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700
@@ -129,12 +129,12 @@ export function SignupPage() {
                        font-semibold hover:bg-blue-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "とうろく中..." : "アカウントを　つくる"}
+            {loading ? "登録中..." : "アカウントを作成する"}
           </button>
         </form>
 
         <p className="text-gray-400 text-sm mt-6">
-          すでに　アカウントを　もっている人は{" "}
+          すでにアカウントを持っている人は{" "}
           <Link to="/login" className="text-blue-500 hover:underline" data-testid="goto-login">
             ログイン
           </Link>

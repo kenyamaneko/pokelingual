@@ -12,12 +12,12 @@ interface NameGuessProps {
  * 文言変更は実装・テスト同時更新になる。
  */
 export const NAME_GUESS_LABELS = {
-  inputPlaceholder: "ポケモンの　名前を　入力してね",
-  submitButton: "きみに　きめた！",
-  skipButton: "わからないので　スキップ →",
-  proceedButton: "次へ　すすむ →",
-  correctTitle: "せいかい！",
-  wrongFinalTitle: "ざんねん！",
+  inputPlaceholder: "ポケモンの名前を入力してね",
+  submitButton: "君に　決めた！",
+  skipButton: "わからないのでスキップ →",
+  proceedButton: "次へ進む",
+  correctTitle: "正解！",
+  wrongFinalTitle: "残念...",
 } as const;
 
 /**
@@ -53,14 +53,14 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
   return (
     <div className="mt-4 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
       <h3 className="text-lg font-bold text-gray-700 mb-2">
-        この　ポケモンの　名前は？
+        このポケモンの名前は？
       </h3>
       <p className="text-sm text-gray-500 mb-1">
-        えいごの　名前だと　つかまえやすいよ！　日本語でも　いいよ
+        英語の名前を当てると捕まえやすいよ！　日本語でもいいよ
       </p>
       {!isFinished && guessResult && (
         <p className="text-sm text-gray-400 mb-3">
-          のこり　{guessResult.attempts_remaining}回
+          残り{guessResult.attempts_remaining}回
         </p>
       )}
 
@@ -68,12 +68,12 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-3">
           <p className="text-green-700 font-bold">
             {NAME_GUESS_LABELS.correctTitle}
-            {guessResult.fuzzy && "（すこし　ちがったけど　OK！）"}
+            {guessResult.fuzzy && "（少し違ったけどOK！）"}
           </p>
           <p className="text-green-600 text-sm">
             {guessResult.language === "en"
-              ? "えいご名　せいかい！　ハイパーボール　ゲット！"
-              : "日本語名　せいかい！　スーパーボール　ゲット！"}
+              ? "英語名で正解！　ハイパーボールを手に入れた！"
+              : "日本語名で正解！　スーパーボールを手に入れた！"}
           </p>
         </div>
       )}
@@ -92,7 +92,7 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
           <p className="text-yellow-700 text-sm">
             {guessResult.attempts_remaining === 1
               ? "はずれ…　ラストチャンス！"
-              : "はずれ…　もう一度　やってみよう！"}
+              : "はずれ…　もう一度やってみよう！"}
           </p>
         </div>
       )}

@@ -64,21 +64,21 @@ export function QuestPage() {
         {phase === "loading" && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mb-4" />
-            <p className="text-gray-500">やせいの　ポケモンを　さがしています…</p>
+            <p className="text-gray-500">野生のポケモンを探しています</p>
           </div>
         )}
 
         {phase === "error" && (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="text-5xl mb-4">!</p>
-            <p className="text-gray-700 font-bold text-lg mb-2">エラーが　はっせいしました</p>
+            <p className="text-gray-700 font-bold text-lg mb-2">エラーが発生しました</p>
             <p className="text-gray-500 text-sm mb-6">{error}</p>
             <button
               onClick={startNewQuest}
               className="bg-red-500 text-white py-3 px-8 rounded-2xl font-bold
                          hover:bg-red-600 transition-colors shadow-lg"
             >
-              もう一度　さがす
+              もう一度探す
             </button>
           </div>
         )}
@@ -86,11 +86,11 @@ export function QuestPage() {
         {phase === "translating" && quest && (
           <>
             <p className="text-center text-gray-700 font-bold text-lg mb-4">
-              あ！　やせいの　ポケモンが　とび出してきた！
+              あ！　野生の　ポケモンが　飛び出してきた！
             </p>
             {isSpecial && (
               <p className="text-center text-amber-600 font-bold text-sm mb-4 animate-pulse">
-                ただならぬ　けはいを　感じる…
+                ただならない　気配を感じる...
               </p>
             )}
             <QuestCard description={quest.description_en} />
@@ -103,21 +103,21 @@ export function QuestPage() {
             <QuestCard description={quest.description_en} />
             <div className="mt-4 bg-white rounded-2xl shadow-lg p-5 border border-gray-200">
               <div className="mb-3">
-                <p className="text-xs font-semibold text-gray-400 mb-1">きみの　ほんやく</p>
+                <p className="text-xs font-semibold text-gray-400 mb-1">君の翻訳</p>
                 <p className="text-gray-800 text-sm leading-relaxed">
                   {userTranslation}
                 </p>
               </div>
               {score.review && (
                 <div className="mb-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 mb-1">はかせからの　コメント</p>
+                  <p className="text-xs font-semibold text-gray-400 mb-1">博士からのコメント</p>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {score.review}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-xs font-semibold text-gray-400 mb-1">日本語の　せつめい文</p>
+                <p className="text-xs font-semibold text-gray-400 mb-1">日本語の説明文</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   「{score.description_ja}」
                 </p>

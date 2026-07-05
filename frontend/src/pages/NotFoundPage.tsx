@@ -4,9 +4,9 @@ import { Link } from "react-router-dom";
  * NotFoundPage の表示文言。テストから import される SSOT。
  */
 export const NOT_FOUND_LABELS = {
-  title: "おや？　ページが　みつからない",
-  description: "URL が　まちがっているか、ページが　いどうしたみたいだ。",
-  backToHome: "ホームに　もどる",
+  title: "ページが見つかりません",
+  description: "URLが間違っているか、ページが移動しました",
+  backToHome: "ホーム画面に戻る",
 } as const;
 
 /**

@@ -60,7 +60,7 @@ describe("SignupPage", () => {
     await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
 
     expect(await screen.findByTestId("signup-error")).toHaveTextContent(
-      spec("パスワードが　いっちしません"),
+      spec("パスワードが一致しません"),
     );
     // 不一致はクライアントで弾かれ、認証境界に登録リクエストが飛ばない
     expect(signup).not.toHaveBeenCalled();

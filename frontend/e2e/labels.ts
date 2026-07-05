@@ -8,48 +8,48 @@
 
 /** getByRole("link", { name }) で参照するリンク名。 */
 export const LINK = {
-  startQuest: /ぼうけんに.出かける/,
-  viewPokedex: /ずかんを.見る/,
+  startQuest: /ポケモンを探しに行く/,
+  viewPokedex: /図鑑を見る/,
   logo: "PokeLingual",
-  navQuest: "ぼうけん",
-  navPokedex: "ずかん",
-  settings: "せってい",
+  navQuest: "探検",
+  navPokedex: "図鑑",
+  settings: "設定",
 } as const;
 
 /** getByRole("button", { name }) で参照するボタン名。 */
 export const BUTTON = {
-  submitTranslation: /この.ほんやくで/,
-  decideName: /きみに.きめた/,
+  submitTranslation: /この翻訳に決めた/,
+  decideName: /君に.決めた/,
   skip: /スキップ/,
-  proceed: /次へ.すすむ/,
+  proceed: /次へ進む/,
   useBall: /を.使う/,
-  nextQuest: /つぎの.ぼうけんへ/,
-  close: "とじる",
+  nextQuest: /次のポケモンを探す/,
+  close: "閉じる",
 } as const;
 
 /** getByText で参照する本文テキスト。 */
 export const TEXT = {
   questTitle: "Who's That Pokemon?",
   damage: "ダメージ",
-  professorComment: /はかせからの.コメント/,
-  correct: "せいかい！",
+  professorComment: /博士からのコメント/,
+  correct: "正解！",
   wrong: /はずれ/,
-  wrongFinal: /ざんねん/,
+  wrongFinal: /残念/,
   ultraBall: /ハイパーボール/,
   pokeBall: /モンスターボール/,
-  captured: /つかまえたぞ/,
-  escaped: /にげだした/,
-  bestScore: /さいこう.スコア/,
-  captureCount: /ほかく.回数/,
+  captured: /捕まえたぞ/,
+  escaped: /逃げ出した/,
+  bestScore: /最高スコア/,
+  captureCount: /捕獲回数/,
 } as const;
 
 /** getByPlaceholder で参照するプレースホルダ。 */
 export const PLACEHOLDER = {
-  translation: /日本語を.入力してね/,
-  nameGuess: /ポケモンの.名前を.入力してね/,
+  translation: /日本語を入力してね/,
+  nameGuess: /ポケモンの名前を入力してね/,
 } as const;
 
 /** getByRole("heading", { name }) で参照する見出し。 */
 export const HEADING = {
-  pokedex: "ずかん",
+  pokedex: "図鑑",
 } as const;

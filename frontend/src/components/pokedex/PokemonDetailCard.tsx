@@ -61,7 +61,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
             )}
             {pokemon.height != null && pokemon.weight != null && (
               <p className="text-sm text-gray-400 mt-2">
-                たかさ: {formatHeightMeters(pokemon.height)}m | おもさ: {formatWeightKilograms(pokemon.weight)}kg
+                高さ: {formatHeightMeters(pokemon.height)}m | 重さ: {formatWeightKilograms(pokemon.weight)}kg
               </p>
             )}
           </div>
@@ -69,7 +69,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
           {pokemon.flavor_texts && pokemon.flavor_texts.length > 0 ? (
             <div className="mb-4">
               <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                ずかんの　せつめい
+                図鑑の説明
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                 {pokemon.flavor_texts.map((pair, i) => (
@@ -90,7 +90,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
           ) : (
             <div className="bg-gray-50 rounded-xl p-4 mb-4">
               <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                ずかんの　せつめい
+                図鑑の説明
               </h3>
               <p className="text-gray-700 text-sm leading-relaxed italic">
                 &ldquo;{pokemon.description_en}&rdquo;
@@ -105,19 +105,19 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
 
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-blue-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-blue-400">さいこう　スコア</p>
+              <p className="text-xs text-blue-400">最高スコア</p>
               <p className="text-xl font-bold text-blue-600">
                 {pokemon.best_score}
               </p>
             </div>
             <div className="bg-green-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-green-400">ほかく　回数</p>
+              <p className="text-xs text-green-400">捕獲回数</p>
               <p className="text-xl font-bold text-green-600">
                 {pokemon.total_captures}
               </p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-purple-400">そうぐう　回数</p>
+              <p className="text-xs text-purple-400">遭遇回数</p>
               <p className="text-xl font-bold text-purple-600">
                 {pokemon.total_encounters}
               </p>
@@ -129,7 +129,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
             className="mt-4 w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold
                        hover:bg-gray-200 transition-colors"
           >
-            とじる
+            閉じる
           </button>
         </div>
       </div>

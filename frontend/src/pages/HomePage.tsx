@@ -17,7 +17,7 @@ export function HomePage() {
           おーす！　みらいの　チャンピオン
         </h1>
         <p className="text-gray-500 mb-8">
-          えいごを　ほんやくして　ポケモンを　つかまえよう！
+          英語を翻訳してポケモンを捕まえよう
         </p>
 
         <div className="space-y-4">
@@ -26,21 +26,21 @@ export function HomePage() {
             className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
           >
-            ぼうけんに　出かける
+            ポケモンを探しに行く
           </Link>
           <Link
             to="/pokedex"
             className="block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow border border-gray-200"
           >
-            ずかんを　見る
+            図鑑を見る
           </Link>
           <Link
             to="/settings"
             className="block w-full bg-white hover:bg-gray-100 text-gray-500 py-3 px-6 rounded-2xl
                        font-bold text-base transition-colors border border-gray-200"
           >
-            せってい
+            設定
           </Link>
         </div>
       </div>

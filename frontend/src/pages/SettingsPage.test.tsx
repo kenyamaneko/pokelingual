@@ -119,7 +119,7 @@ describe("SettingsPage の除外ポケモン管理", () => {
     renderSettings();
 
     expect(
-      await screen.findByText(spec("せっていの　読みこみに　しっぱいしました")),
+      await screen.findByText(spec("設定の読み込みに失敗しました")),
     ).toBeInTheDocument();
     vi.restoreAllMocks();
   });
@@ -131,12 +131,12 @@ describe("SettingsPage の除外ポケモン管理", () => {
     renderSettings();
 
     await user.type(await screen.findByPlaceholderText("ポケモン ID"), "42");
-    await user.click(screen.getByRole("button", { name: "ついか" }));
+    await user.click(screen.getByRole("button", { name: "追加" }));
 
     // 追加した ID が 3 桁 0 埋めで一覧に現れ、空状態の文言が消える
     expect(await screen.findByText("#042")).toBeInTheDocument();
     expect(
-      screen.queryByText(spec("じょがい　ポケモンは　いません")),
+      screen.queryByText(spec("除外ポケモンはいません")),
     ).not.toBeInTheDocument();
     // 保存 API には追加後の ID 一覧が渡る (実際に送られた HTTP ボディで確認)
     await waitFor(() => expect(lastSavedIDs).toEqual([42]));
@@ -149,10 +149,10 @@ describe("SettingsPage の除外ポケモン管理", () => {
     renderSettings();
 
     expect(await screen.findByText("#042")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "さくじょ" }));
+    await user.click(screen.getByRole("button", { name: "削除" }));
 
     expect(
-      await screen.findByText(spec("じょがい　ポケモンは　いません")),
+      await screen.findByText(spec("除外ポケモンはいません")),
     ).toBeInTheDocument();
     expect(screen.queryByText("#042")).not.toBeInTheDocument();
     // 保存 API には削除後の空一覧が渡る (実際に送られた HTTP ボディで確認)
@@ -168,17 +168,17 @@ describe("SettingsPage の除外ポケモン管理", () => {
     renderSettings();
 
     await user.type(await screen.findByPlaceholderText("ポケモン ID"), "42");
-    await user.click(screen.getByRole("button", { name: "ついか" }));
+    await user.click(screen.getByRole("button", { name: "追加" }));
 
     expect(
       await screen.findByText(
-        spec("せっていを　ほぞんできなかったよ。ポケモン ID を　かくにんしてね"),
+        spec("設定の保存に失敗しました"),
       ),
     ).toBeInTheDocument();
     // 保存に失敗した ID は一覧に反映されず、空状態のまま
     expect(screen.queryByText("#042")).not.toBeInTheDocument();
     expect(
-      screen.getByText(spec("じょがい　ポケモンは　いません")),
+      screen.getByText(spec("除外ポケモンはいません")),
     ).toBeInTheDocument();
     vi.restoreAllMocks();
   });

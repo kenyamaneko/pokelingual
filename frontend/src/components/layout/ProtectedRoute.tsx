@@ -14,7 +14,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <div className="flex justify-center items-center h-screen">
         <div
           role="status"
-          aria-label="にんしょうを かくにんちゅう"
+          aria-label="認証を確認中..."
           className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"
         />
       </div>

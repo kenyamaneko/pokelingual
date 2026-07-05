@@ -10,7 +10,7 @@ import { Header } from "./Header";
 /**
  * Header の仕様:
  * - 環境ラベル: local では LOCAL、dev では DEV を表示し、prod・未設定・想定外の値では出さない
- * - レート残量: 「のこり (limit - count)/limit」を表示し、超過時はマイナスにせず 0 にクランプする
+ * - レート残量: 「残り (limit - count)/limit」を表示し、超過時はマイナスにせず 0 にクランプする
  * - usage が取得できないあいだは残量バッジを出さない
  * - 未ログイン時はヘッダ自体を描画しない
  */
@@ -56,7 +56,7 @@ describe("Header", () => {
       renderHeader();
 
       // 残量バッジの出現でレンダー完了を待ってから不在を確かめる
-      await screen.findByText("のこり 30/30");
+      await screen.findByText("残り 30/30");
       expect(screen.queryByText("LOCAL")).not.toBeInTheDocument();
       expect(screen.queryByText("DEV")).not.toBeInTheDocument();
     });
@@ -67,7 +67,7 @@ describe("Header", () => {
 
       renderHeader();
 
-      await screen.findByText("のこり 30/30");
+      await screen.findByText("残り 30/30");
       expect(screen.queryByText("LOCAL")).not.toBeInTheDocument();
       expect(screen.queryByText("DEV")).not.toBeInTheDocument();
     });
@@ -75,9 +75,9 @@ describe("Header", () => {
 
   describe("レート残量の表示とクランプ", () => {
     it.each([
-      [29, 30, "のこり 1/30"],
-      [30, 30, "のこり 0/30"],
-      [31, 30, "のこり 0/30"],
+      [29, 30, "残り 1/30"],
+      [30, 30, "残り 0/30"],
+      [31, 30, "残り 0/30"],
     ])(
       "count=%i / limit=%i のとき「%s」と表示する (マイナスにしない)",
       async (count, limit, expected) => {
@@ -99,7 +99,7 @@ describe("Header", () => {
       // /usage の取得が試みられたことを確かめてから、残量バッジの不在を確認する
       await waitFor(() => expect(countRequests("/usage")).toBe(1));
       expect(screen.getByText("PokeLingual")).toBeInTheDocument();
-      expect(screen.queryByText(/のこり/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/残り/)).not.toBeInTheDocument();
     });
   });
 

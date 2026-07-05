@@ -29,7 +29,7 @@ export function LoginPage() {
     try {
       await login(email, password);
     } catch {
-      setError("メールアドレス　または　パスワードが　正しくありません");
+      setError("メールアドレスまたはパスワードが間違っています");
     } finally {
       setLoading(false);
     }
@@ -41,7 +41,7 @@ export function LoginPage() {
     try {
       await loginWithGoogle();
     } catch {
-      setError("Google ログインに　しっぱいしました");
+      setError("Googleでのログインに失敗しました");
     } finally {
       setGoogleLoading(false);
     }
@@ -60,7 +60,7 @@ export function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">PokeLingual</h1>
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
         <p className="text-gray-400 text-sm mb-8">
-          ポケモンで　えいごを　学ぼう！
+          ポケモンで英語を学ぼう！
         </p>
 
         <button
@@ -72,7 +72,7 @@ export function LoginPage() {
                      disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <GoogleLogo />
-          {googleLoading ? "ログイン中..." : "Google で　はじめる"}
+          {googleLoading ? "ログイン中..." : "Googleでログイン"}
         </button>
 
         <div className="flex items-center gap-3 my-6 text-gray-400 text-xs">
@@ -110,24 +110,24 @@ export function LoginPage() {
                        font-semibold hover:bg-blue-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "ログイン中..." : "メールで　ログイン"}
+            {loading ? "ログイン中..." : "メールでログイン"}
           </button>
         </form>
 
         <p className="text-gray-400 text-sm mt-6">
-          はじめての　人は{" "}
+          初めての人は{" "}
           <Link to="/signup" className="text-blue-500 hover:underline" data-testid="goto-signup">
-            アカウントを　つくる
+            アカウントを作る
           </Link>
         </p>
         <p className="text-gray-400 text-sm mt-2">
-          パスワードを　わすれた人は{" "}
+          パスワードを忘れた人は{" "}
           <Link
             to="/reset-password"
             className="text-blue-500 hover:underline"
             data-testid="goto-reset-password"
           >
-            さいせってい
+            再設定する
           </Link>
         </p>
       </div>
