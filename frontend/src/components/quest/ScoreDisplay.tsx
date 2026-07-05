@@ -58,10 +58,10 @@ function getHPBarColor(remainingHP: number): string {
  * 文言変更時は実装とテストが同時に追従する。
  */
 export const SCORE_LABELS = {
-  critical: "いちげき　ひっさつ！",
-  superEffective: "こうかは　ばつぐんだ！",
-  notVeryEffective: "こうかは　いまひとつの　ようだ",
-  noEffect: "こうかが　ないみたいだ...",
+  critical: "いちげきひっさつ！",
+  superEffective: "効果は　バツグンだ！",
+  notVeryEffective: "効果は　いまひとつのようだ",
+  noEffect: "効果が　ないみたいだ...",
 } as const;
 
 /**

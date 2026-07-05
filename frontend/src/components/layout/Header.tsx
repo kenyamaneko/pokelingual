@@ -45,9 +45,9 @@ export function Header() {
           {usage && remaining !== null && (
             <span
               className="text-xs font-semibold bg-white/20 px-2 py-0.5 rounded-full"
-              title="きょうの　のこり　AI呼び出しかいすう（JST 0:00 に リセット）"
+              title="今日の残り回数"
             >
-              のこり {remaining}/{usage.limit}
+              残り {remaining}/{usage.limit}
             </span>
           )}
         </div>
@@ -58,7 +58,7 @@ export function Header() {
               location.pathname === "/quest" ? "underline underline-offset-4" : ""
             }`}
           >
-            ぼうけん
+            探検
           </Link>
           <Link
             to="/pokedex"
@@ -68,7 +68,7 @@ export function Header() {
                 : ""
             }`}
           >
-            ずかん
+            図鑑
           </Link>
           <Link
             to="/settings"
@@ -78,7 +78,7 @@ export function Header() {
                 : ""
             }`}
           >
-            せってい
+            設定
           </Link>
         </nav>
       </div>

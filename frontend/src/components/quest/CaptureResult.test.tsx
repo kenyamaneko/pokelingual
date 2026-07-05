@@ -65,7 +65,7 @@ describe("CaptureResult", () => {
     ).toBeInTheDocument();
   });
 
-  it("「メニューに もどる」ボタンでホーム (/) へ遷移する", async () => {
+  it("「メニューに戻る」ボタンでホーム (/) へ遷移する", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/quest"]}>

@@ -58,20 +58,20 @@ function isRateLimitError(err: unknown): boolean {
 function getErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     if (!err.response) {
-      return "サーバーに　せつぞくできません。ネットワークを　かくにんしてください";
+      return "サーバーに接続できません。ネットワークを確認してください";
     }
     const status = err.response.status;
     if (status === 401) {
-      return "にんしょうに　しっぱいしました。ログイン　しなおしてください";
+      return "認証に失敗しました。ログインし直してください";
     }
     if (status === 403) {
-      return "アクセスけんが　ありません";
+      return "アクセス権がありません";
     }
     if (status === 502) {
-      return "がいぶサービス（PokeAPI / Gemini）が　おうとうしません。しばらく　待ってください";
+      return "外部サービスが応答しません。しばらく待ってから、もう一度試してください";
     }
     if (status === 404) {
-      return "ぼうけんが　見つかりません。新しい　ぼうけんを　始めてください";
+      return "セッションが切断されました。次のポケモンを探してください";
     }
     return `${fallback}（${status}）`;
   }
@@ -108,7 +108,7 @@ export function useQuest(): UseQuestResult {
       setQuest(res.data);
       setPhase("translating");
     } catch (err) {
-      setError(getErrorMessage(err, "ポケモンの　データを　読みこめません"));
+      setError(getErrorMessage(err, "データの読み込みに失敗しました。もう一度試してください。続く場合はお問い合わせください"));
       setPhase("error");
     }
   }, []);
@@ -126,7 +126,7 @@ export function useQuest(): UseQuestResult {
       refreshUsage();
     } catch (err) {
       if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "さいてんに　しっぱいしました"));
+      setError(getErrorMessage(err, "採点に失敗しました"));
     }
   };
 
@@ -139,7 +139,7 @@ export function useQuest(): UseQuestResult {
       }
     } catch (err) {
       if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "名前の　はんていに　しっぱいしました"));
+      setError(getErrorMessage(err, "名前の判定に失敗しました"));
     }
   };
 
@@ -151,7 +151,7 @@ export function useQuest(): UseQuestResult {
       setPhase("capturing");
     } catch (err) {
       if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "スキップに　しっぱいしました"));
+      setError(getErrorMessage(err, "スキップに失敗しました"));
     }
   };
 
@@ -162,7 +162,7 @@ export function useQuest(): UseQuestResult {
       setPhase("result");
     } catch (err) {
       if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "ほかくの　はんていに　しっぱいしました"));
+      setError(getErrorMessage(err, "捕獲の判定に失敗しました"));
     }
   };
 

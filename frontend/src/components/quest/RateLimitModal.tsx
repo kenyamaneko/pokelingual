@@ -10,10 +10,9 @@ interface Props {
  * RateLimitModal の仕様文言。テストから import される SSOT。
  */
 export const RATE_LIMIT_LABELS = {
-  userTitle: "きょうの　しゅぎょうは　ここまで！",
-  globalTitle: "きょうは　たくさんの　トレーナーが…",
-  dismissButton: "また　あした　くる",
-  closeButtonAria: "閉じる",
+  userTitle: "博士は忙しそうにしている",
+  globalTitle: "研究所は大にぎわいのようだ",
+  dismissButton: "閉じる",
 } as const;
 
 const MS_PER_SECOND = 1000;
@@ -53,21 +52,14 @@ export function RateLimitModal({ detail, onDismiss }: Props) {
         className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 id="rate-limit-modal-title" className="text-lg font-bold text-gray-800">{title}</h2>
-          <button
-            onClick={onDismiss}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-            aria-label={RATE_LIMIT_LABELS.closeButtonAria}
-          >
-            &times;
-          </button>
         </div>
 
         <p className="text-sm text-gray-700 leading-relaxed mb-4">{detail.message}</p>
 
         <div className="bg-gray-50 rounded-xl p-4 mb-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">つぎの　ちょうせんまで（JST 0:00 に リセット）</p>
+          <p className="text-xs text-gray-500 mb-1">リセットまで</p>
           <p className="text-2xl font-mono font-bold text-gray-800">{countdown}</p>
         </div>
 

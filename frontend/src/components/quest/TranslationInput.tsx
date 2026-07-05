@@ -8,7 +8,7 @@ interface TranslationInputProps {
  * TranslationInput の仕様文言。テストから import される SSOT。
  */
 export const TRANSLATION_INPUT_LABELS = {
-  submitButton: "この　ほんやくで　たたかう！",
+  submitButton: "この翻訳に決めた！",
 } as const;
 
 /**
@@ -35,7 +35,7 @@ export function TranslationInput({ onSubmit }: TranslationInputProps) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="日本語を　入力してね"
+        placeholder="日本語を入力してね"
         className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl
                    focus:border-blue-500 focus:outline-none text-lg resize-none
                    bg-white text-gray-800"
@@ -51,7 +51,7 @@ export function TranslationInput({ onSubmit }: TranslationInputProps) {
         {submitting ? (
           <span className="flex items-center justify-center gap-2">
             <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-            さいてん　しています…
+            博士が採点しています
           </span>
         ) : (
           TRANSLATION_INPUT_LABELS.submitButton

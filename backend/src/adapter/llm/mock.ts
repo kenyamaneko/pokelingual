@@ -41,9 +41,9 @@ export class MockLLMClient implements LLMClient {
  * @returns スコア帯に対応する日本語の講評文。
  */
 function buildMockReview(score: number): string {
-  if (score >= REVIEW_THRESHOLDS.excellent) return "これは 最高評価用の モック講評だぞ！素晴らしい！全体の 意味を 正確に 捉えているぞ。";
-  if (score >= REVIEW_THRESHOLDS.good) return "これは 高評価用の モック講評だぞ！意味は しっかり 伝わっているぞ。";
-  if (score >= REVIEW_THRESHOLDS.partial) return "これは 中間評価用の モック講評だぞ！前半は よく 訳せているぞ。";
-  if (score >= REVIEW_THRESHOLDS.attempted) return "これは 低評価用の モック講評だぞ！挑戦した ことが 大事だぞ！";
-  return "これは 最低評価用の モック講評だぞ！まずは 知っている 単語を 手がかりに 全体像を つかんでみよう。";
+  if (score >= REVIEW_THRESHOLDS.excellent) return "これは　最高評価用の　モック講評だぞ！　素晴らしい！　英文の　意味を　正確に捉えているぞ。";
+  if (score >= REVIEW_THRESHOLDS.good) return "これは　高評価用の　モック講評だぞ！　意味は　しっかり　伝わっているぞ。";
+  if (score >= REVIEW_THRESHOLDS.partial) return "これは　中間評価用の　モック講評だぞ！　部分的には　よく　訳せているぞ。";
+  if (score >= REVIEW_THRESHOLDS.attempted) return "これは　低評価用の　モック講評だぞ！　挑戦した　ことが　大事だぞ！";
+  return "これは　最低評価用の　モック講評だぞ！　まずは　知っている　単語を　手がかりに　全体像を　掴んでみよう。";
 }

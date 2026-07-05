@@ -61,7 +61,7 @@ async function submitLogin(
 ) {
   await user.type(screen.getByPlaceholderText("メールアドレス"), email);
   await user.type(screen.getByPlaceholderText("パスワード"), password);
-  await user.click(screen.getByRole("button", { name: "メールで　ログイン" }));
+  await user.click(screen.getByRole("button", { name: "メールでログイン" }));
 }
 
 describe("LoginPage", () => {
@@ -82,11 +82,11 @@ describe("LoginPage", () => {
 
     expect(
       await screen.findByText(
-        spec("メールアドレス　または　パスワードが　正しくありません"),
+        spec("メールアドレスまたはパスワードが間違っています"),
       ),
     ).toBeInTheDocument();
     // 再入力してやり直せるよう、送信ボタンが操作可能な状態で残る
-    expect(screen.getByRole("button", { name: "メールで　ログイン" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "メールでログイン" })).toBeEnabled();
     // 認証失敗ではホームへ遷移しない
     expect(screen.queryByTestId("home-page")).not.toBeInTheDocument();
   });

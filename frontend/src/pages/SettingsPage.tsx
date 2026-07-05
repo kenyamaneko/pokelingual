@@ -24,7 +24,7 @@ export function SettingsPage() {
         setExcludedIDs(res.data.excluded_pokemon_ids);
       })
       .catch(() => {
-        setError("せっていの　読みこみに　しっぱいしました");
+        setError("設定の読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -37,7 +37,7 @@ export function SettingsPage() {
       await settingsApi.updateExcludedPokemon(ids);
       setExcludedIDs(ids);
     } catch {
-      setError("せっていを　ほぞんできなかったよ。ポケモン ID を　かくにんしてね");
+      setError("設定の保存に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -70,7 +70,7 @@ export function SettingsPage() {
   return (
     <div className="min-h-[calc(100vh-56px)] bg-gray-50 py-8">
       <div className="max-w-md mx-auto px-4">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">せってい</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">設定</h1>
 
         <div className="bg-white rounded-2xl shadow p-6 mb-6">
           <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
@@ -100,14 +100,14 @@ export function SettingsPage() {
         <div className="bg-white rounded-2xl shadow p-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-400 uppercase">
-              にがて　ポケモン　せってい
+              苦手ポケモン設定
             </h2>
             <span className="text-xs text-gray-400 font-mono">
               {excludedIDs.length}
             </span>
           </div>
           <p className="text-gray-500 text-sm mb-4">
-            ぼうけんに　出てきてほしくない　ポケモンの　IDを　せっていできます
+            出てきてほしくないポケモンを設定できます
           </p>
 
           {error && (
@@ -131,13 +131,13 @@ export function SettingsPage() {
               className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm
                          hover:bg-red-600 transition-colors disabled:opacity-50"
             >
-              ついか
+              追加
             </button>
           </div>
 
           {excludedIDs.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-4">
-              じょがい　ポケモンは　いません
+              除外ポケモンはいません
             </p>
           ) : (
             <ul className="space-y-2">
@@ -155,7 +155,7 @@ export function SettingsPage() {
                     className="text-red-400 hover:text-red-600 text-sm font-bold
                                disabled:opacity-50"
                   >
-                    さくじょ
+                    削除
                   </button>
                 </li>
               ))}

@@ -12,12 +12,12 @@ interface CaptureResultProps {
  * タイトル系はポケモン名を埋め込む関数として export する。
  */
 export const CAPTURE_RESULT_LABELS = {
-  capturedTitle: (nameJa: string) => `やったー！　${nameJa}を　つかまえたぞ！`,
-  capturedLegendaryTitle: (nameJa: string) => `やったー！　でんせつの　${nameJa}を　つかまえたぞ！`,
-  capturedMythicalTitle: (nameJa: string) => `しんじられない！　まぼろしの　${nameJa}を　つかまえたぞ！`,
-  escapedTitle: (nameJa: string) => `やせいの　${nameJa}は　にげだした！`,
-  nextButton: "つぎの　ぼうけんへ",
-  backToMenuButton: "メニューに　もどる",
+  capturedTitle: (nameJa: string) => `やったー！　${nameJa}を　捕まえたぞ！`,
+  capturedLegendaryTitle: (nameJa: string) => `やったー！　伝説の　${nameJa}を　捕まえたぞ！`,
+  capturedMythicalTitle: (nameJa: string) => `信じられない！　幻の　${nameJa}を　捕まえたぞ！`,
+  escapedTitle: (nameJa: string) => `野生の　${nameJa}は　逃げ出した！`,
+  nextButton: "次のポケモンを探す",
+  backToMenuButton: "メニューに戻る",
 } as const;
 
 /**
@@ -103,7 +103,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         {result.description_en && (
           <div className="mt-4 bg-gray-50 rounded-xl p-4 text-left">
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              かくちの　ずかんの　せつめい
+              各地の図鑑の説明
             </h3>
             <p className="text-gray-700 text-sm leading-relaxed italic">
               "{result.description_en}"

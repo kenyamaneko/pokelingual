@@ -106,7 +106,7 @@ describe("PokedexPage", () => {
 
     // 読み込み完了を待ってからバナーの不在を確かめる
     await screen.findByText("ダミーモンA");
-    expect(screen.queryByText(/よみこめなかったよ/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/読み込めませんでした/)).not.toBeInTheDocument();
   });
 
   it("よみこめなかったポケモンが 1 匹のときは警告バナーが出る", async () => {
@@ -116,7 +116,7 @@ describe("PokedexPage", () => {
 
     expect(
       await screen.findByText(
-        spec("1びき　よみこめなかったよ。あとで　もう一度　ためしてね"),
+        spec("1匹読み込めませんでした。あとでもう一度試してください"),
       ),
     ).toBeInTheDocument();
   });
@@ -127,7 +127,7 @@ describe("PokedexPage", () => {
     render(<PokedexPage />);
 
     expect(
-      await screen.findByText(spec("まだ　ポケモンに　出会っていません")),
+      await screen.findByText(spec("まだポケモンに出会っていません")),
     ).toBeInTheDocument();
   });
 
@@ -139,7 +139,7 @@ describe("PokedexPage", () => {
     render(<PokedexPage />);
 
     expect(
-      await screen.findByText(spec("ずかんの　よみこみに　しっぱいしました")),
+      await screen.findByText(spec("図鑑の読み込みに失敗しました")),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("pokemon-card")).not.toBeInTheDocument();
   });
@@ -158,7 +158,7 @@ describe("PokedexPage", () => {
     ).toBeInTheDocument();
     // タイプバッジまで描画される (詳細カードを実部品で組み立てた結果の観測)
     expect(screen.getByText("grass")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "とじる" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "閉じる" })).toBeInTheDocument();
   });
 
   it("詳細モーダルの とじる を押すと一覧へ戻る", async () => {
@@ -169,7 +169,7 @@ describe("PokedexPage", () => {
     render(<PokedexPage />);
 
     await user.click(await screen.findByRole("button", { name: /ダミーモンA/ }));
-    await user.click(await screen.findByRole("button", { name: "とじる" }));
+    await user.click(await screen.findByRole("button", { name: "閉じる" }));
 
     // モーダルが閉じ、詳細説明が消えて一覧のカードだけが残る
     await waitFor(() =>
@@ -192,8 +192,8 @@ describe("PokedexPage", () => {
     await user.click(await screen.findByRole("button", { name: /ダミーモンA/ }));
 
     expect(
-      await screen.findByText(spec("ポケモンの　しょうさいを　よみこめなかったよ")),
+      await screen.findByText(spec("ポケモンの詳細の読み込みに失敗しました")),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "とじる" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "閉じる" })).not.toBeInTheDocument();
   });
 });

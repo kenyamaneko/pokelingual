@@ -16,8 +16,8 @@ export function handleError(res: Response, err: unknown, path: string): void {
     res.status(404).json({ error: "resource not found" } satisfies ErrorResponse);
   } else if (err instanceof RateLimitError) {
     const message = err.kind === "user"
-      ? "きょうの　しゅぎょうは　ここまでだ！あした　また　きてくれな。"
-      : "きょうは　たくさんの　トレーナーが　きているようだ。あした　また　ちょうせんしてくれ！";
+      ? "そろそろ　研究に　戻るぞ。また　明日　来てくれ"
+      : "今日は　たくさんの　トレーナーが　来ているぞ。また　明日　来てくれ";
     const body: RateLimitResponse = { error: err.kind, message };
     res.status(429).json(body);
   } else if (err instanceof ExternalServiceError) {

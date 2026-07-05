@@ -30,7 +30,7 @@ export function PokedexPage() {
       })
       .catch((err) => {
         logger.error("failed to load pokedex", { error: err });
-        setListError("ずかんの　よみこみに　しっぱいしました");
+        setListError("図鑑の読み込みに失敗しました");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -42,7 +42,7 @@ export function PokedexPage() {
       setSelectedPokemon(res.data);
     } catch (err) {
       logger.error("failed to load pokemon detail", { error: err });
-      setDetailError("ポケモンの　しょうさいを　よみこめなかったよ");
+      setDetailError("ポケモンの詳細の読み込みに失敗しました");
     }
   };
 
@@ -51,7 +51,7 @@ export function PokedexPage() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">
-            ずかん
+            図鑑
           </h1>
           <span className="text-gray-400 text-sm">
             {capturedCount} 匹
@@ -60,7 +60,7 @@ export function PokedexPage() {
 
         {unavailableCount > 0 && (
           <p className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm rounded-xl px-4 py-2 mb-4">
-            {unavailableCount}びき　よみこめなかったよ。あとで　もう一度　ためしてね
+            {unavailableCount}匹読み込めませんでした。あとでもう一度試してください
           </p>
         )}
 

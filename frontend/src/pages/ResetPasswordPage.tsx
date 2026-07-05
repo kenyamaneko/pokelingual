@@ -21,7 +21,7 @@ export function ResetPasswordPage() {
       await resetPassword(email);
       setSent(true);
     } catch {
-      setError("メールの　そうしんに　しっぱいしました。メールアドレスを　かくにんしてね");
+      setError("メールの送信に失敗しました。メールアドレスを確認してください");
     } finally {
       setLoading(false);
     }
@@ -39,18 +39,18 @@ export function ResetPasswordPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">PokeLingual</h1>
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
-        <p className="text-gray-400 text-sm mb-8">パスワードを　さいせっていしよう</p>
+        <p className="text-gray-400 text-sm mb-8">パスワードを再設定する</p>
 
         {sent ? (
           <div data-testid="reset-sent">
             <p className="text-green-600 text-sm">
-              メールを　おくりました。とどいた　リンクから　パスワードを　さいせっていしてね
+              メールを送信しました。届いたリンクからパスワードを再設定してください
             </p>
             {/* 列挙保護が有効なため送信は常に成功扱いになる。メールが届かない原因
                 (アドレス誤り / Google 登録) をユーザ自身が切り分けられるよう案内する */}
             <p className="text-gray-400 text-xs mt-3">
-              メールが　とどかない　ときは、メールアドレスが　まちがっているか、Google
-              アカウントで　とうろくして　いるかもしれません
+              メールが届かないときは、メールアドレスが間違っているか、Google
+              アカウントで登録している可能性があります
             </p>
           </div>
         ) : (
@@ -78,14 +78,14 @@ export function ResetPasswordPage() {
                          font-semibold hover:bg-blue-600 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "そうしん中..." : "さいせってい　メールを　おくる"}
+              {loading ? "送信中..." : "再設定メールを送る"}
             </button>
           </form>
         )}
 
         <p className="text-gray-400 text-sm mt-6">
           <Link to="/login" className="text-blue-500 hover:underline" data-testid="goto-login">
-            ログインに　もどる
+            ログインに戻る
           </Link>
         </p>
       </div>

@@ -75,10 +75,10 @@ describe("useQuest", () => {
 
   // ステータスごとにユーザー向け文言が切り替わる仕様。表示される文言 (観測結果) で確かめる。
   it.each([
-    { status: 401, expected: /にんしょう/ },
-    { status: 403, expected: /アクセスけん/ },
-    { status: 404, expected: /見つかりません/ },
-    { status: 502, expected: /がいぶサービス/ },
+    { status: 401, expected: /認証/ },
+    { status: 403, expected: /アクセス権/ },
+    { status: 404, expected: /セッションが切断されました/ },
+    { status: 502, expected: /外部サービス/ },
   ])("/quest/new の $status ではステータスに応じた文言を表示する", async ({ status, expected }) => {
     server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })));
 
@@ -94,7 +94,7 @@ describe("useQuest", () => {
     const { result } = renderHook(() => useQuest());
     await waitFor(() => expect(result.current.phase).toBe("error"));
 
-    expect(result.current.error).toMatch(/せつぞくできません/);
+    expect(result.current.error).toMatch(/接続できません/);
   });
 
   it("submitTranslation 成功で guessing フェーズへ遷移し、usage 再取得が走る", async () => {
