@@ -9,6 +9,13 @@ tmp/
 # Coverage
 coverage/
 
+# Test reports (JUnit XML 等)
+test-results/
+
+# Python
+__pycache__/
+.pytest_cache/
+
 # Environment
 .env
 .env.local

@@ -20,6 +20,11 @@ export default defineConfig({
   // mock 認証は全リクエストが同一 uid のため、backend の in-memory クエストセッションを
   // 全テストが共有する。並列実行だと他テストの capture がセッションを消して 404 になるため直列に固定する。
   workers: 1,
+  // 振る舞いカタログ (docs/adr/014) の生成元としてテスト名を JUnit XML に残す。
+  reporter: [["list"], ["junit", { outputFile: "test-results/e2e-junit.xml" }]],
+  // Playwright は実行開始時に outputDir を丸ごと消すため、既定の test-results/ のままだと
+  // Vitest の junit (test-results/vitest-junit.xml) を巻き込んで消す。サブディレクトリに隔離する。
+  outputDir: "test-results/e2e",
   use: {
     baseURL,
     screenshot: "only-on-failure",

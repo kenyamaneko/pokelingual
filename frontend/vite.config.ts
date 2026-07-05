@@ -16,6 +16,9 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     css: false,
     exclude: ['e2e/**', 'node_modules/**'],
+    // 振る舞いカタログ (docs/adr/014) の生成元としてテスト名を JUnit XML に残す。
+    // Playwright の e2e-junit.xml と同じ test-results/ に置くため、ファイル名で区別する。
+    reporters: ['default', ['junit', { outputFile: 'test-results/vitest-junit.xml' }]],
     env: {
       VITE_APP_MODE: 'mock',
       // MSW が絶対 URL でマッチできるよう API のベース URL を固定する (client.ts の baseURL 前置に使われる)。
