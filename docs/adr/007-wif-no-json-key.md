@@ -2,20 +2,17 @@
 
 ## ステータス
 
-採用済み
+Accepted
 
-## コンテキスト
+## 結論
 
-GitHub Actions から Google Cloud にデプロイするには認証が必要。
-従来の方法はサービスアカウントの JSON キーを GitHub Secrets に保存する方式だが、以下のリスクがある:
-- キーの漏洩リスク（永続的なクレデンシャル）
-- キーのローテーション管理が必要
+永続クレデンシャルの漏洩リスクとローテーション負担をなくすため、Workload Identity Federation（WIF）で GitHub Actions の OIDC トークンから直接 Google Cloud に認証する。JSON キーを使わず短命トークンのみを用い、リポジトリレベルでアクセスを制限できる。
 
-## 決定
+## 背景・課題
 
-Workload Identity Federation（WIF）を使い、GitHub Actions の OIDC トークンで直接 Google Cloud に認証する。
+GitHub Actions から Google Cloud にデプロイするには認証が必要になる。従来はサービスアカウントの JSON キーを GitHub Secrets に保存する方式だが、永続的なクレデンシャルの漏洩リスクと、キーのローテーション管理の負担がある。
 
-### 構成
+## 詳細
 
 ```
 GitHub Actions (OIDC トークン)
@@ -29,9 +26,4 @@ Service Account (github-actions-deploy)
     roles: artifactregistry.writer, run.admin, datastore.user, firebasehosting.admin
 ```
 
-## 結果
-
-- JSON キー不要。短命トークンのみ使用
-- リポジトリレベルでアクセスを制限（他リポジトリからは認証不可）
-- Terraform で WIF Pool / Provider / SA を一括管理
-- GitHub Actions 側は `google-github-actions/auth@v2` で WIF 認証
+WIF Pool / Provider / SA は Terraform で一括管理する。GitHub Actions 側は `google-github-actions/auth@v2` で WIF 認証する。

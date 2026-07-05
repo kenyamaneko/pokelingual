@@ -2,28 +2,23 @@
 
 ## ステータス
 
-採用済み
+Accepted
 
-## コンテキスト
+## 結論
 
-バックエンドは複数の外部サービス（PokeAPI, Gemini API, Firestore, Firebase Auth）に依存する。
-ローカル開発時にこれらすべてを起動するのは現実的ではなく、テスト時にも外部依存を排除したい。
+外部サービスへの依存を差し替え可能にし、ローカル開発とテストを外部依存なしで回すため、サービス層はインターフェース（`domain/interfaces.go`）に依存させ、具象型に直接依存させない。`cmd/server/main.go` が `APP_MODE` に応じて実装を注入する。devmock やモックで外部サービスなしに動作し、本番実装を差し替えるだけで AI バックエンドを変更できる（Gemini から Claude 等）。
 
-## 決定
+## 背景・課題
 
-サービス層がインターフェース（`domain/interfaces.go`）に依存し、具象型に直接依存しないクリーンアーキテクチャを採用する。
+バックエンドは複数の外部サービス（PokeAPI, Gemini API, Firestore, Firebase Auth）に依存する。ローカル開発時にこれらすべてを起動するのは現実的でなく、テスト時にも外部依存を排除したい。
 
-主要インターフェース:
-- `PokemonFetcher` — ポケモンデータ取得
-- `AIScorer` — 翻訳スコアリング
-- `UserPokemonRepository` — 捕獲データ永続化
-- `UserSettingsRepository` — ユーザー設定
+## 詳細
 
-`cmd/server/main.go` で `APP_MODE` に応じて実装を注入する。
+主要インターフェース：
 
-## 結果
+- `PokemonFetcher`：ポケモンデータ取得
+- `AIScorer`：翻訳スコアリング
+- `UserPokemonRepository`：捕獲データ永続化
+- `UserSettingsRepository`：ユーザー設定
 
-- ローカル開発: devmock 実装で外部依存なしに動作
-- テスト: testutil のモックで高速な単体テスト
-- 本番: 実装を差し替えるだけで AI バックエンドの変更が可能（Gemini → Claude 等）
-- 配線が `main.go` に集約され、依存関係が明示的
+`APP_MODE` で devmock 実装（外部依存なし）、testutil のモック（単体テスト）、本番実装を切り替える。
