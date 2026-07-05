@@ -156,8 +156,8 @@ describe("PokedexPage", () => {
     expect(
       await screen.findByText(spec("「テストのための　ダミーポケモン。」")),
     ).toBeInTheDocument();
-    // タイプバッジまで描画される (詳細カードを実部品で組み立てた結果の観測)
-    expect(screen.getByText("grass")).toBeInTheDocument();
+    // タイプバッジが日本語表示名で描画される (詳細カードを実部品で組み立てた結果の観測)
+    expect(screen.getByText("くさ")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "閉じる" })).toBeInTheDocument();
   });
 

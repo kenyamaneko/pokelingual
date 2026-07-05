@@ -1,11 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import type { CaptureResponse } from "../../../../shared/api-types/quest";
-import { getTypeColor } from "../../utils/pokemonTypes";
+import { getTypeColor, getTypeLabel } from "../../utils/pokemonTypes";
 
 interface CaptureResultProps {
   result: CaptureResponse;
   onNewQuest: () => void;
 }
+
+/** 種族値合計がこの値以上のポケモンは、非伝説でも「強そう」演出の対象にする (600族=非伝説の最強格の下限)。 */
+const STRONG_BASE_STAT_TOTAL_THRESHOLD = 600;
 
 /**
  * CaptureResult の仕様文言。テストから import される SSOT。
@@ -15,18 +18,20 @@ export const CAPTURE_RESULT_LABELS = {
   capturedTitle: (nameJa: string) => `やったー！　${nameJa}を　捕まえたぞ！`,
   capturedLegendaryTitle: (nameJa: string) => `やったー！　伝説の　${nameJa}を　捕まえたぞ！`,
   capturedMythicalTitle: (nameJa: string) => `信じられない！　幻の　${nameJa}を　捕まえたぞ！`,
+  capturedStrongTitle: (nameJa: string) => `やったー！　強そうな　${nameJa}を　捕まえたぞ！`,
   escapedTitle: (nameJa: string) => `野生の　${nameJa}は　逃げ出した！`,
   nextButton: "次のポケモンを探す",
   backToMenuButton: "メニューに戻る",
 } as const;
 
 /**
- * 捕獲結果の表示。成否・伝説/幻演出・次のクエスト遷移を提供する。
+ * 捕獲結果の表示。成否・伝説/幻/強豪演出・次のクエスト遷移を提供する。
  * @param props result / onNewQuest を含む props。
  * @returns 捕獲結果表示の要素。
  */
 export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
   const navigate = useNavigate();
+  const isStrong = result.base_stat_total >= STRONG_BASE_STAT_TOTAL_THRESHOLD;
 
   return (
     <div className="mt-4 text-center">
@@ -36,9 +41,11 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
             ? "bg-gradient-to-b from-purple-100 to-indigo-50 border-purple-400"
             : result.captured && result.is_legendary
               ? "bg-gradient-to-b from-amber-100 to-yellow-50 border-amber-400"
-              : result.captured
-                ? "bg-gradient-to-b from-green-50 to-white border-green-300"
-                : "bg-gradient-to-b from-gray-50 to-white border-gray-300"
+              : result.captured && isStrong
+                ? "bg-gradient-to-b from-orange-100 to-red-50 border-orange-400"
+                : result.captured
+                  ? "bg-gradient-to-b from-green-50 to-white border-green-300"
+                  : "bg-gradient-to-b from-gray-50 to-white border-gray-300"
         }`}
       >
         {result.captured ? (
@@ -49,13 +56,17 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
                 ? "text-purple-700"
                 : result.is_legendary
                   ? "text-amber-700"
-                  : "text-green-700"
+                  : isStrong
+                    ? "text-orange-700"
+                    : "text-green-700"
             }`}>
               {result.is_mythical
                 ? CAPTURE_RESULT_LABELS.capturedMythicalTitle(result.name_ja)
                 : result.is_legendary
                   ? CAPTURE_RESULT_LABELS.capturedLegendaryTitle(result.name_ja)
-                  : CAPTURE_RESULT_LABELS.capturedTitle(result.name_ja)}
+                  : isStrong
+                    ? CAPTURE_RESULT_LABELS.capturedStrongTitle(result.name_ja)
+                    : CAPTURE_RESULT_LABELS.capturedTitle(result.name_ja)}
             </h2>
           </>
         ) : (
@@ -88,7 +99,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
                 key={t}
                 className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
               >
-                {t}
+                {getTypeLabel(t)}
               </span>
             ))}
           </div>
@@ -96,8 +107,6 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
 
         <div className="mt-4 text-sm text-gray-500">
           <span>スコア: {result.score}</span>
-          <span className="mx-2">|</span>
-          <span>しゅぞくち: {result.base_stat_total}</span>
         </div>
 
         {result.description_en && (

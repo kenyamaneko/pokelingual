@@ -30,3 +30,34 @@ const typeColors: Record<PokemonType, string> = {
 export function getTypeColor(type: PokemonType): string {
   return typeColors[type];
 }
+
+/** ポケモンタイプ名から日本語表示名へのマップ。全 18 種を網羅する (Record が網羅性を保証)。 */
+const typeLabels: Record<PokemonType, string> = {
+  normal: "ノーマル",
+  fire: "ほのお",
+  water: "みず",
+  electric: "でんき",
+  grass: "くさ",
+  ice: "こおり",
+  fighting: "かくとう",
+  poison: "どく",
+  ground: "じめん",
+  flying: "ひこう",
+  psychic: "エスパー",
+  bug: "むし",
+  rock: "いわ",
+  ghost: "ゴースト",
+  dragon: "ドラゴン",
+  dark: "あく",
+  steel: "はがね",
+  fairy: "フェアリー",
+};
+
+/**
+ * ポケモンタイプ名に対応する日本語表示名を返す。
+ * @param type ポケモンのタイプ (18 種の PokemonType)。未知の値は backend 境界 (toPokemonType) で排除済み。
+ * @returns 日本語のタイプ表示名。
+ */
+export function getTypeLabel(type: PokemonType): string {
+  return typeLabels[type];
+}
