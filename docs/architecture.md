@@ -112,9 +112,9 @@ API 契約型（wire format）は `shared/api-types/*.d.ts` を SSOT とし、ba
 - セッションは `attemptCapture` で削除済みのため、チャットはセッション不参照
 
 **ポケモン名伏せ字:**
-- 出題・スコアリング時: 説明文中のポケモン名を代名詞に置換（名前推測のヒント防止）
-  - EN: "this Pokémon"（単数）/ "of these Pokémon"（複数、前の単語で判定）
-  - JA: "この ポケモン"
+- 出題・スコアリング時：説明文中のポケモン名を代名詞に置換（名前推測のヒント防止）
+  - EN："this Pokémon"（単数）/ "of these Pokémon"（複数、前の単語で判定）
+  - JA："この ポケモン"
 - AI スコアリングには元テキストを使用（採点精度に影響なし）
 - 捕獲結果・コレクションでは元の名前を表示
 
@@ -126,7 +126,7 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 ```
 - 種族値（BST）が高いポケモンほど捕まえにくい
 - スコア90 + スーパーボールなら伝説ポケモン（BST 680）でもほぼ確実に捕獲可能
-- ボール倍率: モンスターボール 1.0x / スーパーボール 2.0x / ハイパーボール 3.0x
+- ボール倍率：モンスターボール 1.0x / スーパーボール 2.0x / ハイパーボール 3.0x
 
 **名前当て → ボール種類:**
 - 英語名 正解（完全 or ファジー一致、Levenshtein距離 ≤ 2, 名前4文字以上）→ ハイパーボール（ultra, 3.0x）
@@ -135,26 +135,26 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 
 ### PokeAPI データ取得
 
-- 対象: Gen 1-8（ID 1-898、環境変数 `MAX_POKEMON_ID` で指定。mock は既定 898 / real は deploy.yml が注入）
+- 対象：Gen 1-8（ID 1-898、環境変数 `MAX_POKEMON_ID` で指定。mock は既定 898 / real は deploy.yml が注入）
   - #899-905（Legends: Arceus）は対象バージョンに説明文がないため範囲外
   - Gen 9（#906+）は PokeAPI に未収録
-- EN/JA 説明文: Gen 6（XY）以降のゲームから取得
+- EN/JA 説明文：Gen 6（XY）以降のゲームから取得
   - PokeAPI の `flavor_text_entries` で日本語は Gen 6+ のゲームにのみ存在
-- FlavorTextPair: バージョンごとに EN/JA をペアリング、`ja` 優先で `ja-Hrkt` フォールバック
-- 重複排除: EN+JA テキストが同一のバージョンは VersionNames をマージ
-- タイプ・身長・体重: `/api/v2/pokemon/{id}` の `types`, `height`, `weight` から取得
-  - height: デシメートル（4 = 0.4m）、weight: ヘクトグラム（60 = 6.0kg）
+- FlavorTextPair：バージョンごとに EN/JA をペアリング、`ja` 優先で `ja-Hrkt` フォールバック
+- 重複排除：EN+JA テキストが同一のバージョンは VersionNames をマージ
+- タイプ・身長・体重：`/api/v2/pokemon/{id}` の `types`, `height`, `weight` から取得
+  - height：デシメートル（4 = 0.4m）、weight：ヘクトグラム（60 = 6.0kg）
   - フロントエンドで /10 変換して m / kg 表示
-- 伝説・幻フラグ: `/api/v2/pokemon-species/{id}` の `is_legendary`, `is_mythical` を取得
+- 伝説・幻フラグ：`/api/v2/pokemon-species/{id}` の `is_legendary`, `is_mythical` を取得
   - 登場時に特別メッセージ + 背景色変更（伝説=金、幻=紫）
-- キャッシュ: `Map` によるインメモリキャッシュ
+- キャッシュ：`Map` によるインメモリキャッシュ
 
 ### 除外ポケモン
 
 除外は 2 系統のロジックを**別々に**持ち、出題抽選と図鑑の両方に適用する。
 
-- **ユーザー設定による除外**: `users/{uid}/settings/preferences.excluded_pokemon_ids`（Firestore）。ユーザーが設定画面で自由に追加・削除でき、次の出題から即反映。全環境で有効。未設定なら除外なし。
-- **開発者除外**: コードの固定 ID リスト（開発者が苦手で名前も見たくない 6 匹）。**prod では無効**、それ以外の環境（local/dev）でのみ有効。開発者が非 prod 環境で作業する際の配慮で、システム側が透過的に適用する（設定画面には表示しない）。
+- **ユーザー設定による除外**：`users/{uid}/settings/preferences.excluded_pokemon_ids`（Firestore）。ユーザーが設定画面で自由に追加・削除でき、次の出題から即反映。全環境で有効。未設定なら除外なし。
+- **開発者除外**：コードの固定 ID リスト（開発者が苦手で名前も見たくない 6 匹）。**prod では無効**、それ以外の環境（local/dev）でのみ有効。開発者が非 prod 環境で作業する際の配慮で、システム側が透過的に適用する（設定画面には表示しない）。
 
 適用される除外 = ユーザー設定による除外 ∪ 開発者除外（prod 以外）。`newQuest`（出題抽選）と `getCollection`（図鑑）の両方で除外する。図鑑の分母 `total_available` は変えない（表示エントリのみ除外）。
 
@@ -166,10 +166,10 @@ Client → Cloud Run (IAM: allUsers) → CORS middleware → Firebase Auth middl
 
 - Cloud Run の IAM は `allUsers`（無認証許可）。Firebase Auth トークンは IAM トークンではないため
 - アプリレベルの認証は `middleware/auth.ts` が担当
-- `allowed_emails`: Firestore `config/auth` ドキュメントから起動時に読み込み
+- `allowed_emails`：Firestore `config/auth` ドキュメントから起動時に読み込み
 - メールがホワイトリストにない場合は 403
 - **`allowed_emails` が空配列・ドキュメント不在の場合は公開モード**（誰でも認証通過後にアクセス可）
-  - dev 環境: ホワイトリスト運用、prod 環境: 空配列で公開
+  - dev 環境：ホワイトリスト運用、prod 環境：空配列で公開
 
 ### コスト管理層（レートリミット）
 
@@ -191,7 +191,7 @@ Auth middleware → Rate limit middleware → Handler
 | 全体1日あたり | 1,500回（環境変数 `GLOBAL_DAILY_LIMIT`） | AI 呼び出し |
 | リセット時刻 | JST 0:00 | 固定 |
 
-- カウント対象: `/api/quest/score` と `/api/quest/chat`（Gemini を呼ぶエンドポイント）
+- カウント対象：`/api/quest/score` と `/api/quest/chat`（Gemini を呼ぶエンドポイント）
 - グローバル上限を先に判定（混雑時に「混雑」と「あなたが使い切った」を区別可能）
 - 上限到達時は HTTP 429 + `kind: "user" | "global"` を返す
 - Firestore トランザクションで原子的にチェック+インクリメント
@@ -204,9 +204,9 @@ Auth middleware → Rate limit middleware → Handler
 ### ロギング
 
 - 自前の小さなロガー util を通し、Info / Warn / Error の 3 レベル (principles.md のログ方針と 1:1) で出力する
-- backend (`backend/src/util/logger.ts`): `severity` / `message` / `time` + 任意フィールドの 1 行 JSON を stdout (Info) / stderr (Warn/Error) に書き、Cloud Run が Cloud Logging へ自動転送する。JSON は構造化フィールドとして取り込まれ、severity での絞り込みとフィールド検索ができる。可変値は message に埋め込まず fields に分離する（message を固定文字列に保ち検索性を確保するため）
-- frontend (`frontend/src/utils/logger.ts`): 収集基盤が無くブラウザ devtools でしか見ないため、JSON 文字列化はせず console に message + fields のまま渡す（ツリー展開・スタックトレース表示を保つ）
-- 既製ロガー (pino 等) を使わない理由: 3 レベル・十数箇所という規模に対し、依存ゼロで全挙動を単体テストで固定できることを優先した（裁定は Issue #14）
+- backend (`backend/src/util/logger.ts`)：`severity` / `message` / `time` + 任意フィールドの 1 行 JSON を stdout (Info) / stderr (Warn/Error) に書き、Cloud Run が Cloud Logging へ自動転送する。JSON は構造化フィールドとして取り込まれ、severity での絞り込みとフィールド検索ができる。可変値は message に埋め込まず fields に分離する（message を固定文字列に保ち検索性を確保するため）
+- frontend (`frontend/src/utils/logger.ts`)：収集基盤が無くブラウザ devtools でしか見ないため、JSON 文字列化はせず console に message + fields のまま渡す（ツリー展開・スタックトレース表示を保つ）
+- 既製ロガー (pino 等) を使わない理由：3 レベル・十数箇所という規模に対し、依存ゼロで全挙動を単体テストで固定できることを優先した（裁定は Issue #14）
 - リクエストログは実装しない（Cloud Run が標準で出力するため）
 
 ## フロントエンド詳細
@@ -274,7 +274,7 @@ loading → translating → guessing → capturing → result   （失敗時は 
 | Cloud Monitoring | 5xx アラート、レイテンシアラート、エラーログアラート |
 | Billing Budget | 月次予算アラート（50/80/100% でメール通知） |
 
-**Cloud Run は Terraform 管理外** — GitHub Actions の `gcloud run deploy` が作成・更新。
+**Cloud Run は Terraform 管理外**。GitHub Actions の `gcloud run deploy` が作成・更新する。
 
 ### Firestore データ構造
 

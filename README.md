@@ -263,8 +263,8 @@ make dev-logs
 ```
 
 起動後のアクセス先：
-- フロントエンド: http://localhost:15151
-- バックエンド API: http://localhost:15100
+- フロントエンド：http://localhost:15151
+- バックエンド API：http://localhost:15100
 
 ## テスト
 
