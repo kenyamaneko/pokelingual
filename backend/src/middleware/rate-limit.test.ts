@@ -24,7 +24,7 @@ function stubRepo(checkAndIncrement: RateLimitRepository["checkAndIncrement"]): 
   };
 }
 
-describe("rate-limit ミドルウェアの仕様", () => {
+describe("rate-limit ミドルウェア", () => {
   it("上限内なら次のハンドラに進む（next が呼ばれる）", async () => {
     const mw = rateLimit(stubRepo(async () => ({ count: 1, limit: 3 })));
     const { req, res, next, status } = makeReqRes();

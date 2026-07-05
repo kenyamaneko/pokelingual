@@ -64,7 +64,7 @@ async function submitLogin(
   await user.click(screen.getByRole("button", { name: "メールで　ログイン" }));
 }
 
-describe("LoginPage の仕様", () => {
+describe("LoginPage", () => {
   it("メールアドレスとパスワードでログインするとホーム画面へ遷移する", async () => {
     const user = userEvent.setup();
     renderLogin(vi.fn().mockResolvedValue(undefined));

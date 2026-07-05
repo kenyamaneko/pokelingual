@@ -84,7 +84,7 @@ function mockDetail(detail: PokemonDetailResponse) {
  *
  * API 境界 (HTTP) のみ MSW でモックし、グリッド・詳細カードは実部品で組み立てる。
  */
-describe("PokedexPage の仕様", () => {
+describe("PokedexPage", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });

@@ -71,7 +71,7 @@ describe("RateLimitRepo (Firestore emulator)", () => {
   });
 });
 
-describe("レートリミットの日次リセット仕様 (Firestore emulator)", () => {
+describe("レートリミットの日次リセット (Firestore emulator)", () => {
   // Date のみフェイクし、setTimeout 等の timer はリアルに保つ。
   // 全 timer をフェイクすると Firestore SDK の内部タイマー (gRPC keepalive 等) が止まる可能性があるため。
   beforeEach(async () => {

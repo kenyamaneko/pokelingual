@@ -31,7 +31,7 @@ function renderPage(resetPassword: () => Promise<void>) {
   );
 }
 
-describe("ResetPasswordPage の仕様", () => {
+describe("ResetPasswordPage", () => {
   it("入力メールアドレスでリセットメール送信を依頼する", async () => {
     const user = userEvent.setup();
     const resetPassword = vi.fn().mockResolvedValue(undefined);

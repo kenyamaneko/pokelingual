@@ -38,7 +38,7 @@ function statusAdapter(status: number, data: unknown): AxiosAdapter {
   };
 }
 
-describe("api/client の仕様", () => {
+describe("api/client", () => {
   afterEach(() => {
     api.defaults.adapter = originalAdapter;
     vi.restoreAllMocks();

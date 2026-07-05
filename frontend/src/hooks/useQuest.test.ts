@@ -46,7 +46,7 @@ function mockNewQuest(resp: QuestNewResponse = questResp) {
  * フェーズ遷移と副作用 (refreshUsage) の整合性、エラー処理の振り分けを検証する。
  * API 境界は MSW でモックし、UsageContext だけは別コンテキストの境界としてスタブする。
  */
-describe("useQuest の仕様", () => {
+describe("useQuest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

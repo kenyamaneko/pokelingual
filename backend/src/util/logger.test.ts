@@ -7,7 +7,7 @@ import { buildLogEntry, logger } from "./logger.js";
  * - 予約キー (severity / message / time) を fields で上書きしようとするとエラーにする
  * - logger.info は stdout、warn / error は stderr に severity 付きで書き出す
  */
-describe("buildLogEntry の仕様", () => {
+describe("buildLogEntry", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-03T04:56:07.000Z"));
@@ -49,7 +49,7 @@ describe("buildLogEntry の仕様", () => {
   );
 });
 
-describe("logger の仕様", () => {
+describe("logger", () => {
   let written: Record<"stdout" | "stderr", string[]>;
 
   beforeEach(() => {

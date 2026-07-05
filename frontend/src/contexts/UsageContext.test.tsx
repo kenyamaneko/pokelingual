@@ -26,7 +26,7 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-describe("UsageProvider のふるまい仕様", () => {
+describe("UsageProvider", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });

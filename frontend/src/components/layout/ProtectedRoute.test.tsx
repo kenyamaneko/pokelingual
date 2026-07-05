@@ -41,7 +41,7 @@ function renderGuarded(auth: { user: User | null; loading: boolean }) {
   );
 }
 
-describe("ProtectedRoute の仕様", () => {
+describe("ProtectedRoute", () => {
   it("認証済みなら children を描画する", () => {
     renderGuarded({ user: fakeUser, loading: false });
 

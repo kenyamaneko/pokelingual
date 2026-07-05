@@ -77,7 +77,7 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
  * SettingsPage の遷移仕様:
  * - ログアウトボタン押下で logout を実行し、/login へ遷移する
  */
-describe("SettingsPage の遷移仕様", () => {
+describe("SettingsPage の遷移", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -107,7 +107,7 @@ describe("SettingsPage の遷移仕様", () => {
  *
  * ID の範囲・件数上限・重複のバリデーションは backend の責務のため、ここでは検証しない。
  */
-describe("SettingsPage の除外ポケモン管理仕様", () => {
+describe("SettingsPage の除外ポケモン管理", () => {
   beforeEach(() => {
     lastSavedIDs = null;
   });
