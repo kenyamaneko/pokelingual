@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { GoogleLogo } from "../components/auth/GoogleLogo";
+import { CONTACT_FORM_URL } from "../constants/links";
 
 /**
  * ログインページ。Email/Password と Google サインインを提供する。
@@ -130,6 +131,20 @@ export function LoginPage() {
             再設定する
           </Link>
         </p>
+
+        <div className="mt-6 flex justify-center gap-4 text-gray-400 text-xs">
+          <a
+            href={CONTACT_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            問い合わせ
+          </a>
+          <Link to="/terms" className="hover:underline">
+            利用規約
+          </Link>
+        </div>
       </div>
     </div>
   );
