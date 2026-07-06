@@ -7,6 +7,7 @@ import type { User } from "firebase/auth";
 import { AuthContext } from "../contexts/AuthContext";
 import { LoginPage } from "./LoginPage";
 import { spec } from "../test/labels";
+import { CONTACT_FORM_URL } from "../constants/links";
 
 /**
  * LoginPage の仕様:
@@ -89,5 +90,22 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "メールでログイン" })).toBeEnabled();
     // 認証失敗ではホームへ遷移しない
     expect(screen.queryByTestId("home-page")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * ログイン前でも問い合わせ・利用規約に到達できる導線の仕様。
+ */
+describe("LoginPage のサイト情報リンク", () => {
+  it("問い合わせリンクが問い合わせフォームを新しいタブで開く", () => {
+    renderLogin(vi.fn());
+    const contact = screen.getByRole("link", { name: "問い合わせ" });
+    expect(contact).toHaveAttribute("href", CONTACT_FORM_URL);
+    expect(contact).toHaveAttribute("target", "_blank");
+  });
+
+  it("利用規約リンクが利用規約ページ (/terms) を指す", () => {
+    renderLogin(vi.fn());
+    expect(screen.getByRole("link", { name: "利用規約" })).toHaveAttribute("href", "/terms");
   });
 });
