@@ -8,6 +8,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { server, apiUrl } from "../test/mswServer";
 import { SettingsPage } from "./SettingsPage";
 import { spec } from "../test/labels";
+import { CONTACT_FORM_URL } from "../constants/links";
 
 const fakeUser = { uid: "alice", email: "alice@example.com" } as unknown as User;
 
@@ -349,5 +350,29 @@ describe("SettingsPage の出題世代", () => {
 
     expect(only).toBeChecked();
     expect(lastSavedGenerations).toBeNull();
+  });
+});
+
+/**
+ * SettingsPage のサイト情報リンクの仕様:
+ * - 問い合わせリンクは問い合わせフォームを新しいタブで開く
+ * - 利用規約リンクは利用規約ページ (/terms) を指す
+ */
+describe("SettingsPage のサイト情報リンク", () => {
+  beforeEach(() => {
+    mockGetSettings([]);
+  });
+
+  it("問い合わせリンクが問い合わせフォームを新しいタブで開く", async () => {
+    renderSettings();
+    const link = await screen.findByRole("link", { name: "問い合わせ" });
+    expect(link).toHaveAttribute("href", CONTACT_FORM_URL);
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("利用規約リンクが利用規約ページ (/terms) を指す", async () => {
+    renderSettings();
+    const link = await screen.findByRole("link", { name: "利用規約" });
+    expect(link).toHaveAttribute("href", "/terms");
   });
 });

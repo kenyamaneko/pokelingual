@@ -217,12 +217,13 @@ Auth middleware → Rate limit middleware → Handler
 ```
 frontend/src/
 ├── pages/                  # ルートに対応するページコンポーネント
-│   ├── LoginPage.tsx       # ログイン（Google + メール/パスワード）
+│   ├── LoginPage.tsx       # ログイン（Google + メール/パスワード）、問い合わせ/利用規約リンク
 │   ├── SignupPage.tsx      # 新規登録
 │   ├── ResetPasswordPage.tsx # パスワードリセット
 │   ├── QuestPage.tsx       # クエストフロー（状態機械は useQuest に委譲）
 │   ├── PokedexPage.tsx  # 捕獲済みポケモン一覧
-│   ├── SettingsPage.tsx    # 出題世代・除外ポケモン設定、ログアウト
+│   ├── SettingsPage.tsx    # 出題世代・除外ポケモン設定、問い合わせ/利用規約リンク、ログアウト
+│   ├── TermsPage.tsx       # 利用規約（非営利ファンサイト明記。/terms 公開ルート）
 │   ├── NotFoundPage.tsx    # 404
 │   └── HomePage.tsx
 ├── components/

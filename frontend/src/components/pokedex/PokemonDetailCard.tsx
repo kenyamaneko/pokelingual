@@ -1,5 +1,5 @@
 import type { PokemonDetailResponse } from "../../../../shared/api-types/pokedex";
-import { getTypeColor } from "../../utils/pokemonTypes";
+import { getTypeColor, getTypeLabel } from "../../utils/pokemonTypes";
 import { formatPokemonId, formatHeightMeters, formatWeightKilograms } from "../../utils/pokemonFormat";
 
 interface PokemonDetailCardProps {
@@ -54,7 +54,7 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
                     key={t}
                     className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
                   >
-                    {t}
+                    {getTypeLabel(t)}
                   </span>
                 ))}
               </div>

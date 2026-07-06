@@ -31,14 +31,20 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   };
 }
 
+/** 実データの仕様変更でテストが壊れないよう、実ポケモンでなくダミーの ID/名前を使う。 */
+const DUMMY_NAME = "テストポケモン";
+const DUMMY_IDENTITY = { pokemon_id: 9999, name_ja: DUMMY_NAME };
+
 /**
  * CaptureResult の仕様:
  * - captured=true なら捕獲タイトル、false なら逃走タイトルを表示する
- * - 「メニューに もどる」でホーム (/) へ遷移する
+ * - 捕獲時の演出タイトルは 幻 > 伝説 > 強豪 (種族値600以上) > 通常 の優先度で出し分ける
+ * - タイプは日本語表示名で表示する
+ * - 「メニューに戻る」でホーム (/) へ遷移する
  *
- * 「つぎの ぼうけんへ」で次の出題が始まる結合は、実際に新しい出題画面が出る結果を
+ * 「次のポケモンを探す」で次の出題が始まる結合は、実際に新しい出題画面が出る結果を
  * 観測するため QuestPage.test.tsx (公開入口からのフロー) で確かめる。
- * テスト対象外: 画像 src/ポケモン名/スコア の "props 透過" 表示は仕様ではなく、
+ * テスト対象外: 画像 src/ポケモン名 の "props 透過" 表示は仕様ではなく、
  * Render が動けば成立するため検証しない。
  */
 describe("CaptureResult", () => {
@@ -89,5 +95,90 @@ describe("CaptureResult", () => {
     );
 
     expect(screen.getByTestId("home-page")).toBeInTheDocument();
+  });
+
+  it("タイプを日本語表示名 (electric → でんき) で表示する", () => {
+    renderWithProviders(
+      <CaptureResult
+        result={baseResult({ ...DUMMY_IDENTITY, types: ["electric"] })}
+        onNewQuest={vi.fn()}
+      />,
+      { withRouter: true },
+    );
+    expect(screen.getByText("でんき")).toBeInTheDocument();
+  });
+
+  describe("種族値による捕獲演出のタイトル出し分け", () => {
+    it("種族値600以上で伝説でも幻でもないとき、強そうタイトルを表示する", () => {
+      renderWithProviders(
+        <CaptureResult
+          result={baseResult({
+            ...DUMMY_IDENTITY,
+            base_stat_total: 600,
+            is_legendary: false,
+            is_mythical: false,
+          })}
+          onNewQuest={vi.fn()}
+        />,
+        { withRouter: true },
+      );
+      expect(
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedStrongTitle(DUMMY_NAME))),
+      ).toBeInTheDocument();
+    });
+
+    it("種族値599のとき、通常の捕獲タイトルを表示する", () => {
+      renderWithProviders(
+        <CaptureResult
+          result={baseResult({
+            ...DUMMY_IDENTITY,
+            base_stat_total: 599,
+            is_legendary: false,
+            is_mythical: false,
+          })}
+          onNewQuest={vi.fn()}
+        />,
+        { withRouter: true },
+      );
+      expect(
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle(DUMMY_NAME))),
+      ).toBeInTheDocument();
+    });
+
+    it("種族値600以上でも伝説なら伝説タイトルを優先する", () => {
+      renderWithProviders(
+        <CaptureResult
+          result={baseResult({
+            ...DUMMY_IDENTITY,
+            base_stat_total: 680,
+            is_legendary: true,
+            is_mythical: false,
+          })}
+          onNewQuest={vi.fn()}
+        />,
+        { withRouter: true },
+      );
+      expect(
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedLegendaryTitle(DUMMY_NAME))),
+      ).toBeInTheDocument();
+    });
+
+    it("種族値600以上でも幻なら幻タイトルを優先する", () => {
+      renderWithProviders(
+        <CaptureResult
+          result={baseResult({
+            ...DUMMY_IDENTITY,
+            base_stat_total: 680,
+            is_legendary: false,
+            is_mythical: true,
+          })}
+          onNewQuest={vi.fn()}
+        />,
+        { withRouter: true },
+      );
+      expect(
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedMythicalTitle(DUMMY_NAME))),
+      ).toBeInTheDocument();
+    });
   });
 });

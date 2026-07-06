@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { pokedexApi } from "../api/pokedexApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
 import { logger } from "../utils/logger";
 import type { PokedexEntry } from "../../../shared/api-types/pokedex";
+import { CONTACT_FORM_URL } from "../constants/links";
 
 /** 選択可能な世代 (第1〜8世代) と代表作。数字だけだと分かりにくいのでバージョン名を併記する。backend の GENERATION_RANGES と対応。 */
 const GENERATION_OPTIONS = [
@@ -273,6 +274,25 @@ export function SettingsPage() {
               ))}
             </ul>
           )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-6 mt-6">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase mb-3">
+            このサイトについて
+          </h2>
+          <div className="flex flex-col gap-2 text-sm">
+            <a
+              href={CONTACT_FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              問い合わせ
+            </a>
+            <Link to="/terms" className="text-blue-500 hover:underline">
+              利用規約
+            </Link>
+          </div>
         </div>
       </div>
     </div>
