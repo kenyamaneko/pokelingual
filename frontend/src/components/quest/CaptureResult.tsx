@@ -105,10 +105,6 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
           </div>
         )}
 
-        <div className="mt-4 text-sm text-gray-500">
-          <span>スコア: {result.score}</span>
-        </div>
-
         {result.description_en && (
           <div className="mt-4 bg-gray-50 rounded-xl p-4 text-left">
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
