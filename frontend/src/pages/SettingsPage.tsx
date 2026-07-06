@@ -7,8 +7,17 @@ import { formatPokemonId } from "../utils/pokemonFormat";
 import { logger } from "../utils/logger";
 import type { PokedexEntry } from "../../../shared/api-types/pokedex";
 
-/** 選択可能な世代 (第1〜8世代)。図鑑上限 898 に対応し、backend の GENERATION_RANGES と対応する。 */
-const SELECTABLE_GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+/** 選択可能な世代 (第1〜8世代) と代表作。数字だけだと分かりにくいのでバージョン名を併記する。backend の GENERATION_RANGES と対応。 */
+const GENERATION_OPTIONS = [
+  { generation: 1, versions: "赤・緑" },
+  { generation: 2, versions: "金・銀" },
+  { generation: 3, versions: "ルビー・サファイア" },
+  { generation: 4, versions: "ダイヤモンド・パール" },
+  { generation: 5, versions: "ブラック・ホワイト" },
+  { generation: 6, versions: "X・Y" },
+  { generation: 7, versions: "サン・ムーン" },
+  { generation: 8, versions: "ソード・シールド" },
+];
 
 /** 名前検索で一度に表示する候補の最大数。多すぎる候補で画面が埋まるのを防ぐ。 */
 const MAX_SEARCH_CANDIDATES = 20;
@@ -161,13 +170,13 @@ export function SettingsPage() {
             選んだ世代のポケモンだけが登場します（図鑑の数は変わりません）
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {SELECTABLE_GENERATIONS.map((generation) => {
+            {GENERATION_OPTIONS.map(({ generation, versions }) => {
               const checked = enabledGenerations.includes(generation);
               const isOnlyChecked = checked && enabledGenerations.length === 1;
               return (
                 <label
                   key={generation}
-                  className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2 cursor-pointer"
+                  className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -176,11 +185,12 @@ export function SettingsPage() {
                     onChange={() => toggleGeneration(generation)}
                     className="accent-red-500"
                   />
-                  <span className="text-gray-700 text-sm">第{generation}世代</span>
+                  <span className="text-gray-700 text-sm">第{generation}世代（{versions}）</span>
                 </label>
               );
             })}
           </div>
+          <p className="text-gray-400 text-xs mt-3">1つ以上えらんでね（ぜんぶは外せないよ）</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow p-6">
@@ -198,7 +208,7 @@ export function SettingsPage() {
 
           {pokedexUnavailable ? (
             <p className="text-gray-400 text-sm mb-4">
-              ポケモン一覧を読み込めなかったため、名前で探せません
+              ポケモン一覧を読み込めませんでした。ページを再読み込みしてください
             </p>
           ) : (
             <div className="mb-4">

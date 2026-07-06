@@ -5,7 +5,7 @@ import {
   maskPokemonNameEN,
   maskPokemonNameJA,
 } from "./quest-service.js";
-import { NotFoundError, ExternalServiceError } from "../domain/errors.js";
+import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -163,14 +163,14 @@ interface ServiceOverrides {
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
   const pokemonClient: PokemonClient = {
-    // 実アダプタと同じく allowedIds に含まれるプールの中から乱数で選ぶ (乱数0 = 先頭)。
-    getRandomPokemon: async (allowedIds) => {
+    // データソースは提供できる図鑑番号を返すだけ。抽選 (許可 ID に絞ってランダム) はサービスが行う。
+    getServableIDs: () => pool.map((p) => p.id),
+    getPokemonByID: async (id) => {
       if (o.pokemonError) throw o.pokemonError;
-      const available = pool.filter((p) => allowedIds.has(p.id));
-      if (available.length === 0) throw new Error("no pokemon available in the allowed pool");
-      return available[Math.floor((o.randomValue ?? 0) * available.length)];
+      const found = pool.find((p) => p.id === id);
+      if (!found) throw new Error(`not in pool: ${id}`);
+      return found;
     },
-    getPokemonByID: async () => makePokemon(),
   };
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
@@ -227,6 +227,8 @@ describe("QuestService.newQuest", () => {
     expect(res.pokemon_id).toBe(300);
   });
 
+  // 未設定 (null) は「こだわりなし = 全世代」。画面は GET で全チェック表示になる (空配列 [] とは別で、
+  // 空は設定画面の最低1世代バリデーションが防ぐ)。
   it("世代未設定なら全世代が出題対象になる", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 500 })],
@@ -237,13 +239,15 @@ describe("QuestService.newQuest", () => {
     expect(res.pokemon_id).toBe(500);
   });
 
-  it("出題プールが空 (全 ID が除外) ならエラー", async () => {
+  // 画面は最低1世代・除外上限で空プールを防ぐため通常は到達しない防御的経路。到達時は
+  // EmptyQuestPoolError → 409 → 画面で「今の設定では出会えるポケモンがいません。設定を見直して」と案内される。
+  it("出題プールが空 (全 ID が除外) なら EmptyQuestPoolError になる", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 1 })],
       excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       maxPokemonID: 10,
     });
-    await expect(service.newQuest("alice")).rejects.toThrow(/no pokemon available/);
+    await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
   });
 
   it("ポケモン取得の失敗は ExternalServiceError として伝わる", async () => {

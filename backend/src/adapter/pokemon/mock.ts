@@ -1,4 +1,4 @@
-import type { PokemonClient, RandomSource } from "../../domain/ports.js";
+import type { PokemonClient } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
 
 const mockPokemon: Pokemon[] = [
@@ -71,24 +71,17 @@ const mockPokemon: Pokemon[] = [
   },
 ];
 
-/** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。 */
+/** 固定リストの図鑑番号 (リスト順)。抽選はサービス側がこの一覧と許可 ID を突き合わせて行う。 */
+const MOCK_POKEMON_IDS: readonly number[] = mockPokemon.map((p) => p.id);
+
+/** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。抽選ロジックは持たず、データ提供のみを担う。 */
 export class MockPokemonClient implements PokemonClient {
   /**
-   * @param random 乱数ソース。MockRandomSource を渡すと毎回同じポケモンが出題され、e2e が同じ結果を再現できる。
+   * このデータソースが取得できる図鑑番号の一覧 (固定リスト順)。
+   * @returns 図鑑番号の配列。
    */
-  constructor(private random: RandomSource) {}
-
-  /**
-   * @param allowedIds 出題を許可する図鑑番号の集合。固定リストのうちこれに含まれるものから抽選する。
-   * @returns 乱数ソースで選んだポケモン。
-   * @throws 固定リストに許可された図鑑番号が無い場合 (mock データは第1世代中心のため他世代のみ選択時に起こりうる)。
-   */
-  async getRandomPokemon(allowedIds: ReadonlySet<number>): Promise<Pokemon> {
-    const available = mockPokemon.filter((p) => allowedIds.has(p.id));
-    if (available.length === 0) {
-      throw new Error("no mock pokemon available in the allowed pool");
-    }
-    return { ...available[Math.floor(this.random.next() * available.length)] };
+  getServableIDs(): readonly number[] {
+    return MOCK_POKEMON_IDS;
   }
 
   /**

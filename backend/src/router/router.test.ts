@@ -63,7 +63,7 @@ interface AppOverrides {
  */
 function makeApp(o: AppOverrides = {}) {
   const pokemonClient: PokemonClient = {
-    getRandomPokemon: async () => makePokemon(),
+    getServableIDs: () => [makePokemon().id],
     getPokemonByID: async () => makePokemon(),
   };
   const llm: LLMClient = {

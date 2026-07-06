@@ -156,7 +156,7 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 出題されるポケモンを世代（第 1〜8 世代）で絞り込む per-user 設定。`users/{uid}/settings/preferences.enabled_generations`（Firestore）に保持し、設定画面のチェックボックスで選ぶ。未設定なら全世代。最低 1 世代必須（全解除は不可）。
 
 - **出題プールにのみ適用**：`newQuest` の抽選対象を選択世代の図鑑番号に限定する。**図鑑の母数は変えない**（`getCollection` には適用しない）。
-- **抽選機構**：出題プール = 選択世代を `MAX_POKEMON_ID` 内で図鑑番号に展開し、除外 ID を差し引いた集合（`buildQuestPoolIDs`）。この集合を `PokemonClient.getRandomPokemon(allowedIds)` に渡し、アダプタが自身の扱えるプールと交差した中から抽選する。狭いプール（1 世代のみ等）でも出題が失敗しないよう、引いてから弾くのではなく許可 ID の中から直接引く。
+- **抽選機構**：出題プール = 選択世代を `MAX_POKEMON_ID` 内で図鑑番号に展開し、除外 ID を差し引いた集合（`buildQuestPoolIDs`）。抽選はサービスが行う：`PokemonClient.getServableIDs()`（データソースが提供できる図鑑番号）と出題プールを突き合わせ、その中からランダムに1匹選ぶ。アダプタは抽選ロジックを持たずデータ提供のみを担う。プールが空（画面が最低1世代・除外上限で防ぐが、設定次第で起こり得る）なら `EmptyQuestPoolError` → 409 で「設定を見直して」と案内する。
 - 世代境界は `domain/generation.ts` の `GENERATION_RANGES`（全国図鑑の世代区分）を SSoT とする。
 
 ### 認証フロー

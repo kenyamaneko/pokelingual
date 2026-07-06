@@ -5,51 +5,52 @@ import {
   validateEnabledGenerations,
 } from "./generation.js";
 
-// 図鑑番号上限のダミー値。実運用の 898 とは独立に境界を確かめる。
-const MAX_ID = 898;
+// 世代範囲がクランプされない十分大きい上限。上限でのクランプ自体は専用テストで別に確かめる。
+const NO_CLAMP_MAX = 898;
 
 /**
  * 選択世代を図鑑番号の集合へ展開する仕様。世代境界 (151/152 など) は純関数の定義そのものなので具体値で確かめる。
  */
 describe("generationsToPokemonIDs (選択世代→図鑑番号の集合)", () => {
-  it("第1世代は 1〜151 を含み 152 を含まない", () => {
-    const ids = generationsToPokemonIDs([1], MAX_ID);
+  it("第1世代は 1〜151 を含み、隣の 152 は含まない", () => {
+    const ids = generationsToPokemonIDs([1], NO_CLAMP_MAX);
     expect(ids.size).toBe(151);
     expect(ids.has(1)).toBe(true);
     expect(ids.has(151)).toBe(true);
     expect(ids.has(152)).toBe(false);
   });
 
-  it("第2世代は 152〜251 を含み、第1世代の 151 は含まない", () => {
-    const ids = generationsToPokemonIDs([2], MAX_ID);
+  it("第2世代は 152〜251 を含み、両隣の 151・252 は含まない", () => {
+    const ids = generationsToPokemonIDs([2], NO_CLAMP_MAX);
     expect(ids.has(152)).toBe(true);
     expect(ids.has(251)).toBe(true);
     expect(ids.has(151)).toBe(false);
     expect(ids.has(252)).toBe(false);
   });
 
-  it("複数世代を選ぶと双方の範囲を含む", () => {
-    const ids = generationsToPokemonIDs([1, 2], MAX_ID);
-    expect(ids.size).toBe(251);
-    expect(ids.has(1)).toBe(true);
-    expect(ids.has(251)).toBe(true);
+  it("選んでいない世代の番号は含まれない (第3世代のみ選ぶと第1世代は入らない)", () => {
+    const ids = generationsToPokemonIDs([3], NO_CLAMP_MAX);
+    expect(ids.has(252)).toBe(true);
+    expect(ids.has(1)).toBe(false);
+    expect(ids.has(151)).toBe(false);
   });
 
-  it("上限より上の図鑑番号は切り捨てられる", () => {
+  it("飛び石の世代選択 (第2・第4世代) は間の第3世代を含まない", () => {
+    const ids = generationsToPokemonIDs([2, 4], NO_CLAMP_MAX);
+    expect(ids.has(200)).toBe(true);
+    expect(ids.has(400)).toBe(true);
+    expect(ids.has(300)).toBe(false);
+  });
+
+  it("maxPokemonID を超える番号は含まれない (上限でクランプする)", () => {
     const ids = generationsToPokemonIDs([1], 100);
     expect(ids.size).toBe(100);
     expect(ids.has(100)).toBe(true);
     expect(ids.has(101)).toBe(false);
   });
 
-  it("選ばれていない世代の図鑑番号は含まれない", () => {
-    const ids = generationsToPokemonIDs([3], MAX_ID);
-    expect(ids.has(1)).toBe(false);
-    expect(ids.has(252)).toBe(true);
-  });
-
   it("世代が空なら空集合になる", () => {
-    expect(generationsToPokemonIDs([], MAX_ID).size).toBe(0);
+    expect(generationsToPokemonIDs([], NO_CLAMP_MAX).size).toBe(0);
   });
 });
 
@@ -58,7 +59,7 @@ describe("generationsToPokemonIDs (選択世代→図鑑番号の集合)", () =>
  */
 describe("buildQuestPoolIDs (出題プールの図鑑番号)", () => {
   it("除外 ID がプールから取り除かれる", () => {
-    const pool = buildQuestPoolIDs([1], MAX_ID, new Set([5, 10]));
+    const pool = buildQuestPoolIDs([1], NO_CLAMP_MAX, new Set([5, 10]));
     expect(pool.size).toBe(149);
     expect(pool.has(5)).toBe(false);
     expect(pool.has(10)).toBe(false);
@@ -66,7 +67,7 @@ describe("buildQuestPoolIDs (出題プールの図鑑番号)", () => {
   });
 
   it("選択世代の外にある除外 ID はプールの大きさに影響しない", () => {
-    const pool = buildQuestPoolIDs([1], MAX_ID, new Set([200]));
+    const pool = buildQuestPoolIDs([1], NO_CLAMP_MAX, new Set([200]));
     expect(pool.size).toBe(151);
   });
 
@@ -78,21 +79,22 @@ describe("buildQuestPoolIDs (出題プールの図鑑番号)", () => {
 
 /**
  * 世代リストのバリデーション仕様。純関数なので具体値で直接確かめる。
+ * 空配列・不正値の経路は設定画面 (チェックボックス・最低1世代) で塞がれるが、API 境界の防御として backend でも弾く。
  */
 describe("validateEnabledGenerations", () => {
   it("有効な世代を重複排除・昇順で返す", () => {
     expect(validateEnabledGenerations([3, 1, 1])).toEqual({ ok: true, generations: [1, 3] });
   });
 
-  it("空配列は失敗 (最低1世代必須)", () => {
+  it("空配列は失敗する (画面の最低1世代バリデーションが本来防ぐが、防御的に弾く)", () => {
     expect(validateEnabledGenerations([]).ok).toBe(false);
   });
 
-  it("配列でなければ失敗", () => {
+  it("配列でなければ失敗する", () => {
     expect(validateEnabledGenerations("x").ok).toBe(false);
   });
 
-  it("undefined でも失敗 (リクエストボディ欠落)", () => {
+  it("undefined でも失敗する (リクエストボディ欠落)", () => {
     expect(validateEnabledGenerations(undefined).ok).toBe(false);
   });
 
@@ -106,7 +108,7 @@ describe("validateEnabledGenerations", () => {
     expect(validateEnabledGenerations([9]).ok).toBe(false);
   });
 
-  it("非整数は失敗", () => {
+  it("整数でない世代番号は失敗する", () => {
     expect(validateEnabledGenerations([1.5]).ok).toBe(false);
   });
 });

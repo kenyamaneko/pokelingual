@@ -1,5 +1,5 @@
 import levenshtein from "js-levenshtein";
-import { NotFoundError, ExternalServiceError } from "../domain/errors.js";
+import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import type {
@@ -74,13 +74,17 @@ export class QuestService {
     const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
     const generations = settings.enabled_generations ?? ALL_GENERATIONS;
     const allowedIds = buildQuestPoolIDs(generations, this.pokemonConfig.maxPokemonID, excluded);
-    if (allowedIds.size === 0) {
-      throw new Error(`no pokemon available for the quest pool (generations=${generations.join(",")}, excluded=${excluded.size})`);
+    // 抽選はサービスが行う: データソースが提供できる図鑑番号のうち、許可された ID に絞ってランダムに1匹選ぶ。
+    const candidates = this.pokemonClient.getServableIDs().filter((id) => allowedIds.has(id));
+    if (candidates.length === 0) {
+      // 画面が最低1世代・除外上限で空プールを防ぐため通常は到達しない。防御的に案内エラーにする。
+      throw new EmptyQuestPoolError();
     }
+    const pokemonID = candidates[Math.floor(this.random.next() * candidates.length)];
 
     let pokemon: Pokemon;
     try {
-      pokemon = await this.pokemonClient.getRandomPokemon(allowedIds);
+      pokemon = await this.pokemonClient.getPokemonByID(pokemonID);
     } catch (err) {
       throw new ExternalServiceError("PokemonAPI", err as Error);
     }

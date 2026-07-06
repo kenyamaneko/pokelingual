@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { cleanFlavorText, PokeAPIClient } from "./pokeapi.js";
-import type { HttpGet, PokemonConfig, RandomSource } from "../../domain/ports.js";
+import type { HttpGet, PokemonConfig } from "../../domain/ports.js";
 
 describe("cleanFlavorText", () => {
   it("改行・改ページ・復帰をスペースに置換する", () => {
@@ -48,8 +48,7 @@ function makeClientWithTypes(typeNames: string[]): PokeAPIClient {
     json: async () => (url.includes("pokemon-species") ? speciesBody : pokemonBody),
   });
   const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
-  const random: RandomSource = { next: () => 0 };
-  return new PokeAPIClient(config, random, httpGet);
+  return new PokeAPIClient(config, httpGet);
 }
 
 describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
@@ -66,18 +65,11 @@ describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
 });
 
 /**
- * 出題抽選は allowedIds の中の図鑑番号を取得する。返り値の id は取得した図鑑番号をそのまま持つ。
+ * このデータソースは 1..maxPokemonID の図鑑番号を提供する (抽選はサービス側が行う)。
  */
-describe("PokeAPIClient.getRandomPokemon", () => {
-  it("allowedIds の中の図鑑番号を取得する (乱数0 = 集合の先頭)", async () => {
-    const pokemon = await makeClientWithTypes(["normal"]).getRandomPokemon(new Set([7, 3, 9]));
-    // 乱数0 で集合の先頭 (挿入順) の 7 が選ばれる
-    expect(pokemon.id).toBe(7);
-  });
-
-  it("許可された図鑑番号が無ければエラー", async () => {
-    await expect(makeClientWithTypes(["normal"]).getRandomPokemon(new Set())).rejects.toThrow(
-      /no pokemon id/,
-    );
+describe("PokeAPIClient.getServableIDs", () => {
+  it("1 から maxPokemonID までの図鑑番号を提供する", () => {
+    const ids = makeClientWithTypes(["normal"]).getServableIDs();
+    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 });

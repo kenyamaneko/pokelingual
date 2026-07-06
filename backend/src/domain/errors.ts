@@ -26,6 +26,14 @@ export class ExternalServiceError extends Error {
   }
 }
 
+/** 現在の設定 (世代・除外) では出題できるポケモンがいないことを表す。handleError で 409 にマップされる。 */
+export class EmptyQuestPoolError extends Error {
+  constructor() {
+    super("no pokemon available for the current quest settings");
+    this.name = "EmptyQuestPoolError";
+  }
+}
+
 // RateLimitKind は 429 レスポンスの error フィールドに乗る wire 値なので、shared/api-types を SSOT として再 export する。
 import type { RateLimitKind } from "../../../shared/api-types/rate-limit.js";
 export type { RateLimitKind };

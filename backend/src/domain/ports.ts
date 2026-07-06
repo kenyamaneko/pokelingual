@@ -15,11 +15,11 @@ export interface RandomSource {
   next(): number;
 }
 
-/** ポケモン情報の取得を担うデータソースポート。出題抽選プールは実装側のデータ事情に依存する。 */
+/** ポケモン情報の取得を担うデータソースポート。抽選 (どの ID を出すか) はサービス側が行い、実装はデータ提供のみを担う。 */
 export interface PokemonClient {
   getPokemonByID(id: number): Promise<Pokemon>;
-  /** allowedIds は出題を許可する図鑑番号の集合。実装は自身が扱えるプールと交差した中から抽選する。 */
-  getRandomPokemon(allowedIds: ReadonlySet<number>): Promise<Pokemon>;
+  /** このデータソースが取得できる図鑑番号の一覧 (mock は固定リスト順、real は 1..maxPokemonID)。 */
+  getServableIDs(): readonly number[];
 }
 
 /** HTTP レスポンスのうち外部 API アダプタが参照する最小要素。 */

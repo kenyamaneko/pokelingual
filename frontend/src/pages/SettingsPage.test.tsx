@@ -196,6 +196,22 @@ describe("SettingsPage の苦手ポケモン管理", () => {
     expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
   });
 
+  it("複数のポケモンが名前にヒットすると、その全てが候補に出る", async () => {
+    mockGetSettings([]);
+    mockPokedexEntries([
+      { pokemon_id: 10, name_ja: "ダミラス" },
+      { pokemon_id: 20, name_ja: "ダミリン" },
+    ]);
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
+
+    // 「ダミ」に一致する2匹が候補ボタンとして出る
+    expect(await screen.findByRole("button", { name: /ダミラス/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ダミリン/ })).toBeInTheDocument();
+  });
+
   it("すでに除外済みのポケモンは検索候補に出ない", async () => {
     mockGetSettings([42]);
     mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
@@ -252,7 +268,7 @@ describe("SettingsPage の苦手ポケモン管理", () => {
     vi.restoreAllMocks();
   });
 
-  it("図鑑一覧の取得に失敗すると、名前で探せない旨を表示する", async () => {
+  it("図鑑一覧の取得に失敗すると、再読み込みを促すメッセージを表示する", async () => {
     // エラー経路の診断ログは検証対象外のため沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSettings([]);
@@ -260,7 +276,7 @@ describe("SettingsPage の苦手ポケモン管理", () => {
     renderSettings();
 
     expect(
-      await screen.findByText(spec("ポケモン一覧を読み込めなかったため、名前で探せません")),
+      await screen.findByText(spec("ポケモン一覧を読み込めませんでした。ページを再読み込みしてください")),
     ).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("ポケモンの名前で探す")).not.toBeInTheDocument();
     vi.restoreAllMocks();
@@ -280,13 +296,13 @@ describe("SettingsPage の出題世代", () => {
     lastSavedGenerations = null;
   });
 
-  it("GET の enabled_generations に応じてチェック状態が復元される", async () => {
+  it("選択済みの世代がチェック状態で復元される", async () => {
     mockGetSettings([], [1, 3]);
     renderSettings();
 
-    expect(await screen.findByRole("checkbox", { name: "第1世代" })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: "第2世代" })).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: "第3世代" })).toBeChecked();
+    expect(await screen.findByRole("checkbox", { name: /第1世代/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /第2世代/ })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /第3世代/ })).toBeChecked();
   });
 
   it("世代のチェックを外すと、その世代を除いた一覧が保存される", async () => {
@@ -295,11 +311,11 @@ describe("SettingsPage の出題世代", () => {
     const user = userEvent.setup();
     renderSettings();
 
-    await user.click(await screen.findByRole("checkbox", { name: "第2世代" }));
+    await user.click(await screen.findByRole("checkbox", { name: /第2世代/ }));
 
     // 第2世代を外した [1, 3] が保存され、チェックも外れる
     await waitFor(() => expect(lastSavedGenerations).toEqual([1, 3]));
-    expect(screen.getByRole("checkbox", { name: "第2世代" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /第2世代/ })).not.toBeChecked();
   });
 
   it("世代のチェックを付けると、その世代を加えた一覧が保存される", async () => {
@@ -308,22 +324,26 @@ describe("SettingsPage の出題世代", () => {
     const user = userEvent.setup();
     renderSettings();
 
-    await user.click(await screen.findByRole("checkbox", { name: "第4世代" }));
+    await user.click(await screen.findByRole("checkbox", { name: /第4世代/ }));
 
     // 第4世代を加えた [1, 4] が保存され、チェックが付く
     await waitFor(() => expect(lastSavedGenerations).toEqual([1, 4]));
-    expect(screen.getByRole("checkbox", { name: "第4世代" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /第4世代/ })).toBeChecked();
   });
 
-  it("最後の1世代は外せない (最低1世代必須で保存も走らない)", async () => {
+  it("選択が1つだけのときはその世代を外せず、1つ以上必要な旨を表示する", async () => {
     mockGetSettings([], [5]);
     mockUpdateGenerationsSuccess();
     const user = userEvent.setup();
     renderSettings();
 
-    const only = await screen.findByRole("checkbox", { name: "第5世代" });
+    const only = await screen.findByRole("checkbox", { name: /第5世代/ });
     expect(only).toBeChecked();
     expect(only).toBeDisabled();
+    // なぜ外せないかが分かる案内を出す
+    expect(
+      screen.getByText(spec("1つ以上えらんでね（ぜんぶは外せないよ）")),
+    ).toBeInTheDocument();
 
     await user.click(only);
 
