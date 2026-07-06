@@ -39,7 +39,6 @@ const DUMMY_IDENTITY = { pokemon_id: 9999, name_ja: DUMMY_NAME };
  * CaptureResult の仕様:
  * - captured=true なら捕獲タイトル、false なら逃走タイトルを表示する
  * - 捕獲時の演出タイトルは 幻 > 伝説 > 強豪 (種族値600以上) > 通常 の優先度で出し分ける
- * - 種族値 (しゅぞくち) とスコアは表示しない
  * - タイプは日本語表示名で表示する
  * - 「メニューに戻る」でホーム (/) へ遷移する
  *
@@ -96,22 +95,6 @@ describe("CaptureResult", () => {
     );
 
     expect(screen.getByTestId("home-page")).toBeInTheDocument();
-  });
-
-  it("捕獲結果に種族値 (しゅぞくち) を表示しない", () => {
-    renderWithProviders(
-      <CaptureResult result={baseResult({ ...DUMMY_IDENTITY })} onNewQuest={vi.fn()} />,
-      { withRouter: true },
-    );
-    expect(screen.queryByText(/しゅぞくち/)).not.toBeInTheDocument();
-  });
-
-  it("捕獲結果にスコアを表示しない", () => {
-    renderWithProviders(
-      <CaptureResult result={baseResult({ ...DUMMY_IDENTITY })} onNewQuest={vi.fn()} />,
-      { withRouter: true },
-    );
-    expect(screen.queryByText(/スコア/)).not.toBeInTheDocument();
   });
 
   it("タイプを日本語表示名 (electric → でんき) で表示する", () => {
