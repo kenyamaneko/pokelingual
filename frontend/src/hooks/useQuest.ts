@@ -4,6 +4,7 @@ import { questApi } from "../api/questApi";
 import { useUsage } from "../contexts/UsageContext";
 import type {
   QuestNewResponse,
+  QuestLocation,
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
@@ -14,6 +15,7 @@ export type { BallType };
 
 /** クエストフェーズの遷移ステート。 */
 export type QuestPhase =
+  | "selectLocation"
   | "loading"
   | "translating"
   | "guessing"
@@ -25,6 +27,7 @@ export type QuestPhase =
 export interface UseQuestResult {
   phase: QuestPhase;
   quest: QuestNewResponse | null;
+  locations: QuestLocation[];
   score: ScoreResponse | null;
   guessResult: GuessResponse | null;
   captureResult: CaptureResponse | null;
@@ -33,6 +36,7 @@ export interface UseQuestResult {
   error: string | null;
 
   startNewQuest: () => Promise<void>;
+  selectLocation: (locationId: string) => Promise<void>;
   submitTranslation: (translation: string) => Promise<void>;
   submitGuess: (guess: string) => Promise<void>;
   skipGuess: () => Promise<void>;
@@ -86,8 +90,9 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * @returns フェーズ・各種データ・操作関数を含むクエスト状態。
  */
 export function useQuest(): UseQuestResult {
-  const [phase, setPhase] = useState<QuestPhase>("loading");
+  const [phase, setPhase] = useState<QuestPhase>("selectLocation");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);
+  const [locations, setLocations] = useState<QuestLocation[]>([]);
   const [score, setScore] = useState<ScoreResponse | null>(null);
   const [guessResult, setGuessResult] = useState<GuessResponse | null>(null);
   const [captureResult, setCaptureResult] = useState<CaptureResponse | null>(null);
@@ -97,7 +102,7 @@ export function useQuest(): UseQuestResult {
   const { refresh: refreshUsage } = useUsage();
 
   const startNewQuest = useCallback(async () => {
-    setPhase("loading");
+    setPhase("selectLocation");
     setQuest(null);
     setScore(null);
     setGuessResult(null);
@@ -105,9 +110,22 @@ export function useQuest(): UseQuestResult {
     setUserTranslation("");
     setBallType(null);
     setError(null);
+    setLocations([]);
 
     try {
-      const res = await questApi.newQuest();
+      const res = await questApi.getLocations();
+      setLocations(res.data.locations);
+    } catch (err) {
+      setError(getErrorMessage(err, "場所の読み込みに失敗しました。もう一度試してください。続く場合はお問い合わせください"));
+      setPhase("error");
+    }
+  }, []);
+
+  const selectLocation = useCallback(async (locationId: string) => {
+    setPhase("loading");
+    setError(null);
+    try {
+      const res = await questApi.newQuest(locationId);
       setQuest(res.data);
       setPhase("translating");
     } catch (err) {
@@ -172,6 +190,7 @@ export function useQuest(): UseQuestResult {
   return {
     phase,
     quest,
+    locations,
     score,
     guessResult,
     captureResult,
@@ -179,6 +198,7 @@ export function useQuest(): UseQuestResult {
     ballType,
     error,
     startNewQuest,
+    selectLocation,
     submitTranslation,
     submitGuess,
     skipGuess,

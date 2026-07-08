@@ -3,6 +3,7 @@ import { TranslationInput } from "../components/quest/TranslationInput";
 import { ScoreDisplay } from "../components/quest/ScoreDisplay";
 import { NameGuess } from "../components/quest/NameGuess";
 import { CaptureResult } from "../components/quest/CaptureResult";
+import { LocationSelect } from "../components/quest/LocationSelect";
 import { useQuest, type BallType } from "../hooks/useQuest";
 
 const BALL_SPRITES: Record<BallType, string> = {
@@ -31,7 +32,9 @@ export function QuestPage() {
     userTranslation,
     ballType,
     error,
+    locations,
     startNewQuest,
+    selectLocation,
     submitTranslation,
     submitGuess,
     skipGuess,
@@ -59,6 +62,10 @@ export function QuestPage() {
               もう一度
             </button>
           </div>
+        )}
+
+        {phase === "selectLocation" && (
+          <LocationSelect locations={locations} onSelect={selectLocation} />
         )}
 
         {phase === "loading" && (

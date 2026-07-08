@@ -38,6 +38,19 @@ function mockNewQuest(resp: QuestNewResponse = questResp) {
 }
 
 /**
+ * useQuest をマウントし、最初の場所を選んで出題を開始した状態にする。
+ * @returns renderHook の戻り値。
+ */
+async function mountAndSelectLocation() {
+  const hook = renderHook(() => useQuest());
+  await waitFor(() => expect(hook.result.current.locations.length).toBeGreaterThan(0));
+  await act(async () => {
+    await hook.result.current.selectLocation(hook.result.current.locations[0].id);
+  });
+  return hook;
+}
+
+/**
  * useQuest の仕様:
  * - クエストセッションのライフサイクル (new → score → guess → capture) を state machine として管理する
  * - 全 API 呼び出しで 429 は UsageProvider のモーダルに委譲し、ローカル error は設定しない
@@ -51,23 +64,34 @@ describe("useQuest", () => {
     vi.clearAllMocks();
   });
 
-  it("マウント時に /quest/new を呼び、成功で translating フェーズへ遷移する", async () => {
+  it("マウント時に場所選択が表示され、場所を選ぶと translating フェーズへ遷移する", async () => {
     mockNewQuest();
 
     const { result } = renderHook(() => useQuest());
+    await waitFor(() => expect(result.current.phase).toBe("selectLocation"));
+    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
 
-    expect(result.current.phase).toBe("loading");
+    await act(async () => {
+      await result.current.selectLocation(result.current.locations[0].id);
+    });
 
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
+    expect(result.current.phase).toBe("translating");
     expect(result.current.quest).toEqual(questResp);
   });
 
-  it("/quest/new が失敗すると error フェーズに遷移し、メッセージを保持する", async () => {
-    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })));
+  it("場所の取得に失敗すると error フェーズに遷移し、メッセージを保持する", async () => {
+    server.use(http.get(apiUrl("/quest/locations"), () => HttpResponse.json({}, { status: 500 })));
 
     const { result } = renderHook(() => useQuest());
+    await waitFor(() => expect(result.current.phase).toBe("error"));
 
+    expect(result.current.error).not.toBeNull();
+  });
+
+  it("場所を選んだ後の /quest/new が失敗すると error フェーズに遷移し、メッセージを保持する", async () => {
+    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })));
+
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("error"));
 
     expect(result.current.error).not.toBeNull();
@@ -82,7 +106,7 @@ describe("useQuest", () => {
   ])("/quest/new の $status ではステータスに応じた文言を表示する", async ({ status, expected }) => {
     server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("error"));
 
     expect(result.current.error).toMatch(expected);
@@ -91,7 +115,7 @@ describe("useQuest", () => {
   it("ネットワーク断 (レスポンス無し) では接続エラーの文言を表示する", async () => {
     server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.error()));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("error"));
 
     expect(result.current.error).toMatch(/接続できません/);
@@ -101,7 +125,7 @@ describe("useQuest", () => {
     mockNewQuest();
     server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
@@ -143,7 +167,7 @@ describe("useQuest", () => {
       ),
     );
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
@@ -177,7 +201,7 @@ describe("useQuest", () => {
     mockNewQuest();
     server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 502 })));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
@@ -198,7 +222,7 @@ describe("useQuest", () => {
     };
     server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guess)));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
@@ -215,7 +239,7 @@ describe("useQuest", () => {
       http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
     );
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
@@ -250,7 +274,7 @@ describe("useQuest", () => {
     };
     server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captured)));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
@@ -261,11 +285,11 @@ describe("useQuest", () => {
     expect(result.current.captureResult).toEqual(captured);
   });
 
-  it("startNewQuest で全 state がリセットされ、loading→translating になる", async () => {
+  it("startNewQuest で state がリセットされ場所選択に戻り、選び直すと新しい出題になる", async () => {
     mockNewQuest();
     server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = await mountAndSelectLocation();
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     // 進捗を進めて state を持たせた状態を作る
@@ -274,7 +298,6 @@ describe("useQuest", () => {
     });
     expect(result.current.phase).toBe("guessing");
 
-    // 新しいクエストを開始すると state がリセットされる
     const second: QuestNewResponse = { ...questResp, pokemon_id: 1 };
     mockNewQuest(second);
 
@@ -282,10 +305,16 @@ describe("useQuest", () => {
       await result.current.startNewQuest();
     });
 
-    expect(result.current.phase).toBe("translating");
+    expect(result.current.phase).toBe("selectLocation");
     expect(result.current.score).toBeNull();
     expect(result.current.userTranslation).toBe("");
     expect(result.current.ballType).toBeNull();
+
+    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+    await act(async () => {
+      await result.current.selectLocation(result.current.locations[0].id);
+    });
+    expect(result.current.phase).toBe("translating");
     expect(result.current.quest).toEqual(second);
   });
 });

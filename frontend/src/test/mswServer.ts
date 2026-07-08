@@ -33,6 +33,13 @@ const defaultHandlers = [
     HttpResponse.json({ pokemon: [], captured_count: 0, unavailable_count: 0 }),
   ),
   http.get(apiUrl("/pokedex/:id"), () => HttpResponse.json({})),
+  http.get(apiUrl("/quest/locations"), () =>
+    HttpResponse.json({
+      locations: [
+        { id: "test-place", name: "テスト草原", description: "テスト用の場所", types: ["normal"] },
+      ],
+    }),
+  ),
   http.get(apiUrl("/quest/new"), () =>
     HttpResponse.json({
       pokemon_id: 1,

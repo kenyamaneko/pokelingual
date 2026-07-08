@@ -24,6 +24,7 @@ export const BUTTON = {
   proceed: /次へ進む/,
   useBall: /を.使う/,
   nextQuest: /次のポケモンを探す/,
+  selectPowerPlant: /廃墟の発電所/,
   close: "閉じる",
 } as const;
 

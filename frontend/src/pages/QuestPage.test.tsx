@@ -72,6 +72,8 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
 
     renderWithProviders(<QuestPage />, { withRouter: true });
 
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+
     const translationBox = await screen.findByRole("textbox");
     expect(screen.getByTestId("quest-description")).toHaveTextContent(
       "The first wild creature.",
@@ -100,6 +102,8 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
     await user.click(
       screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.nextButton }),
     );
+    // 「次のポケモンを探す」で場所選択に戻り、選び直すと次の出題が始まる
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
     await waitFor(() =>
       expect(screen.getByTestId("quest-description")).toHaveTextContent(
         "A second wild creature.",
@@ -126,6 +130,8 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
 
     renderWithProviders(<QuestPage />, { withRouter: true });
 
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+
     await user.type(await screen.findByRole("textbox"), "やくぶん");
     await user.click(
       screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
@@ -135,5 +141,14 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
       await screen.findByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
     );
     expect(await screen.findByRole("button", { name: /使う/ })).toBeInTheDocument();
+  });
+
+  it("最初に場所選択画面が表示される", async () => {
+    renderWithProviders(<QuestPage />, { withRouter: true });
+
+    expect(
+      await screen.findByRole("button", { name: /テスト草原/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(spec("どこに ポケモンを 探しに行く？"))).toBeInTheDocument();
   });
 });

@@ -15,6 +15,8 @@ export async function registerViaUi(page: Page, email: string, password: string)
 // クエストを1回完走させる（翻訳→採点→名前スキップ→捕獲→結果カード表示まで）。
 export async function completeQuest(page: Page) {
   await page.goto("/quest");
+  // 場所選択で「廃墟の発電所」(でんき) を選ぶと、mock では決定的にピカチュウが出る
+  await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
   await page.getByText(TEXT.questTitle).waitFor();
 
   // 翻訳入力 → 送信

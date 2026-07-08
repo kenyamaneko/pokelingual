@@ -58,6 +58,7 @@ const TRANSLATION_TEXT = "この ポケモンは はやい";
  */
 async function submitTranslationForScoring(): Promise<void> {
   const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
   await user.type(await screen.findByRole("textbox"), TRANSLATION_TEXT);
   await user.click(
     screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
