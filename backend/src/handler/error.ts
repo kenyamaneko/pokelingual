@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { NotFoundError, ExternalServiceError, RateLimitError } from "../domain/errors.js";
+import { NotFoundError, ExternalServiceError, RateLimitError, EmptyQuestPoolError } from "../domain/errors.js";
 import { logger } from "../util/logger.js";
 import type { RateLimitResponse } from "../../../shared/api-types/rate-limit.js";
 import type { ErrorResponse } from "../../../shared/api-types/error.js";
@@ -23,6 +23,9 @@ export function handleError(res: Response, err: unknown, path: string): void {
   } else if (err instanceof ExternalServiceError) {
     logger.error("external service error", { service: err.service, error: String(err.cause), path });
     res.status(502).json({ error: "external service unavailable" } satisfies ErrorResponse);
+  } else if (err instanceof EmptyQuestPoolError) {
+    logger.warn("empty quest pool", { error: String(err), path });
+    res.status(409).json({ error: "empty_quest_pool" } satisfies ErrorResponse);
   } else {
     logger.error("internal error", { error: String(err), path });
     res.status(500).json({ error: "internal server error" } satisfies ErrorResponse);

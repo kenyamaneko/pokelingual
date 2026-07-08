@@ -62,7 +62,7 @@ if (cfg.appMode === "mock") {
   logger.info("starting in mock mode", { firestore_emulator: process.env.FIRESTORE_EMULATOR_HOST });
   const firestoreClient = new Firestore({ projectId: cfg.googleCloudProject });
   randomSource = new MockRandomSource();
-  pokemonClient = new MockPokemonClient(randomSource);
+  pokemonClient = new MockPokemonClient();
   llmClient = new MockLLMClient();
   pokemonConfig = { maxPokemonID: cfg.maxPokemonID, environment: cfg.environment };
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
@@ -97,7 +97,7 @@ if (cfg.appMode === "mock") {
 
   pokemonConfig = { maxPokemonID: cfg.maxPokemonID, environment: cfg.environment };
   randomSource = new SystemRandomSource();
-  pokemonClient = new PokeAPIClient(pokemonConfig, randomSource, (url) => fetch(url));
+  pokemonClient = new PokeAPIClient(pokemonConfig, (url) => fetch(url));
   llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);

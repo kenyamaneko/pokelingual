@@ -1,4 +1,4 @@
-import type { HttpGet, PokemonClient, PokemonConfig, RandomSource } from "../../domain/ports.js";
+import type { HttpGet, PokemonClient, PokemonConfig } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
 import { buildFlavorTextPairs } from "../../domain/flavor-text.js";
 import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
@@ -52,25 +52,28 @@ interface PokeAPIPokemonResponse {
 /** PokeAPI から種別情報を取得しメモリキャッシュする PokemonClient 実装。 */
 export class PokeAPIClient implements PokemonClient {
   private cache = new Map<number, Pokemon>();
+  private servableIDs: readonly number[] | null = null;
 
   /**
    * @param config ポケモン関連のアプリ設定 (maxPokemonID 等)。
-   * @param random 乱数ソース (抽選を RandomSource ポート経由に統一する)。
    * @param httpGet HTTP トランスポート。本番は fetch、テストは fake を注入する。
    */
   constructor(
     private config: PokemonConfig,
-    private random: RandomSource,
     private httpGet: HttpGet,
   ) {}
 
   /**
-   * 1〜maxPokemonID からランダムに 1 匹取得する。
-   * @returns ランダムに選ばれたポケモン。
+   * このデータソースが取得できる図鑑番号の一覧 (1..maxPokemonID)。初回に構築してキャッシュする。
+   * @returns 図鑑番号の配列。
    */
-  async getRandomPokemon(): Promise<Pokemon> {
-    const id = Math.floor(this.random.next() * this.config.maxPokemonID) + 1;
-    return this.getPokemonByID(id);
+  getServableIDs(): readonly number[] {
+    if (!this.servableIDs) {
+      const ids: number[] = [];
+      for (let id = 1; id <= this.config.maxPokemonID; id++) ids.push(id);
+      this.servableIDs = ids;
+    }
+    return this.servableIDs;
   }
 
   /**

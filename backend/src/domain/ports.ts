@@ -15,10 +15,11 @@ export interface RandomSource {
   next(): number;
 }
 
-/** ポケモン情報の取得を担うデータソースポート。出題抽選プールは実装側のデータ事情に依存する。 */
+/** ポケモン情報の取得を担うデータソースポート。抽選 (どの ID を出すか) はサービス側が行い、実装はデータ提供のみを担う。 */
 export interface PokemonClient {
   getPokemonByID(id: number): Promise<Pokemon>;
-  getRandomPokemon(): Promise<Pokemon>;
+  /** このデータソースが取得できる図鑑番号の一覧 (mock は固定リスト順、real は 1..maxPokemonID)。 */
+  getServableIDs(): readonly number[];
 }
 
 /** HTTP レスポンスのうち外部 API アダプタが参照する最小要素。 */
@@ -49,6 +50,7 @@ export interface UserPokemonRepository {
 export interface UserSettingsRepository {
   getSettings(userId: string): Promise<UserSettings>;
   updateExcludedPokemon(userId: string, pokemonIDs: number[]): Promise<void>;
+  updateEnabledGenerations(userId: string, generations: number[]): Promise<void>;
 }
 
 /** 日次レート制限カウンタを管理するリポジトリ。Firestore 版とインメモリ版がある。 */

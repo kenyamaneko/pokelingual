@@ -31,7 +31,7 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   };
 }
 
-/** テスト専用のダミー識別子 (実ポケモンの ID/名前を使わない)。 */
+/** 実データの仕様変更でテストが壊れないよう、実ポケモンでなくダミーの ID/名前を使う。 */
 const DUMMY_NAME = "テストポケモン";
 const DUMMY_IDENTITY = { pokemon_id: 9999, name_ja: DUMMY_NAME };
 

@@ -1,4 +1,4 @@
-import type { PokemonClient, RandomSource } from "../../domain/ports.js";
+import type { PokemonClient } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
 
 const mockPokemon: Pokemon[] = [
@@ -58,20 +58,30 @@ const mockPokemon: Pokemon[] = [
       { version_names: ["ソード"], description_en: "A Pokémon that was created by genetic manipulation. However, even though the scientific power of humans made its body, they failed to give it a warm heart.", description_ja: "遺伝子 操作に よって つくられた ポケモン。人間の 科学力で 体は つくれても 優しい 心を つくることは できなかった。" },
     ],
   },
+  {
+    id: 445, name_en: "Garchomp", name_ja: "ガブリアス",
+    description_en: "When it folds up its body and extends its wings, it looks like a jet plane. It loves to fly at supersonic speeds.",
+    description_ja: "体を 折りたたみ 翼を 広げると ジェット機の ような 姿に なる。音速で 飛ぶのが 大好き。",
+    sprite_url: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/445.png",
+    base_stat_total: 600, types: ["dragon", "ground"], height: 19, weight: 950, is_legendary: false, is_mythical: false,
+    flavor_texts: [
+      { version_names: ["X"], description_en: "When it folds up its body and extends its wings, it looks like a jet plane. It loves to fly at supersonic speeds.", description_ja: "体を 折りたたみ 翼を 広げると ジェット機の ような 姿に なる。音速で 飛ぶのが 大好き。" },
+      { version_names: ["ソード"], description_en: "It flies at speeds equal to a jet fighter. It never allows its prey to escape.", description_ja: "戦闘機 なみの スピードで 飛ぶ。獲物を 決して 逃がさない。" },
+    ],
+  },
 ];
 
-/** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。 */
+/** 固定リストの図鑑番号 (リスト順)。抽選はサービス側がこの一覧と許可 ID を突き合わせて行う。 */
+const MOCK_POKEMON_IDS: readonly number[] = mockPokemon.map((p) => p.id);
+
+/** PokeAPI を呼ばずに固定リストから返す開発用 PokemonClient 実装。抽選ロジックは持たず、データ提供のみを担う。 */
 export class MockPokemonClient implements PokemonClient {
   /**
-   * @param random 乱数ソース。MockRandomSource を渡すと毎回同じポケモンが出題され、e2e が同じ結果を再現できる。
+   * このデータソースが取得できる図鑑番号の一覧 (固定リスト順)。
+   * @returns 図鑑番号の配列。
    */
-  constructor(private random: RandomSource) {}
-
-  /**
-   * @returns 乱数ソースで選んだ固定リストのポケモン。
-   */
-  async getRandomPokemon(): Promise<Pokemon> {
-    return { ...mockPokemon[Math.floor(this.random.next() * mockPokemon.length)] };
+  getServableIDs(): readonly number[] {
+    return MOCK_POKEMON_IDS;
   }
 
   /**

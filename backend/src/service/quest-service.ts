@@ -1,6 +1,7 @@
 import levenshtein from "js-levenshtein";
-import { NotFoundError, ExternalServiceError } from "../domain/errors.js";
+import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
+import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -18,12 +19,6 @@ import type {
   SkipGuessResponse,
   BallType,
 } from "../../../shared/api-types/quest.js";
-
-/**
- * 出題抽選の最大試行回数 (初回を含む)。除外設定の最大数 (MAX_EXCLUDED_POKEMON_COUNT) と
- * maxPokemonID の関係から、この回数で実質衝突確率はゼロに収束する。
- */
-const MAX_RANDOM_PICK_RETRY = 10;
 
 /** ポケモン名推測の最大試行回数。これを超えるとモンスターボール固定での捕獲フェーズへ。 */
 const MAX_NAME_GUESS_ATTEMPTS = 3;
@@ -77,22 +72,21 @@ export class QuestService {
   async newQuest(userId: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
     const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
-
-    let pokemon: Pokemon | undefined;
-    for (let i = 0; i < MAX_RANDOM_PICK_RETRY; i++) {
-      let candidate: Pokemon;
-      try {
-        candidate = await this.pokemonClient.getRandomPokemon();
-      } catch (err) {
-        throw new ExternalServiceError("PokemonAPI", err as Error);
-      }
-      if (!excluded.has(candidate.id)) {
-        pokemon = candidate;
-        break;
-      }
+    const generations = settings.enabled_generations ?? ALL_GENERATIONS;
+    const allowedIds = buildQuestPoolIDs(generations, this.pokemonConfig.maxPokemonID, excluded);
+    // 抽選はサービスが行う: データソースが提供できる図鑑番号のうち、許可された ID に絞ってランダムに1匹選ぶ。
+    const candidates = this.pokemonClient.getServableIDs().filter((id) => allowedIds.has(id));
+    if (candidates.length === 0) {
+      // 画面が最低1世代・除外上限で空プールを防ぐため通常は到達しない。防御的に案内エラーにする。
+      throw new EmptyQuestPoolError();
     }
-    if (!pokemon) {
-      throw new Error(`failed to pick non-excluded pokemon after ${MAX_RANDOM_PICK_RETRY} attempts (excluded=${excluded.size})`);
+    const pokemonID = candidates[Math.floor(this.random.next() * candidates.length)];
+
+    let pokemon: Pokemon;
+    try {
+      pokemon = await this.pokemonClient.getPokemonByID(pokemonID);
+    } catch (err) {
+      throw new ExternalServiceError("PokemonAPI", err as Error);
     }
 
     let descEN = pokemon.description_en;

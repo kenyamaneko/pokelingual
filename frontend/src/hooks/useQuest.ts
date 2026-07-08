@@ -73,6 +73,9 @@ function getErrorMessage(err: unknown, fallback: string): string {
     if (status === 404) {
       return "セッションが切断されました。次のポケモンを探してください";
     }
+    if (status === 409) {
+      return "今の設定では出会えるポケモンがいません。設定を見直してください";
+    }
     return `${fallback}（${status}）`;
   }
   return fallback;

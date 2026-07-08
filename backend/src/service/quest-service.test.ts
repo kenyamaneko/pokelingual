@@ -5,7 +5,7 @@ import {
   maskPokemonNameEN,
   maskPokemonNameJA,
 } from "./quest-service.js";
-import { NotFoundError, ExternalServiceError } from "../domain/errors.js";
+import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -139,7 +139,7 @@ function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
 }
 
 interface ServiceOverrides {
-  /** getRandomPokemon が順に返すポケモン (尽きたら最後を返し続ける)。 */
+  /** getRandomPokemon の抽選元プール (allowedIds に含まれるものから乱数で選ぶ)。 */
   pokemons?: Pokemon[];
   /** getRandomPokemon が投げるエラー。 */
   pokemonError?: Error;
@@ -147,6 +147,10 @@ interface ServiceOverrides {
   llmText?: string;
   /** per-user 除外 ID (null = 未設定)。 */
   excludedIDs?: number[] | null;
+  /** 出題対象の世代 (null = 未設定 = 全世代)。 */
+  enabledGenerations?: number[] | null;
+  /** 図鑑番号の上限。 */
+  maxPokemonID?: number;
   /** 乱数値。 */
   randomValue?: number;
 }
@@ -157,21 +161,28 @@ interface ServiceOverrides {
  * @returns テスト対象のサービス。
  */
 function makeService(o: ServiceOverrides = {}): QuestService {
-  const queue = [...(o.pokemons ?? [makePokemon()])];
+  const pool = o.pokemons ?? [makePokemon()];
   const pokemonClient: PokemonClient = {
-    getRandomPokemon: async () => {
+    // データソースは提供できる図鑑番号を返すだけ。抽選 (許可 ID に絞ってランダム) はサービスが行う。
+    getServableIDs: () => pool.map((p) => p.id),
+    getPokemonByID: async (id) => {
       if (o.pokemonError) throw o.pokemonError;
-      return queue.length > 1 ? queue.shift()! : queue[0];
+      const found = pool.find((p) => p.id === id);
+      if (!found) throw new Error(`not in pool: ${id}`);
+      return found;
     },
-    getPokemonByID: async () => makePokemon(),
   };
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
-  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
+  const config: PokemonConfig = { maxPokemonID: o.maxPokemonID ?? 10, environment: "prod" };
   const settingsRepo: UserSettingsRepository = {
-    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null }),
+    getSettings: async () => ({
+      excluded_pokemon_ids: o.excludedIDs ?? null,
+      enabled_generations: o.enabledGenerations ?? null,
+    }),
     updateExcludedPokemon: async () => {},
+    updateEnabledGenerations: async () => {},
   };
   const random: RandomSource = { next: () => o.randomValue ?? 0 };
   return new QuestService(pokemonClient, llm, config, settingsRepo, random);
@@ -186,7 +197,7 @@ describe("QuestService.newQuest", () => {
     expect(res.is_legendary).toBe(false);
   });
 
-  it("per-user 除外に含まれる ID は出題されない (次の候補が選ばれる)", async () => {
+  it("per-user 除外に含まれる ID は出題プールから除かれ、除外外の候補が出題される", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 5 }), makePokemon({ id: 6 })],
       excludedIDs: [5],
@@ -195,9 +206,48 @@ describe("QuestService.newQuest", () => {
     expect(res.pokemon_id).toBe(6);
   });
 
-  it("候補が全て除外ならリトライ上限でエラー", async () => {
-    const service = makeService({ pokemons: [makePokemon({ id: 5 })], excludedIDs: [5] });
-    await expect(service.newQuest("alice")).rejects.toThrow(/failed to pick/);
+  it("選択世代のポケモンだけが出題され、他世代は出題されない", async () => {
+    // 100=第1世代, 300=第3世代 の範囲に入るダミー ID
+    const service = makeService({
+      pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
+      enabledGenerations: [1],
+      maxPokemonID: 898,
+    });
+    const res = await service.newQuest("alice");
+    expect(res.pokemon_id).toBe(100);
+  });
+
+  it("選択世代に含まれる世代のポケモンは出題対象になる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ id: 300 })],
+      enabledGenerations: [1, 3],
+      maxPokemonID: 898,
+    });
+    const res = await service.newQuest("alice");
+    expect(res.pokemon_id).toBe(300);
+  });
+
+  // 未設定 (null) は「こだわりなし = 全世代」。画面は GET で全チェック表示になる (空配列 [] とは別で、
+  // 空は設定画面の最低1世代バリデーションが防ぐ)。
+  it("世代未設定なら全世代が出題対象になる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ id: 500 })],
+      enabledGenerations: null,
+      maxPokemonID: 898,
+    });
+    const res = await service.newQuest("alice");
+    expect(res.pokemon_id).toBe(500);
+  });
+
+  // 画面は最低1世代・除外上限で空プールを防ぐため通常は到達しない防御的経路。到達時は
+  // EmptyQuestPoolError → 409 → 画面で「今の設定では出会えるポケモンがいません。設定を見直して」と案内される。
+  it("出題プールが空 (全 ID が除外) なら EmptyQuestPoolError になる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ id: 1 })],
+      excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      maxPokemonID: 10,
+    });
+    await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
   });
 
   it("ポケモン取得の失敗は ExternalServiceError として伝わる", async () => {

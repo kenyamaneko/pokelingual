@@ -46,4 +46,18 @@ describe("UserSettingsRepo (Firestore emulator)", () => {
     const bobSettings = await repo.getSettings("bob");
     expect(bobSettings.excluded_pokemon_ids).toBeNull();
   });
+
+  it("世代を一度も保存していないユーザーは未設定として読める", async () => {
+    const repo = new UserSettingsRepo(db);
+    const settings = await repo.getSettings("newcomer");
+    expect(settings.enabled_generations).toBeNull();
+  });
+
+  it("保存した出題世代を読み戻せる", async () => {
+    const repo = new UserSettingsRepo(db);
+    await repo.updateEnabledGenerations("alice", [1, 3, 5]);
+
+    const settings = await repo.getSettings("alice");
+    expect(settings.enabled_generations).toEqual([1, 3, 5]);
+  });
 });

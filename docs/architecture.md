@@ -151,6 +151,14 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 
 適用される除外 = ユーザー設定による除外 ∪ 開発者除外（prod 以外）。`newQuest`（出題抽選）と `getCollection`（図鑑）の両方で除外する。図鑑の分母 `total_available` は変えない（表示エントリのみ除外）。
 
+### 出題世代フィルタ
+
+出題されるポケモンを世代（第 1〜8 世代）で絞り込む per-user 設定。`users/{uid}/settings/preferences.enabled_generations`（Firestore）に保持し、設定画面のチェックボックスで選ぶ。未設定なら全世代。最低 1 世代必須（全解除は不可）。
+
+- **出題プールにのみ適用**：`newQuest` の抽選対象を選択世代の図鑑番号に限定する。**図鑑の母数は変えない**（`getCollection` には適用しない）。
+- **抽選機構**：出題プール = 選択世代を `MAX_POKEMON_ID` 内で図鑑番号に展開し、除外 ID を差し引いた集合（`buildQuestPoolIDs`）。抽選はサービスが行う：`PokemonClient.getServableIDs()`（データソースが提供できる図鑑番号）と出題プールを突き合わせ、その中からランダムに1匹選ぶ。アダプタは抽選ロジックを持たずデータ提供のみを担う。プールが空（画面が最低1世代・除外上限で防ぐが、設定次第で起こり得る）なら `EmptyQuestPoolError` → 409 で「設定を見直して」と案内する。
+- 世代境界は `domain/generation.ts` の `GENERATION_RANGES`（全国図鑑の世代区分）を SSoT とする。
+
 ### 認証フロー
 
 ```
@@ -214,7 +222,7 @@ frontend/src/
 │   ├── ResetPasswordPage.tsx # パスワードリセット
 │   ├── QuestPage.tsx       # クエストフロー（状態機械は useQuest に委譲）
 │   ├── PokedexPage.tsx  # 捕獲済みポケモン一覧
-│   ├── SettingsPage.tsx    # 除外ポケモン設定、問い合わせ/利用規約リンク、ログアウト
+│   ├── SettingsPage.tsx    # 出題世代・除外ポケモン設定、問い合わせ/利用規約リンク、ログアウト
 │   ├── TermsPage.tsx       # 利用規約（非営利ファンサイト明記。/terms 公開ルート）
 │   ├── NotFoundPage.tsx    # 404
 │   └── HomePage.tsx
@@ -281,7 +289,7 @@ users/
     pokemon/
       {pokemon_id}              # { pokemon_id, name_en, name_ja, sprite_url, score, status, ... }
     settings/
-      preferences               # { excluded_pokemon_ids: [167, 168, ...] }
+      preferences               # { excluded_pokemon_ids: [...], enabled_generations: [1, 2, ...] }
     daily_usage/
       {YYYY-MM-DD}              # { count, updated_at } — per-user レートリミットカウンタ
 

@@ -89,11 +89,13 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
         sprite_url: `https://example.com/${id}.png`,
       });
     },
-    getRandomPokemon: async () => makePokemon(),
+    // PokedexService は出題抽選を使わないため、提供 ID は空でよい (getPokemonByID のみ利用)。
+    getServableIDs: () => [],
   };
   const settingsRepo: UserSettingsRepository = {
-    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null }),
+    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null, enabled_generations: null }),
     updateExcludedPokemon: async () => {},
+    updateEnabledGenerations: async () => {},
   };
   // 図鑑表示は環境非依存に確かめたいので prod (開発者除外なし) 固定。maxPokemonID は本サービスでは未使用のためダミー。
   const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };

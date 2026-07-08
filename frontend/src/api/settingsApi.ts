@@ -15,4 +15,11 @@ export const settingsApi = {
    */
   updateExcludedPokemon: (pokemonIDs: number[]) =>
     api.put("/settings/excluded-pokemon", { pokemon_ids: pokemonIDs }),
+  /**
+   * PUT /settings/generations — 出題対象の世代を更新する。
+   * @param generations 出題対象の世代番号の配列 (最低1世代)。
+   * @returns 更新結果のレスポンス。
+   */
+  updateEnabledGenerations: (generations: number[]) =>
+    api.put("/settings/generations", { generations }),
 };

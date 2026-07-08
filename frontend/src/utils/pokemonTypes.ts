@@ -31,7 +31,7 @@ export function getTypeColor(type: PokemonType): string {
   return typeColors[type];
 }
 
-/** ポケモンタイプ名から日本語表示名へのマップ。全 18 種を網羅する (Record が網羅性を保証)。 */
+/** 全 18 種を網羅する (Record 型が網羅性を保証)。 */
 const typeLabels: Record<PokemonType, string> = {
   normal: "ノーマル",
   fire: "ほのお",

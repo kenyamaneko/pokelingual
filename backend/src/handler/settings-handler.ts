@@ -3,6 +3,7 @@ import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
 import type { SettingsResponse } from "../../../shared/api-types/settings.js";
 import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import { validateExcludedPokemonIDs } from "../domain/settings.js";
+import { ALL_GENERATIONS, validateEnabledGenerations } from "../domain/generation.js";
 import { handleError } from "./error.js";
 
 /**
@@ -33,8 +34,10 @@ export class SettingsHandler {
     try {
       const settings = await this.settingsRepo.getSettings(userId);
       // 設定画面はユーザー自身の除外だけを表示する (開発者除外はシステム側で透過的に適用)。
+      // 世代は未設定なら全世代を返し、UI で全チェック状態にする。
       const body: SettingsResponse = {
         excluded_pokemon_ids: settings.excluded_pokemon_ids ?? [],
+        enabled_generations: settings.enabled_generations ?? ALL_GENERATIONS,
       };
       res.json(body);
     } catch (err) {
@@ -60,6 +63,26 @@ export class SettingsHandler {
     }
     try {
       await this.settingsRepo.updateExcludedPokemon(userId, result.ids);
+      res.json({ status: "ok" });
+    } catch (err) {
+      handleError(res, err, req.path);
+    }
+  };
+
+  /**
+   * PUT /settings/generations — 出題対象の世代リストをバリデーションして更新する。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
+  updateEnabledGenerations = async (req: Request, res: Response) => {
+    const userId = res.locals.userId as string;
+    const result = validateEnabledGenerations(req.body?.generations);
+    if (!result.ok) {
+      res.status(400).json({ error: result.message } satisfies ErrorResponse);
+      return;
+    }
+    try {
+      await this.settingsRepo.updateEnabledGenerations(userId, result.generations);
       res.json({ status: "ok" });
     } catch (err) {
       handleError(res, err, req.path);

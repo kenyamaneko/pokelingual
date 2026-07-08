@@ -12,7 +12,6 @@ export function TermsPage() {
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">利用規約</h1>
 
-        {/* 仮の文面。運営が最終版に差し替える前提。 */}
         <div className="bg-white rounded-2xl shadow p-6 space-y-6 text-gray-700 text-sm leading-relaxed">
           <section>
             <h2 className="font-bold text-gray-800 mb-2">このサイトについて</h2>
