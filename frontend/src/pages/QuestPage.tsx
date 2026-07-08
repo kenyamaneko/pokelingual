@@ -44,10 +44,10 @@ export function QuestPage() {
   const isSpecial = quest?.is_legendary || quest?.is_mythical;
 
   const bgClass = quest?.is_mythical
-    ? "min-h-[calc(100vh-56px)] bg-gradient-to-b from-purple-50 to-gray-50 py-8"
+    ? "min-h-[calc(100vh-var(--header-h))] bg-gradient-to-b from-purple-50 to-gray-50 py-8"
     : quest?.is_legendary
-      ? "min-h-[calc(100vh-56px)] bg-gradient-to-b from-amber-50 to-gray-50 py-8"
-      : "min-h-[calc(100vh-56px)] bg-gray-50 py-8";
+      ? "min-h-[calc(100vh-var(--header-h))] bg-gradient-to-b from-amber-50 to-gray-50 py-8"
+      : "min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8";
 
   return (
     <div className={bgClass}>

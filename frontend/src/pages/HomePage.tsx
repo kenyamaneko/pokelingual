@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
  */
 export function HomePage() {
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-gray-50 flex items-center justify-center">
+    <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 flex items-center justify-center">
       <div className="text-center max-w-md mx-4">
         <img
           src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"

@@ -47,7 +47,7 @@ export function PokedexPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-gray-50 py-8">
+    <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">
