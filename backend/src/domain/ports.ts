@@ -1,6 +1,7 @@
 import type { Pokemon } from "./pokemon.js";
 import type { AppEnvironment } from "./environment.js";
 import type { UserPokemon, UserSettings } from "./user.js";
+import type { PokemonType } from "../../../shared/api-types/pokemon.js";
 // DailyUsage は API レスポンスにそのまま乗る形なので、shared/api-types/usage.d.ts を SSOT として再 export する。
 import type { DailyUsage } from "../../../shared/api-types/usage.js";
 export type { DailyUsage };
@@ -20,6 +21,8 @@ export interface PokemonClient {
   getPokemonByID(id: number): Promise<Pokemon>;
   /** このデータソースが取得できる図鑑番号の一覧 (mock は固定リスト順、real は 1..maxPokemonID)。 */
   getServableIDs(): readonly number[];
+  /** 指定タイプを持つポケモンの図鑑番号 (このデータソースが扱える範囲内)。場所フィルタで使う。 */
+  getIDsByType(type: PokemonType): Promise<readonly number[]>;
 }
 
 /** HTTP レスポンスのうち外部 API アダプタが参照する最小要素。 */

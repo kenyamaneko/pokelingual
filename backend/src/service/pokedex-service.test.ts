@@ -91,6 +91,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     },
     // PokedexService は出題抽選を使わないため、提供 ID は空でよい (getPokemonByID のみ利用)。
     getServableIDs: () => [],
+    getIDsByType: async () => [],
   };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null, enabled_generations: null }),

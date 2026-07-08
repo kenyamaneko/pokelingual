@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { UserPokemonRepository } from "../domain/ports.js";
 import type { QuestService } from "../service/quest-service.js";
 import type { ErrorResponse } from "../../../shared/api-types/error.js";
+import type { QuestLocationsResponse } from "../../../shared/api-types/quest.js";
 import { ExternalServiceError } from "../domain/errors.js";
 import { handleError } from "./error.js";
 
@@ -23,12 +24,23 @@ export class QuestHandler {
    */
   newQuest = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
+    const location = typeof req.query.location === "string" ? req.query.location : undefined;
     try {
-      const resp = await this.questService.newQuest(userId);
+      const resp = await this.questService.newQuest(userId, location);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
     }
+  };
+
+  /**
+   * GET /quest/locations — 場所選択に提示する候補をランダムに返す。
+   * @param _req Express リクエスト。
+   * @param res Express レスポンス。
+   */
+  getLocations = (_req: Request, res: Response) => {
+    const body: QuestLocationsResponse = { locations: this.questService.getLocations() };
+    res.json(body);
   };
 
   /**

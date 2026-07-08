@@ -171,6 +171,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
       if (!found) throw new Error(`not in pool: ${id}`);
       return found;
     },
+    getIDsByType: async (type) => pool.filter((p) => p.types.includes(type)).map((p) => p.id),
   };
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
@@ -280,6 +281,50 @@ describe("QuestService.newQuest", () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
     const res = await service.newQuest("alice");
     expect(res.description_en).toBe("This Pokémon is fast.");
+  });
+
+  it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
+    // 廃墟の発電所 (ruined-powerplant) のタイプは でんき・はがね・どく。100/110 は第1世代のダミー ID
+    const service = makeService({
+      pokemons: [
+        makePokemon({ id: 100, types: ["electric"] }),
+        makePokemon({ id: 110, types: ["grass"] }),
+      ],
+      maxPokemonID: 898,
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(100);
+  });
+
+  it("幻・伝説の抽選に当たると場所を無視して伝説プールから出題される", async () => {
+    // 乱数を上位に振ると伝説抽選が当たる。150 は伝説集合に含まれる図鑑番号
+    const service = makeService({
+      pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
+      maxPokemonID: 898,
+      randomValue: 0.995,
+    });
+    // 場所は発電所 (でんき系) だが、伝説抽選なので場所は無視される
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(150);
+  });
+
+  it("伝説抽選でも選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ id: 100, types: ["electric"] })],
+      maxPokemonID: 898,
+      randomValue: 0.995,
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(100);
+  });
+});
+
+describe("QuestService.getLocations", () => {
+  it("場所選択の候補を返す", () => {
+    const locations = makeService().getLocations();
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]).toHaveProperty("name");
+    expect(locations[0]).toHaveProperty("types");
   });
 });
 

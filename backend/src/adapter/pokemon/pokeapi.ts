@@ -53,6 +53,7 @@ interface PokeAPIPokemonResponse {
 export class PokeAPIClient implements PokemonClient {
   private cache = new Map<number, Pokemon>();
   private servableIDs: readonly number[] | null = null;
+  private typeIDCache = new Map<PokemonType, readonly number[]>();
 
   /**
    * @param config ポケモン関連のアプリ設定 (maxPokemonID 等)。
@@ -74,6 +75,29 @@ export class PokeAPIClient implements PokemonClient {
       this.servableIDs = ids;
     }
     return this.servableIDs;
+  }
+
+  /**
+   * PokeAPI の /type/{name} から、指定タイプを持つポケモンの図鑑番号を取得する (上限内・キャッシュ)。
+   * @param type ポケモンのタイプ。
+   * @returns 該当する図鑑番号の配列 (maxPokemonID 以下)。
+   * @throws API がエラーを返す場合。
+   */
+  async getIDsByType(type: PokemonType): Promise<readonly number[]> {
+    const cached = this.typeIDCache.get(type);
+    if (cached) return cached;
+
+    const resp = await this.httpGet(`https://pokeapi.co/api/v2/type/${type}`);
+    if (!resp.ok) throw new Error(`type API returned status ${resp.status}`);
+    const data = (await resp.json()) as { pokemon: { pokemon: { url: string } }[] };
+    const ids = new Set<number>();
+    for (const entry of data.pokemon) {
+      const id = parsePokemonIDFromURL(entry.pokemon.url);
+      if (id !== null && id <= this.config.maxPokemonID) ids.add(id);
+    }
+    const result = [...ids];
+    this.typeIDCache.set(type, result);
+    return result;
   }
 
   /**
@@ -149,6 +173,16 @@ export class PokeAPIClient implements PokemonClient {
       flavor_texts: flavorTexts,
     };
   }
+}
+
+/**
+ * PokeAPI のポケモン URL から図鑑番号を取り出す。
+ * @param url 例 "https://pokeapi.co/api/v2/pokemon/25/"。
+ * @returns 図鑑番号。取り出せなければ null。
+ */
+function parsePokemonIDFromURL(url: string): number | null {
+  const match = url.match(/\/pokemon\/(\d+)\/?$/);
+  return match ? Number(match[1]) : null;
 }
 
 /**
