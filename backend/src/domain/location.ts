@@ -2,7 +2,7 @@ import type { QuestLocation } from "../../../shared/api-types/quest.js";
 import type { RandomSource } from "./ports.js";
 
 /**
- * 探索場所の定義 (SSoT)。全10か所で全18タイプをそれぞれ2か所ずつ覆う。
+ * 探索場所の定義 (SSoT)。全10か所で全18タイプをそれぞれ2か所ずつカバーする。
  * 場所を選ぶと、そのタイプのいずれかを持つポケモンが出題される。
  */
 export const QUEST_LOCATIONS: readonly QuestLocation[] = [
@@ -31,7 +31,7 @@ export function findLocation(id: string): QuestLocation | undefined {
 }
 
 /**
- * 全場所からランダムに count か所を重複なく選ぶ。
+ * 全場所からランダムに、指定された数の場所を重複なく選ぶ。
  * @param random 乱数ソース。
  * @param count 選ぶ場所の数。
  * @returns ランダムに選ばれた場所の配列。

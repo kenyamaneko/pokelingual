@@ -6,14 +6,9 @@ import {
   maskPokemonNameJA,
 } from "./quest-service.js";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
-import type {
-  LLMClient,
-  PokemonClient,
-  PokemonConfig,
-  RandomSource,
-  UserSettingsRepository,
-} from "../domain/ports.js";
+import type { LLMClient, PokemonConfig, RandomSource, UserSettingsRepository } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
+import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 
 /**
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
@@ -115,29 +110,6 @@ describe("maskPokemonNameJA", () => {
 // 依存はポート経由のスタブで注入する (モックにするのは外部境界のみ)。ダミー値を使用。
 // ============================================================
 
-/**
- * テスト用のダミーポケモンを作る。
- * @param overrides 上書きするフィールド。
- * @returns ダミーポケモン。
- */
-function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
-  return {
-    id: 1,
-    name_en: "Testmon",
-    name_ja: "テストモン",
-    description_en: "Testmon is fast.",
-    description_ja: "テストモンは 速い。",
-    sprite_url: "https://example.com/1.png",
-    base_stat_total: 300,
-    types: ["normal"],
-    height: 1,
-    weight: 1,
-    is_legendary: false,
-    is_mythical: false,
-    ...overrides,
-  };
-}
-
 interface ServiceOverrides {
   /** getRandomPokemon の抽選元プール (allowedIds に含まれるものから乱数で選ぶ)。 */
   pokemons?: Pokemon[];
@@ -162,17 +134,8 @@ interface ServiceOverrides {
  */
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
-  const pokemonClient: PokemonClient = {
-    // データソースは提供できる図鑑番号を返すだけ。抽選 (許可 ID に絞ってランダム) はサービスが行う。
-    getServableIDs: () => pool.map((p) => p.id),
-    getPokemonByID: async (id) => {
-      if (o.pokemonError) throw o.pokemonError;
-      const found = pool.find((p) => p.id === id);
-      if (!found) throw new Error(`not in pool: ${id}`);
-      return found;
-    },
-    getIDsByType: async (type) => pool.filter((p) => p.types.includes(type)).map((p) => p.id),
-  };
+  // データソースは提供できる図鑑番号を返すだけ。抽選 (許可 ID に絞ってランダム) はサービスが行う。
+  const pokemonClient = makePokemonClient(pool, { error: o.pokemonError });
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
@@ -284,8 +247,6 @@ describe("QuestService.newQuest", () => {
   });
 
   it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
-    // 廃墟の発電所 (ruined-powerplant) のタイプは でんき・はがね・どく。100/110 は第1世代のダミー ID。
-    // タイプ外の 110 を先頭に置き、絞り込みが無いと先頭の 110 が選ばれてしまう配置で検証する。
     const service = makeService({
       pokemons: [
         makePokemon({ id: 110, types: ["grass"] }),
@@ -298,8 +259,6 @@ describe("QuestService.newQuest", () => {
   });
 
   it("選んだ場所のタイプでも、選択していない世代のポケモンは出題されない", async () => {
-    // どちらも でんき (発電所に合致) だが、第6世代の 700 は世代フィルタで除外され、第1世代の 100 だけが残る。
-    // 世代フィルタが無いと先頭の 700 が選ばれてしまう配置で検証する。
     const service = makeService({
       pokemons: [
         makePokemon({ id: 700, types: ["electric"] }),
@@ -313,8 +272,6 @@ describe("QuestService.newQuest", () => {
   });
 
   it("幻・伝説の抽選に当たると場所を無視して伝説プールから出題される", async () => {
-    // 乱数を上位に振ると伝説抽選が当たる。150 は伝説集合に含まれる図鑑番号。
-    // 発電所 (でんき) の 100 ではなく場所外タイプの 150 が出ることで「場所を無視」を確かめる。
     const service = makeService({
       pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
       maxPokemonID: 898,
@@ -325,7 +282,6 @@ describe("QuestService.newQuest", () => {
   });
 
   it("伝説抽選に当たっても、選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
-    // 乱数は伝説抽選に当たる値だが、伝説がプールにいないので発電所 (でんき) の 100 が出る。
     const service = makeService({
       pokemons: [makePokemon({ id: 100, types: ["electric"] })],
       maxPokemonID: 898,

@@ -16,14 +16,14 @@ export interface QuestLocation {
   types: PokemonType[];
 }
 
-/** GET /api/quest/locations のレスポンス。場所選択に提示する候補 (全体からランダムに数か所)。 */
+/** GET /api/quest/locations のレスポンス。場所選択の候補。 */
 export interface QuestLocationsResponse {
   locations: QuestLocation[];
 }
 
 /**
  * GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。
- * クエリ `?location=<id>` で探索場所を指定でき、その場所のタイプに出題を絞る (省略時はタイプ非限定)。
+ * クエリ `?location=<id>` で探索場所を指定し、その場所のタイプに出題を絞る。
  */
 export interface QuestNewResponse {
   pokemon_id: number;
