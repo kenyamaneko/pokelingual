@@ -168,6 +168,7 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 - **世代・除外との合成**：場所・幻伝説のどちらのプールも、世代フィルタ・除外（`buildQuestPoolIDs`）および `getServableIDs()` と交差した上で抽選する（AND）。
 - **タイプ→図鑑番号**：`PokemonClient.getIDsByType(type)` が担う。real は PokeAPI の `/type/{name}` をキャッシュ、mock は固定リストをフィルタする。
 - **mock の決定性**：`MockRandomSource` は 0 を返すため 1% 判定に当たらず（`>= 1 - RATE` で判定）、場所抽選が決定的に働く。
+- **場所定義・幻伝説集合をコードに固定する理由**：`domain/location.ts`（場所→タイプ）と `domain/legendary.ts`（幻・伝説の図鑑番号）は DB を使わずコード上の定数として持つ。いずれも実行時に変化しない静的な参照データ（ゲームの世界設定）で、出題のたびに参照される。DB に置くと出題ごとに読み取りのレイテンシと課金が乗るため、`GENERATION_RANGES` と同じくドメインの定数に置く。内容変更にコード変更とデプロイが要る点がトレードオフで、運用者が画面から編集する要件が出たら設定ファイル化・DB 化を検討する。
 
 ### 認証フロー
 
