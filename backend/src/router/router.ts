@@ -27,6 +27,7 @@ export function setupRoutes(
   router.use(authMiddleware);
 
   // Quest routes — Gemini を呼ぶ score のみレートリミット対象
+  router.get("/quest/locations", questHandler.getLocations);
   router.get("/quest/new", questHandler.newQuest);
   router.post("/quest/score", rateLimitMiddleware, questHandler.scoreTranslation);
   router.post("/quest/guess-name", questHandler.guessName);

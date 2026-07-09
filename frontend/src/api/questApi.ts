@@ -1,19 +1,27 @@
 import api from "./client";
 import type {
   QuestNewResponse,
+  QuestLocationsResponse,
   ScoreResponse,
   GuessResponse,
   SkipGuessResponse,
   CaptureResponse,
 } from "../../../shared/api-types/quest";
 
-/** クエスト関連エンドポイント (出題・採点・推測・捕獲) を呼ぶ API クライアント。 */
+/** クエスト関連エンドポイント (場所選択・出題・採点・推測・捕獲) を呼ぶ API クライアント。 */
 export const questApi = {
   /**
-   * GET /quest/new — 新しい出題ポケモンを取得する。
+   * GET /quest/locations — 場所選択の候補を取得する。
+   * @returns 場所候補レスポンス。
+   */
+  getLocations: () => api.get<QuestLocationsResponse>("/quest/locations"),
+  /**
+   * GET /quest/new — 選んだ場所で新しい出題ポケモンを取得する。
+   * @param locationId 選んだ探索場所 ID。
    * @returns 出題レスポンス。
    */
-  newQuest: () => api.get<QuestNewResponse>("/quest/new"),
+  newQuest: (locationId: string) =>
+    api.get<QuestNewResponse>("/quest/new", { params: { location: locationId } }),
   /**
    * POST /quest/score — 翻訳を採点する。
    * @param translation ユーザの日本語訳。

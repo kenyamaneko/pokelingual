@@ -7,33 +7,10 @@ import type {
   UserPokemonRepository,
   UserSettingsRepository,
 } from "../domain/ports.js";
-import type { Pokemon } from "../domain/pokemon.js";
 import type { UserPokemon } from "../domain/user.js";
+import { makePokemon } from "../testing/pokemon-fixtures.js";
 
 // 依存 (Firestore リポジトリ / PokeAPI クライアント) は外部境界なのでポート経由のスタブで注入する。
-
-/**
- * テスト用のダミーポケモンを作る。
- * @param overrides 上書きするフィールド。
- * @returns ダミーポケモン。
- */
-function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
-  return {
-    id: 1,
-    name_en: "Testmon",
-    name_ja: "テストモン",
-    description_en: "Testmon is fast.",
-    description_ja: "テストモンは 速い。",
-    sprite_url: "https://example.com/1.png",
-    base_stat_total: 300,
-    types: ["normal"],
-    height: 1,
-    weight: 1,
-    is_legendary: false,
-    is_mythical: false,
-    ...overrides,
-  };
-}
 
 /**
  * テスト用のダミー図鑑レコードを作る。
@@ -91,6 +68,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     },
     // PokedexService は出題抽選を使わないため、提供 ID は空でよい (getPokemonByID のみ利用)。
     getServableIDs: () => [],
+    getIDsByType: async () => [],
   };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null, enabled_generations: null }),

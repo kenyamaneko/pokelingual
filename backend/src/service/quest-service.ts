@@ -2,6 +2,8 @@ import levenshtein from "js-levenshtein";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
+import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
+import { findLocation, pickRandomLocations, LOCATION_CHOICE_COUNT } from "../domain/location.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -13,6 +15,7 @@ import type { Pokemon } from "../domain/pokemon.js";
 import type { QuestSession, ScoreResult } from "../domain/quest.js";
 import type {
   QuestNewResponse,
+  QuestLocation,
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
@@ -39,6 +42,9 @@ const BALL_MULTIPLIER: Record<BallType, number> = {
   great: 2.0,
   ultra: 3.0,
 };
+
+/** 幻・伝説を抽選する確率 (場所によらず低確率で登場させる)。乱数の上位この割合が当たり。 */
+const LEGENDARY_ENCOUNTER_RATE = 0.01;
 
 // QuestNewResponse / ScoreResponse / GuessResponse / CaptureResponse の API 契約型は shared/api-types/quest.d.ts を参照
 
@@ -67,15 +73,16 @@ export class QuestService {
   /**
    * 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。
    * @param userId ユーザ ID。
+   * @param locationId 選択された探索場所 ID (未指定ならタイプ非限定)。
    * @returns マスク済み説明文と伝説/幻フラグを含む出題レスポンス。
    */
-  async newQuest(userId: string): Promise<QuestNewResponse> {
+  async newQuest(userId: string, locationId?: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
     const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
     const generations = settings.enabled_generations ?? ALL_GENERATIONS;
-    const allowedIds = buildQuestPoolIDs(generations, this.pokemonConfig.maxPokemonID, excluded);
-    // 抽選はサービスが行う: データソースが提供できる図鑑番号のうち、許可された ID に絞ってランダムに1匹選ぶ。
-    const candidates = this.pokemonClient.getServableIDs().filter((id) => allowedIds.has(id));
+    const generationPool = buildQuestPoolIDs(generations, excluded);
+
+    const candidates = await this.pickQuestCandidates(locationId, generationPool);
     if (candidates.length === 0) {
       // 画面が最低1世代・除外上限で空プールを防ぐため通常は到達しない。防御的に案内エラーにする。
       throw new EmptyQuestPoolError();
@@ -123,6 +130,54 @@ export class QuestService {
       is_legendary: pokemon.is_legendary,
       is_mythical: pokemon.is_mythical,
     };
+  }
+
+  /**
+   * 出題候補の図鑑番号を決める。低確率で幻・伝説プール、通常は場所のタイプで絞る。
+   * @param locationId 選択された探索場所 ID (未指定ならタイプ非限定)。
+   * @param generationPool 世代・除外を反映した出題プール。
+   * @returns 出題候補の図鑑番号 (データソースの提供順)。
+   */
+  private async pickQuestCandidates(locationId: string | undefined, generationPool: Set<number>): Promise<number[]> {
+    const servableIDs = this.pokemonClient.getServableIDs();
+    const isLegendaryDraw = this.random.next() >= 1 - LEGENDARY_ENCOUNTER_RATE;
+    if (isLegendaryDraw) {
+      const legendary = servableIDs.filter((id) => generationPool.has(id) && LEGENDARY_MYTHICAL_IDS.has(id));
+      if (legendary.length > 0) return legendary;
+      // 伝説抽選に当たったこと自体をユーザーに悟らせたくないので、対象がいなくてもエラーにせず通常抽選に落とす。
+    }
+    return this.pickLocationCandidates(locationId, generationPool, servableIDs);
+  }
+
+  /**
+   * 選んだ場所のタイプに合う出題候補を返す。場所未指定・未知 ID ならタイプ非限定。
+   * @param locationId 探索場所 ID。
+   * @param generationPool 世代・除外を反映した出題プール。
+   * @param servableIDs データソースが提供できる図鑑番号。
+   * @returns 出題候補の図鑑番号。
+   */
+  private async pickLocationCandidates(
+    locationId: string | undefined,
+    generationPool: Set<number>,
+    servableIDs: readonly number[],
+  ): Promise<number[]> {
+    const location = locationId === undefined ? undefined : findLocation(locationId);
+    if (!location) {
+      return servableIDs.filter((id) => generationPool.has(id));
+    }
+    const typeIDs = new Set<number>();
+    for (const type of location.types) {
+      for (const id of await this.pokemonClient.getIDsByType(type)) typeIDs.add(id);
+    }
+    return servableIDs.filter((id) => generationPool.has(id) && typeIDs.has(id));
+  }
+
+  /**
+   * 場所選択に提示する候補をランダムに返す。
+   * @returns ランダムに選ばれた探索場所の配列。
+   */
+  getLocations(): QuestLocation[] {
+    return pickRandomLocations(this.random, LOCATION_CHOICE_COUNT);
   }
 
   /**

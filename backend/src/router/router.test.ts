@@ -11,41 +11,18 @@ import { PokedexHandler } from "../handler/pokedex-handler.js";
 import { SettingsHandler } from "../handler/settings-handler.js";
 import { UsageHandler } from "../handler/usage-handler.js";
 import { RateLimitError } from "../domain/errors.js";
+import { LOCATION_CHOICE_COUNT } from "../domain/location.js";
 import type {
   LLMClient,
-  PokemonClient,
   PokemonConfig,
   RandomSource,
   RateLimitRepository,
   UserPokemonRepository,
   UserSettingsRepository,
 } from "../domain/ports.js";
-import type { Pokemon } from "../domain/pokemon.js";
 import type { UserPokemon, UserSettings } from "../domain/user.js";
 import type { RateLimitKind } from "../domain/errors.js";
-
-/**
- * テスト用のダミーポケモンを作る。
- * @param overrides 上書きするフィールド。
- * @returns ダミーポケモン。
- */
-function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
-  return {
-    id: 1,
-    name_en: "Testmon",
-    name_ja: "テストモン",
-    description_en: "Testmon is fast.",
-    description_ja: "テストモンは 速い。",
-    sprite_url: "https://example.com/1.png",
-    base_stat_total: 300,
-    types: ["normal"],
-    height: 1,
-    weight: 1,
-    is_legendary: false,
-    is_mythical: false,
-    ...overrides,
-  };
-}
+import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 
 interface AppOverrides {
   /** LLM が投げるエラー (指定時は generateText が失敗する)。 */
@@ -62,10 +39,7 @@ interface AppOverrides {
  * @returns supertest で叩ける Express アプリ。
  */
 function makeApp(o: AppOverrides = {}) {
-  const pokemonClient: PokemonClient = {
-    getServableIDs: () => [makePokemon().id],
-    getPokemonByID: async () => makePokemon(),
-  };
+  const pokemonClient = makePokemonClient([makePokemon()]);
   const llm: LLMClient = {
     generateText: async () => {
       if (o.llmError) throw o.llmError;
@@ -279,5 +253,17 @@ describe("正常系フロー (公開入口経由)", () => {
     const res = await request(makeApp()).get("/api/usage");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ count: 3, limit: 30 });
+  });
+
+  it("場所選択の候補として、決められた数の場所が id・名前・説明・タイプ付きで返る", async () => {
+    const res = await request(makeApp()).get("/api/quest/locations");
+    expect(res.status).toBe(200);
+    expect(res.body.locations).toHaveLength(LOCATION_CHOICE_COUNT);
+    expect(res.body.locations[0]).toMatchObject({
+      id: expect.any(String),
+      name: expect.any(String),
+      description: expect.any(String),
+      types: expect.any(Array),
+    });
   });
 });

@@ -1,5 +1,5 @@
 /**
- * 全国図鑑での世代境界。start/end は両端を含む図鑑番号。対象は第1〜8世代 (maxPokemonID=898 に対応)。
+ * 全国図鑑での世代境界。start/end は両端を含む図鑑番号。対象は第1〜8世代 (全国図鑑 1〜898)。
  */
 export const GENERATION_RANGES = [
   { generation: 1, start: 1, end: 151 },
@@ -16,21 +16,16 @@ export const GENERATION_RANGES = [
 export const ALL_GENERATIONS: number[] = GENERATION_RANGES.map((r) => r.generation);
 
 /**
- * 選択世代を、上限内の図鑑番号 ID 集合に展開する。
+ * 選択世代を図鑑番号 ID 集合に展開する。
  * @param generations 選択された世代番号。
- * @param maxPokemonID 出題対象の図鑑番号上限。
- * @returns 選択世代に含まれ、かつ上限以内の図鑑番号の集合。
+ * @returns 選択世代に含まれる図鑑番号の集合。
  */
-export function generationsToPokemonIDs(
-  generations: readonly number[],
-  maxPokemonID: number,
-): Set<number> {
+export function generationsToPokemonIDs(generations: readonly number[]): Set<number> {
   const selected = new Set(generations);
   const ids = new Set<number>();
   for (const range of GENERATION_RANGES) {
     if (!selected.has(range.generation)) continue;
-    const end = Math.min(range.end, maxPokemonID);
-    for (let id = range.start; id <= end; id++) {
+    for (let id = range.start; id <= range.end; id++) {
       ids.add(id);
     }
   }
@@ -38,18 +33,16 @@ export function generationsToPokemonIDs(
 }
 
 /**
- * 出題プールの図鑑番号 ID 集合を作る。選択世代を上限内で展開し、除外 ID を差し引く。
+ * 出題プールの図鑑番号 ID 集合を作る。選択世代を展開し、除外 ID を差し引く。
  * @param generations 選択された世代番号。
- * @param maxPokemonID 出題対象の図鑑番号上限。
  * @param excludedIDs 除外する図鑑番号。
  * @returns 出題プールの図鑑番号の集合。
  */
 export function buildQuestPoolIDs(
   generations: readonly number[],
-  maxPokemonID: number,
   excludedIDs: ReadonlySet<number>,
 ): Set<number> {
-  const ids = generationsToPokemonIDs(generations, maxPokemonID);
+  const ids = generationsToPokemonIDs(generations);
   for (const excluded of excludedIDs) {
     ids.delete(excluded);
   }

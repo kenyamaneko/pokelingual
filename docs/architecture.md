@@ -97,11 +97,12 @@ API 契約型（wire format）は `shared/api-types/*.d.ts` を SSOT とし、ba
 クエストセッションはインメモリ（`Map`）で管理。Firestore には永続化しない。
 
 ```
-1. GET  /api/quest/new        → ランダムポケモン取得、セッション作成、説明文のポケモン名を伏せ字
-2. POST /api/quest/score      → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）、JA名も伏せ字
-3. POST /api/quest/guess-name → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
-   POST /api/quest/skip-guess → 推測をスキップ → モンスターボール確定
-4. POST /api/quest/capture    → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
+0. GET  /api/quest/locations     → 探索場所の候補をランダムに提示（場所選択画面用）
+1. GET  /api/quest/new?location= → 選んだ場所のタイプで出題、セッション作成、説明文のポケモン名を伏せ字
+2. POST /api/quest/score         → 翻訳を AI がスコアリング（0-100 + 一行レビューコメント）、JA名も伏せ字
+3. POST /api/quest/guess-name    → ポケモン名推測（最大3回、EN/JA対応）→ ボール種類決定
+   POST /api/quest/skip-guess    → 推測をスキップ → モンスターボール確定
+4. POST /api/quest/capture       → シグモイド式（BST + スコア + ボール倍率）で捕獲確率を計算
 ```
 
 **ポケモン名伏せ字:**
@@ -156,8 +157,18 @@ captureRate = clamp(sigmoid(logit) × ballMultiplier, 0, 1)
 出題されるポケモンを世代（第 1〜8 世代）で絞り込む per-user 設定。`users/{uid}/settings/preferences.enabled_generations`（Firestore）に保持し、設定画面のチェックボックスで選ぶ。未設定なら全世代。最低 1 世代必須（全解除は不可）。
 
 - **出題プールにのみ適用**：`newQuest` の抽選対象を選択世代の図鑑番号に限定する。**図鑑の母数は変えない**（`getCollection` には適用しない）。
-- **抽選機構**：出題プール = 選択世代を `MAX_POKEMON_ID` 内で図鑑番号に展開し、除外 ID を差し引いた集合（`buildQuestPoolIDs`）。抽選はサービスが行う：`PokemonClient.getServableIDs()`（データソースが提供できる図鑑番号）と出題プールを突き合わせ、その中からランダムに1匹選ぶ。アダプタは抽選ロジックを持たずデータ提供のみを担う。プールが空（画面が最低1世代・除外上限で防ぐが、設定次第で起こり得る）なら `EmptyQuestPoolError` → 409 で「設定を見直して」と案内する。
+- **抽選機構**：出題プール = 選択世代の図鑑番号から除外 ID を差し引いた集合（`buildQuestPoolIDs`）。図鑑番号の上限（`MAX_POKEMON_ID` / mock の固定リスト）はプール生成では効かせず、抽選時に `getServableIDs()` と突き合わせて一元的に適用する（データソースが実際に出せる番号が上限そのものなので、プール側で二重に上限を持たない）。抽選はサービスが行う：`PokemonClient.getServableIDs()`（データソースが提供できる図鑑番号）と出題プール・場所のタイプ（後述）を突き合わせ、その中からランダムに1匹選ぶ。アダプタは抽選ロジックを持たずデータ提供のみを担う。プールが空（画面が最低1世代・除外上限で防ぐが、設定次第で起こり得る）なら `EmptyQuestPoolError` → 409 で「設定を見直して」と案内する。
 - 世代境界は `domain/generation.ts` の `GENERATION_RANGES`（全国図鑑の世代区分）を SSoT とする。
+
+### 探索場所（クエスト入口）
+
+出題の前に探索場所を選ぶ。全10か所（`domain/location.ts` が SSoT、全18タイプを2か所ずつ覆う）から `GET /api/quest/locations` がランダムに4か所を提示し、選んだ場所のタイプで出題を絞る。
+
+- **2段抽選**：まず乱数上位 1%（`LEGENDARY_ENCOUNTER_RATE`）で幻・伝説を判定する。当たれば場所を無視して幻・伝説プール（`domain/legendary.ts` の固定集合）から、外れれば選んだ場所のタイプを持つポケモンから抽選する。幻・伝説プールが選択世代で空ならフォールバックして場所抽選する。
+- **世代・除外との合成**：場所・幻伝説のどちらのプールも、世代フィルタ・除外（`buildQuestPoolIDs`）および `getServableIDs()` と交差した上で抽選する（AND）。
+- **タイプ→図鑑番号**：`PokemonClient.getIDsByType(type)` が担う。real は PokeAPI の `/type/{name}` をキャッシュ、mock は固定リストをフィルタする。
+- **mock の決定性**：`MockRandomSource` は 0 を返すため 1% 判定に当たらず（`>= 1 - RATE` で判定）、場所抽選が決定的に働く。
+- **場所定義・幻伝説集合をコードに固定する理由**：`domain/location.ts`（場所→タイプ）と `domain/legendary.ts`（幻・伝説の図鑑番号）は DB を使わずコード上の定数として持つ。いずれも実行時に変化しない静的な参照データ（ゲームの世界設定）で、出題のたびに参照される。DB に置くと出題ごとに読み取りのレイテンシと課金が乗るため、`GENERATION_RANGES` と同じくドメインの定数に置く。内容変更にコード変更とデプロイが要る点がトレードオフで、運用者が画面から編集する要件が出たら設定ファイル化・DB 化を検討する。
 
 ### 認証フロー
 
@@ -227,7 +238,7 @@ frontend/src/
 │   ├── NotFoundPage.tsx    # 404
 │   └── HomePage.tsx
 ├── components/
-│   ├── quest/              # QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, RateLimitModal
+│   ├── quest/              # LocationSelect, QuestCard, TranslationInput, ScoreDisplay, NameGuess, CaptureResult, RateLimitModal
 │   ├── pokedex/         # PokemonGrid, PokemonDetailCard
 │   ├── layout/             # Header, ProtectedRoute
 │   └── auth/               # GoogleLogo
@@ -256,10 +267,10 @@ API 契約型は `shared/api-types/*.d.ts`（SSOT）を import type する（fro
 ### QuestPage の状態遷移（useQuest）
 
 ```
-loading → translating → guessing → capturing → result   （失敗時は error）
+selectLocation → loading → translating → guessing → capturing → result   （失敗時は error）
 ```
 
-各フェーズで対応する API を呼び出し、レスポンスに応じて次のフェーズに遷移。
+各フェーズで対応する API を呼び出し、レスポンスに応じて次のフェーズに遷移。`selectLocation` で場所候補を取得し、場所を選ぶと `loading`（出題取得）へ進む。「次のポケモンを探す」は `selectLocation` に戻る。
 
 ## インフラ
 

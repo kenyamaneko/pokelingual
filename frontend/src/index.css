@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+:root {
+  /* ヘッダーの高さ。各ページは最小高 (100vh - この値) を取り、本文が短くても背景を画面下端まで満たす。 */
+  --header-h: 56px;
+}
+
 body {
   margin: 0;
   min-width: 320px;

@@ -123,14 +123,14 @@ export function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-56px)] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-gray-50 py-8">
+    <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8">
       <div className="max-w-md mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">設定</h1>
 

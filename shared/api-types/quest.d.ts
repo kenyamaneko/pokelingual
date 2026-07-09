@@ -8,7 +8,23 @@ import type { PokemonType } from "./pokemon.js";
 /** 捕獲に使うボール種別。 */
 export type BallType = "poke" | "great" | "ultra";
 
-/** GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。 */
+/** クエストの探索場所。選んだ場所のタイプのポケモンが出題される (幻・伝説は場所によらず低確率で出る)。 */
+export interface QuestLocation {
+  id: string;
+  name: string;
+  description: string;
+  types: PokemonType[];
+}
+
+/** GET /api/quest/locations のレスポンス。場所選択の候補。 */
+export interface QuestLocationsResponse {
+  locations: QuestLocation[];
+}
+
+/**
+ * GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。
+ * クエリ `?location=<id>` で探索場所を指定し、その場所のタイプに出題を絞る。
+ */
 export interface QuestNewResponse {
   pokemon_id: number;
   description_en: string;

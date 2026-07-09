@@ -6,14 +6,9 @@ import {
   maskPokemonNameJA,
 } from "./quest-service.js";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
-import type {
-  LLMClient,
-  PokemonClient,
-  PokemonConfig,
-  RandomSource,
-  UserSettingsRepository,
-} from "../domain/ports.js";
+import type { LLMClient, PokemonConfig, RandomSource, UserSettingsRepository } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
+import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 
 /**
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
@@ -115,29 +110,6 @@ describe("maskPokemonNameJA", () => {
 // 依存はポート経由のスタブで注入する (モックにするのは外部境界のみ)。ダミー値を使用。
 // ============================================================
 
-/**
- * テスト用のダミーポケモンを作る。
- * @param overrides 上書きするフィールド。
- * @returns ダミーポケモン。
- */
-function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
-  return {
-    id: 1,
-    name_en: "Testmon",
-    name_ja: "テストモン",
-    description_en: "Testmon is fast.",
-    description_ja: "テストモンは 速い。",
-    sprite_url: "https://example.com/1.png",
-    base_stat_total: 300,
-    types: ["normal"],
-    height: 1,
-    weight: 1,
-    is_legendary: false,
-    is_mythical: false,
-    ...overrides,
-  };
-}
-
 interface ServiceOverrides {
   /** getRandomPokemon の抽選元プール (allowedIds に含まれるものから乱数で選ぶ)。 */
   pokemons?: Pokemon[];
@@ -149,8 +121,6 @@ interface ServiceOverrides {
   excludedIDs?: number[] | null;
   /** 出題対象の世代 (null = 未設定 = 全世代)。 */
   enabledGenerations?: number[] | null;
-  /** 図鑑番号の上限。 */
-  maxPokemonID?: number;
   /** 乱数値。 */
   randomValue?: number;
 }
@@ -162,20 +132,11 @@ interface ServiceOverrides {
  */
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
-  const pokemonClient: PokemonClient = {
-    // データソースは提供できる図鑑番号を返すだけ。抽選 (許可 ID に絞ってランダム) はサービスが行う。
-    getServableIDs: () => pool.map((p) => p.id),
-    getPokemonByID: async (id) => {
-      if (o.pokemonError) throw o.pokemonError;
-      const found = pool.find((p) => p.id === id);
-      if (!found) throw new Error(`not in pool: ${id}`);
-      return found;
-    },
-  };
+  const pokemonClient = makePokemonClient(pool, { error: o.pokemonError });
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
-  const config: PokemonConfig = { maxPokemonID: o.maxPokemonID ?? 10, environment: "prod" };
+  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({
       excluded_pokemon_ids: o.excludedIDs ?? null,
@@ -211,7 +172,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
       enabledGenerations: [1],
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(100);
@@ -221,7 +181,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 300 })],
       enabledGenerations: [1, 3],
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(300);
@@ -233,7 +192,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 500 })],
       enabledGenerations: null,
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(500);
@@ -245,7 +203,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 1 })],
       excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      maxPokemonID: 10,
     });
     await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
   });
@@ -280,6 +237,47 @@ describe("QuestService.newQuest", () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
     const res = await service.newQuest("alice");
     expect(res.description_en).toBe("This Pokémon is fast.");
+  });
+
+  it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
+    const service = makeService({
+      pokemons: [
+        makePokemon({ id: 110, types: ["grass"] }),
+        makePokemon({ id: 100, types: ["electric"] }),
+      ],
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(100);
+  });
+
+  it("選んだ場所のタイプでも、選択していない世代のポケモンは出題されない", async () => {
+    const service = makeService({
+      pokemons: [
+        makePokemon({ id: 700, types: ["electric"] }),
+        makePokemon({ id: 100, types: ["electric"] }),
+      ],
+      enabledGenerations: [1],
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(100);
+  });
+
+  it("幻・伝説の抽選に当たると場所を無視して伝説プールから出題される", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
+      randomValue: 0.995,
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(150);
+  });
+
+  it("伝説抽選に当たっても、選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ id: 100, types: ["electric"] })],
+      randomValue: 0.995,
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(100);
   });
 });
 

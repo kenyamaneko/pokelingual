@@ -1,5 +1,6 @@
 import type { PokemonClient } from "../../domain/ports.js";
 import type { Pokemon } from "../../domain/pokemon.js";
+import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
 
 const mockPokemon: Pokemon[] = [
   {
@@ -93,5 +94,14 @@ export class MockPokemonClient implements PokemonClient {
     const found = mockPokemon.find((p) => p.id === id);
     if (!found) throw new Error(`mock pokemon not found: ${id}`);
     return { ...found };
+  }
+
+  /**
+   * 指定タイプを持つ固定リストのポケモンの図鑑番号を返す。
+   * @param type ポケモンのタイプ。
+   * @returns 該当する図鑑番号の配列。
+   */
+  async getIDsByType(type: PokemonType): Promise<readonly number[]> {
+    return mockPokemon.filter((p) => p.types.includes(type)).map((p) => p.id);
   }
 }

@@ -3,6 +3,7 @@ import { TranslationInput } from "../components/quest/TranslationInput";
 import { ScoreDisplay } from "../components/quest/ScoreDisplay";
 import { NameGuess } from "../components/quest/NameGuess";
 import { CaptureResult } from "../components/quest/CaptureResult";
+import { LocationSelect } from "../components/quest/LocationSelect";
 import { useQuest, type BallType } from "../hooks/useQuest";
 
 const BALL_SPRITES: Record<BallType, string> = {
@@ -31,7 +32,9 @@ export function QuestPage() {
     userTranslation,
     ballType,
     error,
+    locations,
     startNewQuest,
+    selectLocation,
     submitTranslation,
     submitGuess,
     skipGuess,
@@ -41,10 +44,10 @@ export function QuestPage() {
   const isSpecial = quest?.is_legendary || quest?.is_mythical;
 
   const bgClass = quest?.is_mythical
-    ? "min-h-[calc(100vh-56px)] bg-gradient-to-b from-purple-50 to-gray-50 py-8"
+    ? "min-h-[calc(100vh-var(--header-h))] bg-gradient-to-b from-purple-50 to-gray-50 py-8"
     : quest?.is_legendary
-      ? "min-h-[calc(100vh-56px)] bg-gradient-to-b from-amber-50 to-gray-50 py-8"
-      : "min-h-[calc(100vh-56px)] bg-gray-50 py-8";
+      ? "min-h-[calc(100vh-var(--header-h))] bg-gradient-to-b from-amber-50 to-gray-50 py-8"
+      : "min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8";
 
   return (
     <div className={bgClass}>
@@ -59,6 +62,10 @@ export function QuestPage() {
               もう一度
             </button>
           </div>
+        )}
+
+        {phase === "selectLocation" && (
+          <LocationSelect locations={locations} onSelect={selectLocation} />
         )}
 
         {phase === "loading" && (
