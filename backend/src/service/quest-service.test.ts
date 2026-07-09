@@ -121,8 +121,6 @@ interface ServiceOverrides {
   excludedIDs?: number[] | null;
   /** 出題対象の世代 (null = 未設定 = 全世代)。 */
   enabledGenerations?: number[] | null;
-  /** 図鑑番号の上限。 */
-  maxPokemonID?: number;
   /** 乱数値。 */
   randomValue?: number;
 }
@@ -139,7 +137,8 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
-  const config: PokemonConfig = { maxPokemonID: o.maxPokemonID ?? 10, environment: "prod" };
+  // QuestService は maxPokemonID を参照しない (出題プールの上限は getServableIDs 側)。型を満たすためのダミー。
+  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({
       excluded_pokemon_ids: o.excludedIDs ?? null,
@@ -175,7 +174,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
       enabledGenerations: [1],
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(100);
@@ -185,7 +183,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 300 })],
       enabledGenerations: [1, 3],
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(300);
@@ -197,7 +194,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 500 })],
       enabledGenerations: null,
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(500);
@@ -209,7 +205,6 @@ describe("QuestService.newQuest", () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 1 })],
       excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      maxPokemonID: 10,
     });
     await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
   });
@@ -252,7 +247,6 @@ describe("QuestService.newQuest", () => {
         makePokemon({ id: 110, types: ["grass"] }),
         makePokemon({ id: 100, types: ["electric"] }),
       ],
-      maxPokemonID: 898,
     });
     const res = await service.newQuest("alice", "ruined-powerplant");
     expect(res.pokemon_id).toBe(100);
@@ -264,7 +258,6 @@ describe("QuestService.newQuest", () => {
         makePokemon({ id: 700, types: ["electric"] }),
         makePokemon({ id: 100, types: ["electric"] }),
       ],
-      maxPokemonID: 898,
       enabledGenerations: [1],
     });
     const res = await service.newQuest("alice", "ruined-powerplant");
@@ -274,7 +267,6 @@ describe("QuestService.newQuest", () => {
   it("幻・伝説の抽選に当たると場所を無視して伝説プールから出題される", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
-      maxPokemonID: 898,
       randomValue: 0.995,
     });
     const res = await service.newQuest("alice", "ruined-powerplant");
@@ -284,7 +276,6 @@ describe("QuestService.newQuest", () => {
   it("伝説抽選に当たっても、選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 100, types: ["electric"] })],
-      maxPokemonID: 898,
       randomValue: 0.995,
     });
     const res = await service.newQuest("alice", "ruined-powerplant");

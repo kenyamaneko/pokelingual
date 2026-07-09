@@ -80,7 +80,7 @@ export class QuestService {
     const settings = await this.settingsRepo.getSettings(userId);
     const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
     const generations = settings.enabled_generations ?? ALL_GENERATIONS;
-    const generationPool = buildQuestPoolIDs(generations, this.pokemonConfig.maxPokemonID, excluded);
+    const generationPool = buildQuestPoolIDs(generations, excluded);
 
     const candidates = await this.pickQuestCandidates(locationId, generationPool);
     if (candidates.length === 0) {

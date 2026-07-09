@@ -5,15 +5,12 @@ import {
   validateEnabledGenerations,
 } from "./generation.js";
 
-// 世代範囲がクランプされない十分大きい上限。上限でのクランプ自体は専用テストで別に確かめる。
-const NO_CLAMP_MAX = 898;
-
 /**
  * 選択世代を図鑑番号の集合へ展開する仕様。世代境界 (151/152 など) は純関数の定義そのものなので具体値で確かめる。
  */
 describe("generationsToPokemonIDs (選択世代→図鑑番号の集合)", () => {
   it("第1世代は 1〜151 を含み、隣の 152 は含まない", () => {
-    const ids = generationsToPokemonIDs([1], NO_CLAMP_MAX);
+    const ids = generationsToPokemonIDs([1]);
     expect(ids.size).toBe(151);
     expect(ids.has(1)).toBe(true);
     expect(ids.has(151)).toBe(true);
@@ -21,7 +18,7 @@ describe("generationsToPokemonIDs (選択世代→図鑑番号の集合)", () =>
   });
 
   it("第2世代は 152〜251 を含み、両隣の 151・252 は含まない", () => {
-    const ids = generationsToPokemonIDs([2], NO_CLAMP_MAX);
+    const ids = generationsToPokemonIDs([2]);
     expect(ids.has(152)).toBe(true);
     expect(ids.has(251)).toBe(true);
     expect(ids.has(151)).toBe(false);
@@ -29,28 +26,21 @@ describe("generationsToPokemonIDs (選択世代→図鑑番号の集合)", () =>
   });
 
   it("選んでいない世代の番号は含まれない (第3世代のみ選ぶと第1世代は入らない)", () => {
-    const ids = generationsToPokemonIDs([3], NO_CLAMP_MAX);
+    const ids = generationsToPokemonIDs([3]);
     expect(ids.has(252)).toBe(true);
     expect(ids.has(1)).toBe(false);
     expect(ids.has(151)).toBe(false);
   });
 
   it("飛び石の世代選択 (第2・第4世代) は間の第3世代を含まない", () => {
-    const ids = generationsToPokemonIDs([2, 4], NO_CLAMP_MAX);
+    const ids = generationsToPokemonIDs([2, 4]);
     expect(ids.has(200)).toBe(true);
     expect(ids.has(400)).toBe(true);
     expect(ids.has(300)).toBe(false);
   });
 
-  it("maxPokemonID を超える番号は含まれない (上限でクランプする)", () => {
-    const ids = generationsToPokemonIDs([1], 100);
-    expect(ids.size).toBe(100);
-    expect(ids.has(100)).toBe(true);
-    expect(ids.has(101)).toBe(false);
-  });
-
   it("世代が空なら空集合になる", () => {
-    expect(generationsToPokemonIDs([], NO_CLAMP_MAX).size).toBe(0);
+    expect(generationsToPokemonIDs([]).size).toBe(0);
   });
 });
 
@@ -59,7 +49,7 @@ describe("generationsToPokemonIDs (選択世代→図鑑番号の集合)", () =>
  */
 describe("buildQuestPoolIDs (出題プールの図鑑番号)", () => {
   it("除外 ID がプールから取り除かれる", () => {
-    const pool = buildQuestPoolIDs([1], NO_CLAMP_MAX, new Set([5, 10]));
+    const pool = buildQuestPoolIDs([1], new Set([5, 10]));
     expect(pool.size).toBe(149);
     expect(pool.has(5)).toBe(false);
     expect(pool.has(10)).toBe(false);
@@ -67,12 +57,13 @@ describe("buildQuestPoolIDs (出題プールの図鑑番号)", () => {
   });
 
   it("選択世代の外にある除外 ID はプールの大きさに影響しない", () => {
-    const pool = buildQuestPoolIDs([1], NO_CLAMP_MAX, new Set([200]));
+    const pool = buildQuestPoolIDs([1], new Set([200]));
     expect(pool.size).toBe(151);
   });
 
   it("選択世代の全 ID が除外されると空になる", () => {
-    const pool = buildQuestPoolIDs([1], 3, new Set([1, 2, 3]));
+    const allGen1 = new Set(Array.from({ length: 151 }, (_, i) => i + 1));
+    const pool = buildQuestPoolIDs([1], allGen1);
     expect(pool.size).toBe(0);
   });
 });
