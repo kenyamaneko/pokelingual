@@ -91,7 +91,6 @@ describe("PokeAPIClient.getIDsByType", () => {
       }),
     });
     const client = new PokeAPIClient({ maxPokemonID: 100, environment: "prod" }, httpGet);
-    // 500 は上限 (100) を超えるので除外される
     expect(await client.getIDsByType("electric")).toEqual([25, 6]);
   });
 });

@@ -132,12 +132,10 @@ interface ServiceOverrides {
  */
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
-  // データソースは提供できる図鑑番号を返すだけ。抽選 (許可 ID に絞ってランダム) はサービスが行う。
   const pokemonClient = makePokemonClient(pool, { error: o.pokemonError });
   const llm: LLMClient = {
     generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
-  // QuestService は maxPokemonID を参照しない (出題プールの上限は getServableIDs 側)。型を満たすためのダミー。
   const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({

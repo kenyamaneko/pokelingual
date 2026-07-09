@@ -102,7 +102,6 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
     await user.click(
       screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.nextButton }),
     );
-    // 「次のポケモンを探す」で場所選択に戻り、選び直すと次の出題が始まる
     await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
     await waitFor(() =>
       expect(screen.getByTestId("quest-description")).toHaveTextContent(

@@ -140,7 +140,6 @@ export class QuestService {
    */
   private async pickQuestCandidates(locationId: string | undefined, generationPool: Set<number>): Promise<number[]> {
     const servableIDs = this.pokemonClient.getServableIDs();
-    // 乱数の上位 RATE 分に当たったら幻・伝説プールから (mock の乱数0は当たらないため mock では常に通常抽選)。
     const isLegendaryDraw = this.random.next() >= 1 - LEGENDARY_ENCOUNTER_RATE;
     if (isLegendaryDraw) {
       const legendary = servableIDs.filter((id) => generationPool.has(id) && LEGENDARY_MYTHICAL_IDS.has(id));
