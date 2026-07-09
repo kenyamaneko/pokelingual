@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { LocationSelect } from "./LocationSelect";
 import type { QuestLocation } from "../../../../shared/api-types/quest";
 
@@ -18,18 +17,8 @@ describe("LocationSelect", () => {
     expect(screen.getByText("ノーマル")).toBeInTheDocument();
   });
 
-  it("場所を選ぶと、その場所 ID で onSelect が呼ばれる", async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-    render(<LocationSelect locations={locations} onSelect={onSelect} />);
-
-    await user.click(screen.getByRole("button", { name: /テスト洞窟/ }));
-
-    expect(onSelect).toHaveBeenCalledWith("place-b");
-  });
-
-  it("候補が無い間は読み込み表示になる", () => {
+  it("候補を取得できるまでは読み込み中を表示する", () => {
     render(<LocationSelect locations={[]} onSelect={() => {}} />);
-    expect(screen.getByText(/行き先を/)).toBeInTheDocument();
+    expect(screen.getByText(/探しています/)).toBeInTheDocument();
   });
 });

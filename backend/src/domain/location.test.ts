@@ -14,7 +14,7 @@ function fixedRandom(value: number): RandomSource {
 }
 
 /**
- * 場所の設計上の不変条件: 全18タイプがそれぞれちょうど2か所に登場する (どのタイプも必ず出会える)。
+ * 場所の設計上の不変条件: 全18タイプがそれぞれちょうど2か所に登場する。
  */
 describe("QUEST_LOCATIONS", () => {
   const allTypes: PokemonType[] = [

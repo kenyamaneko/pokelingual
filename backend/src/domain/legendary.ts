@@ -1,6 +1,6 @@
 /**
  * 幻・伝説・準伝説の図鑑番号 (第1〜8世代の参照データ)。出題の1%抽選プールに使う。
- * PokeAPI の is_legendary / is_mythical に概ね対応する固定集合。ウルトラビーストは別枠として除外している。
+ * PokeAPI の is_legendary / is_mythical に概ね対応する固定集合。
  * ゲームの参照データであり、必要に応じて調整してよい。
  */
 export const LEGENDARY_MYTHICAL_IDS: ReadonlySet<number> = new Set([

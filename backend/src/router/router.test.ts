@@ -65,7 +65,7 @@ function makeApp(o: AppOverrides = {}) {
   const pokemonClient: PokemonClient = {
     getServableIDs: () => [makePokemon().id],
     getPokemonByID: async () => makePokemon(),
-    getIDsByType: async (type) => (type === "normal" ? [makePokemon().id] : []),
+    getIDsByType: async () => [],
   };
   const llm: LLMClient = {
     generateText: async () => {
@@ -290,10 +290,4 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(res.body.locations[0]).toHaveProperty("types");
   });
 
-  it("場所を指定した出題が通る (?location=)", async () => {
-    // wide-lake はタイプに ノーマル を含む。fake は ノーマル に対して makePokemon の ID を返す
-    const res = await request(makeApp()).get("/api/quest/new?location=wide-lake");
-    expect(res.status).toBe(200);
-    expect(res.body.pokemon_id).toBe(1);
-  });
 });

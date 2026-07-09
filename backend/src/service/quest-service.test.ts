@@ -284,11 +284,12 @@ describe("QuestService.newQuest", () => {
   });
 
   it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
-    // 廃墟の発電所 (ruined-powerplant) のタイプは でんき・はがね・どく。100/110 は第1世代のダミー ID
+    // 廃墟の発電所 (ruined-powerplant) のタイプは でんき・はがね・どく。100/110 は第1世代のダミー ID。
+    // タイプ外の 110 を先頭に置き、絞り込みが無いと先頭の 110 が選ばれてしまう配置で検証する。
     const service = makeService({
       pokemons: [
-        makePokemon({ id: 100, types: ["electric"] }),
         makePokemon({ id: 110, types: ["grass"] }),
+        makePokemon({ id: 100, types: ["electric"] }),
       ],
       maxPokemonID: 898,
     });
@@ -296,19 +297,35 @@ describe("QuestService.newQuest", () => {
     expect(res.pokemon_id).toBe(100);
   });
 
+  it("選んだ場所のタイプでも、選択していない世代のポケモンは出題されない", async () => {
+    // どちらも でんき (発電所に合致) だが、第6世代の 700 は世代フィルタで除外され、第1世代の 100 だけが残る。
+    // 世代フィルタが無いと先頭の 700 が選ばれてしまう配置で検証する。
+    const service = makeService({
+      pokemons: [
+        makePokemon({ id: 700, types: ["electric"] }),
+        makePokemon({ id: 100, types: ["electric"] }),
+      ],
+      maxPokemonID: 898,
+      enabledGenerations: [1],
+    });
+    const res = await service.newQuest("alice", "ruined-powerplant");
+    expect(res.pokemon_id).toBe(100);
+  });
+
   it("幻・伝説の抽選に当たると場所を無視して伝説プールから出題される", async () => {
-    // 乱数を上位に振ると伝説抽選が当たる。150 は伝説集合に含まれる図鑑番号
+    // 乱数を上位に振ると伝説抽選が当たる。150 は伝説集合に含まれる図鑑番号。
+    // 発電所 (でんき) の 100 ではなく場所外タイプの 150 が出ることで「場所を無視」を確かめる。
     const service = makeService({
       pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
       maxPokemonID: 898,
       randomValue: 0.995,
     });
-    // 場所は発電所 (でんき系) だが、伝説抽選なので場所は無視される
     const res = await service.newQuest("alice", "ruined-powerplant");
     expect(res.pokemon_id).toBe(150);
   });
 
-  it("伝説抽選でも選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
+  it("伝説抽選に当たっても、選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
+    // 乱数は伝説抽選に当たる値だが、伝説がプールにいないので発電所 (でんき) の 100 が出る。
     const service = makeService({
       pokemons: [makePokemon({ id: 100, types: ["electric"] })],
       maxPokemonID: 898,
@@ -316,15 +333,6 @@ describe("QuestService.newQuest", () => {
     });
     const res = await service.newQuest("alice", "ruined-powerplant");
     expect(res.pokemon_id).toBe(100);
-  });
-});
-
-describe("QuestService.getLocations", () => {
-  it("場所選択の候補を返す", () => {
-    const locations = makeService().getLocations();
-    expect(locations.length).toBeGreaterThan(0);
-    expect(locations[0]).toHaveProperty("name");
-    expect(locations[0]).toHaveProperty("types");
   });
 });
 

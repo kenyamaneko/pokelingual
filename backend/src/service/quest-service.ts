@@ -145,7 +145,7 @@ export class QuestService {
     if (isLegendaryDraw) {
       const legendary = servableIDs.filter((id) => generationPool.has(id) && LEGENDARY_MYTHICAL_IDS.has(id));
       if (legendary.length > 0) return legendary;
-      // 選択世代に幻・伝説がいなければ通常抽選へフォールバックする。
+      // 伝説抽選に当たったこと自体をユーザーに悟らせたくないので、対象がいなくてもエラーにせず通常抽選に落とす。
     }
     return this.pickLocationCandidates(locationId, generationPool, servableIDs);
   }
