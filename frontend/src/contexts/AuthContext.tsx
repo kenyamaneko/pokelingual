@@ -10,12 +10,14 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
 import { requireAuth } from "../firebase";
+import { EmailNotVerifiedError } from "../utils/authErrors";
 
 interface AuthContextType {
   user: User | null;
@@ -52,11 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [auth]);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    if (!cred.user.emailVerified) {
+      // 未確認のログインは許可しない。確認メールを再送してからサインアウトし、確認を促す。
+      await sendEmailVerification(cred.user);
+      await signOut(auth);
+      throw new EmailNotVerifiedError();
+    }
   };
 
   const signup = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    // 確認が済むまでログインさせないため、確認メールを送ってからサインアウトする。
+    await sendEmailVerification(cred.user);
+    await signOut(auth);
   };
 
   const loginWithGoogle = async () => {

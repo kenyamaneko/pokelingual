@@ -8,6 +8,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { LoginPage } from "./LoginPage";
 import { spec } from "../test/labels";
 import { CONTACT_FORM_URL } from "../constants/links";
+import { EmailNotVerifiedError } from "../utils/authErrors";
 
 /**
  * LoginPage の仕様:
@@ -89,6 +90,16 @@ describe("LoginPage", () => {
     // 再入力してやり直せるよう、送信ボタンが操作可能な状態で残る
     expect(screen.getByRole("button", { name: "メールでログイン" })).toBeEnabled();
     // 認証失敗ではホームへ遷移しない
+    expect(screen.queryByTestId("home-page")).not.toBeInTheDocument();
+  });
+
+  it("メール未確認のログインでは、確認を促すメッセージを表示しホームへ遷移しない", async () => {
+    const user = userEvent.setup();
+    renderLogin(vi.fn().mockRejectedValue(new EmailNotVerifiedError()));
+
+    await submitLogin(user, "dummy@example.com", "dummy-password");
+
+    expect(await screen.findByText(/メールが未確認です/)).toBeInTheDocument();
     expect(screen.queryByTestId("home-page")).not.toBeInTheDocument();
   });
 });

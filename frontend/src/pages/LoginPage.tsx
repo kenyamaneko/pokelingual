@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { GoogleLogo } from "../components/auth/GoogleLogo";
 import { CONTACT_FORM_URL } from "../constants/links";
+import { mapAuthErrorMessage } from "../utils/authErrors";
 
 /**
  * ログインページ。Email/Password と Google サインインを提供する。
@@ -29,8 +30,8 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-    } catch {
-      setError("メールアドレスまたはパスワードが間違っています");
+    } catch (err) {
+      setError(mapAuthErrorMessage(err, "メールアドレスまたはパスワードが間違っています"));
     } finally {
       setLoading(false);
     }
