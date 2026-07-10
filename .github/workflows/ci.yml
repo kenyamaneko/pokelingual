@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     # コード・CI 設定に影響しない変更では実行しない (コスト削減)
     paths-ignore:
       - "**.md"

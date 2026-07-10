@@ -312,26 +312,30 @@ system/
 
 ### 環境
 
-| 環境 | Google Cloud Project | ブランチ | フロントエンド | バックエンド |
+| 環境 | Google Cloud Project | トリガー | フロントエンド | バックエンド |
 |---|---|---|---|---|
-| dev | `pokelingual-dev` | `develop` | Firebase Hosting | Cloud Run |
-| prod | `pokelingual-prod` | `main` | Firebase Hosting | Cloud Run |
+| dev | `pokelingual-dev` | `main` への push | Firebase Hosting | Cloud Run |
+| prod | `pokelingual-prod` | `main` 上のタグ (`v*`) push | Firebase Hosting | Cloud Run |
 
 ### CI/CD パイプライン
 
-**develop ブランチ（dev 環境）:**
+**PR → `main`（`ci.yml`）:**
 ```
-push → ci.yml（テスト・lint） → deploy-backend → integration-test → deploy-frontend
-                                                      ↓ (失敗時)
-                                                  自動ロールバック
+lint・backend-test・frontend-test（並行） + e2e-test → デプロイなし
 ```
 
-**main ブランチ（prod 環境）:**
+**`main` マージ（`deploy-dev.yml`・dev 環境）:**
 ```
-push → ci.yml（テスト・lint） → deploy-backend + deploy-frontend + deploy-behavior-catalog（並列）
+push → ci.yml（テスト再実行） → deploy-backend → smoke-dev
+                             ├ deploy-frontend（deploy-backend 後）
+                             └ publish-behavior-catalog（テスト後）
 ```
 
-結合テスト（dev のみ）: デプロイ済み Cloud Run に対して実際の API リクエスト。
-Firebase Auth テストユーザーを自動作成し、テスト後に全リソースをクリーンアップ。
+**タグ `v*`（`deploy-prod.yml`・prod 環境）:**
+```
+tag → deploy-backend（同一コミットを prod へ再ビルド・再テストなし） → deploy-frontend
+```
 
-振る舞いカタログ: テスト済みの振る舞いを一覧できる仕様ドキュメント。PR では job summary に出力し、main では GitHub Pages に公開する。
+スモーク（dev のみ）: デプロイ済み Cloud Run にヘルスと認証付き read を 1 本ずつ叩く検出専用。書き込みをせず、失敗しても自動ロールバックはしない（ADR-015）。
+
+振る舞いカタログ: テスト済みの振る舞いを一覧できる仕様ドキュメント。PR では job summary に出力し、`main` マージ時点の仕様として GitHub Pages に公開する。

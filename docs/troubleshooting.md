@@ -52,21 +52,21 @@ gcloud run revisions describe REVISION --region REGION --format yaml | grep -A5 
 
 ---
 
-## 結合テストが 403 "access denied" で全失敗
+## デプロイ後スモークが 403 "access denied" で失敗
 
 ### 症状
 
-- CI の結合テスト（`scripts/integration-test.sh`）で全 API が 403 を返す
+- CI のデプロイ後スモーク（`scripts/smoke-dev.sh`）の認証付き API が 403 を返す
 - ローカルや手動テストでは問題なし
 
 ### 原因
 
 GitHub Actions の deploy サービスアカウント（`github-actions-deploy`）に Firestore の読み書き権限がなかった。
 
-結合テストの前処理で「テストユーザーのメールを `config/auth` の `allowed_emails` に追加」するステップがあるが、
+dev デプロイの「スモークユーザーのメールを `config/auth` の `allowed_emails` に常設」するステップがあるが、
 deploy SA に `roles/datastore.user` がなかったため、Firestore への書き込みが**サイレントに失敗**。
 
-結果として `allowed_emails` にテストユーザーが登録されず、バックエンドの認証ミドルウェアが 403 を返した。
+結果として `allowed_emails` にスモークユーザーが登録されず、バックエンドの認証ミドルウェアが 403 を返した。
 
 ### 解決
 
@@ -325,7 +325,7 @@ URL=$(gcloud run services describe pokelingual-api-dev --region asia-northeast1 
 gh secret set API_BASE_URL --env dev --body "${URL}"
 ```
 
-フロントエンドの再デプロイ（develop への push）で反映。
+フロントエンドの再デプロイ（`main` への push）で反映。
 
 ### 学び
 

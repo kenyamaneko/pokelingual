@@ -1,0 +1,265 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches: [main]
+    # コードに影響しない変更ではデプロイしない (コスト削減)
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "rules/**"
+      - ".claude/**"
+      - ".vscode/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOOGLE_CLOUD_REGION: asia-northeast1
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  determine-version:
+    name: Determine Version
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine version from git tags
+        id: version
+        run: |
+          VERSION=$(git describe --tags --always)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Detected version: ${VERSION}"
+
+  deploy-backend:
+    name: Deploy Backend to Cloud Run
+    needs: [test, determine-version]
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 20
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: pokelingual-api-dev
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev
+
+      # デプロイ後スモークがサインインする恒久フィクスチャユーザを許可リストに常設する (冪等)
+      - name: Ensure smoke user email in allowed_emails
+        env:
+          SMOKE_USER_EMAIL: test@pokelingual.dev
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          PROJECT_ID="${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
+          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+          DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
+          EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
+          if echo "${EXISTING}" | grep -qx "${SMOKE_USER_EMAIL}"; then
+            echo "Smoke user email already in allowed_emails"
+          else
+            echo "Adding smoke user email to allowed_emails..."
+            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${SMOKE_USER_EMAIL}"'"}]')
+            curl -s -X PATCH \
+              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
+              -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
+            echo "Added ${SMOKE_USER_EMAIL} to allowed_emails"
+          fi
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_BASE="${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api"
+          docker build \
+            -f backend/Dockerfile \
+            -t "${IMAGE_BASE}:${{ github.sha }}" \
+            -t "${IMAGE_BASE}:${{ needs.determine-version.outputs.version }}" \
+            .
+          docker push "${IMAGE_BASE}" --all-tags
+
+      # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
+      # これはエンドユーザー向け API での Google 推奨パターン。
+      # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
+      # IAM が有効だと Cloud Run がリクエストを拒否してしまう。
+      # アプリレベルの認証は middleware/auth.ts の Firebase Auth ミドルウェアが担保する。
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
+            --service-account "pokelingual-api-dev@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --remove-secrets "GEMINI_API_KEY" \
+            --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
+            --allow-unauthenticated
+
+      # ロールバックで --to-revisions を使うとトラフィックが特定リビジョンにピン留めされ、
+      # 以降の gcloud run deploy は新リビジョンを作成するがトラフィックを更新しない。
+      # --to-latest で常に最新リビジョンにルーティングする。
+      - name: Route traffic to latest revision
+        run: |
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
+            --to-latest
+
+  # デプロイ済み dev に対する検出専用スモーク。実環境・secret の配線切れを検知する。
+  # ロールバックはしない (green までデプロイしない設計上、テスト失敗後のデプロイは発生しない)。
+  smoke-dev:
+    name: Smoke Test (dev)
+    needs: deploy-backend
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: pokelingual-api-dev
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Cloud Run service URL
+        id: service-url
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
+            --format 'value(status.url)')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Run smoke test
+        env:
+          SERVICE_URL: ${{ steps.service-url.outputs.url }}
+          SMOKE_USER_EMAIL: test@pokelingual.dev
+          SMOKE_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+        run: bash scripts/smoke-dev.sh
+
+  deploy-frontend:
+    name: Deploy Frontend to Firebase Hosting
+    needs: [test, deploy-backend, determine-version]
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 15
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
+          VITE_FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+          VITE_BUILD_VERSION: ${{ needs.determine-version.outputs.version }}
+          VITE_ENVIRONMENT: dev
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        run: npx firebase-tools deploy --only hosting --project ${{ vars.FIREBASE_PROJECT_ID }}
+
+  # 振る舞いカタログはマージ時点の仕様として公開する (テストが走るのはこのマージ実行のみ)
+  publish-behavior-catalog:
+    name: Publish Behavior Catalog to GitHub Pages
+    needs: test
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Download JUnit XML
+        uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit-artifacts
+
+      - name: Generate catalog HTML
+        run: |
+          mkdir -p _site
+          python scripts/generate_behavior_catalog.py \
+            --format html \
+            --commit "${GITHUB_SHA}" \
+            --section "backend:junit-artifacts/junit-backend/junit.xml" \
+            --section "frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
+            --section "E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
+            > _site/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

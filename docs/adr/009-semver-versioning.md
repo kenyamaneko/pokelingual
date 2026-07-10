@@ -53,3 +53,20 @@ git push origin develop
 ```
 
 マージバックにより develop での `git describe` が `v1.0.0-N-g<sha>` を返し、dev 環境でも「どのリリースから何コミット先か」が分かる。
+
+## Amendment: 2026-07-10 GitHub Flow 移行と prod 昇格方式の変更
+
+`develop` ブランチを廃止し GitHub Flow (`main` 1 本) へ移行した (`rules/flow.md`)。`main` が dev のソースを兼ねるため、旧手順の 3.（`main → develop` へのマージバック）は不要になった。タグ付け後に `main` へ追加コミットが積まれれば、`git describe` はそのまま `vX.Y.Z-N-g<sha>` を返す。
+
+環境反映は「`main` マージ → dev、`v*` タグ push → prod」に分かれる。prod デプロイはタグ時にテストを走らせず、同一コミットを prod 用に再ビルドしてデプロイする（dev と prod は別プロジェクト・別レジストリのため）。詳細は ADR-015。
+
+新しいリリース手順：
+
+```bash
+# 1. feature/xxx → main に PR マージ（dev デプロイが実行される）
+
+# 2. main でタグ付け → タグ push で prod デプロイ（クリーンなバージョン番号）
+git checkout main && git pull
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```

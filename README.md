@@ -231,18 +231,20 @@ gcloud run deploy pokelingual-api-dev \
 gcloud run services describe pokelingual-api-dev --region asia-northeast1 --format 'value(status.url)'
 ```
 
-以降は `develop` / `main` ブランチへの push で自動デプロイされる。
+以降は `main` への push で dev、`v*` タグ push で prod に自動デプロイされる。
 
-### deploy.yml の環境固有値を更新
+### デプロイワークフローの環境固有値を更新
 
-`.github/workflows/deploy.yml` 内の以下の値を自分の環境に合わせて変更:
+`.github/workflows/deploy-dev.yml`（dev）と `.github/workflows/deploy-prod.yml`（prod）内の以下の値を自分の環境に合わせて変更:
 
 ```yaml
-# FRONTEND_URL（ハードコード箇所）
-FRONTEND_URL: ${{ github.ref_name != 'develop' && 'https://YOUR-PROD.web.app' || 'https://YOUR-DEV.web.app' }}
+# FRONTEND_URL（各ファイルにハードコード）
+#   deploy-dev.yml:  https://YOUR-DEV.web.app
+#   deploy-prod.yml: https://YOUR-PROD.web.app
 
-# SERVICE_NAME（必要に応じて変更）
-SERVICE_NAME: ${{ github.ref_name != 'develop' && 'pokelingual-api-prod' || 'pokelingual-api-dev' }}
+# サービス名（各ファイルの env.SERVICE_NAME）
+#   deploy-dev.yml:  pokelingual-api-dev
+#   deploy-prod.yml: pokelingual-api-prod
 ```
 
 ## ローカル開発
@@ -284,50 +286,53 @@ cd frontend && npx vitest run
 
 GitHub Actions で自動テスト・デプロイを実行。
 
-### develop ブランチ（dev 環境）
+### PR → `main`（`ci.yml`）
 
 ```
-push → 単体テスト・lint → バックエンドデプロイ → 結合テスト → フロントエンドデプロイ
-                                                    ↓ (失敗時)
-                                                自動ロールバック
+lint・バックエンドテスト・フロントエンドテスト（並行） + E2E → デプロイなし
 ```
 
-結合テストでは、デプロイ済みの Cloud Run サービスに対して実際の API リクエストを送信し、PokeAPI・Gemini・Firestore・Firebase Auth を含む全フローを検証する。テスト後は Firestore のテストデータを自動削除。
+ランナー上のテストが品質の主ゲートで、green までデプロイしない。
 
-### main ブランチ（prod 環境）
+### `main` マージ（dev 環境）
 
 ```
-push → 単体テスト・lint → バックエンドデプロイ + フロントエンドデプロイ + 振る舞いカタログ公開（並列）
+push → CI 再実行 → バックエンドデプロイ → デプロイ後スモーク
+                   フロントエンドデプロイ・振る舞いカタログ公開（並行）
 ```
 
-振る舞いカタログはテスト済みの振る舞いを一覧できる仕様ドキュメントで、main の CI が [GitHub Pages](https://kenyamaneko.github.io/pokelingual/) に公開する。PR では job summary に同じ一覧が出る。
+デプロイ後スモークは、デプロイ済み Cloud Run にヘルスと認証付き read を 1 本ずつ叩く検出専用（書き込みなし・自動ロールバックなし、ADR-015）。
+
+### タグ `v*`（prod 環境）
+
+```
+tag → バックエンドデプロイ（同一コミットを prod へ再ビルド・再テストなし） → フロントエンドデプロイ
+```
+
+振る舞いカタログはテスト済みの振る舞いを一覧できる仕様ドキュメントで、`main` マージ時点の仕様として [GitHub Pages](https://kenyamaneko.github.io/pokelingual/) に公開する。PR では job summary に同じ一覧が出る。
 
 ### ワークフロー
 
 | ファイル | トリガー | 内容 |
 |---------|---------|------|
 | `ci.yml` | PR, workflow_call | バックエンド/フロントエンドテスト・lint・型チェック、E2E、Terraform fmt、振る舞いカタログの job summary 出力 |
-| `deploy.yml` | push to main/develop, v* tag | CI → デプロイ → 結合テスト（dev のみ）、振る舞いカタログ公開（main のみ） |
+| `deploy-dev.yml` | push to `main` | CI 再実行 → dev デプロイ → スモーク → 振る舞いカタログ公開 |
+| `deploy-prod.yml` | `v*` タグ push | prod へ再ビルド・デプロイ（再テストなし） |
 
 ### prod リリース手順
 
 SemVer（`vMAJOR.MINOR.PATCH`）の Git タグでバージョンを管理する。
 
 ```bash
-# 1. develop → main に PR をマージ（prod デプロイが実行される）
+# 1. feature/xxx → main に PR をマージ（dev デプロイが実行される）
 
-# 2. main でタグ付け → タグ push で prod 再デプロイ（クリーンなバージョン番号）
+# 2. main でタグ付け → タグ push で prod デプロイ（クリーンなバージョン番号）
 git checkout main && git pull
 git tag v1.0.0
 git push origin v1.0.0
-
-# 3. main → develop にマージバック（タグを develop に伝播）
-git checkout develop && git pull
-git merge main
-git push origin develop
 ```
 
-マージバックにより、dev 環境のバージョンが `v1.0.0-N-g<sha>`（リリースから N コミット先）と表示される。
+タグ付け後に `main` へ追加コミットが積まれれば、dev 環境のバージョンは `v1.0.0-N-g<sha>`（リリースから N コミット先）と表示される。
 
 ## API エンドポイント
 

@@ -1,0 +1,146 @@
+name: Deploy to Prod
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# 進行中の prod ロールアウトを中断させない
+concurrency:
+  group: deploy-prod-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GOOGLE_CLOUD_REGION: asia-northeast1
+
+jobs:
+  determine-version:
+    name: Determine Version
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine version from git tags
+        id: version
+        run: |
+          VERSION=$(git describe --tags --always)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Detected version: ${VERSION}"
+
+  deploy-backend:
+    name: Deploy Backend to Cloud Run
+    needs: determine-version
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 20
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: pokelingual-api-prod
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev
+
+      # タグは検証済みの main コミットに打たれる。dev とは別プロジェクト・別レジストリのため、
+      # 同一コミットを prod レジストリへ再ビルドする (テストは dev マージ時に済んでいるので走らせない)。
+      - name: Build and push Docker image
+        run: |
+          IMAGE_BASE="${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api"
+          docker build \
+            -f backend/Dockerfile \
+            -t "${IMAGE_BASE}:${{ github.sha }}" \
+            -t "${IMAGE_BASE}:${{ needs.determine-version.outputs.version }}" \
+            .
+          docker push "${IMAGE_BASE}" --all-tags
+
+      # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
+      # これはエンドユーザー向け API での Google 推奨パターン。
+      # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
+      # IAM が有効だと Cloud Run がリクエストを拒否してしまう。
+      # アプリレベルの認証は middleware/auth.ts の Firebase Auth ミドルウェアが担保する。
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
+            --service-account "pokelingual-api-prod@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --remove-secrets "GEMINI_API_KEY" \
+            --update-env-vars "APP_MODE=real,APP_ENV=prod,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
+            --allow-unauthenticated
+
+      # ロールバックで --to-revisions を使うとトラフィックが特定リビジョンにピン留めされ、
+      # 以降の gcloud run deploy は新リビジョンを作成するがトラフィックを更新しない。
+      # --to-latest で常に最新リビジョンにルーティングする。
+      - name: Route traffic to latest revision
+        run: |
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
+            --to-latest
+
+  deploy-frontend:
+    name: Deploy Frontend to Firebase Hosting
+    needs: [determine-version, deploy-backend]
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 15
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # Vite は環境値をビルド時に埋め込むため、prod では prod URL とタグ版で再ビルドする。
+      - name: Build
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
+          VITE_FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+          VITE_BUILD_VERSION: ${{ needs.determine-version.outputs.version }}
+          VITE_ENVIRONMENT: prod
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        run: npx firebase-tools deploy --only hosting --project ${{ vars.FIREBASE_PROJECT_ID }}
