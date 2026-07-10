@@ -76,4 +76,22 @@ describe("SignupPage", () => {
     expect(signup).toHaveBeenCalledWith("dummy@example.com", "dummy-pass-1");
     expect(screen.queryByTestId("signup-error")).not.toBeInTheDocument();
   });
+
+  it("登録に成功すると、確認メールの案内画面を表示する", async () => {
+    const user = userEvent.setup();
+    renderPage(vi.fn().mockResolvedValue(undefined));
+
+    await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+
+    expect(await screen.findByTestId("signup-verify-message")).toBeInTheDocument();
+  });
+
+  it("既に登録済みのメールでは、登録済みである旨を表示する", async () => {
+    const user = userEvent.setup();
+    renderPage(vi.fn().mockRejectedValue({ code: "auth/email-already-in-use" }));
+
+    await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+
+    expect(await screen.findByText(/既に登録されています/)).toBeInTheDocument();
+  });
 });

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { mapAuthErrorMessage } from "../utils/authErrors";
 
 /**
  * サインアップページ。Email/Password で新規登録する。
@@ -14,9 +15,12 @@ export function SignupPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const signingUpRef = useRef(false);
 
   useEffect(() => {
-    if (user) {
+    // 登録直後は確認メール送信→サインアウトで user が一時的に確定するが、確認前はホームへ遷移させない。
+    if (user && !signingUpRef.current) {
       navigate("/");
     }
   }, [user, navigate]);
@@ -30,14 +34,42 @@ export function SignupPage() {
       return;
     }
     setLoading(true);
+    signingUpRef.current = true;
     try {
       await signup(email, password);
-    } catch {
-      setError("とうろくに　しっぱいしました。メールアドレスか　パスワードを　かくにんしてね");
+      setRegistered(true);
+    } catch (err) {
+      setError(mapAuthErrorMessage(err, "登録に失敗しました。しばらくしてからお試しください"));
     } finally {
       setLoading(false);
+      signingUpRef.current = false;
     }
   };
+
+  if (registered) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-sky-400 to-blue-500 flex items-center justify-center">
+        <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
+          <div className="text-6xl mb-4">📧</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-3">確認メールを送りました</h1>
+          <p
+            className="text-gray-600 text-sm mb-6 leading-relaxed"
+            data-testid="signup-verify-message"
+          >
+            メールに届いたリンクを開いて、メールアドレスの確認を完了してください。確認したあとにログインできます。
+          </p>
+          <Link
+            to="/login"
+            className="inline-block w-full bg-blue-500 text-white py-2 px-6 rounded-xl text-sm
+                       font-semibold hover:bg-blue-600 transition-colors"
+            data-testid="goto-login-after-signup"
+          >
+            ログインへ
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-400 to-blue-500 flex items-center justify-center">
