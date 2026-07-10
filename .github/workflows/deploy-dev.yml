@@ -224,6 +224,7 @@ jobs:
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
