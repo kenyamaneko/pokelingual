@@ -12,10 +12,6 @@ const FIREBASE_AUTH_MESSAGES: Record<string, string> = {
   "auth/invalid-email": "メールアドレスの形式が正しくありません",
   "auth/weak-password": "パスワードは6文字以上で設定してください",
   "auth/network-request-failed": "ネットワークに接続できません。接続を確認してください",
-  "auth/too-many-requests": "試行回数が多すぎます。しばらく待ってからお試しください",
-  "auth/invalid-credential": "メールアドレスまたはパスワードが正しくありません",
-  "auth/wrong-password": "メールアドレスまたはパスワードが正しくありません",
-  "auth/user-not-found": "メールアドレスまたはパスワードが正しくありません",
 };
 
 /** 未確認メールの案内文。再送済みである旨と、リンクを開いてからログインし直す導線を伝える。 */

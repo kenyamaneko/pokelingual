@@ -56,7 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     if (!cred.user.emailVerified) {
-      // 未確認のログインは許可しない。確認メールを再送してからサインアウトし、確認を促す。
       await sendEmailVerification(cred.user);
       await signOut(auth);
       throw new EmailNotVerifiedError();
@@ -65,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    // 確認が済むまでログインさせないため、確認メールを送ってからサインアウトする。
     await sendEmailVerification(cred.user);
     await signOut(auth);
   };
