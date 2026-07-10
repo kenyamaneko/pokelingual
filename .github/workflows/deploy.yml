@@ -168,10 +168,10 @@ jobs:
           fi
 
       - name: Build and push Docker image
-        working-directory: backend
         run: |
           IMAGE_BASE="${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api"
           docker build \
+            -f backend/Dockerfile \
             -t "${IMAGE_BASE}:${{ github.sha }}" \
             -t "${IMAGE_BASE}:${{ needs.determine-version.outputs.version }}" \
             .

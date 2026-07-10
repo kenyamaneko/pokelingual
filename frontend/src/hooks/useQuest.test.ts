@@ -142,21 +142,21 @@ describe("useQuest", () => {
   // 5xx はローカル error 文言として保持」する仕様。3 API 分まとめて検証する。
   it.each([
     {
-      api: "submitTranslation",
+      api: "採点",
       path: "/quest/score",
       call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
     },
     {
-      api: "submitGuess",
+      api: "名前推測",
       path: "/quest/guess-name",
       call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
     },
     {
-      api: "capture",
+      api: "捕獲",
       path: "/quest/capture",
       call: (r: ReturnType<typeof useQuest>) => r.capture(),
     },
-  ])("$api の 429 では error 文言を出さず、フェーズも変えない (UsageProvider に委譲)", async ({
+  ])("$apiで 429 が返っても error 文言を出さず、フェーズも変えない (UsageProvider に委譲)", async ({
     path,
     call,
   }) => {
@@ -180,21 +180,21 @@ describe("useQuest", () => {
 
   it.each([
     {
-      api: "submitTranslation",
+      api: "採点",
       path: "/quest/score",
       call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
     },
     {
-      api: "submitGuess",
+      api: "名前推測",
       path: "/quest/guess-name",
       call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
     },
     {
-      api: "capture",
+      api: "捕獲",
       path: "/quest/capture",
       call: (r: ReturnType<typeof useQuest>) => r.capture(),
     },
-  ])("$api の 5xx エラーでは error メッセージを保持しつつフェーズは保留", async ({
+  ])("$apiで 5xx が返っても error メッセージを保持し、フェーズは変えない", async ({
     path,
     call,
   }) => {
@@ -210,6 +210,40 @@ describe("useQuest", () => {
 
     expect(result.current.error).not.toBeNull();
     expect(result.current.phase).toBe("translating");
+  });
+
+  it.each([
+    {
+      api: "採点",
+      path: "/quest/score",
+      call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
+    },
+    {
+      api: "名前推測",
+      path: "/quest/guess-name",
+      call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
+    },
+    {
+      api: "捕獲",
+      path: "/quest/capture",
+      call: (r: ReturnType<typeof useQuest>) => r.capture(),
+    },
+  ])("$apiで 404 (セッション切断) になると error 画面へ切り替わり、切断を案内する", async ({
+    path,
+    call,
+  }) => {
+    mockNewQuest();
+    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 404 })));
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await call(result.current);
+    });
+
+    expect(result.current.phase).toBe("error");
+    expect(result.current.error).toMatch(/セッションが切断されました/);
   });
 
   it("submitGuess で ball_type が返れば ballType に保存する", async () => {

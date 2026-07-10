@@ -54,6 +54,15 @@ function isRateLimitError(err: unknown): boolean {
 }
 
 /**
+ * エラーがセッション切断 (404) 由来かを判定する。
+ * @param err 捕捉したエラー。
+ * @returns 404 レスポンスなら true。
+ */
+function isSessionLostError(err: unknown): boolean {
+  return axios.isAxiosError(err) && err.response?.status === 404;
+}
+
+/**
  * エラーをユーザ向けの日本語メッセージに変換する。
  * @param err 捕捉したエラー。
  * @param fallback 分類できない場合に使う既定メッセージ。
@@ -138,6 +147,15 @@ export function useQuest(): UseQuestResult {
     startNewQuest(); // eslint-disable-line react-hooks/set-state-in-effect -- initial data fetch on mount
   }, [startNewQuest]);
 
+  const handleActionError = (err: unknown, fallback: string) => {
+    if (isRateLimitError(err)) return;
+    setError(getErrorMessage(err, fallback));
+    if (isSessionLostError(err)) {
+      // セッション切断は同じセッションで再試行できないので、リスタート導線のある画面へ移す。
+      setPhase("error");
+    }
+  };
+
   const submitTranslation = async (translation: string) => {
     try {
       setUserTranslation(translation);
@@ -146,8 +164,7 @@ export function useQuest(): UseQuestResult {
       setPhase("guessing");
       refreshUsage();
     } catch (err) {
-      if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "採点に失敗しました"));
+      handleActionError(err, "採点に失敗しました");
     }
   };
 
@@ -159,8 +176,7 @@ export function useQuest(): UseQuestResult {
         setBallType(res.data.ball_type);
       }
     } catch (err) {
-      if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "名前の判定に失敗しました"));
+      handleActionError(err, "名前の判定に失敗しました");
     }
   };
 
@@ -171,8 +187,7 @@ export function useQuest(): UseQuestResult {
       setBallType(res.data.ball_type);
       setPhase("capturing");
     } catch (err) {
-      if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "スキップに失敗しました"));
+      handleActionError(err, "スキップに失敗しました");
     }
   };
 
@@ -182,8 +197,7 @@ export function useQuest(): UseQuestResult {
       setCaptureResult(res.data);
       setPhase("result");
     } catch (err) {
-      if (isRateLimitError(err)) return;
-      setError(getErrorMessage(err, "捕獲の判定に失敗しました"));
+      handleActionError(err, "捕獲の判定に失敗しました");
     }
   };
 

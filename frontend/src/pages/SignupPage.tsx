@@ -1,22 +1,20 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { GoogleLogo } from "../components/auth/GoogleLogo";
 import { mapAuthErrorMessage } from "../utils/authErrors";
 
 /**
- * サインアップページ。Email/Password と Google サインインで新規登録する。
+ * サインアップページ。Email/Password で新規登録する。
  * @returns サインアップページの要素。
  */
 export function SignupPage() {
-  const { user, signup, loginWithGoogle } = useAuth();
+  const { user, signup } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
   const signingUpRef = useRef(false);
 
@@ -45,18 +43,6 @@ export function SignupPage() {
     } finally {
       setLoading(false);
       signingUpRef.current = false;
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    setError("");
-    setGoogleLoading(true);
-    try {
-      await loginWithGoogle();
-    } catch {
-      setError("Googleでの登録に失敗しました");
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -99,24 +85,6 @@ export function SignupPage() {
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
         <p className="text-gray-400 text-sm mb-8">登録する</p>
 
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          disabled={googleLoading || loading}
-          className="w-full border-2 border-gray-300 bg-white text-gray-700 py-3 px-6 rounded-xl
-                     font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-3
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <GoogleLogo />
-          {googleLoading ? "登録中..." : "Google で　はじめる"}
-        </button>
-
-        <div className="flex items-center gap-3 my-6 text-gray-400 text-xs">
-          <hr className="flex-1 border-gray-200" />
-          <span>または</span>
-          <hr className="flex-1 border-gray-200" />
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="email"
@@ -155,7 +123,7 @@ export function SignupPage() {
           )}
           <button
             type="submit"
-            disabled={loading || googleLoading}
+            disabled={loading}
             data-testid="signup-submit"
             className="w-full bg-blue-500 text-white py-2 px-6 rounded-xl text-sm
                        font-semibold hover:bg-blue-600 transition-colors
