@@ -150,4 +150,25 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(spec("どこに ポケモンを 探しに行く？"))).toBeInTheDocument();
   });
+
+  it("採点中にセッションが切れる (404) と、次のポケモンを探す導線が出る", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(apiUrl("/quest/score"), () => HttpResponse.json({}, { status: 404 })),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    expect(await screen.findByText(/セッションが切断されました/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /もう一度探す/ }));
+
+    expect(
+      await screen.findByRole("button", { name: /テスト草原/ }),
+    ).toBeInTheDocument();
+  });
 });

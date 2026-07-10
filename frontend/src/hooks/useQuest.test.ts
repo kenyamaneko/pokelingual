@@ -212,6 +212,40 @@ describe("useQuest", () => {
     expect(result.current.phase).toBe("translating");
   });
 
+  it.each([
+    {
+      api: "submitTranslation",
+      path: "/quest/score",
+      call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
+    },
+    {
+      api: "submitGuess",
+      path: "/quest/guess-name",
+      call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
+    },
+    {
+      api: "capture",
+      path: "/quest/capture",
+      call: (r: ReturnType<typeof useQuest>) => r.capture(),
+    },
+  ])("$api の 404 (セッション切断) では error 画面へ切り替わり、切断を案内する", async ({
+    path,
+    call,
+  }) => {
+    mockNewQuest();
+    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 404 })));
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await call(result.current);
+    });
+
+    expect(result.current.phase).toBe("error");
+    expect(result.current.error).toMatch(/セッションが切断されました/);
+  });
+
   it("submitGuess で ball_type が返れば ballType に保存する", async () => {
     mockNewQuest();
     const guess: GuessResponse = {
