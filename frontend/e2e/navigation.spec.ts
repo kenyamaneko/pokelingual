@@ -14,7 +14,10 @@ test("ホームページのリンクが全て機能する", async ({ page }) => 
   await page.goto("/");
 
   // ぼうけんに出かける → /quest
-  await page.getByRole("link", { name: LINK.startQuest }).click();
+  // (完了記録の反映は非同期のため、href の反映を待ってからクリックする)
+  const startQuestLink = page.getByRole("link", { name: LINK.startQuest });
+  await expect(startQuestLink).toHaveAttribute("href", "/quest");
+  await startQuestLink.click();
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーロゴ → /
