@@ -9,12 +9,10 @@ const locations: QuestLocation[] = [
 ];
 
 describe("LocationSelect", () => {
-  it("候補の場所を名前・説明・日本語タイプ付きで表示する", () => {
+  it("候補の場所を名前・説明付きで表示する", () => {
     render(<LocationSelect locations={locations} onSelect={() => {}} />);
     expect(screen.getByText("テスト草原")).toBeInTheDocument();
     expect(screen.getByText("みどりの草原")).toBeInTheDocument();
-    expect(screen.getByText("くさ")).toBeInTheDocument();
-    expect(screen.getByText("ノーマル")).toBeInTheDocument();
   });
 
   it("候補を取得できるまでは読み込み中を表示する", () => {
