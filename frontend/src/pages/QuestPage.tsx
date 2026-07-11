@@ -142,10 +142,10 @@ export function QuestPage() {
           </div>
         )}
 
-        {phase === "revealing" && ballType && captureResult && (
+        {phase === "revealing" && captureResult && (
           <CaptureEffect
-            ballSprite={BALL_SPRITES[ballType]}
-            ballName={BALL_NAMES[ballType]}
+            ballSprite={BALL_SPRITES[captureResult.ball_type]}
+            ballName={BALL_NAMES[captureResult.ball_type]}
             captured={captureResult.captured}
             onComplete={revealCaptureResult}
           />

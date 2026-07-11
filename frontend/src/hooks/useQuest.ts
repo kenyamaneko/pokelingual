@@ -210,10 +210,7 @@ export function useQuest(): UseQuestResult {
     }
   };
 
-  // 捕獲成否は capture() 時点で確定済み。演出 (CaptureEffect) の再生完了を
-  // 受けて結果画面へ進むだけなので、API を呼び直さずローカルの状態遷移で進める。
-  // CaptureEffect 内の useEffect が依存配列にこの関数を持つため、参照を固定して
-  // QuestPage の再レンダリングで演出タイマーが再セットされないようにする。
+  // CaptureEffect の useEffect が依存配列に持つため、useCallback で参照を固定する。
   const revealCaptureResult = useCallback(() => {
     setPhase("result");
   }, []);

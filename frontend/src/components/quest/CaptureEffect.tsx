@@ -11,7 +11,7 @@ interface CaptureEffectProps {
 export const SHAKE_DURATION_MS = 900;
 
 /** 成否エフェクト (花火/煙) の再生時間 (ミリ秒)。CSS 側のアニメーション時間と揃える。 */
-export const EFFECT_DURATION_MS = 700;
+const EFFECT_DURATION_MS = 700;
 
 type Stage = "shaking" | "effect";
 

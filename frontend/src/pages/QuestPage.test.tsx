@@ -95,8 +95,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     );
     await user.click(await screen.findByRole("button", { name: /ハイパーボール/ }));
-    // ボール使用〜結果表示の間に捕獲演出 (揺れ→エフェクト) の実時間の遅延が挟まるため、
-    // 既定の findByText タイムアウト (1000ms) では足りない。
+    // 捕獲演出の再生に実時間で1秒以上かかり、既定の待機時間 (1000ms) を超えるため延長する。
     expect(
       await screen.findByText(
         spec(CAPTURE_RESULT_LABELS.capturedTitle("テストモン")),

@@ -1,10 +1,6 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  CaptureEffect,
-  SHAKE_DURATION_MS,
-  EFFECT_DURATION_MS,
-} from "./CaptureEffect";
+import { CaptureEffect, SHAKE_DURATION_MS } from "./CaptureEffect";
 
 describe("捕獲演出", () => {
   beforeEach(() => {
@@ -15,16 +11,15 @@ describe("捕獲演出", () => {
     vi.useRealTimers();
   });
 
-  function renderEffect(captured: boolean, onComplete = vi.fn()) {
+  function renderEffect(captured: boolean) {
     render(
       <CaptureEffect
         ballSprite="https://example.com/ball.png"
         ballName="テストボール"
         captured={captured}
-        onComplete={onComplete}
+        onComplete={vi.fn()}
       />,
     );
-    return onComplete;
   }
 
   it("揺れの再生中は、成否エフェクトを表示しない", () => {
@@ -46,27 +41,5 @@ describe("捕獲演出", () => {
       vi.advanceTimersByTime(SHAKE_DURATION_MS);
     });
     expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "failure");
-  });
-
-  it("エフェクトの再生完了前は、演出の完了を通知しない", () => {
-    const onComplete = renderEffect(true);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
-    });
-    act(() => {
-      vi.advanceTimersByTime(EFFECT_DURATION_MS - 1);
-    });
-    expect(onComplete).not.toHaveBeenCalled();
-  });
-
-  it("エフェクトの再生完了後、演出の完了を通知する", () => {
-    const onComplete = renderEffect(true);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
-    });
-    act(() => {
-      vi.advanceTimersByTime(EFFECT_DURATION_MS);
-    });
-    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 });

@@ -344,7 +344,7 @@ describe("useQuest", () => {
     expect(result.current.captureResult).toEqual(captured);
   });
 
-  it("revealing フェーズで捕獲演出の完了通知を受けると、result フェーズへ進み captureResult を維持する", async () => {
+  it("revealing フェーズで捕獲演出が終わると、result フェーズへ進み captureResult を維持する", async () => {
     mockNewQuest();
     const captured: CaptureResponse = {
       captured: false,
