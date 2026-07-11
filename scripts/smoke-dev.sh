@@ -7,7 +7,7 @@ set -euo pipefail
 #
 # 必要な環境変数:
 #   SERVICE_URL         - デプロイ済み Cloud Run サービスの URL
-#   SMOKE_USER_EMAIL    - allowed_emails に常設したフィクスチャユーザのメール
+#   SMOKE_USER_EMAIL    - allowed_emails に常設した、事前作成済み・メール確認済みのフィクスチャユーザのメール
 #   SMOKE_USER_PASSWORD - フィクスチャユーザのパスワード
 #   FIREBASE_API_KEY    - Firebase Auth REST 用の API キー
 
@@ -38,24 +38,16 @@ if [ "${health_ok}" != "true" ]; then
   exit 1
 fi
 
-# フィクスチャユーザで ID トークンを取得する。未作成なら作成する (削除はしない)。
-sign_in_fixture_user() {
-  curl -s -X POST \
-    "https://identitytoolkit.googleapis.com/v1/accounts:${1}?key=${FIREBASE_API_KEY}" \
-    -H "Content-Type: application/json" \
-    -d "{\"email\":\"${SMOKE_USER_EMAIL}\",\"password\":\"${SMOKE_USER_PASSWORD}\",\"returnSecureToken\":true}"
-}
-
+# 事前プロビジョンした検証済みフィクスチャユーザでサインインし ID トークンを取得する。
+# backend がメール確認を必須にするため、signUp で作られる未確認ユーザーは認証付き read を通れない。
 echo "== Acquire Firebase ID token for fixture user =="
-response=$(sign_in_fixture_user "signInWithPassword")
+response=$(curl -s -X POST \
+  "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"${SMOKE_USER_EMAIL}\",\"password\":\"${SMOKE_USER_PASSWORD}\",\"returnSecureToken\":true}")
 token=$(echo "${response}" | jq -r '.idToken')
 if [ "${token}" = "null" ] || [ -z "${token}" ]; then
-  echo "Fixture user not found; creating it..."
-  response=$(sign_in_fixture_user "signUp")
-  token=$(echo "${response}" | jq -r '.idToken')
-fi
-if [ "${token}" = "null" ] || [ -z "${token}" ]; then
-  echo "FAIL: could not obtain Firebase ID token"
+  echo "FAIL: could not sign in fixture user (事前作成済み・メール確認済みであること)"
   echo "${response}" | jq .
   exit 1
 fi
