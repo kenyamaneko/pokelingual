@@ -22,8 +22,8 @@
 
 | ドキュメント | 内容 |
 |---|---|
-| [アーキテクチャ](docs/architecture.md) | 全体構成、バックエンド/フロントエンド詳細、インフラ |
 | [技術判断記録（ADR）](docs/adr/) | 各設計判断の背景・理由・結果 |
+| [業務判断記録（BDR）](docs/bdr/) | 仕様・ゲームルールの背景・理由・結果 |
 | [トラブルシューティング](docs/troubleshooting.md) | 開発中に遭遇した問題と解決策 |
 | [振る舞いカタログ](https://kenyamaneko.github.io/pokelingual/) | テスト名から自動生成したテスト済みの振る舞い一覧（main の CI が更新） |
 
