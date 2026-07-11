@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { pokedexApi } from "../api/pokedexApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
+import { searchPokemonByName } from "../utils/pokemonSearch";
 import { logger } from "../utils/logger";
 import type { PokedexEntry } from "../../../shared/api-types/pokedex";
 import { CONTACT_FORM_URL } from "../constants/links";
@@ -114,12 +115,10 @@ export function SettingsPage() {
 
   const nameById = new Map(pokedex.map((p) => [p.pokemon_id, p.name_ja]));
   const query = searchQuery.trim();
-  const candidates =
-    query === ""
-      ? []
-      : pokedex
-          .filter((p) => !excludedIDs.includes(p.pokemon_id) && p.name_ja.includes(query))
-          .slice(0, MAX_SEARCH_CANDIDATES);
+  const candidates = searchPokemonByName(
+    pokedex.filter((p) => !excludedIDs.includes(p.pokemon_id)),
+    query,
+  ).slice(0, MAX_SEARCH_CANDIDATES);
 
   if (loading) {
     return (
