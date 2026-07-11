@@ -1,8 +1,14 @@
 import { test, expect } from "@playwright/test";
+import { completeTutorialViaApi } from "./helpers";
 import { LINK } from "./labels";
 
 // 認証バイパス済み（DevAuthProvider）の mock モード専用。dev では各ページが認証で保護される。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
+
+// このファイルは本番導線の配線を検証する。dev-user のチュートリアル完了状態を先に立てておく
+test.beforeEach(async ({ page }) => {
+  await completeTutorialViaApi(page);
+});
 
 test("ホームページのリンクが全て機能する", async ({ page }) => {
   await page.goto("/");

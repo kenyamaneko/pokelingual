@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { completeTutorialViaApi } from "./helpers";
 import { BUTTON, LINK, PLACEHOLDER, TEXT } from "./labels";
 
 // mock モード専用。dev は dev-signup-flow.spec.ts が担当。
@@ -6,10 +7,14 @@ import { BUTTON, LINK, PLACEHOLDER, TEXT } from "./labels";
 // 選ぶと出題は必ずピカチュウ、捕獲も必ず成功するため、正誤・捕獲を確定的に検証できる。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
+// このファイルは本番クエストを検証する。dev-user のチュートリアル完了状態を先に立てておく
+test.beforeEach(async ({ page }) => {
+  await completeTutorialViaApi(page);
+});
+
 test("クエスト全フロー（翻訳 → 採点 → 名前当て正解 → ハイパーボールで捕獲）", async ({
   page,
 }) => {
-  // ホームページからクエスト開始
   await page.goto("/");
   await page.getByRole("link", { name: LINK.startQuest }).click();
   await expect(page).toHaveURL("/quest");

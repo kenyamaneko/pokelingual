@@ -11,7 +11,7 @@ import { tutorialApi } from "../api/tutorialApi";
 import { logger } from "../utils/logger";
 
 interface TutorialContextValue {
-  /** チュートリアル完了状態。未取得 (ロード中・未ログイン・取得失敗) は null。 */
+  /** チュートリアル完了状態。true と確定するまで (未ログイン・応答待ち・取得失敗を含む) は null。 */
   completed: boolean | null;
   markCompleted: () => Promise<void>;
 }

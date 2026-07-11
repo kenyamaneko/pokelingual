@@ -37,10 +37,10 @@ describe("HomePage (「ポケモンを探しに行く」の遷移先出し分け
     });
   });
 
-  it("チュートリアル完了状態が未取得の間は、遷移先は本番のクエストのままになる", () => {
+  it("チュートリアル完了が確定していないとき、遷移先はチュートリアルになる", () => {
     renderWithProviders(<HomePage />, { user: null, withRouter: true });
 
-    expect(screen.getByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/quest");
+    expect(screen.getByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/tutorial");
   });
 
   it("チュートリアルへの再視聴導線が完了状態によらず表示される", async () => {

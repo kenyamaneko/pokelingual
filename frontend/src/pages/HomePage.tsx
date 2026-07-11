@@ -10,12 +10,12 @@ export const HOME_PAGE_LABELS = {
 
 /**
  * ホームページ。クエスト開始・図鑑・設定への導線を表示する。
- * チュートリアル未完了なら「ポケモンを探しに行く」の遷移先をチュートリアルに差し替える。
+ * チュートリアル完了が確定していなければ、「ポケモンを探しに行く」の遷移先をチュートリアルに差し替える。
  * @returns ホームページの要素。
  */
 export function HomePage() {
   const { completed } = useTutorial();
-  const questLinkTo = completed === false ? "/tutorial" : "/quest";
+  const questLinkTo = completed === true ? "/quest" : "/tutorial";
 
   return (
     <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 flex items-center justify-center">
