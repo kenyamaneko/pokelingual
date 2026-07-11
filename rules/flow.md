@@ -21,4 +21,4 @@ dev デプロイ後は検出専用スモークのみ (ヘルス＋認証付き r
 
 ## [flow] ブランチ保護 (GitHub Rulesets)
 
-`main` の保護は ruleset `main-protection` で設定する (直 push 禁止 / PR マージのみ / 必須チェック: CI の lint・test)。
+`main` の保護は ruleset `main-protection` で設定する (直 push 禁止 / PR マージのみ / 必須チェック: CI の lint・test・E2E・terraform fmt)。
