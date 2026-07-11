@@ -266,18 +266,19 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(res.body).toEqual({ count: 3, limit: 30 });
   });
 
-  it("チュートリアル完了フラグが未設定→取得→完了→取得の順で反映される", async () => {
+  it("チュートリアル未完了のとき、完了状態を取得すると false が返る", async () => {
+    const res = await request(makeApp()).get("/api/tutorial-status");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ tutorial_completed: false });
+  });
+
+  it("完了フラグを立てた後、完了状態を取得すると true を読み戻せる", async () => {
     const app = makeApp();
-
-    const before = await request(app).get("/api/tutorial-status");
-    expect(before.status).toBe(200);
-    expect(before.body).toEqual({ tutorial_completed: false });
-
     const complete = await request(app).put("/api/tutorial-status/complete");
     expect(complete.status).toBe(200);
 
-    const after = await request(app).get("/api/tutorial-status");
-    expect(after.body).toEqual({ tutorial_completed: true });
+    const got = await request(app).get("/api/tutorial-status");
+    expect(got.body).toEqual({ tutorial_completed: true });
   });
 
   it("場所選択の候補として、決められた数の場所が id・名前・説明・タイプ付きで返る", async () => {

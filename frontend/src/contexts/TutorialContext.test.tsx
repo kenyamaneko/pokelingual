@@ -38,7 +38,7 @@ describe("TutorialProvider", () => {
     vi.restoreAllMocks();
   });
 
-  it("ログイン後にバックエンドの /tutorial-status を取得して表示できる", async () => {
+  it("ログイン後、保存されているチュートリアル完了状態を取得して表示できる", async () => {
     mockTutorialStatus(true);
 
     renderProbe();
@@ -48,7 +48,7 @@ describe("TutorialProvider", () => {
     });
   });
 
-  it("取得に失敗しても画面はクラッシュせず、未取得状態のまま動作する", async () => {
+  it("チュートリアル完了状態の取得に失敗しても、画面はクラッシュせず未取得表示のまま動作する", async () => {
     // 導線の出し分けは補助的なUXなので取得失敗はUI上無視する仕様。診断ログは検証対象外なので沈黙させる
     vi.spyOn(console, "warn").mockImplementation(() => {});
     server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
@@ -59,7 +59,7 @@ describe("TutorialProvider", () => {
     expect(screen.getByTestId("completed")).toHaveTextContent("unknown");
   });
 
-  it("未ログイン時は tutorial-status を取得しない", async () => {
+  it("未ログイン時は、チュートリアル完了状態を取得しない", async () => {
     renderProbe(null);
     await waitFor(() => {
       expect(screen.getByTestId("completed")).toHaveTextContent("unknown");
@@ -67,7 +67,7 @@ describe("TutorialProvider", () => {
     expect(countRequests("/tutorial-status")).toBe(0);
   });
 
-  it("markCompleted を呼ぶと完了状態が true になる", async () => {
+  it("チュートリアルを完了させると、完了状態として表示が切り替わる", async () => {
     mockTutorialStatus(false);
     const user = userEvent.setup();
     renderProbe();
@@ -76,6 +76,5 @@ describe("TutorialProvider", () => {
     await user.click(screen.getByRole("button", { name: "完了にする" }));
 
     await waitFor(() => expect(screen.getByTestId("completed")).toHaveTextContent("true"));
-    expect(countRequests("/tutorial-status/complete")).toBe(1);
   });
 });

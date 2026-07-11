@@ -13,7 +13,6 @@ import { logger } from "../utils/logger";
 interface TutorialContextValue {
   /** チュートリアル完了状態。未取得 (ロード中・未ログイン・取得失敗) は null。 */
   completed: boolean | null;
-  refresh: () => Promise<void>;
   markCompleted: () => Promise<void>;
 }
 
@@ -57,7 +56,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TutorialContext.Provider value={{ completed, refresh, markCompleted }}>
+    <TutorialContext.Provider value={{ completed, markCompleted }}>
       {children}
     </TutorialContext.Provider>
   );

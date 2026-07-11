@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TutorialInstructionModal } from "./TutorialInstructionModal";
+import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
 
 interface Props {
   onSubmit: (translation: string) => boolean;
@@ -7,11 +8,12 @@ interface Props {
 
 /**
  * TutorialTranslationStep の仕様文言。テストから import される SSOT。
+ * 送信ボタンの文言は本番の TranslationInput (TRANSLATION_INPUT_LABELS) をそのまま使う。
  */
 export const TUTORIAL_TRANSLATION_LABELS = {
   modalTitle: "この英文を訳してみよう",
   modalInstruction: "「電気タイプのねずみポケモン」と入力してみてね",
-  submitButton: "この翻訳に決めた！",
+  submitButton: TRANSLATION_INPUT_LABELS.submitButton,
   missingKeywordsError: "「電気」と「ネズミ」の両方を含めて入力してね",
 } as const;
 

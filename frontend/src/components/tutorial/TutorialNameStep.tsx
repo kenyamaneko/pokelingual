@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TutorialInstructionModal } from "./TutorialInstructionModal";
+import { NAME_GUESS_LABELS } from "../quest/NameGuess";
 
 interface Props {
   onSubmit: (name: string) => boolean;
@@ -7,12 +8,13 @@ interface Props {
 
 /**
  * TutorialNameStep の仕様文言。テストから import される SSOT。
+ * 入力欄・送信ボタンの文言は本番の NameGuess (NAME_GUESS_LABELS) をそのまま使う。
  */
 export const TUTORIAL_NAME_LABELS = {
   modalTitle: "このポケモンの名前を当てよう",
   modalInstruction: "「ピカチュウ」または「pikachu」と入力してみてね",
-  inputPlaceholder: "ポケモンの名前を入力してね",
-  submitButton: "君に　決めた！",
+  inputPlaceholder: NAME_GUESS_LABELS.inputPlaceholder,
+  submitButton: NAME_GUESS_LABELS.submitButton,
   wrongNameError: "「ピカチュウ」または「pikachu」と入力してね",
 } as const;
 
