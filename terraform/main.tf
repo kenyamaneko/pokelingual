@@ -1,6 +1,10 @@
 terraform {
   required_version = ">= 1.5"
 
+  # dev/prod は別 Google Cloud プロジェクトのため bucket を静的に書けない。
+  # 環境ごとの値は `terraform init -backend-config=environments/<env>/backend.gcs.tfbackend` で渡す。
+  backend "gcs" {}
+
   required_providers {
     google = {
       source  = "hashicorp/google"
