@@ -104,23 +104,37 @@ gcloud billing projects link my-pokelingual-prod --billing-account=BILLING_ACCOU
 
 ### Terraform でインフラ構築
 
+state は環境ごとに別プロジェクトの GCS バケットへ保存する（dev/prod が別プロジェクトのため）。
+
+```bash
+# tfstate 用バケットを環境ごとに作成（初回のみ）
+gcloud storage buckets create gs://my-pokelingual-dev-tfstate \
+  --project=my-pokelingual-dev --location=asia-northeast1 \
+  --uniform-bucket-level-access --public-access-prevention=enforced
+gcloud storage buckets update gs://my-pokelingual-dev-tfstate --versioning
+
+gcloud storage buckets create gs://my-pokelingual-prod-tfstate \
+  --project=my-pokelingual-prod --location=asia-northeast1 \
+  --uniform-bucket-level-access --public-access-prevention=enforced
+gcloud storage buckets update gs://my-pokelingual-prod-tfstate --versioning
+```
+
 ```bash
 cd terraform
 
-# tfvars を自分のプロジェクトに合わせて編集
-# environments/dev/terraform.tfvars
+# tfvars と backend 設定を自分のプロジェクトに合わせて編集
+# environments/dev/terraform.tfvars, environments/dev/backend.gcs.tfbackend
 #   project_id  = "my-pokelingual-dev"
 #   environment = "dev"
 #   region      = "asia-northeast1"
+#   (backend.gcs.tfbackend の bucket も上で作成したバケット名に合わせる)
 
 # dev 環境
-terraform init
-terraform workspace select default  # dev workspace
+terraform init -backend-config=environments/dev/backend.gcs.tfbackend
 terraform apply -var-file=environments/dev/terraform.tfvars
 
-# prod 環境
-terraform workspace new prod  # 初回のみ
-terraform workspace select prod
+# prod 環境 (別プロジェクトの state に切り替えるため -reconfigure が必要)
+terraform init -backend-config=environments/prod/backend.gcs.tfbackend -reconfigure
 terraform apply -var-file=environments/prod/terraform.tfvars
 ```
 
@@ -359,10 +373,10 @@ git push origin v1.0.0
 
 ```bash
 cd terraform
-terraform workspace select default  # dev
+terraform init -backend-config=environments/dev/backend.gcs.tfbackend -reconfigure
 terraform apply -var-file=environments/dev/terraform.tfvars
 
-terraform workspace select prod
+terraform init -backend-config=environments/prod/backend.gcs.tfbackend -reconfigure
 terraform apply -var-file=environments/prod/terraform.tfvars
 ```
 
