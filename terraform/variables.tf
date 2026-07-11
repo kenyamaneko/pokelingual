@@ -32,6 +32,12 @@ variable "alert_email" {
   type        = string
 }
 
+# Slack 通知チャネルは OAuth 認可が必要で Terraform から作成できないため、手動作成したリソース名を受け取る。
+variable "slack_notification_channel_id" {
+  description = "Resource name of a manually created Slack notification channel. Leave empty to skip Slack notifications."
+  type        = string
+}
+
 # 請求アカウントの表示名。空文字なら Billing Budget は作成しない。
 # 作成には Terraform 実行者が billing.budgets.create 権限を請求アカウントレベルで持つ必要あり
 variable "billing_account_display_name" {
