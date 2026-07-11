@@ -76,7 +76,7 @@ function mockDetail(detail: PokemonDetailResponse) {
 
 /**
  * PokedexPage の仕様:
- * - 一覧取得に成功すると全ポケモンのカードと捕獲済み数を表示する
+ * - 一覧取得に成功すると全ポケモンのカードと見つけた数・捕まえた数を表示する
  * - 読み込めなかったポケモンが 1 匹以上あるときだけ警告バナーを表示する
  * - 一覧が空なら空状態メッセージを表示する
  * - 一覧・詳細の取得に失敗したらエラーメッセージを表示する
@@ -89,14 +89,21 @@ describe("PokedexPage", () => {
     vi.restoreAllMocks();
   });
 
-  it("一覧取得に成功すると全ポケモンのカードと捕獲済み数が表示される", async () => {
-    mockPokedex([makeEntry(11, "ダミーモンA"), makeEntry(22, "ダミーモンB")], 2, 0);
+  it("一覧取得に成功すると全ポケモンのカードと見つけた数・捕まえた数が表示される", async () => {
+    // 見つけた数 (一覧の全件) と捕まえた数 (captured のみ) が別々に反映されることを、
+    // 値が食い違う入力 (2 件中 1 件だけ捕獲済み) で確かめる。
+    mockPokedex(
+      [makeEntry(11, "ダミーモンA"), { ...makeEntry(22, "ダミーモンB"), status: "encountered" }],
+      1,
+      0,
+    );
 
     render(<PokedexPage />);
 
     expect(await screen.findByText("ダミーモンA")).toBeInTheDocument();
     expect(screen.getByText("ダミーモンB")).toBeInTheDocument();
-    expect(screen.getByText("2 匹")).toBeInTheDocument();
+    expect(screen.getByText("見つけた数 2種類")).toBeInTheDocument();
+    expect(screen.getByText("捕まえた数 1種類")).toBeInTheDocument();
   });
 
   it("よみこめなかったポケモンが 0 匹のときは警告バナーが出ない", async () => {
