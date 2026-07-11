@@ -10,6 +10,7 @@ import { QuestHandler } from "../handler/quest-handler.js";
 import { PokedexHandler } from "../handler/pokedex-handler.js";
 import { SettingsHandler } from "../handler/settings-handler.js";
 import { UsageHandler } from "../handler/usage-handler.js";
+import { TutorialHandler } from "../handler/tutorial-handler.js";
 import { RateLimitError } from "../domain/errors.js";
 import { LOCATION_CHOICE_COUNT } from "../domain/location.js";
 import type {
@@ -19,6 +20,7 @@ import type {
   RateLimitRepository,
   UserPokemonRepository,
   UserSettingsRepository,
+  UserRepository,
 } from "../domain/ports.js";
 import type { UserPokemon, UserSettings } from "../domain/user.js";
 import type { RateLimitKind } from "../domain/errors.js";
@@ -85,6 +87,14 @@ function makeApp(o: AppOverrides = {}) {
     },
   };
 
+  let tutorialCompleted = false;
+  const userRepo: UserRepository = {
+    getUser: async () => ({ tutorial_completed: tutorialCompleted }),
+    markTutorialCompleted: async () => {
+      tutorialCompleted = true;
+    },
+  };
+
   const rateLimitRepo: RateLimitRepository = {
     checkAndIncrement: async () => {
       if (o.rateLimitKind) throw new RateLimitError(o.rateLimitKind);
@@ -107,6 +117,7 @@ function makeApp(o: AppOverrides = {}) {
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsRepo, config),
       new UsageHandler(rateLimitRepo),
+      new TutorialHandler(userRepo),
     ),
   );
   return app;
@@ -253,6 +264,20 @@ describe("正常系フロー (公開入口経由)", () => {
     const res = await request(makeApp()).get("/api/usage");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ count: 3, limit: 30 });
+  });
+
+  it("チュートリアル完了フラグが未設定→取得→完了→取得の順で反映される", async () => {
+    const app = makeApp();
+
+    const before = await request(app).get("/api/tutorial-status");
+    expect(before.status).toBe(200);
+    expect(before.body).toEqual({ tutorial_completed: false });
+
+    const complete = await request(app).put("/api/tutorial-status/complete");
+    expect(complete.status).toBe(200);
+
+    const after = await request(app).get("/api/tutorial-status");
+    expect(after.body).toEqual({ tutorial_completed: true });
   });
 
   it("場所選択の候補として、決められた数の場所が id・名前・説明・タイプ付きで返る", async () => {

@@ -1,10 +1,22 @@
 import { Link } from "react-router-dom";
+import { useTutorial } from "../contexts/TutorialContext";
+
+/**
+ * HomePage の仕様文言。テストから import される SSOT。
+ */
+export const HOME_PAGE_LABELS = {
+  tutorialLink: "チュートリアルを見る",
+} as const;
 
 /**
  * ホームページ。クエスト開始・図鑑・設定への導線を表示する。
+ * チュートリアル未完了なら「ポケモンを探しに行く」の遷移先をチュートリアルに差し替える。
  * @returns ホームページの要素。
  */
 export function HomePage() {
+  const { completed } = useTutorial();
+  const questLinkTo = completed === false ? "/tutorial" : "/quest";
+
   return (
     <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 flex items-center justify-center">
       <div className="text-center max-w-md mx-4">
@@ -21,13 +33,21 @@ export function HomePage() {
         </p>
 
         <div className="space-y-4">
-          <Link
-            to="/quest"
-            className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
-                       font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
-          >
-            ポケモンを探しに行く
-          </Link>
+          <div>
+            <Link
+              to={questLinkTo}
+              className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
+                         font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+            >
+              ポケモンを探しに行く
+            </Link>
+            <Link
+              to="/tutorial"
+              className="block mt-2 text-sm text-gray-400 hover:text-gray-600 underline text-center"
+            >
+              {HOME_PAGE_LABELS.tutorialLink}
+            </Link>
+          </div>
           <Link
             to="/pokedex"
             className="block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
