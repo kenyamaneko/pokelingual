@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { completeQuest } from "./helpers";
 import { BUTTON, HEADING, LINK, TEXT } from "./labels";
 
-// 固定ポケモン集合・即時採点を前提とする mock モード専用。dev は dev-signup-flow.spec.ts が担当。
+// 固定ポケモン集合・即時採点を前提とする mock モード専用。dev は dev-quest-flow.spec.ts が担当。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
 test("図鑑ページが表示される", async ({ page }) => {
