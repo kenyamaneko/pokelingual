@@ -4,6 +4,7 @@ import {
   calculateCaptureRate,
   maskPokemonNameEN,
   maskPokemonNameJA,
+  BALL_MULTIPLIER,
 } from "./quest-service.js";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import type { LLMClient, PokemonConfig, RandomSource, UserSettingsRepository } from "../domain/ports.js";
@@ -32,6 +33,14 @@ describe("calculateCaptureRate", () => {
 
   it("ボール倍率が高いほど捕獲確率が上がる", () => {
     expect(calculateCaptureRate(0, 680, 3.0)).toBeGreaterThan(calculateCaptureRate(0, 680, 1.0));
+  });
+
+  it("スコアとポケモンの種族値が同一ならモンスターボール<スーパーボール<ハイパーボールの順に捕獲確率が上がる", () => {
+    const pokeRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.poke);
+    const greatRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.great);
+    const ultraRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.ultra);
+    expect(greatRate).toBeGreaterThan(pokeRate);
+    expect(ultraRate).toBeGreaterThan(greatRate);
   });
 
   it("スコア90 + スーパーボールなら種族値合計が高い(680)でもほぼ確実", () => {
@@ -396,6 +405,7 @@ describe("QuestService.guessName", () => {
     const res = service.guessName("alice", "wrong3");
     expect(res).toMatchObject({
       correct: false,
+      ball_type: "poke",
       attempts_remaining: 0,
       reveal_name_en: "Testmon",
       reveal_name_ja: "テストモン",
@@ -422,6 +432,22 @@ describe("QuestService.skipGuess / attemptCapture", () => {
   it("セッションが無い skip は NotFoundError", () => {
     const service = makeService();
     expect(() => service.skipGuess("nobody")).toThrow(NotFoundError);
+  });
+
+  it("英語名正解 (ハイパーボール確定) 後に skip すると、ハイパーボールのまま捕獲できる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.guessName("alice", "testmon");
+    expect(service.skipGuess("alice")).toEqual({ ball_type: "ultra" });
+    expect(service.attemptCapture("alice").ball_type).toBe("ultra");
+  });
+
+  it("日本語名正解 (スーパーボール確定) 後に skip すると、スーパーボールのまま捕獲できる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.guessName("alice", "テストモン");
+    expect(service.skipGuess("alice")).toEqual({ ball_type: "great" });
+    expect(service.attemptCapture("alice").ball_type).toBe("great");
   });
 
   it("ボール未確定 (名前当ても skip もしていない) の capture はエラー", async () => {

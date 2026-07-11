@@ -38,6 +38,7 @@ export function QuestPage() {
     submitTranslation,
     submitGuess,
     skipGuess,
+    proceedToCapture,
     capture,
   } = useQuest();
 
@@ -134,6 +135,7 @@ export function QuestPage() {
             <NameGuess
               onSubmit={submitGuess}
               onSkip={skipGuess}
+              onProceed={proceedToCapture}
               guessResult={guessResult}
             />
           </>

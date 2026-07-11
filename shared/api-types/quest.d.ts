@@ -39,7 +39,7 @@ export interface ScoreResponse {
   description_ja: string;
 }
 
-/** POST /api/quest/guess-name のレスポンス。正解時はボール種別、不正解時は残り試行回数を返す。 */
+/** POST /api/quest/guess-name のレスポンス。名前当てが完了した (正解、または全て不正解) ときはボール種別を含む。 */
 export interface GuessResponse {
   correct: boolean;
   ball_type?: BallType;
@@ -50,7 +50,7 @@ export interface GuessResponse {
   reveal_name_ja?: string;
 }
 
-/** POST /api/quest/skip-guess のレスポンス。スキップ時は常にモンスターボール。 */
+/** POST /api/quest/skip-guess のレスポンス。名前当て未確定からのスキップは常にモンスターボール、確定済みならその値を維持する。 */
 export interface SkipGuessResponse {
   ball_type: BallType;
 }

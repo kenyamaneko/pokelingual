@@ -37,7 +37,7 @@ const SCORE_MIN = 0;
 const SCORE_MAX = 100;
 
 /** ボール種別ごとの捕獲確率倍率。 */
-const BALL_MULTIPLIER: Record<BallType, number> = {
+export const BALL_MULTIPLIER: Record<BallType, number> = {
   poke: 1.0,
   great: 2.0,
   ultra: 3.0,
@@ -273,19 +273,32 @@ export class QuestService {
     if (remaining <= 0) {
       session.ball_type = "poke";
       session.name_guessed = true;
-      return { correct: false, attempts_remaining: 0, reveal_name_en: session.name_en, reveal_name_ja: session.name_ja };
+      return {
+        correct: false,
+        ball_type: "poke",
+        attempts_remaining: 0,
+        reveal_name_en: session.name_en,
+        reveal_name_ja: session.name_ja,
+      };
     }
 
     return { correct: false, attempts_remaining: remaining };
   }
 
   /**
-   * 名前当てをスキップして、ボールを確定する。
+   * 名前当てをスキップして、ボールを確定する。名前当てが完了済みのセッションに対して
+   * 呼ばれた場合は上書きせず、確定済みのボール種別をそのまま返す。
    * @param userId ユーザ ID。
-   * @returns 確定したボール種別 (常にモンスターボール)。
+   * @returns 確定したボール種別。
    */
   skipGuess(userId: string): SkipGuessResponse {
     const session = this.getSession(userId);
+    if (session.name_guessed) {
+      // 通常の動作では、名前確定後にフロントエンドからこの API が呼ばれることはない。
+      // それでも呼ばれた場合に上書きしないのは、backend が先にデプロイされる構成で残る
+      // 旧フロントエンドの呼び出しに対しても、確定済みのボールを壊さないための防御的な実装。
+      return { ball_type: session.ball_type! };
+    }
     session.ball_type = "poke";
     session.name_guessed = true;
     return { ball_type: "poke" };

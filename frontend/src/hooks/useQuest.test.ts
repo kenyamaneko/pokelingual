@@ -267,6 +267,31 @@ describe("useQuest", () => {
     expect(result.current.ballType).toBe("ultra");
   });
 
+  it("名前当て確定後に捕獲フェーズへ進んでも、スキップの通信は発生しない", async () => {
+    mockNewQuest();
+    const guess: GuessResponse = {
+      correct: true,
+      ball_type: "ultra",
+      language: "en",
+      attempts_remaining: 2,
+    };
+    server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guess)));
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await result.current.submitGuess("Pikachu");
+    });
+
+    act(() => {
+      result.current.proceedToCapture();
+    });
+
+    expect(countRequests("/quest/skip-guess")).toBe(0);
+    expect(result.current.phase).toBe("capturing");
+  });
+
   it("skipGuess はサーバに明示し ballType=poke にして capturing フェーズへ遷移する", async () => {
     mockNewQuest();
     server.use(

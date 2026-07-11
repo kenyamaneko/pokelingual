@@ -40,6 +40,7 @@ export interface UseQuestResult {
   submitTranslation: (translation: string) => Promise<void>;
   submitGuess: (guess: string) => Promise<void>;
   skipGuess: () => Promise<void>;
+  proceedToCapture: () => void;
   capture: () => Promise<void>;
 }
 
@@ -191,6 +192,12 @@ export function useQuest(): UseQuestResult {
     }
   };
 
+  // ballType は guessName のレスポンスで既に確定している。ここで API を呼び直すと
+  // 確定済みのボールを上書きしてしまう経路になるため、ローカルの状態遷移だけで進める。
+  const proceedToCapture = () => {
+    setPhase("capturing");
+  };
+
   const capture = async () => {
     try {
       const res = await questApi.attemptCapture();
@@ -216,6 +223,7 @@ export function useQuest(): UseQuestResult {
     submitTranslation,
     submitGuess,
     skipGuess,
+    proceedToCapture,
     capture,
   };
 }
