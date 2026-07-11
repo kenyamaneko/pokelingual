@@ -39,7 +39,7 @@ export interface ScoreResponse {
   description_ja: string;
 }
 
-/** POST /api/quest/guess-name のレスポンス。名前当てが完了した (正解、または試行尽き) ときはボール種別を含む。 */
+/** POST /api/quest/guess-name のレスポンス。名前当てが完了した (正解、または全て不正解) ときはボール種別を含む。 */
 export interface GuessResponse {
   correct: boolean;
   ball_type?: BallType;

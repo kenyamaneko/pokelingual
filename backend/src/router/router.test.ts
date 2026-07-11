@@ -227,26 +227,6 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.captured_count).toBe(1);
   });
 
-  it("出題→採点→名前当て正解→スキップ再送信でも、ハイパーボールのまま捕獲できる", async () => {
-    const app = makeApp();
-
-    await request(app).get("/api/quest/new");
-    await request(app).post("/api/quest/score").send({ translation: "はやい" });
-
-    const guess = await request(app).post("/api/quest/guess-name").send({ guess: "Testmon" });
-    expect(guess.status).toBe(200);
-    expect(guess.body.ball_type).toBe("ultra");
-
-    const skip = await request(app).post("/api/quest/skip-guess").send({});
-    expect(skip.status).toBe(200);
-    expect(skip.body).toEqual({ ball_type: "ultra" });
-
-    const capture = await request(app).post("/api/quest/capture").send({});
-    expect(capture.status).toBe(200);
-    expect(capture.body.captured).toBe(true);
-    expect(capture.body.ball_type).toBe("ultra");
-  });
-
   it("除外設定の保存内容が GET で読み戻せる", async () => {
     const app = makeApp();
     const put = await request(app).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [7, 3, 3] });

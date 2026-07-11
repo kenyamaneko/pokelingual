@@ -294,9 +294,9 @@ export class QuestService {
   skipGuess(userId: string): SkipGuessResponse {
     const session = this.getSession(userId);
     if (session.name_guessed) {
-      // 正規のフロントエンドは名前当て確定後にこの API を呼ばない。ここでの上書き防止は、
-      // backend が先にデプロイされる構成で残る旧フロントエンドの呼び出しに対しても
-      // 確定済みのボールを壊さないための防御的な実装。
+      // 通常の動作では、名前確定後にフロントエンドからこの API が呼ばれることはない。
+      // それでも呼ばれた場合に上書きしないのは、backend が先にデプロイされる構成で残る
+      // 旧フロントエンドの呼び出しに対しても、確定済みのボールを壊さないための防御的な実装。
       return { ball_type: session.ball_type! };
     }
     session.ball_type = "poke";

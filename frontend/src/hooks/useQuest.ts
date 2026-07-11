@@ -192,8 +192,8 @@ export function useQuest(): UseQuestResult {
     }
   };
 
-  // 名前当てが完了済み (正解 or 試行尽き) なら guessName のレスポンスで ballType は確定済みのため、
-  // API を叩き直さず捕獲フェーズへ進むだけでよい。
+  // ballType は guessName のレスポンスで既に確定している。ここで API を呼び直すと
+  // 確定済みのボールを上書きしてしまう経路になるため、ローカルの状態遷移だけで進める。
   const proceedToCapture = () => {
     setPhase("capturing");
   };

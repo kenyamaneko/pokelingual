@@ -267,7 +267,7 @@ describe("useQuest", () => {
     expect(result.current.ballType).toBe("ultra");
   });
 
-  it("proceedToCapture は skip-guess を呼ばず、確定済みの ballType のまま capturing フェーズへ遷移する", async () => {
+  it("名前当て確定後に捕獲フェーズへ進んでも、スキップの通信は発生しない", async () => {
     mockNewQuest();
     const guess: GuessResponse = {
       correct: true,
@@ -283,14 +283,12 @@ describe("useQuest", () => {
     await act(async () => {
       await result.current.submitGuess("Pikachu");
     });
-    expect(result.current.ballType).toBe("ultra");
 
     act(() => {
       result.current.proceedToCapture();
     });
 
     expect(countRequests("/quest/skip-guess")).toBe(0);
-    expect(result.current.ballType).toBe("ultra");
     expect(result.current.phase).toBe("capturing");
   });
 

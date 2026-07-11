@@ -35,7 +35,7 @@ describe("calculateCaptureRate", () => {
     expect(calculateCaptureRate(0, 680, 3.0)).toBeGreaterThan(calculateCaptureRate(0, 680, 1.0));
   });
 
-  it("同一条件ならモンスターボール<スーパーボール<ハイパーボールの順に捕獲確率が上がる", () => {
+  it("スコアとポケモンの種族値が同一ならモンスターボール<スーパーボール<ハイパーボールの順に捕獲確率が上がる", () => {
     const pokeRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.poke);
     const greatRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.great);
     const ultraRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.ultra);
