@@ -115,8 +115,10 @@ interface ServiceOverrides {
   pokemons?: Pokemon[];
   /** getRandomPokemon が投げるエラー。 */
   pokemonError?: Error;
-  /** LLM が返すテキスト。 */
+  /** LLM が返すテキスト (固定値)。 */
   llmText?: string;
+  /** LLM の応答をプロンプトを受け取る関数で組み立てる場合に使う (指定時は llmText より優先。プロンプト内容の検査にも使える)。 */
+  llmRespond?: (prompt: string) => string;
   /** per-user 除外 ID (null = 未設定)。 */
   excludedIDs?: number[] | null;
   /** 出題対象の世代 (null = 未設定 = 全世代)。 */
@@ -134,7 +136,8 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
   const pokemonClient = makePokemonClient(pool, { error: o.pokemonError });
   const llm: LLMClient = {
-    generateText: async () => o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
+    generateText: async (prompt) =>
+      o.llmRespond?.(prompt) ?? o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
   const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
   const settingsRepo: UserSettingsRepository = {
@@ -307,6 +310,20 @@ describe("QuestService.scoreTranslation", () => {
     const service = makeService({ llmText: JSON.stringify({ score, review: "r" }) });
     await service.newQuest("alice");
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
+  });
+
+  it("説明文にポケモン名が含まれるとき、LLM に渡す英文はポケモン名を伏せたものになる (講評でのネタバレ防止)", async () => {
+    let sentPrompt = "";
+    const service = makeService({
+      pokemons: [makePokemon({ name_en: "Pikachu", description_en: "Pikachu is yellow." })],
+      llmRespond: (prompt) => {
+        sentPrompt = prompt;
+        return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
+      },
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    expect(sentPrompt).not.toContain("Pikachu");
   });
 
   it.each([
