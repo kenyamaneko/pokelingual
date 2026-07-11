@@ -1,6 +1,6 @@
 import type { Pokemon } from "./pokemon.js";
 import type { AppEnvironment } from "./environment.js";
-import type { UserPokemon, UserSettings } from "./user.js";
+import type { User, UserPokemon, UserSettings } from "./user.js";
 import type { PokemonType } from "../../../shared/api-types/pokemon.js";
 // DailyUsage は API レスポンスにそのまま乗る形なので、shared/api-types/usage.d.ts を SSOT として再 export する。
 import type { DailyUsage } from "../../../shared/api-types/usage.js";
@@ -54,6 +54,12 @@ export interface UserSettingsRepository {
   getSettings(userId: string): Promise<UserSettings>;
   updateExcludedPokemon(userId: string, pokemonIDs: number[]): Promise<void>;
   updateEnabledGenerations(userId: string, generations: number[]): Promise<void>;
+}
+
+/** ユーザ本体 (users/{uid} ルートドキュメント) を永続化するリポジトリ。 */
+export interface UserRepository {
+  getUser(userId: string): Promise<User>;
+  markTutorialCompleted(userId: string): Promise<void>;
 }
 
 /** 日次レート制限カウンタを管理するリポジトリ。Firestore 版とインメモリ版がある。 */

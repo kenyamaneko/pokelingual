@@ -1,0 +1,128 @@
+import { screen, waitFor, render } from "@testing-library/react";
+import userEvent, { type UserEvent } from "@testing-library/user-event";
+import { describe, it, expect } from "vitest";
+import type { User } from "firebase/auth";
+import App from "../../App";
+import { TutorialPage, TUTORIAL_PAGE_LABELS } from "../../pages/TutorialPage";
+import { TUTORIAL_MODAL_LABELS } from "./TutorialInstructionModal";
+import { TUTORIAL_TRANSLATION_LABELS } from "./TutorialTranslationStep";
+import { TUTORIAL_NAME_LABELS } from "./TutorialNameStep";
+import { CAPTURE_RESULT_LABELS } from "../quest/CaptureResult";
+import { renderWithProviders } from "../../test/render";
+import { spec } from "../../test/labels";
+
+const fakeUser = { uid: "trainer-test" } as unknown as User;
+
+/**
+ * 案内モーダルを閉じ、訳文を入力して送信する。
+ * @param user userEvent インスタンス。
+ * @param translation 送信する訳文。
+ */
+async function dismissModalAndSubmitTranslation(user: UserEvent, translation: string): Promise<void> {
+  await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
+  await user.type(screen.getByRole("textbox"), translation);
+  await user.click(screen.getByRole("button", { name: TUTORIAL_TRANSLATION_LABELS.submitButton }));
+}
+
+/**
+ * 案内モーダルを閉じ、名前を入力して送信する。
+ * @param user userEvent インスタンス。
+ * @param name 送信する名前。
+ */
+async function dismissModalAndSubmitName(user: UserEvent, name: string): Promise<void> {
+  await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
+  await user.type(screen.getByPlaceholderText(TUTORIAL_NAME_LABELS.inputPlaceholder), name);
+  await user.click(screen.getByRole("button", { name: TUTORIAL_NAME_LABELS.submitButton }));
+}
+
+describe("チュートリアルへの遷移", () => {
+  it("チュートリアル未完了なら、ログイン後チュートリアル画面に遷移する", async () => {
+    window.history.pushState({}, "", "/");
+    const user = userEvent.setup();
+    render(<App />);
+
+    const link = await screen.findByRole("link", { name: "ポケモンを探しに行く" });
+    await waitFor(() => expect(link).toHaveAttribute("href", "/tutorial"));
+    await user.click(link);
+
+    expect(await screen.findByTestId("quest-description")).toBeInTheDocument();
+  });
+});
+
+describe("チュートリアル (訳文入力ステップ)", () => {
+  it("固定ポケモンの英文と、入力すべき訳文を案内するモーダルが表示される", async () => {
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    expect(await screen.findByText(spec(TUTORIAL_TRANSLATION_LABELS.modalInstruction))).toBeInTheDocument();
+    await screen.findByTestId("quest-description");
+  });
+
+  it("「ねずみポケモン」と入力しても、採点画面に進めない", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "ねずみポケモン");
+
+    expect(await screen.findByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).toBeInTheDocument();
+    expect(screen.queryByText("100")).not.toBeInTheDocument();
+  });
+
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に進み満点が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    expect(await screen.findByText("100")).toBeInTheDocument();
+  });
+});
+
+/**
+ * 訳文ステップを突破し、名前当てステップまで進める。
+ * @returns 操作継続に使う userEvent インスタンス。
+ */
+async function proceedToNameStep(): Promise<UserEvent> {
+  const user = userEvent.setup();
+  renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+  await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+  await screen.findByText("100");
+  return user;
+}
+
+describe("チュートリアル (名前当てステップ)", () => {
+  it("「raichu」と入力しても、捕獲画面に進めない", async () => {
+    const user = await proceedToNameStep();
+
+    await dismissModalAndSubmitName(user, "raichu");
+
+    expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton })).not.toBeInTheDocument();
+  });
+
+  it("「ピカチュウ」と入力すると捕獲画面に進む", async () => {
+    const user = await proceedToNameStep();
+
+    await dismissModalAndSubmitName(user, "ピカチュウ");
+
+    expect(await screen.findByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton })).toBeInTheDocument();
+  });
+});
+
+describe("チュートリアル (捕獲〜完了記録)", () => {
+  it("捕獲後にメニューへ戻ると、ホームの「ポケモンを探しに行く」が本番クエストへの導線に切り替わる", async () => {
+    window.history.pushState({}, "", "/");
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole("link", { name: "ポケモンを探しに行く" }));
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+    await screen.findByText("100");
+    await dismissModalAndSubmitName(user, "ピカチュウ");
+    await user.click(await screen.findByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton }));
+    expect(await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")))).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.backToMenuButton }));
+
+    expect(await screen.findByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/quest");
+  });
+});
