@@ -53,9 +53,10 @@ export function PokedexPage() {
           <h1 className="text-2xl font-bold text-gray-800">
             図鑑
           </h1>
-          <span className="text-gray-400 text-sm">
-            {capturedCount} 匹
-          </span>
+          <div className="text-gray-400 text-sm text-right leading-relaxed">
+            <p>見つけた数 {pokedex.length}種類</p>
+            <p>捕まえた数 {capturedCount}種類</p>
+          </div>
         </div>
 
         {unavailableCount > 0 && (
