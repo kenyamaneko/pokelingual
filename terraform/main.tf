@@ -124,15 +124,24 @@ resource "google_identity_platform_config" "auth" {
   provider = google-beta
   project  = var.project_id
 
-  # multi_tenant / sign_in.phone_number は未使用機能のため宣言しない。
-  # 明示的な値 (false 等) を書くと provider の null 表現との間で terraform plan が
-  # 恒久的に差分を出すため、宣言を省略して null のままにする。
+  # multi_tenant / sign_in.phone_number は未使用機能だが、GCP側がこれらを未設定にできず
+  # 常に false/{} を返すため、宣言を省略すると null との間で terraform plan が恒久的に
+  # 差分を出す。実際の値に合わせて明示的に宣言する。
+  multi_tenant {
+    allow_tenants = false
+  }
+
   sign_in {
     allow_duplicate_emails = false
 
     email {
       enabled           = true
       password_required = true
+    }
+
+    phone_number {
+      enabled            = false
+      test_phone_numbers = {}
     }
   }
 
