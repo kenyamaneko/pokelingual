@@ -1,9 +1,3 @@
-/**
- * name とクエリで一致する先頭文字数を返す。
- * @param name 候補の名前。
- * @param query 検索クエリ。
- * @returns 先頭から一致する文字数 (0 なら先頭文字から不一致)。
- */
 function commonPrefixLength(name: string, query: string): number {
   const max = Math.min(name.length, query.length);
   let i = 0;

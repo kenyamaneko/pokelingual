@@ -115,9 +115,9 @@ interface ServiceOverrides {
   pokemons?: Pokemon[];
   /** getRandomPokemon が投げるエラー。 */
   pokemonError?: Error;
-  /** LLM が返すテキスト (固定値)。 */
+  /** LLM が返すテキスト。 */
   llmText?: string;
-  /** LLM の応答をプロンプトを受け取る関数で組み立てる場合に使う (指定時は llmText より優先。プロンプト内容の検査にも使える)。 */
+  /** LLM が返すテキストをプロンプト内容から動的に組み立てたい場合に使う (指定時は llmText より優先)。 */
   llmRespond?: (prompt: string) => string;
   /** per-user 除外 ID (null = 未設定)。 */
   excludedIDs?: number[] | null;
