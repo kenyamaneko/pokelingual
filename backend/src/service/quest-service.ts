@@ -37,7 +37,7 @@ const SCORE_MIN = 0;
 const SCORE_MAX = 100;
 
 /** ボール種別ごとの捕獲確率倍率。 */
-const BALL_MULTIPLIER: Record<BallType, number> = {
+export const BALL_MULTIPLIER: Record<BallType, number> = {
   poke: 1.0,
   great: 2.0,
   ultra: 3.0,
@@ -273,19 +273,30 @@ export class QuestService {
     if (remaining <= 0) {
       session.ball_type = "poke";
       session.name_guessed = true;
-      return { correct: false, attempts_remaining: 0, reveal_name_en: session.name_en, reveal_name_ja: session.name_ja };
+      return {
+        correct: false,
+        ball_type: "poke",
+        attempts_remaining: 0,
+        reveal_name_en: session.name_en,
+        reveal_name_ja: session.name_ja,
+      };
     }
 
     return { correct: false, attempts_remaining: remaining };
   }
 
   /**
-   * 名前当てをスキップして、ボールを確定する。
+   * 名前当てをスキップして、ボールを確定する。既に名前当てが完了している (正解または試行尽き)
+   * セッションに対して呼ばれた場合は上書きせず、確定済みのボール種別をそのまま返す。
    * @param userId ユーザ ID。
-   * @returns 確定したボール種別 (常にモンスターボール)。
+   * @returns 確定したボール種別。未確定 (初回呼び出し) なら常にモンスターボール、確定済みならその値を維持する。
    */
   skipGuess(userId: string): SkipGuessResponse {
     const session = this.getSession(userId);
+    if (session.name_guessed) {
+      // name_guessed=true は guessName の正解/試行尽き分岐でのみ立ち、同時に ball_type も必ず設定される。
+      return { ball_type: session.ball_type! };
+    }
     session.ball_type = "poke";
     session.name_guessed = true;
     return { ball_type: "poke" };

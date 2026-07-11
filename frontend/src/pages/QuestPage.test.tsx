@@ -94,7 +94,8 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
     await user.click(
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     );
-    await user.click(await screen.findByRole("button", { name: /使う/ }));
+    // 正解で確定したボール (ハイパーボール) がそのまま捕獲フェーズへ引き継がれることを確かめる
+    await user.click(await screen.findByRole("button", { name: /ハイパーボール/ }));
     expect(
       await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("テストモン"))),
     ).toBeInTheDocument();

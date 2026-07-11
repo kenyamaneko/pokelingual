@@ -40,6 +40,7 @@ export interface UseQuestResult {
   submitTranslation: (translation: string) => Promise<void>;
   submitGuess: (guess: string) => Promise<void>;
   skipGuess: () => Promise<void>;
+  proceedToCapture: () => void;
   capture: () => Promise<void>;
 }
 
@@ -191,6 +192,12 @@ export function useQuest(): UseQuestResult {
     }
   };
 
+  // 名前当てが完了済み (正解 or 試行尽き) なら guessName のレスポンスで ballType は確定済みのため、
+  // API を叩き直さず捕獲フェーズへ進むだけでよい。
+  const proceedToCapture = () => {
+    setPhase("capturing");
+  };
+
   const capture = async () => {
     try {
       const res = await questApi.attemptCapture();
@@ -216,6 +223,7 @@ export function useQuest(): UseQuestResult {
     submitTranslation,
     submitGuess,
     skipGuess,
+    proceedToCapture,
     capture,
   };
 }
