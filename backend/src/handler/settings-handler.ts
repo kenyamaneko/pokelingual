@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
-import type { SettingsResponse } from "../../../shared/api-types/settings.js";
+import type {
+  SettingsResponse,
+  UpdateExcludedPokemonRequest,
+  UpdateEnabledGenerationsRequest,
+} from "../../../shared/api-types/settings.js";
 import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import { validateExcludedPokemonIDs } from "../domain/settings.js";
 import { ALL_GENERATIONS, validateEnabledGenerations } from "../domain/generation.js";
@@ -52,8 +56,9 @@ export class SettingsHandler {
    */
   updateExcludedPokemon = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
+    const body = req.body as Partial<UpdateExcludedPokemonRequest>;
     const result = validateExcludedPokemonIDs(
-      req.body?.pokemon_ids,
+      body.pokemon_ids,
       this.pokemonConfig.maxPokemonID,
       MAX_EXCLUDED_POKEMON_COUNT,
     );
@@ -76,7 +81,8 @@ export class SettingsHandler {
    */
   updateEnabledGenerations = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
-    const result = validateEnabledGenerations(req.body?.generations);
+    const body = req.body as Partial<UpdateEnabledGenerationsRequest>;
+    const result = validateEnabledGenerations(body.generations);
     if (!result.ok) {
       res.status(400).json({ error: result.message } satisfies ErrorResponse);
       return;
