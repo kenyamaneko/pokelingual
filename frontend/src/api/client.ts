@@ -6,6 +6,7 @@ import {
   type RateLimitDetail,
 } from "../utils/rateLimitEvents";
 import { logger } from "../utils/logger";
+import type { RateLimitResponse } from "../../../shared/api-types/rate-limit";
 
 // 未設定を "undefined/api" として黙って叩かないよう、起動時に存在を強制する。
 const apiBaseURL = import.meta.env.VITE_API_BASE_URL;
@@ -35,7 +36,7 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (axios.isAxiosError(err) && err.response?.status === 429) {
-      const data = err.response.data as { error?: string; message?: string };
+      const data = err.response.data as Partial<RateLimitResponse>;
       if (data.error !== "user" && data.error !== "global") {
         logger.error("unexpected 429 response shape from backend", { response_body: data });
       } else if (!data.message) {
