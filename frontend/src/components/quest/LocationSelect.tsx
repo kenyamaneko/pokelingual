@@ -1,5 +1,4 @@
 import type { QuestLocation } from "../../../../shared/api-types/quest";
-import { getTypeLabel } from "../../utils/pokemonTypes";
 
 interface LocationSelectProps {
   locations: QuestLocation[];
@@ -35,17 +34,7 @@ export function LocationSelect({ locations, onSelect }: LocationSelectProps) {
                        hover:border-red-300 hover:shadow-md transition-all"
           >
             <p className="font-bold text-gray-800 text-lg mb-1">{location.name}</p>
-            <p className="text-gray-500 text-sm mb-3">{location.description}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {location.types.map((t) => (
-                <span
-                  key={t}
-                  className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5"
-                >
-                  {getTypeLabel(t)}
-                </span>
-              ))}
-            </div>
+            <p className="text-gray-500 text-sm">{location.description}</p>
           </button>
         ))}
       </div>
