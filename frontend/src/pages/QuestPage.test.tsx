@@ -95,8 +95,13 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     );
     await user.click(await screen.findByRole("button", { name: /ハイパーボール/ }));
+    // 捕獲演出の再生に実時間で1秒以上かかり、既定の待機時間 (1000ms) を超えるため延長する。
     expect(
-      await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("テストモン"))),
+      await screen.findByText(
+        spec(CAPTURE_RESULT_LABELS.capturedTitle("テストモン")),
+        {},
+        { timeout: 3000 },
+      ),
     ).toBeInTheDocument();
 
     await user.click(
@@ -141,6 +146,116 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
     );
     expect(await screen.findByRole("button", { name: /使う/ })).toBeInTheDocument();
   });
+
+  it.each([
+    {
+      scenario: "名前当てをスキップしたとき",
+      ballType: "poke",
+      ballName: "モンスターボール",
+      setupGuessHandler: () =>
+        server.use(
+          http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
+        ),
+      performGuess: async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.click(
+          await screen.findByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
+        );
+      },
+    },
+    {
+      scenario: "日本語名を正しく当てたとき",
+      ballType: "great",
+      ballName: "スーパーボール",
+      setupGuessHandler: () =>
+        server.use(
+          http.post(apiUrl("/quest/guess-name"), () =>
+            HttpResponse.json({
+              correct: true,
+              ball_type: "great",
+              language: "ja",
+              attempts_remaining: 2,
+            }),
+          ),
+        ),
+      performGuess: async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.type(await screen.findByRole("textbox"), "テストモン");
+        await user.click(
+          screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+        );
+        await user.click(
+          await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
+        );
+      },
+    },
+    {
+      scenario: "英語名を正しく当てたとき",
+      ballType: "ultra",
+      ballName: "ハイパーボール",
+      setupGuessHandler: () =>
+        server.use(
+          http.post(apiUrl("/quest/guess-name"), () =>
+            HttpResponse.json({
+              correct: true,
+              ball_type: "ultra",
+              language: "en",
+              attempts_remaining: 2,
+            }),
+          ),
+        ),
+      performGuess: async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.type(await screen.findByRole("textbox"), "Testmon");
+        await user.click(
+          screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+        );
+        await user.click(
+          await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
+        );
+      },
+    },
+  ])(
+    "$scenario、名前当てで確定したボールが捕獲画面と捕獲演出の両方で $ballName になる",
+    async ({ ballType, ballName, setupGuessHandler, performGuess }) => {
+      const user = userEvent.setup();
+      setupGuessHandler();
+      server.use(
+        http.post(apiUrl("/quest/capture"), () =>
+          HttpResponse.json({
+            captured: true,
+            probability: 0.9,
+            pokemon_id: 9001,
+            name_en: "Testmon",
+            name_ja: "テストモン",
+            sprite_url: "https://example.com/9001.png",
+            score: 80,
+            description_en: "x",
+            description_ja: "y",
+            base_stat_total: 300,
+            ball_type: ballType,
+            types: ["normal"],
+            height: 1,
+            weight: 1,
+            is_legendary: false,
+            is_mythical: false,
+          }),
+        ),
+      );
+
+      renderWithProviders(<QuestPage />, { withRouter: true });
+      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.type(await screen.findByRole("textbox"), "やくぶん");
+      await user.click(
+        screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+      );
+
+      await performGuess(user);
+
+      await user.click(
+        await screen.findByRole("button", { name: new RegExp(ballName) }),
+      );
+
+      expect(await screen.findByAltText(ballName)).toBeInTheDocument();
+    },
+  );
 
   it("最初に場所選択画面が表示される", async () => {
     renderWithProviders(<QuestPage />, { withRouter: true });

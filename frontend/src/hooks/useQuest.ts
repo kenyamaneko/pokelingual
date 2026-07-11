@@ -20,6 +20,7 @@ export type QuestPhase =
   | "translating"
   | "guessing"
   | "capturing"
+  | "revealing"
   | "result"
   | "error";
 
@@ -42,6 +43,7 @@ export interface UseQuestResult {
   skipGuess: () => Promise<void>;
   proceedToCapture: () => void;
   capture: () => Promise<void>;
+  revealCaptureResult: () => void;
 }
 
 /**
@@ -202,11 +204,16 @@ export function useQuest(): UseQuestResult {
     try {
       const res = await questApi.attemptCapture();
       setCaptureResult(res.data);
-      setPhase("result");
+      setPhase("revealing");
     } catch (err) {
       handleActionError(err, "捕獲の判定に失敗しました");
     }
   };
+
+  // CaptureEffect の useEffect が依存配列に持つため、useCallback で参照を固定する。
+  const revealCaptureResult = useCallback(() => {
+    setPhase("result");
+  }, []);
 
   return {
     phase,
@@ -225,5 +232,6 @@ export function useQuest(): UseQuestResult {
     skipGuess,
     proceedToCapture,
     capture,
+    revealCaptureResult,
   };
 }
