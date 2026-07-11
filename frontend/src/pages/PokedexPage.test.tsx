@@ -89,9 +89,7 @@ describe("PokedexPage", () => {
     vi.restoreAllMocks();
   });
 
-  it("一覧取得に成功すると全ポケモンのカードと見つけた数・捕まえた数が表示される", async () => {
-    // 見つけた数 (一覧の全件) と捕まえた数 (captured のみ) が別々に反映されることを、
-    // 値が食い違う入力 (2 件中 1 件だけ捕獲済み) で確かめる。
+  it("一覧2件のうち1件だけ捕獲済みのとき、見つけた数2種類・捕まえた数1種類が別々に表示される", async () => {
     mockPokedex(
       [makeEntry(11, "ダミーモンA"), { ...makeEntry(22, "ダミーモンB"), status: "encountered" }],
       1,

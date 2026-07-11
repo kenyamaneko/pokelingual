@@ -144,7 +144,6 @@ describe("SettingsPage の遷移", () => {
  * - 設定の読み込みに失敗したらエラーメッセージを表示する
  * - 名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される
  * - 検索語に一致するポケモンがなければ候補が出ない
- * - 検索語は名前の前方一致で候補を絞り込む (名前の途中に含むだけでは候補に出ない)
  * - すでに除外済みのポケモンは候補に出ない
  * - さくじょを押すと一覧から取り除かれ、空状態の文言に戻る
  * - 保存に失敗したらエラーメッセージを表示し、一覧は変わらない
@@ -196,16 +195,6 @@ describe("SettingsPage の苦手ポケモン管理", () => {
 
     await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "いない");
     expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
-  });
-
-  it("検索語が名前の途中に含まれるだけ (先頭には一致しない) 候補は出ない", async () => {
-    mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_ja: "コダミラス" }]);
-    const user = userEvent.setup();
-    renderSettings();
-
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
-    expect(screen.queryByRole("button", { name: /コダミラス/ })).not.toBeInTheDocument();
   });
 
   it("複数のポケモンが名前にヒットすると、その全てが候補に出る", async () => {

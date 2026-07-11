@@ -188,7 +188,7 @@ export class QuestService {
    */
   async scoreTranslation(userId: string, translation: string): Promise<ScoreResponse> {
     const session = this.getSession(userId);
-    // ユーザが実際に見た (マスク済みの) 英文を渡す。原文のままだと講評でポケモン名がネタバレしうる。
+    // 原文のままだと講評でポケモン名がネタバレしうるため、マスク済みの英文を渡す。
     const maskedDescriptionEN = maskPokemonNameEN(session.description_en, session.name_en);
 
     let result: ScoreResult;
