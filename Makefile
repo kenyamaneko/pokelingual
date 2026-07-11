@@ -31,7 +31,7 @@ test: test-backend test-frontend
 # backend テストは Firestore Emulator を必須化している。
 # firebase emulators:exec が Emulator 起動 → FIRESTORE_EMULATOR_HOST を自動注入 → 終了時に停止まで面倒を見る。
 test-backend:
-	cd backend && npx tsc --noEmit && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
+	cd backend && npm run lint && npx tsc --noEmit && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
 
 test-frontend:
 	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
