@@ -22,3 +22,11 @@ Accepted
 - `UserSettingsRepository`：ユーザー設定
 
 `APP_MODE` で devmock 実装（外部依存なし）、testutil のモック（単体テスト）、本番実装を切り替える。
+
+## Amendment: 2026-05-30 Repository 層はモックを持たず Firestore Emulator に一本化
+
+Repository 層（Firestore アクセス）のインメモリモックを廃止し、ローカル/テスト共に Firestore Emulator 上で本番実装（Repo）を動かす方式に一本化した。インメモリモックは Firestore のセマンティクス（パスの妥当性、Date/Timestamp の扱い）と実装が乖離しやすく、Emulator を使った contract test と二重管理になっていたため。
+
+- `APP_MODE=mock` では外部 API（PokeAPI/Gemini）と認証のみモック注入し、永続化は Firestore Emulator + 本番 Repo を使う（`FIRESTORE_EMULATOR_HOST` が未設定なら起動エラー）。
+- `APP_MODE=real` では本番実装を注入する。
+- `APP_MODE` は必須の環境変数とし、未設定・未知値は起動エラーにして意図しないモードでの起動を防ぐ。
