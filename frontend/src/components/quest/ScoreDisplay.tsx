@@ -1,11 +1,16 @@
+import { useEffect, useState } from "react";
 import type { ScoreResponse } from "../../../../shared/api-types/quest";
 
 interface ScoreDisplayProps {
   score: ScoreResponse;
+  onSettled?: () => void;
 }
 
 /** スコア最大値。HP バー (100 - score) の上限としても使う。 */
 const MAX_SCORE = 100;
+
+/** ダメージメーターのアニメーション時間 (ミリ秒)。バーの transitionDuration と揃える。 */
+export const METER_ANIMATION_DURATION_MS = 1000;
 
 /** スコアに応じた色クラスを返すための閾値。 */
 const SCORE_COLOR_THRESHOLDS = {
@@ -78,12 +83,27 @@ function getScoreLabel(score: number): string | null {
 }
 
 /**
- * 採点結果をダメージ表現で表示する。HPバーとスコア帯のラベルを含む。
- * @param props score を含む props。
+ * 採点結果をダメージ表現で表示する。HPバーは満タンから残量まで動的に減少し、
+ * こうかラベルはそのアニメーションが完了してから表示する。
+ * @param props score / onSettled を含む props。
  * @returns スコア表示の要素。
  */
-export function ScoreDisplay({ score }: ScoreDisplayProps) {
+export function ScoreDisplay({ score, onSettled }: ScoreDisplayProps) {
   const remainingHP = MAX_SCORE - score.score;
+  const [barWidth, setBarWidth] = useState(MAX_SCORE);
+  const [hasSettled, setHasSettled] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setBarWidth(remainingHP));
+    const settleTimer = setTimeout(() => {
+      setHasSettled(true);
+      onSettled?.();
+    }, METER_ANIMATION_DURATION_MS);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(settleTimer);
+    };
+  }, [remainingHP, onSettled]);
 
   return (
     <div className="mt-4 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
@@ -92,7 +112,7 @@ export function ScoreDisplay({ score }: ScoreDisplayProps) {
           {score.score}
         </span>
         <span className="text-gray-400 text-xl"> ダメージ</span>
-        {getScoreLabel(score.score) && (
+        {hasSettled && getScoreLabel(score.score) && (
           <p className={`text-sm font-semibold mt-1 ${getScoreColor(score.score)}`}>
             {getScoreLabel(score.score)}
           </p>
@@ -103,8 +123,11 @@ export function ScoreDisplay({ score }: ScoreDisplayProps) {
         <span className="text-xs font-bold text-gray-500 shrink-0">HP</span>
         <div className="flex-1 bg-gray-200 rounded-full h-3">
           <div
-            className={`h-3 rounded-full transition-all duration-1000 ease-out ${getHPBarColor(remainingHP)}`}
-            style={{ width: `${remainingHP}%` }}
+            className={`h-3 rounded-full transition-all ease-out ${getHPBarColor(remainingHP)}`}
+            style={{
+              width: `${barWidth}%`,
+              transitionDuration: `${METER_ANIMATION_DURATION_MS}ms`,
+            }}
           />
         </div>
         <span className="text-xs text-gray-500 shrink-0">{remainingHP}/{MAX_SCORE}</span>
