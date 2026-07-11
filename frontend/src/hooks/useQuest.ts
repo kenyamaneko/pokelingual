@@ -20,6 +20,7 @@ export type QuestPhase =
   | "translating"
   | "guessing"
   | "capturing"
+  | "revealing"
   | "result"
   | "error";
 
@@ -42,6 +43,7 @@ export interface UseQuestResult {
   skipGuess: () => Promise<void>;
   proceedToCapture: () => void;
   capture: () => Promise<void>;
+  revealCaptureResult: () => void;
 }
 
 /**
@@ -202,10 +204,16 @@ export function useQuest(): UseQuestResult {
     try {
       const res = await questApi.attemptCapture();
       setCaptureResult(res.data);
-      setPhase("result");
+      setPhase("revealing");
     } catch (err) {
       handleActionError(err, "捕獲の判定に失敗しました");
     }
+  };
+
+  // 捕獲成否は capture() 時点で確定済み。演出 (CaptureEffect) の再生完了を
+  // 受けて結果画面へ進むだけなので、API を呼び直さずローカルの状態遷移で進める。
+  const revealCaptureResult = () => {
+    setPhase("result");
   };
 
   return {
@@ -225,5 +233,6 @@ export function useQuest(): UseQuestResult {
     skipGuess,
     proceedToCapture,
     capture,
+    revealCaptureResult,
   };
 }

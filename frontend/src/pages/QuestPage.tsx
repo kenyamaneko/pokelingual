@@ -2,6 +2,7 @@ import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
 import { TranslationResult } from "../components/quest/TranslationResult";
 import { NameGuess } from "../components/quest/NameGuess";
+import { CaptureEffect } from "../components/quest/CaptureEffect";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { LocationSelect } from "../components/quest/LocationSelect";
 import { useQuest, type BallType } from "../hooks/useQuest";
@@ -40,6 +41,7 @@ export function QuestPage() {
     skipGuess,
     proceedToCapture,
     capture,
+    revealCaptureResult,
   } = useQuest();
 
   const isSpecial = quest?.is_legendary || quest?.is_mythical;
@@ -138,6 +140,15 @@ export function QuestPage() {
               {BALL_NAMES[ballType]}を　使う
             </button>
           </div>
+        )}
+
+        {phase === "revealing" && ballType && captureResult && (
+          <CaptureEffect
+            ballSprite={BALL_SPRITES[ballType]}
+            ballName={BALL_NAMES[ballType]}
+            captured={captureResult.captured}
+            onComplete={revealCaptureResult}
+          />
         )}
 
         {phase === "result" && captureResult && (

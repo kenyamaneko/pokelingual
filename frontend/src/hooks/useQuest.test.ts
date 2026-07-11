@@ -311,14 +311,14 @@ describe("useQuest", () => {
     expect(result.current.phase).toBe("capturing");
   });
 
-  it("capture 成功で result フェーズに遷移し captureResult を保持する", async () => {
+  it("capture 成功で revealing フェーズに遷移し captureResult を保持する", async () => {
     mockNewQuest();
     const captured: CaptureResponse = {
       captured: true,
       probability: 0.9,
-      pokemon_id: 25,
-      name_en: "Pikachu",
-      name_ja: "ピカチュウ",
+      pokemon_id: 9001,
+      name_en: "Testmon",
+      name_ja: "テストモン",
       sprite_url: "https://example.com/p.png",
       score: 90,
       description_en: "x",
@@ -338,6 +338,44 @@ describe("useQuest", () => {
 
     await act(async () => {
       await result.current.capture();
+    });
+
+    expect(result.current.phase).toBe("revealing");
+    expect(result.current.captureResult).toEqual(captured);
+  });
+
+  it("revealing フェーズで捕獲演出の完了通知を受けると、result フェーズへ進み captureResult を維持する", async () => {
+    mockNewQuest();
+    const captured: CaptureResponse = {
+      captured: false,
+      probability: 0.2,
+      pokemon_id: 9001,
+      name_en: "Testmon",
+      name_ja: "テストモン",
+      sprite_url: "https://example.com/p.png",
+      score: 40,
+      description_en: "x",
+      description_ja: "y",
+      base_stat_total: 250,
+      ball_type: "poke",
+      types: ["normal"],
+      height: 4,
+      weight: 60,
+      is_legendary: false,
+      is_mythical: false,
+    };
+    server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captured)));
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await result.current.capture();
+    });
+    expect(result.current.phase).toBe("revealing");
+
+    act(() => {
+      result.current.revealCaptureResult();
     });
 
     expect(result.current.phase).toBe("result");
