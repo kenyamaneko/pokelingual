@@ -169,7 +169,7 @@ export function SettingsPage() {
           <p className="text-gray-500 text-sm mb-4">
             選んだ世代のポケモンだけが登場します（図鑑の数は変わりません）
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {GENERATION_OPTIONS.map(({ generation, versions }) => {
               const checked = enabledGenerations.includes(generation);
               const isOnlyChecked = checked && enabledGenerations.length === 1;
