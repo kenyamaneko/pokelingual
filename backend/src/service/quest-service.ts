@@ -188,10 +188,12 @@ export class QuestService {
    */
   async scoreTranslation(userId: string, translation: string): Promise<ScoreResponse> {
     const session = this.getSession(userId);
+    // ユーザが実際に見た (マスク済みの) 英文を渡す。原文のままだと講評でポケモン名がネタバレしうる。
+    const maskedDescriptionEN = maskPokemonNameEN(session.description_en, session.name_en);
 
     let result: ScoreResult;
     try {
-      result = await this.scoreWithLLM(session.description_en, translation);
+      result = await this.scoreWithLLM(maskedDescriptionEN, translation);
     } catch (err) {
       throw new ExternalServiceError("LLM", err as Error);
     }
