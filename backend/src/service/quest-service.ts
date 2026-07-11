@@ -286,15 +286,17 @@ export class QuestService {
   }
 
   /**
-   * 名前当てをスキップして、ボールを確定する。既に名前当てが完了している (正解または試行尽き)
-   * セッションに対して呼ばれた場合は上書きせず、確定済みのボール種別をそのまま返す。
+   * 名前当てをスキップして、ボールを確定する。名前当てが完了済みのセッションに対して
+   * 呼ばれた場合は上書きせず、確定済みのボール種別をそのまま返す。
    * @param userId ユーザ ID。
-   * @returns 確定したボール種別。未確定 (初回呼び出し) なら常にモンスターボール、確定済みならその値を維持する。
+   * @returns 確定したボール種別。
    */
   skipGuess(userId: string): SkipGuessResponse {
     const session = this.getSession(userId);
     if (session.name_guessed) {
-      // name_guessed=true は guessName の正解/試行尽き分岐でのみ立ち、同時に ball_type も必ず設定される。
+      // 正規のフロントエンドは名前当て確定後にこの API を呼ばない。ここでの上書き防止は、
+      // backend が先にデプロイされる構成で残る旧フロントエンドの呼び出しに対しても
+      // 確定済みのボールを壊さないための防御的な実装。
       return { ball_type: session.ball_type! };
     }
     session.ball_type = "poke";

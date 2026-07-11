@@ -237,8 +237,6 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(guess.status).toBe(200);
     expect(guess.body.ball_type).toBe("ultra");
 
-    // フロントエンドの「次へ進む」操作は、名前当て確定後も skip-guess を送ることがある
-    // (Issue #102)。確定済みのボール種別を上書きしないことを公開入口経由で確かめる。
     const skip = await request(app).post("/api/quest/skip-guess").send({});
     expect(skip.status).toBe(200);
     expect(skip.body).toEqual({ ball_type: "ultra" });

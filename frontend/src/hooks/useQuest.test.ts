@@ -289,7 +289,6 @@ describe("useQuest", () => {
       result.current.proceedToCapture();
     });
 
-    // 正解で確定済みの ball_type を、無関係な skip-guess 呼び出しで上書きしない
     expect(countRequests("/quest/skip-guess")).toBe(0);
     expect(result.current.ballType).toBe("ultra");
     expect(result.current.phase).toBe("capturing");

@@ -434,7 +434,7 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(() => service.skipGuess("nobody")).toThrow(NotFoundError);
   });
 
-  it("英語名正解後に skip を呼んでも、確定済みのハイパーボールを上書きしない", async () => {
+  it("英語名正解 (ハイパーボール確定) 後に skip すると、ハイパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.guessName("alice", "testmon");
@@ -442,7 +442,7 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(service.attemptCapture("alice").ball_type).toBe("ultra");
   });
 
-  it("日本語名正解後に skip を呼んでも、確定済みのスーパーボールを上書きしない", async () => {
+  it("日本語名正解 (スーパーボール確定) 後に skip すると、スーパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.guessName("alice", "テストモン");
