@@ -94,11 +94,8 @@ resource "google_firebaserules_ruleset" "firestore" {
         rules_version = '2';
         service cloud.firestore {
           match /databases/{database}/documents {
-            // Users can only access their own data
-            match /users/{userId}/{document=**} {
-              allow read, write: if request.auth != null && request.auth.uid == userId;
-            }
-            // Deny all other access
+            // backend の Admin SDK がルールをバイパスする唯一のアクセス経路であり、
+            // クライアントの直接アクセスはレート制限カウンタ等の改ざんを許すため全拒否する
             match /{document=**} {
               allow read, write: if false;
             }
