@@ -1,14 +1,12 @@
 import type { Page } from "@playwright/test";
 import { BUTTON, PLACEHOLDER, TEXT } from "./labels";
 
-// /signup から新規登録し、認証済みでホームに着地するまでを行う。dev モードの E2E で使う。
-export async function registerViaUi(page: Page, email: string, password: string) {
-  await page.goto("/signup");
-  await page.getByTestId("signup-email").fill(email);
-  await page.getByTestId("signup-password").fill(password);
-  await page.getByTestId("signup-password-confirm").fill(password);
-  await page.getByTestId("signup-submit").click();
-  // 登録成功で onAuthStateChanged が発火し、ホームへリダイレクトされる
+// /login からメール確認済みユーザでログインし、ホームに着地するまでを行う。dev モードの E2E で使う。
+export async function loginViaUi(page: Page, email: string, password: string) {
+  await page.goto("/login");
+  await page.getByPlaceholder(PLACEHOLDER.email).fill(email);
+  await page.getByPlaceholder(PLACEHOLDER.password).fill(password);
+  await page.getByRole("button", { name: BUTTON.login }).click();
   await page.waitForURL("/");
 }
 

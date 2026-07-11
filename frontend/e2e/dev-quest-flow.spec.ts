@@ -1,48 +1,57 @@
 import { test, expect } from "@playwright/test";
-import { registerViaUi } from "./helpers";
+import { loginViaUi } from "./helpers";
 import { BUTTON, HEADING, LINK, PLACEHOLDER, TEXT } from "./labels";
 
 // 実 Firebase Auth・実バックエンドを使うクラウド Dev 専用。local では実行しない。
 test.skip(() => process.env.E2E_MODE !== "dev", "cloud-dev only spec");
 
-test("新規登録 → クエスト → 図鑑（クラウド Dev フルフロー）", async ({ page }) => {
+test("ログイン → クエスト → 図鑑（クラウド Dev フルフロー）", async ({ page }) => {
   const email = process.env.E2E_EMAIL;
   const password = process.env.E2E_PASSWORD;
-  // dev では本番相当の資格情報が必須。未設定なら誤った対象を叩く前に明示的に失敗させる。
+  // dev では許可リストに常設したメール確認済みフィクスチャユーザの資格情報が必須。
+  // 未設定なら誤った対象を叩く前に明示的に失敗させる。
   if (!email || !password) {
     throw new Error("E2E_EMAIL and E2E_PASSWORD must be set for dev mode");
   }
 
-  // 新規登録 → 認証済みでホームに着地（実 Firebase Auth 成功＋許可リスト通過の証明）
-  await registerViaUi(page, email, password);
+  // ログイン（実 Firebase Auth 成功＋許可リスト通過＋メール確認済みの証明）
+  const tutorialStatusLoaded = page.waitForResponse(
+    (res) => res.url().includes("/api/tutorial-status") && res.request().method() === "GET",
+  );
+  await loginViaUi(page, email, password);
   await expect(page).toHaveURL("/");
+  await tutorialStatusLoaded;
 
-  // 新規登録直後はチュートリアル未完了のため、クエスト導線はチュートリアルに向く
-  await page.getByRole("link", { name: LINK.startQuest }).click();
-  await expect(page).toHaveURL("/tutorial");
+  // フィクスチャユーザは実行間で使い回すため、チュートリアル完了状態は実行のたびに変わりうる。
+  // 未完了ならチュートリアルを通過し、完了済みならスキップする
+  const startQuestLink = page.getByRole("link", { name: LINK.startQuest });
+  if ((await startQuestLink.getAttribute("href")) === "/tutorial") {
+    await startQuestLink.click();
+    await expect(page).toHaveURL("/tutorial");
 
-  // チュートリアルは frontend 完結の固定シナリオなので、内容を確定的に検証できる
-  await page.getByRole("button", { name: BUTTON.gotIt }).click();
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("電気タイプのねずみポケモン");
-  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
-  await expect(page.getByText("100", { exact: true })).toBeVisible();
+    // チュートリアルは frontend 完結の固定シナリオなので、内容を確定的に検証できる
+    await page.getByRole("button", { name: BUTTON.gotIt }).click();
+    await page.getByPlaceholder(PLACEHOLDER.translation).fill("電気タイプのねずみポケモン");
+    await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
+    await expect(page.getByText("100", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: BUTTON.gotIt }).click();
-  await page.getByPlaceholder(PLACEHOLDER.nameGuess).fill("pikachu");
-  await page.getByRole("button", { name: BUTTON.decideName }).click();
+    await page.getByRole("button", { name: BUTTON.gotIt }).click();
+    await page.getByPlaceholder(PLACEHOLDER.nameGuess).fill("pikachu");
+    await page.getByRole("button", { name: BUTTON.decideName }).click();
 
-  await page.getByRole("button", { name: BUTTON.useBall }).click();
-  await expect(page.getByText(TEXT.captured)).toBeVisible();
-  await expect(page.getByTestId("captured-name-en")).toHaveText("Pikachu");
+    await page.getByRole("button", { name: BUTTON.useBall }).click();
+    await expect(page.getByText(TEXT.captured)).toBeVisible();
+    await expect(page.getByTestId("captured-name-en")).toHaveText("Pikachu");
 
-  await page.getByRole("button", { name: BUTTON.backToMenu }).click();
-  await expect(page).toHaveURL("/");
+    await page.getByRole("button", { name: BUTTON.backToMenu }).click();
+    await expect(page).toHaveURL("/");
+  }
 
   // チュートリアル完了後は、クエスト導線が本番クエストに切り替わる
   // (完了記録の PUT が非同期のため、href の反映を待ってからクリックする)
-  const startQuestLink = page.getByRole("link", { name: LINK.startQuest });
-  await expect(startQuestLink).toHaveAttribute("href", "/quest");
-  await startQuestLink.click();
+  const questLink = page.getByRole("link", { name: LINK.startQuest });
+  await expect(questLink).toHaveAttribute("href", "/quest");
+  await questLink.click();
   await expect(page).toHaveURL("/quest");
 
   await page.getByText(TEXT.questTitle).waitFor();
