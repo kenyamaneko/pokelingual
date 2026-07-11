@@ -1,0 +1,199 @@
+{
+  "displayName": "PokeLingual Backend (${environment})",
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "title": "全APIリクエスト数",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/request_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.response_code_class"]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "AI採点APIリクエスト数 (直近24時間合計)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"aiplatform.googleapis.com/PublisherModel\" AND metric.type = \"aiplatform.googleapis.com/publisher/online_serving/model_invocation_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "86400s",
+                    "perSeriesAligner": "ALIGN_SUM",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "当日ユニークサインイン数",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"identitytoolkit_project\" AND metric.type = \"identitytoolkit.googleapis.com/usage/daily_new_signin_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "3600s",
+                    "perSeriesAligner": "ALIGN_SUM",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "エラーログ件数",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"logging.googleapis.com/log_entry_count\" AND metric.labels.severity = \"ERROR\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_SUM"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Cloud Run CPU使用率",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "平均",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/container/cpu/utilizations\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                }
+              }
+            },
+            {
+              "plotType": "LINE",
+              "legendTemplate": "最大",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/container/cpu/utilizations\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MAX",
+                    "crossSeriesReducer": "REDUCE_MAX"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Cloud Run メモリ使用率",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "legendTemplate": "平均",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/container/memory/utilizations\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_MEAN"
+                  }
+                }
+              }
+            },
+            {
+              "plotType": "LINE",
+              "legendTemplate": "最大",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/container/memory/utilizations\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MAX",
+                    "crossSeriesReducer": "REDUCE_MAX"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Cloud Run リクエストレイテンシ (p95)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/request_latencies\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                    "crossSeriesReducer": "REDUCE_MAX"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Cloud Run インスタンス数 (状態別)",
+        "xyChart": {
+          "dataSets": [
+            {
+              "plotType": "LINE",
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"pokelingual-api-${environment}\" AND metric.type = \"run.googleapis.com/container/instance_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.state"]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

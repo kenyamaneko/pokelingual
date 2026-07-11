@@ -262,7 +262,34 @@ resource "google_monitoring_notification_channel" "email" {
   depends_on = [google_project_service.apis]
 }
 
+locals {
+  alert_notification_channels = concat(
+    [google_monitoring_notification_channel.email.id],
+    var.slack_notification_channel_id != "" ? [var.slack_notification_channel_id] : [],
+  )
+}
+
+# prod に既存適用済みのリソースへ count を追加するとアドレスが [0] 付きに変わるため、
+# moved block なしでは destroy + recreate になってしまう。
+moved {
+  from = google_monitoring_alert_policy.cloud_run_error_rate
+  to   = google_monitoring_alert_policy.cloud_run_error_rate[0]
+}
+
+moved {
+  from = google_monitoring_alert_policy.cloud_run_latency
+  to   = google_monitoring_alert_policy.cloud_run_latency[0]
+}
+
+moved {
+  from = google_monitoring_alert_policy.log_error_count
+  to   = google_monitoring_alert_policy.log_error_count[0]
+}
+
+# Dev は動作確認・テストでエラーパスを意図的に踏むため、アラートポリシー自体を作らず監視を prod に絞る。
 resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
+  count = var.environment == "prod" ? 1 : 0
+
   project      = var.project_id
   display_name = "Cloud Run 5xx Error Rate (${var.environment})"
   combiner     = "OR"
@@ -289,7 +316,7 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
     }
   }
 
-  notification_channels = [google_monitoring_notification_channel.email.id]
+  notification_channels = local.alert_notification_channels
 
   alert_strategy {
     auto_close = "604800s"
@@ -299,12 +326,14 @@ resource "google_monitoring_alert_policy" "cloud_run_error_rate" {
 }
 
 resource "google_monitoring_alert_policy" "cloud_run_latency" {
+  count = var.environment == "prod" ? 1 : 0
+
   project      = var.project_id
   display_name = "Cloud Run High Latency (${var.environment})"
   combiner     = "OR"
 
   conditions {
-    display_name = "p95 latency > 10s"
+    display_name = "p95 latency > 5s"
 
     condition_threshold {
       filter = <<-EOT
@@ -314,7 +343,7 @@ resource "google_monitoring_alert_policy" "cloud_run_latency" {
       EOT
 
       comparison      = "COMPARISON_GT"
-      threshold_value = 10000
+      threshold_value = 5000
       duration        = "300s"
 
       aggregations {
@@ -325,7 +354,7 @@ resource "google_monitoring_alert_policy" "cloud_run_latency" {
     }
   }
 
-  notification_channels = [google_monitoring_notification_channel.email.id]
+  notification_channels = local.alert_notification_channels
 
   alert_strategy {
     auto_close = "604800s"
@@ -335,12 +364,14 @@ resource "google_monitoring_alert_policy" "cloud_run_latency" {
 }
 
 resource "google_monitoring_alert_policy" "log_error_count" {
+  count = var.environment == "prod" ? 1 : 0
+
   project      = var.project_id
   display_name = "Application Error Logs (${var.environment})"
   combiner     = "OR"
 
   conditions {
-    display_name = "Error log entries > 10 in 5min"
+    display_name = "Error log entries > 0 in 5min"
 
     condition_threshold {
       filter = <<-EOT
@@ -351,7 +382,7 @@ resource "google_monitoring_alert_policy" "log_error_count" {
       EOT
 
       comparison      = "COMPARISON_GT"
-      threshold_value = 10
+      threshold_value = 0
       duration        = "0s"
 
       aggregations {
@@ -361,11 +392,23 @@ resource "google_monitoring_alert_policy" "log_error_count" {
     }
   }
 
-  notification_channels = [google_monitoring_notification_channel.email.id]
+  notification_channels = local.alert_notification_channels
 
   alert_strategy {
     auto_close = "604800s"
   }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_monitoring_dashboard" "backend" {
+  count = 1
+
+  project = var.project_id
+
+  dashboard_json = templatefile("${path.module}/dashboard.json", {
+    environment = var.environment
+  })
 
   depends_on = [google_project_service.apis]
 }
