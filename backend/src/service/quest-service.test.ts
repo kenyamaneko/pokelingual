@@ -23,11 +23,11 @@ describe("捕獲確率の計算", () => {
     expect(calculateCaptureRate(100, 100, 3.0)).toBe(1);
   });
 
-  it("スコアが高いほど捕獲確率が上がる (種族値合計/ボール固定)", () => {
+  it("同じ種族値合計・同じボールなら、スコアが高いほど捕獲確率が上がる", () => {
     expect(calculateCaptureRate(90, 300, 1.0)).toBeGreaterThan(calculateCaptureRate(30, 300, 1.0));
   });
 
-  it("種族値合計が高いほど捕獲確率が下がる (スコア/ボール固定)", () => {
+  it("同じスコア・同じボールなら、種族値合計が高いほど捕獲確率が下がる", () => {
     expect(calculateCaptureRate(50, 300, 1.0)).toBeGreaterThan(calculateCaptureRate(50, 680, 1.0));
   });
 
@@ -363,14 +363,14 @@ describe("名前当ての判定", () => {
     expect(res).toMatchObject({ correct: true, ball_type: "great", language: "ja" });
   });
 
-  it("名前の綴りが 2 文字までずれていても正解になる", async () => {
+  it("名前が 4 文字以上のとき、綴りが 2 文字までずれていても正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "testmxx");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", fuzzy: true });
   });
 
-  it("名前の綴りが 3 文字ずれていると不正解になる", async () => {
+  it("名前が 4 文字以上のとき、綴りが 3 文字ずれていると不正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "testxxx");
@@ -469,7 +469,7 @@ describe("名前当てスキップと捕獲", () => {
     expect(res.probability).toBeGreaterThan(0);
   });
 
-  it("乱数が捕獲確率を上回れば捕獲は失敗する (種族値680/スコア0/モンスターボールで確率は極小)", async () => {
+  it("捕獲確率を乱数が上回ると、捕獲は失敗する", async () => {
     const service = makeService({
       pokemons: [makePokemon({ base_stat_total: 680 })],
       randomValue: 0.5,

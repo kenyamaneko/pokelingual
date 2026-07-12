@@ -221,8 +221,13 @@ describe("入力バリデーションの 400 (公開入口経由)", () => {
     expect(res.status).toBe(400);
   });
 
-  it.each([0, 101])("範囲外の除外 ID %i は 400", async (id) => {
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [id] });
+  it("範囲外の除外 ID 0 は 400", async () => {
+    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [0] });
+    expect(res.status).toBe(400);
+  });
+
+  it("設定上限を 1 超える除外 ID は 400", async () => {
+    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [101] });
     expect(res.status).toBe(400);
   });
 

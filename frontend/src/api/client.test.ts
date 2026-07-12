@@ -66,7 +66,7 @@ describe("バックエンド通信の共通処理", () => {
     ["個人", "user"],
     ["全体", "global"],
   ] as const)(
-    "429 で%sの上限エラーの正しいスキーマが返ると、利用上限の通知が発火する",
+    "429 で%sの上限エラーが正しい形式で返ると、利用上限の通知が発火する",
     async (_label, kind) => {
       installAdapter(statusAdapter(429, { error: kind, message: "上限に たっしました" }));
       const handler = spyOnRateLimitEvents();
@@ -82,7 +82,7 @@ describe("バックエンド通信の共通処理", () => {
   it.each([
     ["エラー種別が想定外の値", { error: "invalid", message: "x" }],
     ["メッセージが欠落", { error: "user" }],
-  ])("429 でも「%s」のときは利用上限の通知をせず、診断ログを出す", async (_name, body) => {
+  ])("429 でも「%s」のときは利用上限の通知をせず、コンソールにエラーを出力する", async (_name, body) => {
     installAdapter(statusAdapter(429, body));
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const handler = spyOnRateLimitEvents();
