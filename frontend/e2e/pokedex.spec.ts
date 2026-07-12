@@ -12,7 +12,7 @@ test("ログインして図鑑を開くと、図鑑が表示される", async ({
   await expect(page.getByRole("heading", { name: HEADING.pokedex })).toBeVisible();
 });
 
-test("クエスト後に捕獲ポケモンが図鑑に表示される", async ({ page }) => {
+test("クエスト後の図鑑確認（カード表示 → 詳細モーダルの実績確認 → 閉じる）", async ({ page }) => {
   // クエストを1回完了（mock モードでは捕獲は決定的に成功する）
   await completeQuest(page);
 

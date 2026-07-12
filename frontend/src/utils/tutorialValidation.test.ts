@@ -11,10 +11,10 @@ describe("チュートリアルの訳文判定", () => {
   });
 
   it.each([
-    "ねずみポケモン",
-    "電気タイプのポケモン",
-    "",
-  ])("「%s」は、必須キーワードを満たさない", (input) => {
+    ["ねずみポケモン", "ねずみポケモン"],
+    ["電気タイプのポケモン", "電気タイプのポケモン"],
+    ["空文字", ""],
+  ])("「%s」は、必須キーワードを満たさない", (_label, input) => {
     expect(validateTutorialTranslation(input)).toBe(false);
   });
 });
@@ -30,10 +30,10 @@ describe("チュートリアルの名前当て判定", () => {
   });
 
   it.each([
-    "ピカ",
-    "raichu",
-    "",
-  ])("「%s」は、ピカチュウとして一致しない", (input) => {
+    ["ピカ", "ピカ"],
+    ["raichu", "raichu"],
+    ["空文字", ""],
+  ])("「%s」は、ピカチュウとして一致しない", (_label, input) => {
     expect(validateTutorialName(input)).toBe(false);
   });
 });
