@@ -291,6 +291,14 @@ resource "google_project_iam_member" "terraform_plan_security_reviewer" {
   member  = "serviceAccount:${google_service_account.terraform_plan.email}"
 }
 
+# Firebase Management API・Firebase Rules API 等は roles/viewer だけでは呼べず、
+# プロジェクトのサービス利用権限 (serviceusage.services.use) が別途必要になる。
+resource "google_project_iam_member" "terraform_plan_service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
 resource "google_monitoring_notification_channel" "email" {
   project      = var.project_id
   display_name = "PokeLingual Alert Email (${var.environment})"
