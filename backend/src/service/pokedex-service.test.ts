@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { PokedexService } from "./pokedex-service.js";
-import { ExternalServiceError } from "../domain/errors.js";
 import type {
   PokemonClient,
   PokemonConfig,
@@ -208,15 +207,5 @@ describe("図鑑詳細の取得", () => {
     });
     const res = await service.getPokemonDetail("alice", 7);
     expect(res.last_captured_at).toBeNull();
-  });
-
-  it("ポケモン詳細の取得に失敗したら、外部サービスのエラーとして伝わる", async () => {
-    const service = makeService({
-      records: [makeUserPokemon({ pokemon_id: 7 })],
-      failingIDs: [7],
-    });
-    await expect(service.getPokemonDetail("alice", 7)).rejects.toBeInstanceOf(
-      ExternalServiceError,
-    );
   });
 });

@@ -33,6 +33,10 @@ interface AppOverrides {
   rateLimitKind?: RateLimitKind;
   /** settings 取得が投げるエラー (想定外エラー→500 の検証用)。 */
   settingsError?: Error;
+  /** PokeAPI クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
+  pokemonError?: Error;
+  /** 図鑑詳細エンドポイントの検証用に、事前に保存済みとして扱うユーザ実績。 */
+  seededUserPokemon?: UserPokemon[];
 }
 
 /**
@@ -41,7 +45,7 @@ interface AppOverrides {
  * @returns supertest で叩ける Express アプリ。
  */
 function makeApp(o: AppOverrides = {}) {
-  const pokemonClient = makePokemonClient([makePokemon()]);
+  const pokemonClient = makePokemonClient([makePokemon()], { error: o.pokemonError });
   const llm: LLMClient = {
     generateText: async () => {
       if (o.llmError) throw o.llmError;
@@ -53,6 +57,9 @@ function makeApp(o: AppOverrides = {}) {
 
   // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
   const pokemonStore = new Map<number, UserPokemon>();
+  for (const entry of o.seededUserPokemon ?? []) {
+    pokemonStore.set(entry.pokemon_id, entry);
+  }
   const userPokemonRepo: UserPokemonRepository = {
     upsertEncounter: async (_uid, pokemonID, score, isCaptured) => {
       pokemonStore.set(pokemonID, {
@@ -134,6 +141,33 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
     const app = makeApp({ llmError: new Error("llm down") });
     await request(app).get("/api/quest/new");
     const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "external service unavailable" });
+  });
+
+  it("ポケモン情報の取得に失敗した出題リクエストは 502 を返す", async () => {
+    const app = makeApp({ pokemonError: new Error("pokeapi down") });
+    const res = await request(app).get("/api/quest/new");
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "external service unavailable" });
+  });
+
+  it("ポケモン情報の取得に失敗した図鑑詳細リクエストは 502 を返す", async () => {
+    const app = makeApp({
+      pokemonError: new Error("pokeapi down"),
+      seededUserPokemon: [
+        {
+          pokemon_id: 1,
+          status: "seen",
+          total_captures: 0,
+          total_encounters: 1,
+          last_captured_at: null,
+          last_encountered_at: new Date(),
+          best_score: 0,
+        },
+      ],
+    });
+    const res = await request(app).get("/api/pokedex/1");
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: "external service unavailable" });
   });

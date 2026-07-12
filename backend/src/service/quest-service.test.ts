@@ -122,8 +122,6 @@ describe("日本語説明文のポケモン名マスク", () => {
 interface ServiceOverrides {
   /** getRandomPokemon の抽選元プール (allowedIds に含まれるものから乱数で選ぶ)。 */
   pokemons?: Pokemon[];
-  /** getRandomPokemon が投げるエラー。 */
-  pokemonError?: Error;
   /** LLM が返すテキスト。 */
   llmText?: string;
   /** LLM が返すテキストをプロンプト内容から動的に組み立てたい場合に使う (指定時は llmText より優先)。 */
@@ -143,7 +141,7 @@ interface ServiceOverrides {
  */
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
-  const pokemonClient = makePokemonClient(pool, { error: o.pokemonError });
+  const pokemonClient = makePokemonClient(pool);
   const llm: LLMClient = {
     generateText: async (prompt) =>
       o.llmRespond?.(prompt) ?? o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
@@ -217,11 +215,6 @@ describe("クエストの出題", () => {
       excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     });
     await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
-  });
-
-  it("ポケモン情報の取得に失敗すると、外部サービスのエラーとして伝わる", async () => {
-    const service = makeService({ pokemonError: new Error("api down") });
-    await expect(service.newQuest("alice")).rejects.toBeInstanceOf(ExternalServiceError);
   });
 
   it("説明文が複数あるポケモンでは、そのうちの 1 つが選ばれて出題される", async () => {
