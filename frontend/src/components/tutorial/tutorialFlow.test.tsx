@@ -78,6 +78,36 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     expect(await screen.findByText("100")).toBeInTheDocument();
   });
 
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に君の翻訳として入力した訳文が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    expect(await screen.findByText("電気タイプのねずみポケモン")).toBeInTheDocument();
+  });
+
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に日本語の説明文「電気タイプのねずみポケモン」が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    expect(await screen.findByText("「電気タイプのねずみポケモン」")).toBeInTheDocument();
+  });
+
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に博士からのコメント「かんぺきな　ほんやくだ！」が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    // タイプライター演出がダメージメーターのアニメーション完了後 (1000ms) に始まるため、既定の待機時間を延長する。
+    expect(
+      await screen.findByText(spec("かんぺきな　ほんやくだ！"), {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
+  });
+
   it("必須キーワード不足のエラーが出た後、訳文を入力し直すとエラー表示が消える", async () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });

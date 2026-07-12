@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { QuestCard } from "../components/quest/QuestCard";
-import { ScoreDisplay } from "../components/quest/ScoreDisplay";
+import { TranslationResult } from "../components/quest/TranslationResult";
 import { CaptureStandby } from "../components/quest/CaptureStandby";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { TutorialTranslationStep } from "../components/tutorial/TutorialTranslationStep";
@@ -21,7 +21,8 @@ export const TUTORIAL_PAGE_LABELS = {
  */
 export function TutorialPage() {
   const navigate = useNavigate();
-  const { phase, quest, score, captureResult, submitTranslation, submitName, capture } = useTutorialQuest();
+  const { phase, quest, score, userTranslation, captureResult, submitTranslation, submitName, capture } =
+    useTutorialQuest();
 
   return (
     <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8">
@@ -39,7 +40,7 @@ export function TutorialPage() {
         {phase === "guessing" && score && (
           <>
             <QuestCard description={quest.description_en} />
-            <ScoreDisplay score={score} />
+            <TranslationResult userTranslation={userTranslation} score={score} />
             <TutorialNameStep onSubmit={submitName} />
           </>
         )}
