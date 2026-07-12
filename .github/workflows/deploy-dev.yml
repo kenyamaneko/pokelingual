@@ -168,7 +168,6 @@ jobs:
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
         run: bash scripts/smoke-dev.sh
 
-      # ヘルス＋read だけでは実 Gemini・Firestore 書き込みの経路を検出できない。
       - name: Run quest smoke test
         env:
           SERVICE_URL: ${{ steps.service-url.outputs.url }}
