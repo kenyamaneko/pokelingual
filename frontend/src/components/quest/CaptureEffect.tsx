@@ -41,7 +41,7 @@ export function CaptureEffect({ ballSprite, ballName, captured, onComplete }: Ca
         <img
           src={ballSprite}
           alt={ballName}
-          className={`w-24 h-24 ${
+          className={`w-24 h-24 origin-bottom ${
             stage === "shaking" ? "animate-[ball-shake_0.3s_ease-in-out_3]" : ""
           }`}
         />
