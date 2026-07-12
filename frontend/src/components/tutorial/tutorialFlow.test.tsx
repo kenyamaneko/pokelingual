@@ -7,6 +7,8 @@ import { TutorialPage, TUTORIAL_PAGE_LABELS } from "../../pages/TutorialPage";
 import { TUTORIAL_MODAL_LABELS } from "./TutorialInstructionModal";
 import { TUTORIAL_TRANSLATION_LABELS } from "./TutorialTranslationStep";
 import { TUTORIAL_NAME_LABELS } from "./TutorialNameStep";
+import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
+import { NAME_GUESS_LABELS } from "../quest/NameGuess";
 import { CAPTURE_RESULT_LABELS } from "../quest/CaptureResult";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
@@ -21,7 +23,7 @@ const fakeUser = { uid: "trainer-test" } as unknown as User;
 async function dismissModalAndSubmitTranslation(user: UserEvent, translation: string): Promise<void> {
   await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
   await user.type(screen.getByRole("textbox"), translation);
-  await user.click(screen.getByRole("button", { name: TUTORIAL_TRANSLATION_LABELS.submitButton }));
+  await user.click(screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }));
 }
 
 /**
@@ -31,8 +33,8 @@ async function dismissModalAndSubmitTranslation(user: UserEvent, translation: st
  */
 async function dismissModalAndSubmitName(user: UserEvent, name: string): Promise<void> {
   await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
-  await user.type(screen.getByPlaceholderText(TUTORIAL_NAME_LABELS.inputPlaceholder), name);
-  await user.click(screen.getByRole("button", { name: TUTORIAL_NAME_LABELS.submitButton }));
+  await user.type(screen.getByPlaceholderText(NAME_GUESS_LABELS.inputPlaceholder), name);
+  await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }));
 }
 
 describe("チュートリアルへの遷移", () => {
@@ -75,6 +77,48 @@ describe("チュートリアル (訳文入力ステップ)", () => {
 
     expect(await screen.findByText("100")).toBeInTheDocument();
   });
+
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に君の翻訳として入力した訳文が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    expect(await screen.findByText("電気タイプのねずみポケモン")).toBeInTheDocument();
+  });
+
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に日本語の説明文「電気タイプのねずみポケモン」が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    expect(await screen.findByText("「電気タイプのねずみポケモン」")).toBeInTheDocument();
+  });
+
+  it("「電気タイプのねずみポケモン」と入力すると、採点画面に博士からのコメント「かんぺきな　ほんやくだ！」が表示される", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+
+    // タイプライター演出がダメージメーターのアニメーション完了後 (1000ms) に始まるため、既定の待機時間を延長する。
+    expect(
+      await screen.findByText(spec("かんぺきな　ほんやくだ！"), {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
+  });
+
+  it("必須キーワード不足のエラーが出た後、訳文を入力し直すとエラー表示が消える", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "ねずみポケモン");
+    expect(await screen.findByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).toBeInTheDocument();
+
+    await user.type(screen.getByRole("textbox"), "電気タイプの");
+
+    expect(screen.queryByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).not.toBeInTheDocument();
+  });
 });
 
 /**
@@ -105,6 +149,17 @@ describe("チュートリアル (名前当てステップ)", () => {
     await dismissModalAndSubmitName(user, "ピカチュウ");
 
     expect(await screen.findByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton })).toBeInTheDocument();
+  });
+
+  it("間違った名前のエラーが出た後、名前を入力し直すとエラー表示が消える", async () => {
+    const user = await proceedToNameStep();
+
+    await dismissModalAndSubmitName(user, "raichu");
+    expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText(NAME_GUESS_LABELS.inputPlaceholder), "pika");
+
+    expect(screen.queryByText(TUTORIAL_NAME_LABELS.wrongNameError)).not.toBeInTheDocument();
   });
 });
 

@@ -2,22 +2,12 @@ import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
 import { TranslationResult } from "../components/quest/TranslationResult";
 import { NameGuess } from "../components/quest/NameGuess";
+import { CaptureStandby } from "../components/quest/CaptureStandby";
 import { CaptureEffect } from "../components/quest/CaptureEffect";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { LocationSelect } from "../components/quest/LocationSelect";
-import { useQuest, type BallType } from "../hooks/useQuest";
-
-const BALL_SPRITES: Record<BallType, string> = {
-  poke: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
-  great: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png",
-  ultra: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png",
-};
-
-const BALL_NAMES: Record<BallType, string> = {
-  poke: "モンスターボール",
-  great: "スーパーボール",
-  ultra: "ハイパーボール",
-};
+import { BALL_SPRITES, BALL_NAMES } from "../components/quest/ballAssets";
+import { useQuest } from "../hooks/useQuest";
 
 /**
  * クエストの主要ページ。フェーズに応じた UI を描画するだけで、状態は useQuest に委譲する。
@@ -122,24 +112,7 @@ export function QuestPage() {
         )}
 
         {phase === "capturing" && ballType && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <img
-              src={BALL_SPRITES[ballType]}
-              alt={BALL_NAMES[ballType]}
-              className="w-24 h-24 animate-bounce mb-6"
-            />
-            <p className="text-gray-600 mb-6 text-lg">
-              {BALL_NAMES[ballType]}を　手に　入れた！
-            </p>
-            <button
-              onClick={capture}
-              className="bg-red-500 text-white py-4 px-12 rounded-2xl font-bold text-xl
-                         hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
-                         active:scale-95 transform"
-            >
-              {BALL_NAMES[ballType]}を　使う
-            </button>
-          </div>
+          <CaptureStandby ballType={ballType} onUse={capture} />
         )}
 
         {phase === "revealing" && captureResult && (

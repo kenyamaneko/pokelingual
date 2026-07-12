@@ -12,6 +12,7 @@ export interface UseTutorialQuestResult {
   phase: TutorialPhase;
   quest: QuestNewResponse;
   score: ScoreResponse | null;
+  userTranslation: string;
   captureResult: CaptureResponse | null;
   submitTranslation: (translation: string) => boolean;
   submitName: (name: string) => boolean;
@@ -25,6 +26,7 @@ export interface UseTutorialQuestResult {
 export function useTutorialQuest(): UseTutorialQuestResult {
   const [phase, setPhase] = useState<TutorialPhase>("translating");
   const [score, setScore] = useState<ScoreResponse | null>(null);
+  const [userTranslation, setUserTranslation] = useState("");
   const [captureResult, setCaptureResult] = useState<CaptureResponse | null>(null);
   const { markCompleted } = useTutorial();
 
@@ -32,6 +34,7 @@ export function useTutorialQuest(): UseTutorialQuestResult {
     const ok = validateTutorialTranslation(translation);
     if (ok) {
       setScore(TUTORIAL_SCORE_RESULT);
+      setUserTranslation(translation);
       setPhase("guessing");
     }
     return ok;
@@ -56,5 +59,14 @@ export function useTutorialQuest(): UseTutorialQuestResult {
     }
   }, [phase, markCompleted]);
 
-  return { phase, quest: TUTORIAL_QUEST, score, captureResult, submitTranslation, submitName, capture };
+  return {
+    phase,
+    quest: TUTORIAL_QUEST,
+    score,
+    userTranslation,
+    captureResult,
+    submitTranslation,
+    submitName,
+    capture,
+  };
 }
