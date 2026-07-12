@@ -52,7 +52,7 @@ function makeClientWithTypes(typeNames: string[]): PokeAPIClient {
 }
 
 describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
-  it("既知のタイプ名は受理され、タイプの一覧に反映される", async () => {
+  it("PokeAPI が返したタイプ名が既知なら、ポケモン情報のタイプとして採用される", async () => {
     const pokemon = await makeClientWithTypes(["grass", "poison"]).getPokemonByID(1);
     expect(pokemon.types).toEqual(["grass", "poison"]);
   });
@@ -68,7 +68,7 @@ describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
  * このデータソースは 1..maxPokemonID の図鑑番号を提供する (抽選はサービス側が行う)。
  */
 describe("出題可能な図鑑番号の範囲", () => {
-  it("1 から 10 (設定した上限) までの図鑑番号を提供する", () => {
+  it("出題対象の図鑑番号は 1 から設定上限までになる", () => {
     const ids = makeClientWithTypes(["normal"]).getServableIDs();
     expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
@@ -78,7 +78,7 @@ describe("出題可能な図鑑番号の範囲", () => {
  * /type/{name} のレスポンスから、指定タイプのポケモンの図鑑番号を取り出す。
  */
 describe("タイプ別の出題候補の取得", () => {
-  it("指定したタイプの図鑑番号だけが、出題可能な上限の範囲内で返る", async () => {
+  it("指定したタイプの図鑑番号だけが返り、設定上限を超える番号は含まれない", async () => {
     const httpGet: HttpGet = async () => ({
       ok: true,
       status: 200,

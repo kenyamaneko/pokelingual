@@ -272,7 +272,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.captured_count).toBe(1);
   });
 
-  it("除外設定を保存すると、その内容を読み戻せる", async () => {
+  it("重複や順序を含む除外設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
     const app = makeApp();
     const put = await request(app).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [7, 3, 3] });
     expect(put.status).toBe(200);
@@ -283,7 +283,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(got.body).toEqual({ excluded_pokemon_ids: [3, 7], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] });
   });
 
-  it("世代設定を保存すると、その内容を読み戻せる", async () => {
+  it("重複や順序を含む世代設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
     const app = makeApp();
     const put = await request(app).put("/api/settings/generations").send({ generations: [3, 1, 1] });
     expect(put.status).toBe(200);
@@ -294,7 +294,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(got.body).toEqual({ excluded_pokemon_ids: [], enabled_generations: [1, 3] });
   });
 
-  it("利用状況が取得できる", async () => {
+  it("認証済みユーザーが利用状況を取得すると、利用回数と上限が返る", async () => {
     const res = await request(makeApp()).get("/api/usage");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ count: 3, limit: 30 });
@@ -306,7 +306,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(res.body).toEqual({ tutorial_completed: false });
   });
 
-  it("完了フラグを立てた後、完了状態を取得すると true を読み戻せる", async () => {
+  it("完了フラグを立てた後に完了状態を取得すると、true が返る", async () => {
     const app = makeApp();
     const complete = await request(app).put("/api/tutorial-status/complete");
     expect(complete.status).toBe(200);

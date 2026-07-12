@@ -8,7 +8,7 @@ const db = requireFirestoreEmulator();
 describe("AI 利用回数の記録", () => {
   beforeEach(clearFirestoreEmulator);
 
-  it("ユーザーは 5 回まで AI 呼び出しできる", async () => {
+  it("ユーザーは設定された上限の回数まで AI 呼び出しを記録できる", async () => {
     const repo = new RateLimitRepo(db, 5, 1000);
     for (let i = 0; i < 5; i++) {
       const usage = await repo.checkAndIncrement("alice");
@@ -27,7 +27,7 @@ describe("AI 利用回数の記録", () => {
     });
   });
 
-  it("あるユーザーが利用枠を消化しても、別ユーザーには影響しない", async () => {
+  it("あるユーザーが利用回数の上限に達しても、別ユーザーの利用回数の記録には影響しない", async () => {
     const repo = new RateLimitRepo(db, 2, 1000);
     await repo.checkAndIncrement("alice");
     await repo.checkAndIncrement("alice");
@@ -54,7 +54,7 @@ describe("AI 利用回数の記録", () => {
     await expect(repo.checkAndIncrement("alice")).rejects.toMatchObject({ kind: "global" });
   });
 
-  it("未使用のユーザーの利用回数を取得すると、0 が返る", async () => {
+  it("まだ記録の無いユーザーの利用回数を取得すると、0 が返る", async () => {
     const repo = new RateLimitRepo(db, 30, 1000);
     const usage = await repo.getUserUsage("newcomer");
     expect(usage.count).toBe(0);
@@ -82,7 +82,7 @@ describe("レート制限の日次リセット", () => {
     vi.useRealTimers();
   });
 
-  it("JST で日付が変わると新しい枠で使えるようになる", async () => {
+  it("上限まで使い切っても、JST で日付が変わると再び記録できる", async () => {
     const repo = new RateLimitRepo(db, 2, 100);
 
     // JST 2026-05-28 12:00 相当 (UTC 03:00)

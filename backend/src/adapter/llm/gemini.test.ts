@@ -50,11 +50,11 @@ describe("AI 応答の解釈", () => {
   // JSON として解釈できないテキストの扱いは、JSON を解釈する側 (quest-service) の
   // テストで確かめる。ここではクライアント自身が検出すべき欠落レスポンスを網羅する。
   it.each([
-    ["AI 応答に候補が 1 件も無いとき、エラーになる", []],
-    ["AI 応答の候補に中身が無いとき、エラーになる", [{}]],
-    ["AI 応答の中身に本文が無いとき、エラーになる", [{ content: {} }]],
-    ["AI 応答の本文が 0 件のとき、エラーになる", [{ content: { parts: [] } }]],
-    ["AI 応答の本文が空文字のとき、エラーになる", [{ content: { parts: [{ text: "" }] } }]],
+    ["応答の candidates が空のとき、エラーになる", []],
+    ["応答の candidates に content が無いとき、エラーになる", [{}]],
+    ["応答の content に parts が無いとき、エラーになる", [{ content: {} }]],
+    ["応答の parts が空のとき、エラーになる", [{ content: { parts: [] } }]],
+    ["応答の parts のテキストが空文字のとき、エラーになる", [{ content: { parts: [{ text: "" }] } }]],
   ])("%s", async (_name, candidates) => {
     await expect(makeClientWithCandidates(candidates).generateText("p")).rejects.toThrow(
       /empty response/,

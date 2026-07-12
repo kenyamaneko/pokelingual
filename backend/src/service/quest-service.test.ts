@@ -160,7 +160,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
 }
 
 describe("クエストの出題", () => {
-  it("説明文のポケモン名をマスクして出題を返す", async () => {
+  it("出題される英語説明文は、ポケモン名が伏せ字になっている", async () => {
     const service = makeService();
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(1);

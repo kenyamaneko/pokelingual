@@ -27,7 +27,7 @@ describe("除外ポケモン設定の検証", () => {
     expect(validateExcludedPokemonIDs([1], MAX_ID, MAX_COUNT).ok).toBe(true);
   });
 
-  it("上限: 10 は成功、11 は失敗", () => {
+  it("上限ちょうどの ID は成功し、上限を 1 超えると失敗する", () => {
     expect(validateExcludedPokemonIDs([MAX_ID], MAX_ID, MAX_COUNT).ok).toBe(true);
     expect(validateExcludedPokemonIDs([MAX_ID + 1], MAX_ID, MAX_COUNT).ok).toBe(false);
   });
