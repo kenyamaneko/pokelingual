@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TutorialInstructionModal } from "./TutorialInstructionModal";
-import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
+import { TranslationInput } from "../quest/TranslationInput";
 
 interface Props {
   onSubmit: (translation: string) => boolean;
@@ -8,12 +8,10 @@ interface Props {
 
 /**
  * TutorialTranslationStep の仕様文言。テストから import される SSOT。
- * 送信ボタンの文言は本番の TranslationInput (TRANSLATION_INPUT_LABELS) をそのまま使う。
  */
 export const TUTORIAL_TRANSLATION_LABELS = {
   modalTitle: "この英文を訳してみよう",
   modalInstruction: "「電気タイプのねずみポケモン」と入力してみてね",
-  submitButton: TRANSLATION_INPUT_LABELS.submitButton,
   missingKeywordsError: "「電気」と「ネズミ」の両方を含めて入力してね",
 } as const;
 
@@ -25,16 +23,14 @@ export const TUTORIAL_TRANSLATION_LABELS = {
  */
 export function TutorialTranslationStep({ onSubmit }: Props) {
   const [showModal, setShowModal] = useState(true);
-  const [text, setText] = useState("");
   const [showError, setShowError] = useState(false);
 
-  const handleSubmit = () => {
-    const ok = onSubmit(text);
-    setShowError(!ok);
+  const handleSubmit = async (translation: string) => {
+    setShowError(!onSubmit(translation));
   };
 
   return (
-    <div className="mt-4">
+    <>
       {showModal && (
         <TutorialInstructionModal
           title={TUTORIAL_TRANSLATION_LABELS.modalTitle}
@@ -42,29 +38,10 @@ export function TutorialTranslationStep({ onSubmit }: Props) {
           onDismiss={() => setShowModal(false)}
         />
       )}
-      <textarea
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          setShowError(false);
-        }}
-        placeholder="日本語を入力してね"
-        className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl
-                   focus:border-blue-500 focus:outline-none text-lg resize-none
-                   bg-white text-gray-800"
-      />
       {showError && (
-        <p className="text-red-600 text-sm mt-2">{TUTORIAL_TRANSLATION_LABELS.missingKeywordsError}</p>
+        <p className="text-red-600 text-sm mt-4">{TUTORIAL_TRANSLATION_LABELS.missingKeywordsError}</p>
       )}
-      <button
-        onClick={handleSubmit}
-        disabled={!text.trim()}
-        className="mt-2 w-full bg-blue-500 text-white py-3 rounded-xl font-bold text-lg
-                   hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-colors"
-      >
-        {TUTORIAL_TRANSLATION_LABELS.submitButton}
-      </button>
-    </div>
+      <TranslationInput onSubmit={handleSubmit} onChangeText={() => setShowError(false)} />
+    </>
   );
 }

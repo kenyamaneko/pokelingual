@@ -7,6 +7,7 @@ import { TutorialPage, TUTORIAL_PAGE_LABELS } from "../../pages/TutorialPage";
 import { TUTORIAL_MODAL_LABELS } from "./TutorialInstructionModal";
 import { TUTORIAL_TRANSLATION_LABELS } from "./TutorialTranslationStep";
 import { TUTORIAL_NAME_LABELS } from "./TutorialNameStep";
+import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
 import { CAPTURE_RESULT_LABELS } from "../quest/CaptureResult";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
@@ -21,7 +22,7 @@ const fakeUser = { uid: "trainer-test" } as unknown as User;
 async function dismissModalAndSubmitTranslation(user: UserEvent, translation: string): Promise<void> {
   await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
   await user.type(screen.getByRole("textbox"), translation);
-  await user.click(screen.getByRole("button", { name: TUTORIAL_TRANSLATION_LABELS.submitButton }));
+  await user.click(screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }));
 }
 
 /**
@@ -74,6 +75,18 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
     expect(await screen.findByText("100")).toBeInTheDocument();
+  });
+
+  it("必須キーワード不足のエラーが出た後、訳文を入力し直すとエラー表示が消える", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await dismissModalAndSubmitTranslation(user, "ねずみポケモン");
+    expect(await screen.findByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).toBeInTheDocument();
+
+    await user.type(screen.getByRole("textbox"), "電気タイプの");
+
+    expect(screen.queryByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).not.toBeInTheDocument();
   });
 });
 
