@@ -266,7 +266,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
     expect(screen.getByText(spec("どこに ポケモンを 探しに行く？"))).toBeInTheDocument();
   });
 
-  it("採点中にセッションが切れる (404) と、次のポケモンを探す導線が出る", async () => {
+  it("採点中にセッションが切れる (404) と、もう一度探す導線が出る", async () => {
     const user = userEvent.setup();
     server.use(
       http.post(apiUrl("/quest/score"), () => HttpResponse.json({}, { status: 404 })),
