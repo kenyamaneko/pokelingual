@@ -4,7 +4,7 @@
 
 ## [pokelingual] 設計ドキュメント
 
-- 設計レベルの Why を書く先 (共通で ARCHITECTURE.md と表記される先) は、本リポでは `docs/architecture.md` とする
+- 設計上のトレードオフによる Why (ADR) は `docs/adr/` に、仕様・業務ルールとしての Why (BDR) は `docs/bdr/` に置く
 
 ## [pokelingual] 契約型
 
