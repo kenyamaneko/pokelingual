@@ -38,13 +38,13 @@ function statusAdapter(status: number, data: unknown): AxiosAdapter {
   };
 }
 
-describe("api/client", () => {
+describe("バックエンド通信の共通処理", () => {
   afterEach(() => {
     api.defaults.adapter = originalAdapter;
     vi.restoreAllMocks();
   });
 
-  it("mock モードで Authorization: Bearer dev-token を自動付与する", async () => {
+  it("mock モードでは、開発用トークンが自動で付与される", async () => {
     let capturedAuth: string | undefined;
     installAdapter(async (config) => {
       capturedAuth = config.headers?.Authorization?.toString();
@@ -62,9 +62,12 @@ describe("api/client", () => {
     expect(capturedAuth).toBe("Bearer dev-token");
   });
 
-  it.each(["user", "global"] as const)(
-    "429 + kind=%s の正しいスキーマで rateLimit イベントが発火する",
-    async (kind) => {
+  it.each([
+    ["個人", "user"],
+    ["全体", "global"],
+  ] as const)(
+    "429 で%sの上限エラーが正しい形式で返ると、利用上限の通知が発火する",
+    async (_label, kind) => {
       installAdapter(statusAdapter(429, { error: kind, message: "上限に たっしました" }));
       const handler = spyOnRateLimitEvents();
 
@@ -77,9 +80,9 @@ describe("api/client", () => {
   );
 
   it.each([
-    { name: "error が想定外の値", body: { error: "invalid", message: "x" } },
-    { name: "message が欠落", body: { error: "user" } },
-  ])("429 だが $name のとき通知せず、診断ログを出す", async ({ body }) => {
+    ["エラー種別が想定外の値", { error: "invalid", message: "x" }],
+    ["メッセージが欠落", { error: "user" }],
+  ])("429 でも「%s」のときは利用上限の通知をせず、コンソールにエラーを出力する", async (_name, body) => {
     installAdapter(statusAdapter(429, body));
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const handler = spyOnRateLimitEvents();
@@ -90,7 +93,7 @@ describe("api/client", () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it("429 以外のエラーでは rateLimit イベントを発火しない", async () => {
+  it("429 以外のエラーでは、利用上限の通知を発火しない", async () => {
     installAdapter(statusAdapter(500, { error: "internal" }));
     const handler = spyOnRateLimitEvents();
 

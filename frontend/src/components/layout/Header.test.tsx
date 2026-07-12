@@ -24,14 +24,14 @@ function renderHeader(user: User | null = fakeUser) {
   return renderWithProviders(<Header />, { user, withRouter: true });
 }
 
-describe("Header", () => {
+describe("ヘッダー", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
   describe("環境ラベルの出し分け", () => {
-    it("VITE_ENVIRONMENT=local では LOCAL バッジを表示する", async () => {
+    it("local 環境では LOCAL バッジを表示する", async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "local");
       mockUsage({ count: 0, limit: 30 });
 
@@ -40,7 +40,7 @@ describe("Header", () => {
       expect(await screen.findByText("LOCAL")).toBeInTheDocument();
     });
 
-    it("VITE_ENVIRONMENT=dev では DEV バッジを表示する", async () => {
+    it("dev 環境では DEV バッジを表示する", async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "dev");
       mockUsage({ count: 0, limit: 30 });
 
@@ -49,7 +49,7 @@ describe("Header", () => {
       expect(await screen.findByText("DEV")).toBeInTheDocument();
     });
 
-    it("VITE_ENVIRONMENT=prod では環境バッジを表示しない", async () => {
+    it("prod 環境では環境バッジを表示しない", async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "prod");
       mockUsage({ count: 0, limit: 30 });
 
@@ -61,7 +61,7 @@ describe("Header", () => {
       expect(screen.queryByText("DEV")).not.toBeInTheDocument();
     });
 
-    it("VITE_ENVIRONMENT が未設定でも環境バッジを表示しない", async () => {
+    it("実行環境が未設定でも環境バッジを表示しない", async () => {
       vi.stubEnv("VITE_ENVIRONMENT", undefined);
       mockUsage({ count: 0, limit: 30 });
 
@@ -73,13 +73,13 @@ describe("Header", () => {
     });
   });
 
-  describe("レート残量の表示とクランプ", () => {
+  describe("レート残量の表示 (マイナスにしない)", () => {
     it.each([
       [29, 30, "残り 1/30"],
       [30, 30, "残り 0/30"],
       [31, 30, "残り 0/30"],
     ])(
-      "count=%i / limit=%i のとき「%s」と表示する (マイナスにしない)",
+      "利用済み %i 回・上限 %i 回のとき「%s」と表示する",
       async (count, limit, expected) => {
         mockUsage({ count, limit });
 
@@ -89,7 +89,7 @@ describe("Header", () => {
       },
     );
 
-    it("usage が取得できないあいだは残量バッジを表示しない", async () => {
+    it("利用状況が取得できないあいだは残量バッジを表示しない", async () => {
       // 使用量取得失敗時の診断ログは検証対象外なので沈黙させる
       vi.spyOn(console, "warn").mockImplementation(() => {});
       server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
@@ -103,7 +103,7 @@ describe("Header", () => {
     });
   });
 
-  it("未ログイン時はヘッダを描画しない", () => {
+  it("未ログイン時はヘッダーを描画しない", () => {
     renderHeader(null);
 
     expect(screen.queryByRole("banner")).not.toBeInTheDocument();

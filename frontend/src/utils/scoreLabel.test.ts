@@ -7,17 +7,17 @@ import { getScoreLabel, SCORE_LABELS } from "./scoreLabel";
  */
 describe("こうかラベル分類", () => {
   it.each([
-    { score: 100, label: SCORE_LABELS.critical },
-    { score: 99, label: SCORE_LABELS.superEffective },
-    { score: 80, label: SCORE_LABELS.superEffective },
-    { score: 40, label: SCORE_LABELS.notVeryEffective },
-    { score: 1, label: SCORE_LABELS.notVeryEffective },
-    { score: 0, label: SCORE_LABELS.noEffect },
-  ])("score=$score のとき $label を返す", ({ score, label }) => {
+    [100, SCORE_LABELS.critical],
+    [99, SCORE_LABELS.superEffective],
+    [80, SCORE_LABELS.superEffective],
+    [40, SCORE_LABELS.notVeryEffective],
+    [1, SCORE_LABELS.notVeryEffective],
+    [0, SCORE_LABELS.noEffect],
+  ])("スコア %i のとき『%s』と表示される", (score, label) => {
     expect(getScoreLabel(score)).toBe(label);
   });
 
-  it.each([79, 41])("score=%i は通常帯でラベルを返さない", (score) => {
+  it.each([79, 41])("スコア %i は通常帯でラベルを返さない", (score) => {
     expect(getScoreLabel(score)).toBeNull();
   });
 });

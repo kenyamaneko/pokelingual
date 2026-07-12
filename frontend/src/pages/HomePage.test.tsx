@@ -18,7 +18,7 @@ function mockTutorialStatus(completed: boolean) {
 
 const fakeUser = { uid: "trainer-test" } as unknown as User;
 
-describe("HomePage (「ポケモンを探しに行く」の遷移先出し分け)", () => {
+describe("ホーム画面 (「ポケモンを探しに行く」の遷移先出し分け)", () => {
   it("チュートリアル未完了のとき、遷移先はチュートリアルになる", async () => {
     mockTutorialStatus(false);
     renderWithProviders(<HomePage />, { user: fakeUser, withRouter: true });
@@ -43,7 +43,7 @@ describe("HomePage (「ポケモンを探しに行く」の遷移先出し分け
     expect(screen.getByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/tutorial");
   });
 
-  it("チュートリアルへの再視聴導線が完了状態によらず表示される", async () => {
+  it("チュートリアル完了済みのとき、チュートリアルへの再視聴導線が表示される", async () => {
     mockTutorialStatus(true);
     renderWithProviders(<HomePage />, { user: fakeUser, withRouter: true });
 

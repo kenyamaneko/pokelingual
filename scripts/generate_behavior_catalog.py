@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""テスト実行結果の JUnit XML から、テスト済みの振る舞いの一覧 (振る舞いカタログ) を生成する。
+"""テスト実行結果の JUnit XML から、テスト観点カタログを生成する。
 
 テストの命名規約 (keyandnotes-rules testing.md「テストの命名」) に従ったテスト名を、
 グループ (テスト対象の要素) とケース (シナリオ) の階層に復元し、Markdown または HTML で
-標準出力に書き出す。
+標準出力に書き出す。セクションは「外から見た振る舞い」「内部の挙動」のカテゴリに属し、
+1 つの JUnit XML をテストファイルのパスで複数セクションに振り分けることもできる。
 """
 
 import argparse
@@ -21,11 +22,11 @@ SKIPPED_NOTE = "（skip 中のため未検証）"
 
 # テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
 DISCLAIMER = (
-    "本カタログは自動テストのテスト名から生成した「テスト済みの振る舞い」の一覧であり、"
+    "本カタログは自動テストのテスト名から生成した「テスト済みの観点」の一覧であり、"
     "仕様の全量ではない。テストの無い仕様はここに現れない。"
 )
 
-PAGE_TITLE = "pokelingual 振る舞いカタログ"
+PAGE_TITLE = "pokelingual テスト観点カタログ"
 
 MARKDOWN_INDENT = "  "
 
@@ -38,11 +39,13 @@ class BehaviorCase:
         group_chain: テスト対象の要素を表すグループ名の連鎖 (describe の入れ子)。
         case_name: シナリオを表すケース名。
         is_skipped: skip されて実行されていないケースかどうか。
+        source_file: テストランナーが記録した由来テストファイルのパス。
     """
 
     group_chain: tuple[str, ...]
     case_name: str
     is_skipped: bool
+    source_file: str
 
 
 @dataclass
@@ -56,6 +59,24 @@ class GroupNode:
 
     subgroups: "dict[str, GroupNode]" = field(default_factory=dict)
     cases: list[BehaviorCase] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class SectionSpec:
+    """--section 引数 1 件分の指定。
+
+    Args:
+        category: セクションの上位カテゴリ名 (「外から見た振る舞い」「内部の挙動」等)。
+        label: セクション名。
+        path: JUnit XML のパス。
+        prefixes: このセクションに含める由来ファイルパスの前方一致プレフィクス群。
+            None なら JUnit XML 全体をこのセクションに含める。
+    """
+
+    category: str
+    label: str
+    path: Path
+    prefixes: "tuple[str, ...] | None"
 
 
 def split_test_name(raw_name: str) -> tuple[tuple[str, ...], str]:
@@ -83,7 +104,7 @@ def parse_junit_file(path: Path) -> list[BehaviorCase]:
         文書順の BehaviorCase のリスト。
 
     Raises:
-        ValueError: testcase に name 属性が無いとき。
+        ValueError: testcase に name または classname 属性が無いとき。
     """
     root = ET.parse(path).getroot()
     cases = []
@@ -91,10 +112,79 @@ def parse_junit_file(path: Path) -> list[BehaviorCase]:
         raw_name = testcase.get("name")
         if raw_name is None:
             raise ValueError(f"testcase に name 属性がありません: {path}")
+        source_file = testcase.get("classname")
+        if source_file is None:
+            raise ValueError(f"testcase に classname 属性がありません: {path}")
         group_chain, case_name = split_test_name(raw_name)
         is_skipped = testcase.find("skipped") is not None
-        cases.append(BehaviorCase(group_chain, case_name, is_skipped))
+        cases.append(BehaviorCase(group_chain, case_name, is_skipped, source_file))
     return cases
+
+
+def route_cases_to_specs(
+    specs: list[SectionSpec], cases: list[BehaviorCase]
+) -> dict[SectionSpec, list[BehaviorCase]]:
+    """1 つの JUnit XML から読んだケース群を、由来ファイルパスでセクションへ振り分ける。
+
+    Args:
+        specs: 同じ JUnit XML を参照する SectionSpec のリスト。
+        cases: その JUnit XML から読んだ BehaviorCase のリスト。
+
+    Returns:
+        SectionSpec ごとに振り分けられた BehaviorCase のリスト。
+
+    Raises:
+        ValueError: プレフィクスにどのセクションにも、または複数セクションにマッチする
+            ケースがあるとき。
+    """
+    if len(specs) == 1 and specs[0].prefixes is None:
+        return {specs[0]: cases}
+
+    assigned: dict[SectionSpec, list[BehaviorCase]] = {spec: [] for spec in specs}
+    for case in cases:
+        matches = [
+            spec
+            for spec in specs
+            if spec.prefixes is not None
+            and any(case.source_file.startswith(prefix) for prefix in spec.prefixes)
+        ]
+        if not matches:
+            raise ValueError(f"どのセクションにも振り分けられない testcase です: {case.source_file}")
+        if len(matches) > 1:
+            raise ValueError(f"複数のセクションに振り分けられる testcase です: {case.source_file}")
+        assigned[matches[0]].append(case)
+    return assigned
+
+
+def build_sections(specs: list[SectionSpec]) -> list[tuple[str, str, GroupNode]]:
+    """--section 引数群から (カテゴリ, セクション名, グループ木) のリストを組み立てる。
+
+    同じ JUnit XML を参照する SectionSpec は、由来ファイルパスのプレフィクスで振り分ける。
+    出力は --section の指定順によらず、カテゴリの初出順にまとめる。
+
+    Args:
+        specs: コマンドラインで指定された SectionSpec のリスト。
+
+    Returns:
+        カテゴリごとにまとめた (カテゴリ, セクション名, グループ木) のリスト。
+    """
+    specs_by_path: dict[Path, list[SectionSpec]] = {}
+    for spec in specs:
+        specs_by_path.setdefault(spec.path, []).append(spec)
+
+    assigned: dict[SectionSpec, list[BehaviorCase]] = {}
+    for path, path_specs in specs_by_path.items():
+        assigned.update(route_cases_to_specs(path_specs, parse_junit_file(path)))
+
+    specs_by_category: dict[str, list[SectionSpec]] = {}
+    for spec in specs:
+        specs_by_category.setdefault(spec.category, []).append(spec)
+
+    return [
+        (spec.category, spec.label, build_group_tree(assigned[spec]))
+        for category_specs in specs_by_category.values()
+        for spec in category_specs
+    ]
 
 
 def build_group_tree(cases: list[BehaviorCase]) -> GroupNode:
@@ -170,11 +260,11 @@ def append_group_markdown(lines: list[str], node: GroupNode, depth: int) -> None
         append_group_markdown(lines, subgroup, depth + 1)
 
 
-def render_markdown(sections: list[tuple[str, GroupNode]], commit: str | None) -> str:
-    """振る舞いカタログを Markdown で描画する。
+def render_markdown(sections: list[tuple[str, str, GroupNode]], commit: str | None) -> str:
+    """テスト観点カタログを Markdown で描画する。
 
     Args:
-        sections: (セクション名, グループ木) のリスト。
+        sections: (カテゴリ, セクション名, グループ木) のリスト。
         commit: 生成元 commit の SHA。None なら記載しない。
 
     Returns:
@@ -183,14 +273,18 @@ def render_markdown(sections: list[tuple[str, GroupNode]], commit: str | None) -
     lines = [f"# {PAGE_TITLE}", "", f"> {DISCLAIMER}", ""]
     if commit is not None:
         lines += [f"生成元 commit: `{commit}`", ""]
-    for label, root in sections:
-        lines += [f"## {escape_text(label)}（全 {count_cases(root)} ケース）", ""]
+    current_category = None
+    for category, label, root in sections:
+        if category != current_category:
+            lines += [f"## {escape_text(category)}", ""]
+            current_category = category
+        lines += [f"### {escape_text(label)}（全 {count_cases(root)} ケース）", ""]
         for case in root.cases:
             lines.append(f"- {format_case_text(case)}")
         if root.cases:
             lines.append("")
         for group_name in sorted(root.subgroups):
-            lines += [f"### {escape_text(group_name)}", ""]
+            lines += [f"#### {escape_text(group_name)}", ""]
             append_group_markdown(lines, root.subgroups[group_name], 0)
             lines.append("")
     return "\n".join(lines).rstrip("\n") + "\n"
@@ -222,11 +316,11 @@ def append_group_html(parts: list[str], node: GroupNode) -> None:
         parts.append("</details>")
 
 
-def render_html(sections: list[tuple[str, GroupNode]], commit: str | None) -> str:
-    """振る舞いカタログを単一ファイルの HTML ページとして描画する。
+def render_html(sections: list[tuple[str, str, GroupNode]], commit: str | None) -> str:
+    """テスト観点カタログを単一ファイルの HTML ページとして描画する。
 
     Args:
-        sections: (セクション名, グループ木) のリスト。
+        sections: (カテゴリ, セクション名, グループ木) のリスト。
         commit: 生成元 commit の SHA。None なら記載しない。
 
     Returns:
@@ -243,6 +337,7 @@ def render_html(sections: list[tuple[str, GroupNode]], commit: str | None) -> st
         "body { font-family: sans-serif; max-width: 60rem; margin: 0 auto; padding: 1rem 1.5rem; line-height: 1.7; }",
         "blockquote { border-left: 4px solid #c9c9c9; margin: 1rem 0; padding: 0.25rem 1rem; background: #f6f6f6; }",
         "h2 { border-bottom: 2px solid #ddd; padding-bottom: 0.25rem; margin-top: 2.5rem; }",
+        "h3 { margin-top: 1.75rem; }",
         "details { margin: 0.25rem 0 0.25rem 1rem; }",
         "summary { cursor: pointer; font-weight: bold; }",
         "summary:hover { color: #1a5fb4; }",
@@ -255,29 +350,41 @@ def render_html(sections: list[tuple[str, GroupNode]], commit: str | None) -> st
     ]
     if commit is not None:
         parts.append(f"<p>生成元 commit: <code>{escape_text(commit)}</code></p>")
-    for label, root in sections:
-        parts.append(f"<h2>{escape_text(label)}（全 {count_cases(root)} ケース）</h2>")
+    current_category = None
+    for category, label, root in sections:
+        if category != current_category:
+            parts.append(f"<h2>{escape_text(category)}</h2>")
+            current_category = category
+        parts.append(f"<h3>{escape_text(label)}（全 {count_cases(root)} ケース）</h3>")
         append_group_html(parts, root)
     parts += ["</body>", "</html>"]
     return "\n".join(parts) + "\n"
 
 
-def parse_section_arg(value: str) -> tuple[str, Path]:
-    """--section の「ラベル:パス」形式を分解する。
+def parse_section_arg(value: str) -> SectionSpec:
+    """--section の「カテゴリ:ラベル:パス[:プレフィクス]」形式を分解する。
 
     Args:
-        value: コマンドラインで渡された「ラベル:パス」。
+        value: コマンドラインで渡された値。
 
     Returns:
-        (セクション名, JUnit XML のパス)。
+        分解済みの SectionSpec。
 
     Raises:
-        argparse.ArgumentTypeError: 「ラベル:パス」の形式でないとき。
+        argparse.ArgumentTypeError: 「カテゴリ:ラベル:パス」の形式でないとき。
     """
-    label, colon, path = value.partition(":")
-    if not colon or not label or not path:
-        raise argparse.ArgumentTypeError(f"「ラベル:パス」の形式で指定してください: {value!r}")
-    return label, Path(path)
+    parts = value.split(":", 3)
+    if len(parts) < 3 or not all(parts[:3]):
+        raise argparse.ArgumentTypeError(
+            f"「カテゴリ:ラベル:パス」または「カテゴリ:ラベル:パス:プレフィクス」の形式で指定してください: {value!r}"
+        )
+    category, label, path = parts[0], parts[1], parts[2]
+    prefixes = None
+    if len(parts) == 4:
+        prefixes = tuple(prefix for prefix in parts[3].split(",") if prefix)
+        if not prefixes:
+            raise argparse.ArgumentTypeError(f"プレフィクスが空です: {value!r}")
+    return SectionSpec(category, label, Path(path), prefixes)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -286,20 +393,20 @@ def main(argv: list[str] | None = None) -> None:
     Args:
         argv: コマンドライン引数。None なら sys.argv を使う。
     """
-    parser = argparse.ArgumentParser(description="JUnit XML から振る舞いカタログを生成する")
+    parser = argparse.ArgumentParser(description="JUnit XML からテスト観点カタログを生成する")
     parser.add_argument(
         "--section",
         action="append",
         required=True,
         type=parse_section_arg,
-        metavar="LABEL:PATH",
-        help="セクション名と JUnit XML のパス (複数指定可)",
+        metavar="CATEGORY:LABEL:PATH[:PREFIXES]",
+        help="カテゴリ名・セクション名・JUnit XML のパス・振り分けプレフィクス (複数指定可)",
     )
     parser.add_argument("--format", choices=("markdown", "html"), required=True, help="出力形式")
     parser.add_argument("--commit", default=None, help="生成元 commit の SHA (省略可)")
     args = parser.parse_args(argv)
 
-    sections = [(label, build_group_tree(parse_junit_file(path))) for label, path in args.section]
+    sections = build_sections(args.section)
     renderer = render_markdown if args.format == "markdown" else render_html
     sys.stdout.write(renderer(sections, args.commit))
 

@@ -22,8 +22,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("ScoreDisplay", () => {
-  it("HP 表示は (100 - score) / 100 になる", () => {
+describe("採点スコアの演出", () => {
+  it("スコア 35 のとき、相手の残り HP が 65/100 と表示される", () => {
     render(<ScoreDisplay score={withScore(35)} />);
     expect(screen.getByText("65/100")).toBeInTheDocument();
   });

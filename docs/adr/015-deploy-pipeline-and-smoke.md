@@ -28,13 +28,13 @@ GitHub Flow (main 1 本、ADR-009) への移行に伴い、環境反映を「mai
 
 ワークフローは 3 ファイルに分ける。
 
-- `ci.yml`: 共有 CI。PR (`pull_request`) と `workflow_call` で起動し、lint・バックエンド・フロントエンド・E2E・Terraform fmt・振る舞いカタログ (ジョブ要約) を走らせる。
-- `deploy-dev.yml`: `main` への push で起動。CI を再実行し、通れば dev へ backend/frontend をデプロイ、デプロイ後にスモークを走らせ、振る舞いカタログを GitHub Pages へ公開する。表示バージョンは `git describe --tags --always`。
+- `ci.yml`: 共有 CI。PR (`pull_request`) と `workflow_call` で起動し、lint・バックエンド・フロントエンド・E2E・Terraform fmt・テスト観点カタログ (ジョブ要約) を走らせる。
+- `deploy-dev.yml`: `main` への push で起動。CI を再実行し、通れば dev へ backend/frontend をデプロイ、デプロイ後にスモークを走らせ、テスト観点カタログを GitHub Pages へ公開する。表示バージョンは `git describe --tags --always`。
 - `deploy-prod.yml`: `v*` タグ push で起動。テストは走らせず、同一コミットを prod レジストリへ再ビルドして prod へデプロイし、frontend も prod 用に再ビルドしてデプロイする。表示バージョンはタグ。
 
 スモーク (`scripts/smoke-dev.sh`) は、`GET /health` (起動確認) と、許可リストに常設したフィクスチャユーザでの `GET /api/usage` (実 Firebase Auth・Firestore・env/secret の配線確認) の 2 本のみを叩く。書き込みをしないため後始末は不要で、失敗しても通知のみとする。
 
-振る舞いカタログはマージ時点の仕様を表す。テストが走るのは main マージの実行だけなので、公開もそのタイミングで行う。
+テスト観点カタログはマージ時点の仕様を表す。テストが走るのは main マージの実行だけなので、公開もそのタイミングで行う。
 
 ## 不採用案
 

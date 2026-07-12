@@ -33,6 +33,10 @@ interface AppOverrides {
   rateLimitKind?: RateLimitKind;
   /** settings 取得が投げるエラー (想定外エラー→500 の検証用)。 */
   settingsError?: Error;
+  /** PokeAPI クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
+  pokemonError?: Error;
+  /** 図鑑詳細エンドポイントの検証用に、事前に保存済みとして扱うユーザ実績。 */
+  seededUserPokemon?: UserPokemon[];
 }
 
 /**
@@ -41,7 +45,7 @@ interface AppOverrides {
  * @returns supertest で叩ける Express アプリ。
  */
 function makeApp(o: AppOverrides = {}) {
-  const pokemonClient = makePokemonClient([makePokemon()]);
+  const pokemonClient = makePokemonClient([makePokemon()], { error: o.pokemonError });
   const llm: LLMClient = {
     generateText: async () => {
       if (o.llmError) throw o.llmError;
@@ -53,6 +57,9 @@ function makeApp(o: AppOverrides = {}) {
 
   // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
   const pokemonStore = new Map<number, UserPokemon>();
+  for (const entry of o.seededUserPokemon ?? []) {
+    pokemonStore.set(entry.pokemon_id, entry);
+  }
   const userPokemonRepo: UserPokemonRepository = {
     upsertEncounter: async (_uid, pokemonID, score, isCaptured) => {
       pokemonStore.set(pokemonID, {
@@ -123,14 +130,14 @@ function makeApp(o: AppOverrides = {}) {
   return app;
 }
 
-describe("エラー→HTTP マッピング (公開入口経由)", () => {
+describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
   it("セッションが無い採点リクエストは 404 を返す", async () => {
     const res = await request(makeApp()).post("/api/quest/score").send({ translation: "訳" });
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: "resource not found" });
   });
 
-  it("LLM が失敗した採点は 502 を返す", async () => {
+  it("AI 呼び出しが失敗した採点は 502 を返す", async () => {
     const app = makeApp({ llmError: new Error("llm down") });
     await request(app).get("/api/quest/new");
     const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
@@ -138,7 +145,34 @@ describe("エラー→HTTP マッピング (公開入口経由)", () => {
     expect(res.body).toEqual({ error: "external service unavailable" });
   });
 
-  it("ユーザー上限到達は 429 + kind=user + ユーザー向けメッセージを返す", async () => {
+  it("ポケモン情報の取得に失敗した出題リクエストは 502 を返す", async () => {
+    const app = makeApp({ pokemonError: new Error("pokeapi down") });
+    const res = await request(app).get("/api/quest/new");
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "external service unavailable" });
+  });
+
+  it("ポケモン情報の取得に失敗した図鑑詳細リクエストは 502 を返す", async () => {
+    const app = makeApp({
+      pokemonError: new Error("pokeapi down"),
+      seededUserPokemon: [
+        {
+          pokemon_id: 1,
+          status: "seen",
+          total_captures: 0,
+          total_encounters: 1,
+          last_captured_at: null,
+          last_encountered_at: new Date(),
+          best_score: 0,
+        },
+      ],
+    });
+    const res = await request(app).get("/api/pokedex/1");
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "external service unavailable" });
+  });
+
+  it("自分の利用上限に達すると 429 になり、個人の上限である旨とユーザー向けメッセージを返す", async () => {
     const app = makeApp({ rateLimitKind: "user" });
     const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
     expect(res.status).toBe(429);
@@ -146,7 +180,7 @@ describe("エラー→HTTP マッピング (公開入口経由)", () => {
     expect(res.body.message).toBeTruthy();
   });
 
-  it("全体上限到達は 429 + kind=global を返し、メッセージは user と異なる", async () => {
+  it("全体の利用上限に達すると 429 になり、全体の上限である旨を返し、メッセージはユーザー上限時と異なる", async () => {
     const userRes = await request(makeApp({ rateLimitKind: "user" }))
       .post("/api/quest/score")
       .send({ translation: "訳" });
@@ -167,12 +201,12 @@ describe("エラー→HTTP マッピング (公開入口経由)", () => {
 });
 
 describe("入力バリデーションの 400 (公開入口経由)", () => {
-  it("translation 欠落の採点は 400", async () => {
+  it("訳文が無い採点リクエストは 400", async () => {
     const res = await request(makeApp()).post("/api/quest/score").send({});
     expect(res.status).toBe(400);
   });
 
-  it("guess 欠落の名前推測は 400", async () => {
+  it("名前当ての回答が無いリクエストは 400", async () => {
     const res = await request(makeApp()).post("/api/quest/guess-name").send({});
     expect(res.status).toBe(400);
   });
@@ -187,8 +221,13 @@ describe("入力バリデーションの 400 (公開入口経由)", () => {
     expect(res.status).toBe(400);
   });
 
-  it.each([0, 101])("範囲外の除外 ID %i は 400", async (id) => {
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [id] });
+  it("範囲外の除外 ID 0 は 400", async () => {
+    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [0] });
+    expect(res.status).toBe(400);
+  });
+
+  it("設定上限を 1 超える除外 ID は 400", async () => {
+    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [101] });
     expect(res.status).toBe(400);
   });
 
@@ -238,7 +277,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.captured_count).toBe(1);
   });
 
-  it("除外設定の保存内容が GET で読み戻せる", async () => {
+  it("重複や順序を含む除外設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
     const app = makeApp();
     const put = await request(app).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [7, 3, 3] });
     expect(put.status).toBe(200);
@@ -249,7 +288,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(got.body).toEqual({ excluded_pokemon_ids: [3, 7], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] });
   });
 
-  it("世代設定の保存内容が GET で読み戻せる", async () => {
+  it("重複や順序を含む世代設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
     const app = makeApp();
     const put = await request(app).put("/api/settings/generations").send({ generations: [3, 1, 1] });
     expect(put.status).toBe(200);
@@ -260,7 +299,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(got.body).toEqual({ excluded_pokemon_ids: [], enabled_generations: [1, 3] });
   });
 
-  it("利用状況が取得できる", async () => {
+  it("認証済みユーザーが利用状況を取得すると、利用回数と上限が返る", async () => {
     const res = await request(makeApp()).get("/api/usage");
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ count: 3, limit: 30 });
@@ -272,7 +311,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(res.body).toEqual({ tutorial_completed: false });
   });
 
-  it("完了フラグを立てた後、完了状態を取得すると true を読み戻せる", async () => {
+  it("完了フラグを立てた後に完了状態を取得すると、true が返る", async () => {
     const app = makeApp();
     const complete = await request(app).put("/api/tutorial-status/complete");
     expect(complete.status).toBe(200);
@@ -281,7 +320,7 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(got.body).toEqual({ tutorial_completed: true });
   });
 
-  it("場所選択の候補として、決められた数の場所が id・名前・説明・タイプ付きで返る", async () => {
+  it("場所選択の候補として、決められた数の場所が ID・名前・説明・タイプ付きで返る", async () => {
     const res = await request(makeApp()).get("/api/quest/locations");
     expect(res.status).toBe(200);
     expect(res.body.locations).toHaveLength(LOCATION_CHOICE_COUNT);

@@ -47,8 +47,8 @@ const DUMMY_IDENTITY = { pokemon_id: 9999, name_ja: DUMMY_NAME };
  * テスト対象外: 画像 src/ポケモン名 の "props 透過" 表示は仕様ではなく、
  * Render が動けば成立するため検証しない。
  */
-describe("CaptureResult", () => {
-  it("captured=true で捕獲タイトル (ポケモン名入り) を表示する", () => {
+describe("捕獲結果画面", () => {
+  it("捕獲に成功すると、捕獲タイトル (ポケモン名入り) を表示する", () => {
     renderWithProviders(
       <CaptureResult result={baseResult()} onNewQuest={vi.fn()} />,
       { withRouter: true },
@@ -58,7 +58,7 @@ describe("CaptureResult", () => {
     ).toBeInTheDocument();
   });
 
-  it("captured=false で逃走タイトルを表示する", () => {
+  it("捕獲に失敗すると、逃走タイトルを表示する", () => {
     renderWithProviders(
       <CaptureResult
         result={baseResult({ captured: false })}
@@ -71,7 +71,7 @@ describe("CaptureResult", () => {
     ).toBeInTheDocument();
   });
 
-  it("「メニューに戻る」ボタンでホーム (/) へ遷移する", async () => {
+  it("「メニューに戻る」ボタンでホーム画面へ遷移する", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/quest"]}>

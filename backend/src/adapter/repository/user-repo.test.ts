@@ -4,16 +4,16 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("チュートリアル完了フラグの永続化 (Firestore emulator)", () => {
+describe("チュートリアル完了フラグの永続化", () => {
   beforeEach(clearFirestoreEmulator);
 
-  it("新規ユーザーは、チュートリアル未完了として読める", async () => {
+  it("一度も保存していないユーザーの完了フラグを取得すると、未完了が返る", async () => {
     const repo = new UserRepo(db);
     const user = await repo.getUser("newcomer");
     expect(user.tutorial_completed).toBe(false);
   });
 
-  it("チュートリアルを完了させると、完了状態として読み戻せる", async () => {
+  it("完了を保存した後に取得すると、完了済みが返る", async () => {
     const repo = new UserRepo(db);
     await repo.markTutorialCompleted("alice");
 

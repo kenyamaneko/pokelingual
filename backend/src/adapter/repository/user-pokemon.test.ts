@@ -4,10 +4,10 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("UserPokemonRepo (Firestore emulator)", () => {
+describe("図鑑記録の保存", () => {
   beforeEach(clearFirestoreEmulator);
 
-  it("未遭遇のポケモンに対する upsert は seen として記録される", async () => {
+  it("初めて遭遇したポケモンは、遭遇済みとして記録される", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 70, false);
 
@@ -21,7 +21,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.last_encountered_at).toBeInstanceOf(Date);
   });
 
-  it("未遭遇のポケモンに対する captured=true の upsert は captured として記録される", async () => {
+  it("初めて捕獲したポケモンは、捕獲済みとして記録される", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 90, true);
 
@@ -33,7 +33,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.last_captured_at).toBeInstanceOf(Date);
   });
 
-  it("seen のあとの seen upsert で total_encounters のみ増える", async () => {
+  it("遭遇済みのポケモンに再度遭遇すると、遭遇回数だけが増える", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 70, false);
     await repo.upsertEncounter("alice", 25, 60, false);
@@ -44,7 +44,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.total_captures).toBe(0);
   });
 
-  it("seen のあとの captured upsert で status が captured に昇格する", async () => {
+  it("遭遇済みのポケモンを捕獲すると、記録が捕獲済みに昇格する", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 70, false);
     await repo.upsertEncounter("alice", 25, 95, true);
@@ -56,7 +56,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.last_captured_at).toBeInstanceOf(Date);
   });
 
-  it("captured のあとの seen upsert でも status は captured のまま", async () => {
+  it("捕獲済みのポケモンに再度遭遇しても、捕獲済みのまま変わらない", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 95, true);
     await repo.upsertEncounter("alice", 25, 50, false);
@@ -67,7 +67,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.total_captures).toBe(1);
   });
 
-  it("best_score は過去最高値のみ更新する", async () => {
+  it("採点スコアが過去最高を上回ったときだけ、図鑑の最高スコアが更新される", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 25, 80, false);
     await repo.upsertEncounter("alice", 25, 60, false);
@@ -78,7 +78,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokemon.best_score).toBe(90);
   });
 
-  it("getPokedex は pokemon_id 昇順で返す", async () => {
+  it("登録した図鑑記録は図鑑番号の昇順で返る", async () => {
     const repo = new UserPokemonRepo(db);
     await repo.upsertEncounter("alice", 150, 80, true);
     await repo.upsertEncounter("alice", 1, 70, false);
@@ -88,7 +88,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(pokedex.map((p) => p.pokemon_id)).toEqual([1, 25, 150]);
   });
 
-  it("未遭遇ユーザーの getPokedex は空配列", async () => {
+  it("まだ何も記録していないユーザーの図鑑は空配列になる", async () => {
     const repo = new UserPokemonRepo(db);
     const pokedex = await repo.getPokedex("newcomer");
     expect(pokedex).toEqual([]);
@@ -102,7 +102,7 @@ describe("UserPokemonRepo (Firestore emulator)", () => {
     expect(bobPokedex).toEqual([]);
   });
 
-  it("未遭遇ポケモンへの getPokemon はエラー", async () => {
+  it("未遭遇のポケモンの記録を取得しようとすると、エラーになる", async () => {
     const repo = new UserPokemonRepo(db);
     await expect(repo.getPokemon("alice", 25)).rejects.toThrow();
   });

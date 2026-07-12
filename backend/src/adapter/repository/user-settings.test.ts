@@ -4,16 +4,16 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("UserSettingsRepo (Firestore emulator)", () => {
+describe("ユーザー設定の保存", () => {
   beforeEach(clearFirestoreEmulator);
 
-  it("未保存ユーザーは excluded_pokemon_ids=null として読める", async () => {
+  it("一度も保存していないユーザーの設定を取得すると、苦手ポケモンは未設定が返る", async () => {
     const repo = new UserSettingsRepo(db);
     const settings = await repo.getSettings("newcomer");
     expect(settings.excluded_pokemon_ids).toBeNull();
   });
 
-  it("updateExcludedPokemon で保存した値が getSettings で取得できる", async () => {
+  it("保存した苦手ポケモンの一覧を読み直すと、同じ内容が返る", async () => {
     const repo = new UserSettingsRepo(db);
     await repo.updateExcludedPokemon("alice", [1, 25, 150]);
 
@@ -21,7 +21,7 @@ describe("UserSettingsRepo (Firestore emulator)", () => {
     expect(settings.excluded_pokemon_ids).toEqual([1, 25, 150]);
   });
 
-  it("updateExcludedPokemon は後勝ちで上書きする", async () => {
+  it("苦手ポケモンを再度保存すると、後の値で上書きされる", async () => {
     const repo = new UserSettingsRepo(db);
     await repo.updateExcludedPokemon("alice", [1, 25]);
     await repo.updateExcludedPokemon("alice", [4, 7]);
@@ -47,13 +47,13 @@ describe("UserSettingsRepo (Firestore emulator)", () => {
     expect(bobSettings.excluded_pokemon_ids).toBeNull();
   });
 
-  it("世代を一度も保存していないユーザーは未設定として読める", async () => {
+  it("一度も保存していないユーザーの設定を取得すると、出題世代は未設定が返る", async () => {
     const repo = new UserSettingsRepo(db);
     const settings = await repo.getSettings("newcomer");
     expect(settings.enabled_generations).toBeNull();
   });
 
-  it("保存した出題世代を読み戻せる", async () => {
+  it("保存した出題世代を読み直すと、同じ内容が返る", async () => {
     const repo = new UserSettingsRepo(db);
     await repo.updateEnabledGenerations("alice", [1, 3, 5]);
 

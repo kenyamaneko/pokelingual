@@ -41,15 +41,15 @@ function renderGuarded(auth: { user: User | null; loading: boolean }) {
   );
 }
 
-describe("ProtectedRoute", () => {
-  it("認証済みなら children を描画する", () => {
+describe("ログイン必須画面の保護", () => {
+  it("ログイン済みなら、保護対象の画面が表示される", () => {
     renderGuarded({ user: fakeUser, loading: false });
 
     expect(screen.getByTestId("secret-page")).toBeInTheDocument();
     expect(screen.queryByTestId("login-page")).not.toBeInTheDocument();
   });
 
-  it("未認証なら /login へリダイレクトする", () => {
+  it("未認証なら、ログイン画面へリダイレクトする", () => {
     renderGuarded({ user: null, loading: false });
 
     expect(screen.getByTestId("login-page")).toBeInTheDocument();

@@ -242,9 +242,9 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
-  # 振る舞いカタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
+  # テスト観点カタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
   publish-reports:
-    name: Publish Behavior Catalog & Coverage to GitHub Pages
+    name: Publish Test Perspective Catalog & Coverage to GitHub Pages
     needs: test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
@@ -270,16 +270,17 @@ jobs:
           pattern: junit-*
           path: junit-artifacts
 
-      # 振る舞いカタログ (index.html) とは別ページにするため、既存 URL に影響しないルート直下に生成する。
+      # カバレッジページとは別ページにするため、既存 URL に影響しないルート直下に生成する。
       - name: Generate catalog HTML
         run: |
           mkdir -p _site
           python scripts/generate_behavior_catalog.py \
             --format html \
             --commit "${GITHUB_SHA}" \
-            --section "backend:junit-artifacts/junit-backend/junit.xml" \
-            --section "frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
-            --section "E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
+            --section "外から見た振る舞い:backend API の振る舞い:junit-artifacts/junit-backend/junit.xml:src/router/,src/middleware/" \
+            --section "内部の挙動:backend 内部部品の検証（開発者向け）:junit-artifacts/junit-backend/junit.xml:src/adapter/,src/domain/,src/service/,src/config/,src/util/" \
+            --section "外から見た振る舞い:frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
+            --section "外から見た振る舞い:E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
             > _site/index.html
 
       - name: Download coverage reports

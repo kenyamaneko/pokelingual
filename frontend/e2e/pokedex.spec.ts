@@ -5,14 +5,14 @@ import { BUTTON, HEADING, LINK, TEXT } from "./labels";
 // 固定ポケモン集合・即時採点を前提とする mock モード専用。dev は dev-quest-flow.spec.ts が担当。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
-test("図鑑ページが表示される", async ({ page }) => {
+test("ログインして図鑑を開くと、図鑑が表示される", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: LINK.viewPokedex }).click();
   await expect(page).toHaveURL("/pokedex");
   await expect(page.getByRole("heading", { name: HEADING.pokedex })).toBeVisible();
 });
 
-test("クエスト後に捕獲ポケモンが図鑑に表示される", async ({ page }) => {
+test("クエスト後の図鑑確認（カード表示 → 詳細モーダルの実績確認 → 閉じる）", async ({ page }) => {
   // クエストを1回完了（mock モードでは捕獲は決定的に成功する）
   await completeQuest(page);
 

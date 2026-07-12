@@ -24,8 +24,8 @@ function stubRepo(checkAndIncrement: RateLimitRepository["checkAndIncrement"]): 
   };
 }
 
-describe("rate-limit ミドルウェア", () => {
-  it("上限内なら次のハンドラに進む（next が呼ばれる）", async () => {
+describe("レート制限", () => {
+  it("利用回数が上限内なら、リクエストは通過する", async () => {
     const mw = rateLimit(stubRepo(async () => ({ count: 1, limit: 3 })));
     const { req, res, next, status } = makeReqRes();
 
@@ -35,7 +35,7 @@ describe("rate-limit ミドルウェア", () => {
     expect(status).not.toHaveBeenCalled();
   });
 
-  it("ユーザー上限超過時は 429 を返し、kind=user を含む", async () => {
+  it("自分の利用上限を超えると 429 になり、個人の上限である旨が返る", async () => {
     const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("user"); }));
     const { req, res, next, status, json } = makeReqRes();
 
@@ -46,7 +46,7 @@ describe("rate-limit ミドルウェア", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("全体上限超過時は 429 を返し、kind=global を含む", async () => {
+  it("全体の利用上限を超えると 429 になり、全体の上限である旨が返る", async () => {
     const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("global"); }));
     const { req, res, next, status, json } = makeReqRes();
 

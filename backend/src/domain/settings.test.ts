@@ -5,20 +5,20 @@ import { validateExcludedPokemonIDs } from "./settings.js";
 const MAX_ID = 10;
 const MAX_COUNT = 3;
 
-describe("validateExcludedPokemonIDs", () => {
-  it("有効な ID を重複排除・昇順で返す", () => {
+describe("除外ポケモン設定の検証", () => {
+  it("重複を含む有効な ID を保存すると、重複が除かれ昇順で受理される", () => {
     expect(validateExcludedPokemonIDs([3, 1, 3, 2], MAX_ID, MAX_COUNT)).toEqual({ ok: true, ids: [1, 2, 3] });
   });
 
-  it("空配列は成功 (除外なし)", () => {
+  it("空配列を渡すと、除外なしとして成功する", () => {
     expect(validateExcludedPokemonIDs([], MAX_ID, MAX_COUNT)).toEqual({ ok: true, ids: [] });
   });
 
-  it("配列でなければ失敗", () => {
+  it("配列でなければ失敗する", () => {
     expect(validateExcludedPokemonIDs("x", MAX_ID, MAX_COUNT).ok).toBe(false);
   });
 
-  it("undefined でも失敗 (リクエストボディ欠落)", () => {
+  it("undefined でも失敗する (リクエストボディ欠落)", () => {
     expect(validateExcludedPokemonIDs(undefined, MAX_ID, MAX_COUNT).ok).toBe(false);
   });
 
@@ -27,24 +27,24 @@ describe("validateExcludedPokemonIDs", () => {
     expect(validateExcludedPokemonIDs([1], MAX_ID, MAX_COUNT).ok).toBe(true);
   });
 
-  it("上限: maxPokemonID は成功、+1 は失敗", () => {
+  it("上限ちょうどの ID は成功し、上限を 1 超えると失敗する", () => {
     expect(validateExcludedPokemonIDs([MAX_ID], MAX_ID, MAX_COUNT).ok).toBe(true);
     expect(validateExcludedPokemonIDs([MAX_ID + 1], MAX_ID, MAX_COUNT).ok).toBe(false);
   });
 
-  it("非整数は失敗", () => {
+  it("非整数は失敗する", () => {
     expect(validateExcludedPokemonIDs([1.5], MAX_ID, MAX_COUNT).ok).toBe(false);
   });
 
-  it("件数が上限ちょうどは成功", () => {
+  it("件数が上限ちょうどのとき、成功する", () => {
     expect(validateExcludedPokemonIDs([1, 2, 3], MAX_ID, MAX_COUNT).ok).toBe(true);
   });
 
-  it("件数が上限を超えると失敗", () => {
+  it("件数が上限を超えると失敗する", () => {
     expect(validateExcludedPokemonIDs([1, 2, 3, 4], MAX_ID, MAX_COUNT).ok).toBe(false);
   });
 
-  it("重複排除後に上限以内なら成功", () => {
+  it("重複を除いた件数が上限以内なら、成功する", () => {
     expect(validateExcludedPokemonIDs([1, 1, 2, 2, 3, 3], MAX_ID, MAX_COUNT)).toEqual({ ok: true, ids: [1, 2, 3] });
   });
 });
