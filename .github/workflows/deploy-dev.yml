@@ -217,6 +217,50 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting --project ${{ vars.FIREBASE_PROJECT_ID }}
 
+  # 実 Firebase Auth・実 Gemini・実 Firestore を通す唯一の自動テスト。smoke-dev で配線切れを
+  # 弾いた後に実行する (Gemini を消費するため、基本的な疎通確認より後段に置く)。
+  e2e-dev:
+    name: E2E Tests (dev)
+    needs: [smoke-dev, deploy-frontend]
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 15
+    environment: dev
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E (cloud dev)
+        working-directory: frontend
+        env:
+          E2E_MODE: dev
+          E2E_BASE_URL: https://pokelingual-dev.web.app
+          E2E_EMAIL: test@pokelingual.dev
+          E2E_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: npx playwright test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-dev
+          path: frontend/playwright-report/
+          retention-days: 7
+
   # 振る舞いカタログはマージ時点の仕様として公開する (テストが走るのはこのマージ実行のみ)
   publish-behavior-catalog:
     name: Publish Behavior Catalog to GitHub Pages

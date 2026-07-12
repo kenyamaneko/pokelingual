@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { completeTutorialViaApi } from "./helpers";
 import { BUTTON, LINK, PLACEHOLDER, TEXT } from "./labels";
 
-// mock モード専用。dev は dev-signup-flow.spec.ts が担当。
+// mock モード専用。dev は dev-quest-flow.spec.ts が担当。
 // mock は場所選択・出題・捕獲が MockRandomSource で決定化されている。「廃墟の発電所」(でんき) を
 // 選ぶと出題は必ずピカチュウ、捕獲も必ず成功するため、正誤・捕獲を確定的に検証できる。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
