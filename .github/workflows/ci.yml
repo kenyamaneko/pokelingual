@@ -362,10 +362,12 @@ jobs:
       - name: Terraform init
         run: terraform init -backend-config=environments/dev/backend.gcs.tfbackend
 
+      # -lock=false: このSAは読み取り専用でapplyを実行しないため、状態ロック用オブジェクトへの
+      # 書き込み権限を持たせる必要がない。
       - name: Terraform plan
         run: |
           {
             echo '```'
-            terraform plan -input=false -no-color -var-file=environments/dev/terraform.tfvars
+            terraform plan -input=false -no-color -lock=false -var-file=environments/dev/terraform.tfvars
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
