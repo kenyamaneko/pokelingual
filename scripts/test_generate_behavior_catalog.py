@@ -207,12 +207,49 @@ class TestRenderMarkdown:
 
 class TestRenderHtml:
     def test_日本語ページとして本文にケース名と注意書きが入る(self):
-        tree = build_group_tree([BehaviorCase(("グループA",), "ケースX", is_skipped=False)])
+        tree = build_group_tree([BehaviorCase((), "ケースX", is_skipped=False)])
         output = render_html([("backend", tree)], commit="dummysha")
         assert '<html lang="ja">' in output
         assert "<li>ケースX</li>" in output
         assert "本カタログは自動テストのテスト名から生成した" in output
         assert "<code>dummysha</code>" in output
+
+    def test_グループは折りたたみ可能な_details_としてケース数の注記付きで現れる(self):
+        tree = build_group_tree(
+            [
+                BehaviorCase(("グループA",), "ケース1", is_skipped=False),
+                BehaviorCase(("グループA",), "ケース2", is_skipped=False),
+            ]
+        )
+        output = render_html([("backend", tree)], commit=None)
+        assert "<details><summary>グループA（全 2 ケース）</summary>" in output
+        assert "<li>ケース1</li>" in output
+        assert "<li>ケース2</li>" in output
+
+    def test_details_はケースの_ul_の外側に置かれる(self):
+        tree = build_group_tree([BehaviorCase(("グループA",), "ケースX", is_skipped=False)])
+        output = render_html([("backend", tree)], commit=None)
+        assert "<ul><details>" not in output
+        assert "<ul>\n<details>" not in output
+
+    def test_入れ子のグループは_details_が入れ子になる(self):
+        tree = build_group_tree([BehaviorCase(("グループA", "グループB"), "ケースX", is_skipped=False)])
+        output = render_html([("backend", tree)], commit=None)
+        outer_start = output.index("<details><summary>グループA")
+        inner_start = output.index("<details><summary>グループB")
+        inner_end = output.index("</details>", inner_start)
+        outer_end = output.index("</details>", inner_end + 1)
+        assert outer_start < inner_start < inner_end < outer_end
+
+    def test_トップレベルのグループは入力順によらず名前順に並ぶ(self):
+        tree = build_group_tree(
+            [
+                BehaviorCase(("グループB",), "ケース1", is_skipped=False),
+                BehaviorCase(("グループA",), "ケース2", is_skipped=False),
+            ]
+        )
+        output = render_html([("backend", tree)], commit=None)
+        assert output.index("グループA（全") < output.index("グループB（全")
 
     def test_skip_中のケースには未検証の注記とスタイル区分が付く(self):
         tree = build_group_tree([BehaviorCase((), "ケースX", is_skipped=True)])

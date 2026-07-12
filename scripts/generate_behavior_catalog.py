@@ -197,21 +197,29 @@ def render_markdown(sections: list[tuple[str, GroupNode]], commit: str | None) -
 
 
 def append_group_html(parts: list[str], node: GroupNode) -> None:
-    """グループ内のケースと下位グループを HTML の入れ子リストとして追記する。
+    """グループ内のケースと下位グループを HTML として追記する。
+
+    ケースは <ul><li> で列挙し、下位グループは <details> としてケース数の注記付きで追記する。
 
     Args:
         parts: 追記先の HTML 断片リスト。
         node: 描画するグループ。
     """
-    parts.append("<ul>")
-    for case in node.cases:
-        css_class = ' class="skipped"' if case.is_skipped else ""
-        parts.append(f"<li{css_class}>{format_case_text(case)}</li>")
-    for group_name, subgroup in node.subgroups.items():
-        parts.append(f'<li class="group">{escape_text(group_name)}')
+    if node.cases:
+        parts.append("<ul>")
+        for case in node.cases:
+            css_class = ' class="skipped"' if case.is_skipped else ""
+            parts.append(f"<li{css_class}>{format_case_text(case)}</li>")
+        parts.append("</ul>")
+    for group_name in sorted(node.subgroups):
+        subgroup = node.subgroups[group_name]
+        # open 属性を付けず、ページが縦に長くなりすぎないよう既定で閉じた状態にする。
+        parts.append(
+            f"<details><summary>{escape_text(group_name)}"
+            f"（全 {count_cases(subgroup)} ケース）</summary>"
+        )
         append_group_html(parts, subgroup)
-        parts.append("</li>")
-    parts.append("</ul>")
+        parts.append("</details>")
 
 
 def render_html(sections: list[tuple[str, GroupNode]], commit: str | None) -> str:
@@ -235,8 +243,9 @@ def render_html(sections: list[tuple[str, GroupNode]], commit: str | None) -> st
         "body { font-family: sans-serif; max-width: 60rem; margin: 0 auto; padding: 1rem 1.5rem; line-height: 1.7; }",
         "blockquote { border-left: 4px solid #c9c9c9; margin: 1rem 0; padding: 0.25rem 1rem; background: #f6f6f6; }",
         "h2 { border-bottom: 2px solid #ddd; padding-bottom: 0.25rem; margin-top: 2.5rem; }",
-        "li.group { list-style: none; font-weight: bold; margin-left: -1rem; }",
-        "li.group > ul { font-weight: normal; }",
+        "details { margin: 0.25rem 0 0.25rem 1rem; }",
+        "summary { cursor: pointer; font-weight: bold; }",
+        "summary:hover { color: #1a5fb4; }",
         "li.skipped { color: #888; }",
         "</style>",
         "</head>",
@@ -248,11 +257,7 @@ def render_html(sections: list[tuple[str, GroupNode]], commit: str | None) -> st
         parts.append(f"<p>生成元 commit: <code>{escape_text(commit)}</code></p>")
     for label, root in sections:
         parts.append(f"<h2>{escape_text(label)}（全 {count_cases(root)} ケース）</h2>")
-        if root.cases:
-            append_group_html(parts, GroupNode(subgroups={}, cases=root.cases))
-        for group_name in sorted(root.subgroups):
-            parts.append(f"<h3>{escape_text(group_name)}</h3>")
-            append_group_html(parts, root.subgroups[group_name])
+        append_group_html(parts, root)
     parts += ["</body>", "</html>"]
     return "\n".join(parts) + "\n"
 

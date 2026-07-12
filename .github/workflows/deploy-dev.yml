@@ -259,9 +259,9 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
-  # 振る舞いカタログはマージ時点の仕様として公開する (テストが走るのはこのマージ実行のみ)
-  publish-behavior-catalog:
-    name: Publish Behavior Catalog to GitHub Pages
+  # 振る舞いカタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
+  publish-reports:
+    name: Publish Behavior Catalog & Coverage to GitHub Pages
     needs: test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
@@ -287,6 +287,7 @@ jobs:
           pattern: junit-*
           path: junit-artifacts
 
+      # 振る舞いカタログ (index.html) とは別ページにするため、既存 URL に影響しないルート直下に生成する。
       - name: Generate catalog HTML
         run: |
           mkdir -p _site
@@ -297,6 +298,19 @@ jobs:
             --section "frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
             --section "E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
             > _site/index.html
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+
+      # backend/frontend は別プロセスで計測しておりマージできないため、サブパスで並置する。
+      - name: Assemble coverage pages
+        run: |
+          mkdir -p _site/coverage/backend _site/coverage/frontend
+          cp -r coverage-artifacts/coverage-backend/. _site/coverage/backend/
+          cp -r coverage-artifacts/coverage-frontend/. _site/coverage/frontend/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
