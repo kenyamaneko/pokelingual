@@ -69,27 +69,6 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev
 
-      # デプロイ後スモークがサインインする恒久フィクスチャユーザを許可リストに常設する (冪等)
-      - name: Ensure smoke user email in allowed_emails
-        run: |
-          ACCESS_TOKEN=$(gcloud auth print-access-token)
-          PROJECT_ID="${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
-          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
-          DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
-          EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
-          if echo "${EXISTING}" | grep -qx "${TEST_USER_EMAIL}"; then
-            echo "Smoke user email already in allowed_emails"
-          else
-            echo "Adding smoke user email to allowed_emails..."
-            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${TEST_USER_EMAIL}"'"}]')
-            curl -s -X PATCH \
-              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
-              -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
-            echo "Added ${TEST_USER_EMAIL} to allowed_emails"
-          fi
-
       - name: Build and push Docker image
         run: |
           IMAGE_BASE="${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api"

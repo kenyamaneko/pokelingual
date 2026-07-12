@@ -38,3 +38,7 @@ UI 上は **Google を主、メールを従** とする。「Google で　はじ
 ## Amendment: 2026-07-02 google.com IdP の有効化を Terraform 管理外へ
 
 google.com IdP の有効化を Terraform 管理外に変更した。当初は `google_identity_platform_default_supported_idp_config` を TF 変数（client_id/secret）で注入していたが、client_secret が tfstate に平文で残り `rules/lang/iac.md`「機密を state に置かない」に反するため、IdP 有効化は Google Cloud コンソール/gcloud で行う運用に切り替えた。
+
+## Amendment: 2026-07-12 ホワイトリスト機構を廃止し公開モードのみにする
+
+ホワイトリスト機構 (`config/auth.allowed_emails` の読み込みと検証) を撤去した。prod を一般公開する方針が確定し、ホワイトリストを維持する前提自体がなくなったため、「空配列で公開モード」という条件分岐ではなく常時公開モードにした。リリース前監査で prod の `allowed_emails` が運用と乖離していた (空配列の想定に対し作成時の 1 件が残留) ことも撤去の後押しになった。dev の保護は Firebase プロジェクトの分離で担保する。
