@@ -100,6 +100,9 @@ jobs:
             .
           docker push "${IMAGE_BASE}" --all-tags
 
+      # --max-instances 1: クエストセッションをインスタンスのメモリ内に保持するため、
+      # 複数インスタンスにスケールすると別インスタンスに振られたユーザーのセッションが
+      # 見つからず 404 になる。
       # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
       # これはエンドユーザー向け API での Google 推奨パターン。
       # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
@@ -114,6 +117,7 @@ jobs:
             --service-account "pokelingual-api-dev@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
             --remove-secrets "GEMINI_API_KEY" \
             --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
+            --max-instances 1 \
             --allow-unauthenticated
 
       # ロールバックで --to-revisions を使うとトラフィックが特定リビジョンにピン留めされ、
