@@ -80,8 +80,8 @@ resource "google_firestore_database" "default" {
   location_id = var.region
   type        = "FIRESTORE_NATIVE"
 
-  # 誤操作・不具合による書き込み破損からの復旧手段が無かったため、直近7日以内の任意時点への
-  # 復元を可能にする。dev は使い捨てデータのため対象外にし、ストレージ課金の増加を避ける。
+  # 誤操作・不具合による書き込み破損時に、直近7日以内の任意時点へ復元できるようにする。
+  # dev は使い捨てデータのため対象外にし、ストレージ課金の増加を避ける。
   point_in_time_recovery_enablement = var.pitr_enabled ? "POINT_IN_TIME_RECOVERY_ENABLED" : "POINT_IN_TIME_RECOVERY_DISABLED"
 
   depends_on = [google_project_service.apis]
