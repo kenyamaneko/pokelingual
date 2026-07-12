@@ -84,7 +84,7 @@ function mockDetail(detail: PokemonDetailResponse) {
  *
  * API 境界 (HTTP) のみ MSW でモックし、グリッド・詳細カードは実部品で組み立てる。
  */
-describe("PokedexPage", () => {
+describe("図鑑画面", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -166,7 +166,7 @@ describe("PokedexPage", () => {
     expect(screen.getByRole("button", { name: "閉じる" })).toBeInTheDocument();
   });
 
-  it("詳細モーダルの とじる を押すと一覧へ戻る", async () => {
+  it("詳細モーダルの「閉じる」を押すと一覧へ戻る", async () => {
     mockPokedex([makeEntry(11, "ダミーモンA")], 1, 0);
     mockDetail(dummyDetail);
     const user = userEvent.setup();

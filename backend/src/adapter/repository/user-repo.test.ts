@@ -4,7 +4,7 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("チュートリアル完了フラグの永続化 (Firestore emulator)", () => {
+describe("チュートリアル完了フラグの永続化", () => {
   beforeEach(clearFirestoreEmulator);
 
   it("新規ユーザーは、チュートリアル未完了として読める", async () => {

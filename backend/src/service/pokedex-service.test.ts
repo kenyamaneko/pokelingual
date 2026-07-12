@@ -80,8 +80,8 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   return new PokedexService(repo, pokemonClient, settingsRepo, config);
 }
 
-describe("PokedexService.getPokedex", () => {
-  it("図鑑が 0 件なら空の一覧と unavailable_count=0 を返す", async () => {
+describe("図鑑一覧の取得", () => {
+  it("図鑑が 0 件なら、空の一覧になり取得失敗件数も 0 になる", async () => {
     const res = await makeService().getPokedex("alice");
     expect(res.entries).toEqual([]);
     expect(res.unavailable_count).toBe(0);
@@ -137,7 +137,7 @@ describe("PokedexService.getPokedex", () => {
     expect(res.unavailable_count).toBe(0);
   });
 
-  it("複数件中 1 件だけメタ情報の取得に失敗したら、成功分の一覧と unavailable_count=1 を返す", async () => {
+  it("複数件中 1 件だけメタ情報の取得に失敗したら、成功分の一覧になり取得失敗件数は 1 になる", async () => {
     const service = makeService({
       records: [
         makeUserPokemon({ pokemon_id: 1 }),
@@ -151,7 +151,7 @@ describe("PokedexService.getPokedex", () => {
     expect(res.unavailable_count).toBe(1);
   });
 
-  it("全件のメタ情報取得に失敗したら、空の一覧と全件分の unavailable_count を返す", async () => {
+  it("全件のメタ情報取得に失敗したら、空の一覧になり取得失敗件数が全件分になる", async () => {
     const service = makeService({
       records: [makeUserPokemon({ pokemon_id: 1 }), makeUserPokemon({ pokemon_id: 2 })],
       failingIDs: [1, 2],
@@ -176,8 +176,8 @@ describe("PokedexService.getPokedex", () => {
   });
 });
 
-describe("PokedexService.getPokemonDetail", () => {
-  it("ユーザ実績とポケモン詳細を合成して返す (時刻は ISO 8601 文字列)", async () => {
+describe("図鑑詳細の取得", () => {
+  it("図鑑詳細には、ポケモン情報と自分の実績 (最高スコア・最終捕獲日時) がまとめて返る", async () => {
     const service = makeService({
       records: [
         makeUserPokemon({
@@ -202,7 +202,7 @@ describe("PokedexService.getPokemonDetail", () => {
     });
   });
 
-  it("未捕獲 (last_captured_at が null) なら null のまま返す", async () => {
+  it("未捕獲のポケモンの詳細では、最終捕獲日時が空のまま返る", async () => {
     const service = makeService({
       records: [makeUserPokemon({ pokemon_id: 7, last_captured_at: null })],
     });
@@ -210,7 +210,7 @@ describe("PokedexService.getPokemonDetail", () => {
     expect(res.last_captured_at).toBeNull();
   });
 
-  it("ポケモン詳細の取得に失敗したら ExternalServiceError として伝わる", async () => {
+  it("ポケモン詳細の取得に失敗したら、外部サービスのエラーとして伝わる", async () => {
     const service = makeService({
       records: [makeUserPokemon({ pokemon_id: 7 })],
       failingIDs: [7],

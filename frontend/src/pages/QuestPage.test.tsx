@@ -148,25 +148,25 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
   });
 
   it.each([
-    {
-      scenario: "名前当てをスキップしたとき",
-      ballType: "poke",
-      ballName: "モンスターボール",
-      setupGuessHandler: () =>
+    [
+      "名前当てをスキップしたとき、捕獲画面と捕獲演出の両方でモンスターボールになる",
+      "poke",
+      "モンスターボール",
+      () =>
         server.use(
           http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
         ),
-      performGuess: async (user: ReturnType<typeof userEvent.setup>) => {
+      async (user: ReturnType<typeof userEvent.setup>) => {
         await user.click(
           await screen.findByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
         );
       },
-    },
-    {
-      scenario: "日本語名を正しく当てたとき",
-      ballType: "great",
-      ballName: "スーパーボール",
-      setupGuessHandler: () =>
+    ],
+    [
+      "日本語名を正しく当てたとき、捕獲画面と捕獲演出の両方でスーパーボールになる",
+      "great",
+      "スーパーボール",
+      () =>
         server.use(
           http.post(apiUrl("/quest/guess-name"), () =>
             HttpResponse.json({
@@ -177,7 +177,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
             }),
           ),
         ),
-      performGuess: async (user: ReturnType<typeof userEvent.setup>) => {
+      async (user: ReturnType<typeof userEvent.setup>) => {
         await user.type(await screen.findByRole("textbox"), "テストモン");
         await user.click(
           screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
@@ -186,12 +186,12 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
           await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
         );
       },
-    },
-    {
-      scenario: "英語名を正しく当てたとき",
-      ballType: "ultra",
-      ballName: "ハイパーボール",
-      setupGuessHandler: () =>
+    ],
+    [
+      "英語名を正しく当てたとき、捕獲画面と捕獲演出の両方でハイパーボールになる",
+      "ultra",
+      "ハイパーボール",
+      () =>
         server.use(
           http.post(apiUrl("/quest/guess-name"), () =>
             HttpResponse.json({
@@ -202,7 +202,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
             }),
           ),
         ),
-      performGuess: async (user: ReturnType<typeof userEvent.setup>) => {
+      async (user: ReturnType<typeof userEvent.setup>) => {
         await user.type(await screen.findByRole("textbox"), "Testmon");
         await user.click(
           screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
@@ -211,10 +211,10 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
           await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
         );
       },
-    },
-  ])(
-    "$scenario、名前当てで確定したボールが捕獲画面と捕獲演出の両方で $ballName になる",
-    async ({ ballType, ballName, setupGuessHandler, performGuess }) => {
+    ],
+  ] as const)(
+    "%s",
+    async (_name, ballType, ballName, setupGuessHandler, performGuess) => {
       const user = userEvent.setup();
       setupGuessHandler();
       server.use(

@@ -14,12 +14,12 @@ import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 /**
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
  */
-describe("calculateCaptureRate", () => {
+describe("捕獲確率の計算", () => {
   it("種族値合計が高くスコア0 + モンスターボールなら捕獲は困難 (確率は低い)", () => {
     expect(calculateCaptureRate(0, 680, 1.0)).toBeLessThan(0.05);
   });
 
-  it("倍率で 1.0 を超える場合は 1.0 にクランプされる", () => {
+  it("倍率で 1.0 を超える場合は、捕獲確率の上限 1.0 で頭打ちになる", () => {
     expect(calculateCaptureRate(100, 100, 3.0)).toBe(1);
   });
 
@@ -43,7 +43,7 @@ describe("calculateCaptureRate", () => {
     expect(ultraRate).toBeGreaterThan(greatRate);
   });
 
-  it("スコア90 + スーパーボールなら種族値合計が高い(680)でもほぼ確実", () => {
+  it("スコア90 + スーパーボールなら種族値合計が高い (680) でもほぼ確実", () => {
     expect(calculateCaptureRate(90, 680, 2.0)).toBeGreaterThan(0.99);
   });
 });
@@ -51,12 +51,12 @@ describe("calculateCaptureRate", () => {
 /**
  * 英語名の伏せ字仕様。純関数なので具体値で直接確かめる。
  */
-describe("maskPokemonNameEN", () => {
-  it("name が空なら原文のまま", () => {
+describe("英語説明文のポケモン名マスク", () => {
+  it("ポケモン名が空文字なら原文のまま", () => {
     expect(maskPokemonNameEN("A wild creature.", "")).toBe("A wild creature.");
   });
 
-  it("name が本文に無ければ原文のまま", () => {
+  it("ポケモン名が本文に無ければ原文のまま", () => {
     expect(maskPokemonNameEN("Hello world", "Pikachu")).toBe("Hello world");
   });
 
@@ -80,7 +80,7 @@ describe("maskPokemonNameEN", () => {
     );
   });
 
-  it("複数箇所すべて置換する", () => {
+  it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
     expect(maskPokemonNameEN("Pikachu and Pikachu", "Pikachu")).toBe(
       "This Pokémon and this Pokémon",
     );
@@ -94,22 +94,22 @@ describe("maskPokemonNameEN", () => {
 /**
  * 日本語名の伏せ字仕様。
  */
-describe("maskPokemonNameJA", () => {
+describe("日本語説明文のポケモン名マスク", () => {
   it("本文中のポケモン名を「この ポケモン」に置換する", () => {
     expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
   });
 
-  it("複数箇所すべて置換する", () => {
+  it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
     expect(maskPokemonNameJA("ピカチュウとピカチュウ", "ピカチュウ")).toBe(
       "この ポケモンとこの ポケモン",
     );
   });
 
-  it("name が空なら原文のまま", () => {
+  it("ポケモン名が空文字なら原文のまま", () => {
     expect(maskPokemonNameJA("あいうえお", "")).toBe("あいうえお");
   });
 
-  it("name が本文に無ければ原文のまま", () => {
+  it("ポケモン名が本文に無ければ原文のまま", () => {
     expect(maskPokemonNameJA("あいうえお", "ピカチュウ")).toBe("あいうえお");
   });
 });
@@ -161,7 +161,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   return new QuestService(pokemonClient, llm, config, settingsRepo, random);
 }
 
-describe("QuestService.newQuest", () => {
+describe("クエストの出題", () => {
   it("説明文のポケモン名をマスクして出題を返す", async () => {
     const service = makeService();
     const res = await service.newQuest("alice");
@@ -170,7 +170,7 @@ describe("QuestService.newQuest", () => {
     expect(res.is_legendary).toBe(false);
   });
 
-  it("per-user 除外に含まれる ID は出題プールから除かれ、除外外の候補が出題される", async () => {
+  it("ユーザーごとの除外に含まれる ID は出題プールから除かれ、除外外の候補が出題される", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 5 }), makePokemon({ id: 6 })],
       excludedIDs: [5],
@@ -211,7 +211,7 @@ describe("QuestService.newQuest", () => {
 
   // 画面は最低1世代・除外上限で空プールを防ぐため通常は到達しない防御的経路。到達時は
   // EmptyQuestPoolError → 409 → 画面で「今の設定では出会えるポケモンがいません。設定を見直して」と案内される。
-  it("出題プールが空 (全 ID が除外) なら EmptyQuestPoolError になる", async () => {
+  it("全ポケモンを除外していて出題プールが空のとき、出題できないエラーになる", async () => {
     const service = makeService({
       pokemons: [makePokemon({ id: 1 })],
       excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -219,12 +219,12 @@ describe("QuestService.newQuest", () => {
     await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
   });
 
-  it("ポケモン取得の失敗は ExternalServiceError として伝わる", async () => {
+  it("ポケモン情報の取得に失敗すると、外部サービスのエラーとして伝わる", async () => {
     const service = makeService({ pokemonError: new Error("api down") });
     await expect(service.newQuest("alice")).rejects.toBeInstanceOf(ExternalServiceError);
   });
 
-  it("flavor_texts があれば乱数で選んだペアの説明文を使う (乱数0 = 先頭)", async () => {
+  it("説明文が複数あるポケモンでは、そのうちの 1 つが選ばれて出題される", async () => {
     const service = makeService({
       pokemons: [
         makePokemon({
@@ -239,13 +239,13 @@ describe("QuestService.newQuest", () => {
     expect(res.description_en).toBe("Alpha this Pokémon runs.");
   });
 
-  it("flavor_texts が無ければ基本の説明文で出題する", async () => {
+  it("説明文の候補が無ければ、基本の説明文で出題する", async () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: undefined })] });
     const res = await service.newQuest("alice");
     expect(res.description_en).toBe("This Pokémon is fast.");
   });
 
-  it("flavor_texts が空配列でも基本の説明文で出題する", async () => {
+  it("説明文の候補が空配列でも、基本の説明文で出題する", async () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
     const res = await service.newQuest("alice");
     expect(res.description_en).toBe("This Pokémon is fast.");
@@ -293,8 +293,8 @@ describe("QuestService.newQuest", () => {
   });
 });
 
-describe("QuestService.scoreTranslation", () => {
-  it("セッションが無ければ NotFoundError", async () => {
+describe("翻訳の採点", () => {
+  it("セッションが無いまま採点すると、セッション不明のエラーになる", async () => {
     const service = makeService();
     await expect(service.scoreTranslation("nobody", "訳")).rejects.toBeInstanceOf(NotFoundError);
   });
@@ -315,13 +315,13 @@ describe("QuestService.scoreTranslation", () => {
     expect(res.score).toBe(score);
   });
 
-  it.each([-1, 101])("範囲外スコア %i は ExternalServiceError として拒否される", async (score) => {
+  it.each([-1, 101])("範囲外スコア %i は外部サービスのエラーとして拒否される", async (score) => {
     const service = makeService({ llmText: JSON.stringify({ score, review: "r" }) });
     await service.newQuest("alice");
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
   });
 
-  it("説明文にポケモン名が含まれるとき、LLM に渡す英文はポケモン名を伏せたものになる (講評でのネタバレ防止)", async () => {
+  it("説明文にポケモン名が含まれるとき、AI に渡す英文はポケモン名を伏せたものになる (講評でのネタバレ防止)", async () => {
     let sentPrompt = "";
     const service = makeService({
       pokemons: [makePokemon({ name_en: "Pikachu", description_en: "Pikachu is yellow." })],
@@ -336,20 +336,26 @@ describe("QuestService.scoreTranslation", () => {
   });
 
   it.each([
-    { name: "JSON 以外のテキスト", llmText: "ごめん、わからない" },
-    { name: "途中で切れた JSON", llmText: '{"score": 70, "rev' },
-    { name: "score が欠落した JSON", llmText: JSON.stringify({ review: "r" }) },
-    { name: "score が数値でない JSON", llmText: JSON.stringify({ score: "70", review: "r" }) },
-    { name: "review が欠落した JSON", llmText: JSON.stringify({ score: 70 }) },
-    { name: "review が空文字の JSON", llmText: JSON.stringify({ score: 70, review: "" }) },
-  ])("LLM が $name を返したら ExternalServiceError", async ({ llmText }) => {
+    ["AI 応答が JSON でないとき、外部サービスのエラーになる", "ごめん、わからない"],
+    ["AI 応答の JSON が途中で切れているとき、外部サービスのエラーになる", '{"score": 70, "rev'],
+    ["AI 応答にスコアが含まれないとき、外部サービスのエラーになる", JSON.stringify({ review: "r" })],
+    [
+      "AI 応答のスコアが数値でないとき、外部サービスのエラーになる",
+      JSON.stringify({ score: "70", review: "r" }),
+    ],
+    ["AI 応答に講評が含まれないとき、外部サービスのエラーになる", JSON.stringify({ score: 70 })],
+    [
+      "AI 応答の講評が空文字のとき、外部サービスのエラーになる",
+      JSON.stringify({ score: 70, review: "" }),
+    ],
+  ])("%s", async (_name, llmText) => {
     const service = makeService({ llmText });
     await service.newQuest("alice");
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
   });
 });
 
-describe("QuestService.guessName", () => {
+describe("名前当ての判定", () => {
   it("英語名の完全一致はハイパーボール (大文字小文字・前後空白を無視)", async () => {
     const service = makeService();
     await service.newQuest("alice");
@@ -364,27 +370,27 @@ describe("QuestService.guessName", () => {
     expect(res).toMatchObject({ correct: true, ball_type: "great", language: "ja" });
   });
 
-  it("あいまい一致: Levenshtein 距離2 は正解 (fuzzy)", async () => {
+  it("名前の綴りが 2 文字までずれていても正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "testmxx");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", fuzzy: true });
   });
 
-  it("あいまい一致: 距離3 は不正解", async () => {
+  it("名前の綴りが 3 文字ずれていると不正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     const res = service.guessName("alice", "testxxx");
     expect(res.correct).toBe(false);
   });
 
-  it("名前3文字はあいまい一致の対象外 (距離1でも不正解)", async () => {
+  it("名前が 3 文字のポケモンは、1 文字のずれでも不正解になる (あいまい一致の対象外)", async () => {
     const service = makeService({ pokemons: [makePokemon({ name_en: "Abc" })] });
     await service.newQuest("alice");
     expect(service.guessName("alice", "abd").correct).toBe(false);
   });
 
-  it("名前4文字はあいまい一致が有効 (距離1で正解)", async () => {
+  it("名前が 4 文字のポケモンは、1 文字のずれなら正解になる (あいまい一致が有効)", async () => {
     const service = makeService({ pokemons: [makePokemon({ name_en: "Abcd" })] });
     await service.newQuest("alice");
     expect(service.guessName("alice", "abce")).toMatchObject({ correct: true, fuzzy: true });
@@ -422,19 +428,19 @@ describe("QuestService.guessName", () => {
   });
 });
 
-describe("QuestService.skipGuess / attemptCapture", () => {
-  it("skip するとモンスターボールが確定する", async () => {
+describe("名前当てスキップと捕獲", () => {
+  it("名前当てをスキップすると、モンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
     expect(service.skipGuess("alice")).toEqual({ ball_type: "poke" });
   });
 
-  it("セッションが無い skip は NotFoundError", () => {
+  it("セッションが無いまま名前当てをスキップすると、セッション不明のエラーになる", () => {
     const service = makeService();
     expect(() => service.skipGuess("nobody")).toThrow(NotFoundError);
   });
 
-  it("英語名正解 (ハイパーボール確定) 後に skip すると、ハイパーボールのまま捕獲できる", async () => {
+  it("英語名正解 (ハイパーボール確定) 後に名前当てをスキップしても、ハイパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.guessName("alice", "testmon");
@@ -442,7 +448,7 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(service.attemptCapture("alice").ball_type).toBe("ultra");
   });
 
-  it("日本語名正解 (スーパーボール確定) 後に skip すると、スーパーボールのまま捕獲できる", async () => {
+  it("日本語名正解 (スーパーボール確定) 後に名前当てをスキップしても、スーパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.guessName("alice", "テストモン");
@@ -450,13 +456,13 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(service.attemptCapture("alice").ball_type).toBe("great");
   });
 
-  it("ボール未確定 (名前当ても skip もしていない) の capture はエラー", async () => {
+  it("名前当てにもスキップにも応答していないまま捕獲しようとすると、エラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     expect(() => service.attemptCapture("alice")).toThrow(/before a ball/);
   });
 
-  it("skip 後の capture はモンスターボールで捕獲結果を返す (乱数0 = 必ず捕獲)", async () => {
+  it("名前当てをスキップして捕獲すると、モンスターボールでの捕獲結果になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.skipGuess("alice");
@@ -481,7 +487,7 @@ describe("QuestService.skipGuess / attemptCapture", () => {
     expect(res.captured).toBe(false);
   });
 
-  it("capture でセッションが消費され、2回目は NotFoundError", async () => {
+  it("捕獲するとセッションが消費され、2回目はセッション不明のエラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
     service.skipGuess("alice");

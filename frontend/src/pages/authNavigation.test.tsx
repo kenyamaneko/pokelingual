@@ -87,13 +87,13 @@ describe("認証画面間の遷移", () => {
  *   (ログイン・登録成功後にホームへ着地する導線そのもの)
  */
 describe("認証済みユーザの退避", () => {
-  it("認証済みでログイン画面を開くとホーム (/) へ遷移する", async () => {
+  it("認証済みでログイン画面を開くと、ホーム画面へ遷移する", async () => {
     renderAuthRoutes("/login", authenticatedUser);
 
     expect(await screen.findByTestId("home-page")).toBeInTheDocument();
   });
 
-  it("認証済みでサインアップ画面を開くとホーム (/) へ遷移する", async () => {
+  it("認証済みでサインアップ画面を開くと、ホーム画面へ遷移する", async () => {
     renderAuthRoutes("/signup", authenticatedUser);
 
     expect(await screen.findByTestId("home-page")).toBeInTheDocument();

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { cleanFlavorText, PokeAPIClient } from "./pokeapi.js";
 import type { HttpGet, PokemonConfig } from "../../domain/ports.js";
 
-describe("cleanFlavorText", () => {
+describe("説明文の整形", () => {
   it("改行・改ページ・復帰をスペースに置換する", () => {
     expect(cleanFlavorText("A\fB\nC\rD")).toBe("A B C D");
   });
@@ -52,12 +52,12 @@ function makeClientWithTypes(typeNames: string[]): PokeAPIClient {
 }
 
 describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
-  it("既知のタイプ名は受理され types に反映される", async () => {
+  it("既知のタイプ名は受理され、タイプの一覧に反映される", async () => {
     const pokemon = await makeClientWithTypes(["grass", "poison"]).getPokemonByID(1);
     expect(pokemon.types).toEqual(["grass", "poison"]);
   });
 
-  it("未知のタイプ名はエラーにする (意図しない値のまま通さない)", async () => {
+  it("未知のタイプ名はエラーになる", async () => {
     await expect(makeClientWithTypes(["shadow"]).getPokemonByID(1)).rejects.toThrow(
       /unknown pokemon type/,
     );
@@ -67,8 +67,8 @@ describe("タイプ名の実行時検証 (PokeAPI 境界)", () => {
 /**
  * このデータソースは 1..maxPokemonID の図鑑番号を提供する (抽選はサービス側が行う)。
  */
-describe("PokeAPIClient.getServableIDs", () => {
-  it("1 から maxPokemonID までの図鑑番号を提供する", () => {
+describe("出題可能な図鑑番号の範囲", () => {
+  it("1 から 10 (設定した上限) までの図鑑番号を提供する", () => {
     const ids = makeClientWithTypes(["normal"]).getServableIDs();
     expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
@@ -77,8 +77,8 @@ describe("PokeAPIClient.getServableIDs", () => {
 /**
  * /type/{name} のレスポンスから、指定タイプのポケモンの図鑑番号を取り出す。
  */
-describe("PokeAPIClient.getIDsByType", () => {
-  it("指定タイプの図鑑番号を上限内で返す (URL から ID を取り出す)", async () => {
+describe("タイプ別の出題候補の取得", () => {
+  it("指定したタイプの図鑑番号だけが、出題可能な上限の範囲内で返る", async () => {
     const httpGet: HttpGet = async () => ({
       ok: true,
       status: 200,

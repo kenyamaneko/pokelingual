@@ -15,8 +15,8 @@ import type { GuessResponse } from "../../../../shared/api-types/quest";
  * 正しいボールが出る結果は、実際に画面が切り替わる結果として観測するため QuestPage.test.tsx
  * (公開入口からのフロー) で確かめる。
  */
-describe("NameGuess", () => {
-  it("guessResult が null のとき入力欄と送信ボタンが描画される", () => {
+describe("名前当ての入力と結果表示", () => {
+  it("まだ名前当てに答えていないとき、入力欄と送信ボタンが表示される", () => {
     render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={null} />);
 
     expect(screen.getByRole("textbox")).toBeEnabled();
@@ -25,7 +25,7 @@ describe("NameGuess", () => {
     ).toBeInTheDocument();
   });
 
-  it("空テキストのときは送信ボタンが disabled", () => {
+  it("空テキストのときは送信ボタンが押せない", () => {
     render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={null} />);
     expect(
       screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
@@ -54,7 +54,7 @@ describe("NameGuess", () => {
     expect(screen.getByText(/ラストチャンス/)).toBeInTheDocument();
   });
 
-  it("不正解で残り 0 のとき正解の名前 (en/ja) を表示し、入力欄を消す", () => {
+  it("不正解で残り 0 のとき正解の名前 (英語と日本語) を表示し、入力欄を消す", () => {
     const guess: GuessResponse = {
       correct: false,
       attempts_remaining: 0,

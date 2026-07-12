@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   await completeTutorialViaApi(page);
 });
 
-test("ホームページのリンクが全て機能する", async ({ page }) => {
+test("ホームの各リンクから対応する画面へ移動できる", async ({ page }) => {
   await page.goto("/");
 
   // ぼうけんに出かける → /quest
@@ -37,7 +37,7 @@ test("ホームページのリンクが全て機能する", async ({ page }) => 
   await expect(page).toHaveURL("/settings");
 });
 
-test("ヘッダーナビゲーション", async ({ page }) => {
+test("ヘッダーのリンクからクエスト・図鑑・設定へ移動できる", async ({ page }) => {
   await page.goto("/");
 
   // ヘッダーの「ぼうけん」リンク

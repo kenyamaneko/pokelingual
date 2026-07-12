@@ -66,7 +66,7 @@ async function submitLogin(
   await user.click(screen.getByRole("button", { name: "メールでログイン" }));
 }
 
-describe("LoginPage", () => {
+describe("ログイン画面", () => {
   it("メールアドレスとパスワードでログインするとホーム画面へ遷移する", async () => {
     const user = userEvent.setup();
     renderLogin(vi.fn().mockResolvedValue(undefined));
@@ -107,7 +107,7 @@ describe("LoginPage", () => {
 /**
  * ログイン前でも問い合わせ・利用規約に到達できる導線の仕様。
  */
-describe("LoginPage のサイト情報リンク", () => {
+describe("ログイン画面のサイト情報リンク", () => {
   it("問い合わせリンクが問い合わせフォームを新しいタブで開く", () => {
     renderLogin(vi.fn());
     const contact = screen.getByRole("link", { name: "問い合わせ" });
@@ -115,7 +115,7 @@ describe("LoginPage のサイト情報リンク", () => {
     expect(contact).toHaveAttribute("target", "_blank");
   });
 
-  it("利用規約リンクが利用規約ページ (/terms) を指す", () => {
+  it("利用規約リンクが利用規約ページを指す", () => {
     renderLogin(vi.fn());
     expect(screen.getByRole("link", { name: "利用規約" })).toHaveAttribute("href", "/terms");
   });

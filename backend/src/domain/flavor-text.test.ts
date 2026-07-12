@@ -13,8 +13,8 @@ function entry(version: string, language: string, text: string): FlavorTextSourc
   return { version, language, text };
 }
 
-describe("buildFlavorTextPairs", () => {
-  it("対象バージョンの EN/JA が揃えばペアになる", () => {
+describe("英日説明文ペアの構築", () => {
+  it("対象バージョンの英語と日本語が揃えばペアになる", () => {
     const pairs = buildFlavorTextPairs([entry("x", "en", "Fast."), entry("x", "ja", "速い。")]);
     expect(pairs).toEqual([
       { version_names: ["X"], description_en: "Fast.", description_ja: "速い。" },
@@ -26,7 +26,7 @@ describe("buildFlavorTextPairs", () => {
     expect(pairs).toEqual([]);
   });
 
-  it("ja と ja-Hrkt が両方あれば ja を優先する", () => {
+  it("通常表記の日本語とかな表記の説明文が両方あれば、通常表記を優先する", () => {
     const pairs = buildFlavorTextPairs([
       entry("x", "en", "Fast."),
       entry("x", "ja-Hrkt", "はやい。"),
@@ -35,20 +35,20 @@ describe("buildFlavorTextPairs", () => {
     expect(pairs[0].description_ja).toBe("速い。");
   });
 
-  it("ja が無ければ ja-Hrkt にフォールバックする", () => {
+  it("通常表記の日本語が無ければ、かな表記の説明文を使う", () => {
     const pairs = buildFlavorTextPairs([entry("x", "en", "Fast."), entry("x", "ja-Hrkt", "はやい。")]);
     expect(pairs[0].description_ja).toBe("はやい。");
   });
 
-  it("EN が欠けたバージョンはペアにしない", () => {
+  it("英語の説明文が欠けたバージョンはペアにしない", () => {
     expect(buildFlavorTextPairs([entry("x", "ja", "速い。")])).toEqual([]);
   });
 
-  it("JA が欠けたバージョンはペアにしない", () => {
+  it("日本語の説明文が欠けたバージョンはペアにしない", () => {
     expect(buildFlavorTextPairs([entry("x", "en", "Fast.")])).toEqual([]);
   });
 
-  it("EN/JA とも同一テキストのバージョンは version_names にマージされる", () => {
+  it("英語・日本語とも同じ説明文のバージョンは、バージョン名の一覧としてまとめられる", () => {
     const pairs = buildFlavorTextPairs([
       entry("x", "en", "Fast."),
       entry("x", "ja", "速い。"),
@@ -59,7 +59,7 @@ describe("buildFlavorTextPairs", () => {
     expect(pairs[0].version_names).toEqual(["X", "Y"]);
   });
 
-  it("入力順に関わらず世代順 (versionOrder) に並ぶ", () => {
+  it("入力順に関わらず、世代の順番に並ぶ", () => {
     const pairs = buildFlavorTextPairs([
       entry("sword", "en", "New."),
       entry("sword", "ja", "新しい。"),
@@ -69,7 +69,7 @@ describe("buildFlavorTextPairs", () => {
     expect(pairs.map((p) => p.version_names[0])).toEqual(["X", "ソード"]);
   });
 
-  it("エントリが空なら空配列", () => {
+  it("エントリが空なら空配列になる", () => {
     expect(buildFlavorTextPairs([])).toEqual([]);
   });
 });

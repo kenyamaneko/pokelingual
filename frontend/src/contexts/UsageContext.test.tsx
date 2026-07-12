@@ -26,12 +26,12 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-describe("UsageProvider", () => {
+describe("AI 利用回数の取得と表示", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("ログイン後にバックエンドの /usage を取得して表示できる", async () => {
+  it("ログイン後に AI 利用回数を取得して表示できる", async () => {
     mockUsage(3, 30);
 
     renderUsage();
@@ -41,7 +41,7 @@ describe("UsageProvider", () => {
     });
   });
 
-  it("usage の取得に失敗しても画面はクラッシュせず、使用量が無い状態のまま動作する", async () => {
+  it("利用回数の取得に失敗しても画面はクラッシュせず、使用量が無い状態のまま動作する", async () => {
     // 使用量は補助情報のため取得失敗を UI では無視する仕様。診断ログは検証対象外なので沈黙させる
     vi.spyOn(console, "warn").mockImplementation(() => {});
     server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
@@ -53,7 +53,7 @@ describe("UsageProvider", () => {
     expect(screen.getByTestId("usage")).toHaveTextContent("none");
   });
 
-  it("未ログイン時は usage を取得しない", async () => {
+  it("未ログイン時は利用回数を取得しない", async () => {
     renderUsage(null);
     await waitFor(() => {
       expect(screen.getByTestId("usage")).toHaveTextContent("none");

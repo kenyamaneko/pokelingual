@@ -59,12 +59,12 @@ async function mountAndSelectLocation() {
  * フェーズ遷移と副作用 (refreshUsage) の整合性、エラー処理の振り分けを検証する。
  * API 境界は MSW でモックし、UsageContext だけは別コンテキストの境界としてスタブする。
  */
-describe("useQuest", () => {
+describe("クエスト進行", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("マウント時に場所選択が表示され、場所を選ぶと translating フェーズへ遷移する", async () => {
+  it("マウント時に場所選択が表示され、場所を選ぶと訳文入力の段階へ遷移する", async () => {
     mockNewQuest();
 
     const { result } = renderHook(() => useQuest());
@@ -79,7 +79,7 @@ describe("useQuest", () => {
     expect(result.current.quest).toEqual(questResp);
   });
 
-  it("場所の取得に失敗すると error フェーズに遷移し、メッセージを保持する", async () => {
+  it("場所の取得に失敗すると、エラー画面に遷移してメッセージを保持する", async () => {
     server.use(http.get(apiUrl("/quest/locations"), () => HttpResponse.json({}, { status: 500 })));
 
     const { result } = renderHook(() => useQuest());
@@ -88,7 +88,7 @@ describe("useQuest", () => {
     expect(result.current.error).not.toBeNull();
   });
 
-  it("場所を選んだ後の /quest/new が失敗すると error フェーズに遷移し、メッセージを保持する", async () => {
+  it("場所を選んだ後の出題取得に失敗すると、エラー画面に遷移してメッセージを保持する", async () => {
     server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })));
 
     const { result } = await mountAndSelectLocation();
@@ -103,7 +103,7 @@ describe("useQuest", () => {
     { status: 403, expected: /アクセス権/ },
     { status: 404, expected: /セッションが切断されました/ },
     { status: 502, expected: /外部サービス/ },
-  ])("/quest/new の $status ではステータスに応じた文言を表示する", async ({ status, expected }) => {
+  ])("出題取得が $status のとき、ステータスに応じた文言を表示する", async ({ status, expected }) => {
     server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })));
 
     const { result } = await mountAndSelectLocation();
@@ -121,7 +121,7 @@ describe("useQuest", () => {
     expect(result.current.error).toMatch(/接続できません/);
   });
 
-  it("submitTranslation 成功で guessing フェーズへ遷移し、usage 再取得が走る", async () => {
+  it("採点が成功すると名前当てに進み、残り利用回数の表示が更新される", async () => {
     mockNewQuest();
     server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 
@@ -141,25 +141,14 @@ describe("useQuest", () => {
   // submitTranslation / submitGuess / capture すべてのフェーズで「429 は UsageProvider に委譲、
   // 5xx はローカル error 文言として保持」する仕様。3 API 分まとめて検証する。
   it.each([
-    {
-      api: "採点",
-      path: "/quest/score",
-      call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
-    },
-    {
-      api: "名前推測",
-      path: "/quest/guess-name",
-      call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
-    },
-    {
-      api: "捕獲",
-      path: "/quest/capture",
-      call: (r: ReturnType<typeof useQuest>) => r.capture(),
-    },
-  ])("$apiで 429 が返っても error 文言を出さず、フェーズも変えない (UsageProvider に委譲)", async ({
+    ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
+    ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
+  ] as const)("%sで 429 が返っても、エラー文言を出さずフェーズも変えない (上限は利用上限モーダルに委譲)", async (
+    _api,
     path,
     call,
-  }) => {
+  ) => {
     mockNewQuest();
     server.use(
       http.post(apiUrl(path), () =>
@@ -179,25 +168,14 @@ describe("useQuest", () => {
   });
 
   it.each([
-    {
-      api: "採点",
-      path: "/quest/score",
-      call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
-    },
-    {
-      api: "名前推測",
-      path: "/quest/guess-name",
-      call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
-    },
-    {
-      api: "捕獲",
-      path: "/quest/capture",
-      call: (r: ReturnType<typeof useQuest>) => r.capture(),
-    },
-  ])("$apiで 5xx が返っても error メッセージを保持し、フェーズは変えない", async ({
+    ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
+    ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
+  ] as const)("%sで 5xx が返っても、エラーメッセージを保持しフェーズは変えない", async (
+    _api,
     path,
     call,
-  }) => {
+  ) => {
     mockNewQuest();
     server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 502 })));
 
@@ -213,25 +191,14 @@ describe("useQuest", () => {
   });
 
   it.each([
-    {
-      api: "採点",
-      path: "/quest/score",
-      call: (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
-    },
-    {
-      api: "名前推測",
-      path: "/quest/guess-name",
-      call: (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
-    },
-    {
-      api: "捕獲",
-      path: "/quest/capture",
-      call: (r: ReturnType<typeof useQuest>) => r.capture(),
-    },
-  ])("$apiで 404 (セッション切断) になると error 画面へ切り替わり、切断を案内する", async ({
+    ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
+    ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
+  ] as const)("%sで 404 (セッション切断) になると、エラー画面へ切り替わり切断を案内する", async (
+    _api,
     path,
     call,
-  }) => {
+  ) => {
     mockNewQuest();
     server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 404 })));
 
@@ -246,7 +213,7 @@ describe("useQuest", () => {
     expect(result.current.error).toMatch(/セッションが切断されました/);
   });
 
-  it("submitGuess で ball_type が返れば ballType に保存する", async () => {
+  it("名前当てが成立してボールの種類が返ると、その種類を保持する", async () => {
     mockNewQuest();
     const guess: GuessResponse = {
       correct: true,
@@ -267,7 +234,7 @@ describe("useQuest", () => {
     expect(result.current.ballType).toBe("ultra");
   });
 
-  it("名前当て確定後に捕獲フェーズへ進んでも、スキップの通信は発生しない", async () => {
+  it("名前当て確定後に捕獲の段階へ進んでも、スキップの通信は発生しない", async () => {
     mockNewQuest();
     const guess: GuessResponse = {
       correct: true,
@@ -292,7 +259,7 @@ describe("useQuest", () => {
     expect(result.current.phase).toBe("capturing");
   });
 
-  it("skipGuess はサーバに明示し ballType=poke にして capturing フェーズへ遷移する", async () => {
+  it("名前当てをスキップすると、サーバに明示的に伝えてモンスターボールに確定し、捕獲の段階へ遷移する", async () => {
     mockNewQuest();
     server.use(
       http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
@@ -311,7 +278,7 @@ describe("useQuest", () => {
     expect(result.current.phase).toBe("capturing");
   });
 
-  it("capture 成功で revealing フェーズに遷移し captureResult を保持する", async () => {
+  it("捕獲すると捕獲演出に進み、捕獲結果が保持される", async () => {
     mockNewQuest();
     const captured: CaptureResponse = {
       captured: true,
@@ -344,7 +311,7 @@ describe("useQuest", () => {
     expect(result.current.captureResult).toEqual(captured);
   });
 
-  it("revealing フェーズで捕獲演出が終わると、result フェーズへ進み captureResult を維持する", async () => {
+  it("捕獲演出が終わると、結果表示の段階へ進み捕獲結果を維持する", async () => {
     mockNewQuest();
     const captured: CaptureResponse = {
       captured: false,
@@ -382,7 +349,7 @@ describe("useQuest", () => {
     expect(result.current.captureResult).toEqual(captured);
   });
 
-  it("startNewQuest で state がリセットされ場所選択に戻り、選び直すと新しい出題になる", async () => {
+  it("新しいクエストを開始すると状態がリセットされ場所選択に戻り、選び直すと新しい出題になる", async () => {
     mockNewQuest();
     server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 

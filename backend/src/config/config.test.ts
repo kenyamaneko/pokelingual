@@ -22,7 +22,7 @@ function clearConfigEnv(): void {
   }
 }
 
-describe("loadConfig", () => {
+describe("起動設定の読み込み", () => {
   beforeEach(clearConfigEnv);
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };

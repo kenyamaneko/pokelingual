@@ -13,10 +13,13 @@ const allTypes: PokemonType[] = [
  * 色の割り当てそのものを突き合わせると実装のコピーになるため、UI 仕様上の不変条件
  * 「どのタイプも必ず bg- クラスを返す (= バッジが色を持つ)」を全タイプで確かめる。
  */
-describe("getTypeColor (タイプ→Tailwind 背景色クラス)", () => {
-  it.each(allTypes)("%s は bg- で始まる背景色クラスを返す", (type) => {
-    expect(getTypeColor(type)).toMatch(/^bg-/);
-  });
+describe("タイプの表示色", () => {
+  it.each(allTypes.map((type) => [type, getTypeLabel(type)] as const))(
+    "%s (%s) タイプには、背景色が定義されている",
+    (type) => {
+      expect(getTypeColor(type)).toMatch(/^bg-/);
+    },
+  );
 });
 
 /**
@@ -24,7 +27,7 @@ describe("getTypeColor (タイプ→Tailwind 背景色クラス)", () => {
  * 全対応を書き写すと実装の二重管理になるため、不変条件「どのタイプも空でないラベルを
  * 返す」を全タイプで確かめたうえで、命名規則を代表的な具体値で固定する。
  */
-describe("getTypeLabel (タイプ→日本語表示名)", () => {
+describe("タイプの日本語表示名", () => {
   it.each(allTypes)("%s は空でない日本語ラベルを返す", (type) => {
     expect(getTypeLabel(type)).not.toBe("");
   });

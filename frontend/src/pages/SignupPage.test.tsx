@@ -51,7 +51,7 @@ async function submitSignup(
   await user.click(screen.getByTestId("signup-submit"));
 }
 
-describe("SignupPage", () => {
+describe("新規登録画面", () => {
   it("パスワードと確認入力が一致しないとエラーを表示し、登録を依頼しない", async () => {
     const user = userEvent.setup();
     const signup = vi.fn().mockResolvedValue(undefined);

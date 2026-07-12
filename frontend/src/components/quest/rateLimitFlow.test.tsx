@@ -120,7 +120,7 @@ describe("429 上限モーダルの解除 (各操作でモーダルが閉じる)
     );
   });
 
-  it("バックドロップ (ダイアログ外) クリックでモーダルが消える", async () => {
+  it("モーダルの外側をクリックすると、モーダルが消える", async () => {
     const user = userEvent.setup();
     await showRateLimitModal();
 

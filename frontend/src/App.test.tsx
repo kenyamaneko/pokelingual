@@ -11,7 +11,7 @@ import App from "./App";
  * Header が UsageProvider 経由で /usage を引くため、MSW の既定ハンドラが応答する。
  */
 describe("ルーティングの 404", () => {
-  it("未定義 URL では NotFound ページを表示する", async () => {
+  it("未定義 URL では『ページが見つかりません』画面を表示する", async () => {
     window.history.pushState({}, "", "/no-such-page");
     render(<App />);
 
@@ -19,7 +19,7 @@ describe("ルーティングの 404", () => {
     expect(await screen.findByTestId("not-found")).toBeInTheDocument();
   });
 
-  it("定義済み URL (/) では NotFound を表示しない", async () => {
+  it("定義済み URL (/) では『ページが見つかりません』画面を表示しない", async () => {
     window.history.pushState({}, "", "/");
     render(<App />);
 

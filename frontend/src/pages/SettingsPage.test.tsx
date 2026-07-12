@@ -118,12 +118,12 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
  * SettingsPage の遷移仕様:
  * - ログアウトボタン押下で logout を実行し、/login へ遷移する
  */
-describe("SettingsPage の遷移", () => {
+describe("設定画面の遷移", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
 
-  it("ログアウト押下で logout を実行し /login へ遷移する", async () => {
+  it("ログアウトを押すと、ログイン画面へ遷移する", async () => {
     const user = userEvent.setup();
     const logout = vi.fn().mockResolvedValue(undefined);
     renderSettings(logout);
@@ -151,7 +151,7 @@ describe("SettingsPage の遷移", () => {
  *
  * ID の範囲・件数上限・重複のバリデーションは backend の責務のため、ここでは検証しない。
  */
-describe("SettingsPage の苦手ポケモン管理", () => {
+describe("設定画面の苦手ポケモン管理", () => {
   beforeEach(() => {
     lastSavedIDs = null;
   });
@@ -226,7 +226,7 @@ describe("SettingsPage の苦手ポケモン管理", () => {
     expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
   });
 
-  it("さくじょを押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
+  it("削除を押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
     mockGetSettings([42]);
     mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
     mockUpdateSuccess();
@@ -292,7 +292,7 @@ describe("SettingsPage の苦手ポケモン管理", () => {
  *
  * 世代番号・未知値のバリデーションは backend の責務のため、ここでは検証しない。
  */
-describe("SettingsPage の出題世代", () => {
+describe("設定画面の出題世代", () => {
   beforeEach(() => {
     lastSavedGenerations = null;
   });
@@ -358,7 +358,7 @@ describe("SettingsPage の出題世代", () => {
  * - 問い合わせリンクは問い合わせフォームを新しいタブで開く
  * - 利用規約リンクは利用規約ページ (/terms) を指す
  */
-describe("SettingsPage のサイト情報リンク", () => {
+describe("設定画面のサイト情報リンク", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -370,7 +370,7 @@ describe("SettingsPage のサイト情報リンク", () => {
     expect(link).toHaveAttribute("target", "_blank");
   });
 
-  it("利用規約リンクが利用規約ページ (/terms) を指す", async () => {
+  it("利用規約リンクが利用規約ページを指す", async () => {
     renderSettings();
     const link = await screen.findByRole("link", { name: "利用規約" });
     expect(link).toHaveAttribute("href", "/terms");

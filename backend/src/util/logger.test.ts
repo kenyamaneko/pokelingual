@@ -7,7 +7,7 @@ import { buildLogEntry, logger } from "./logger.js";
  * - 予約キー (severity / message / time) を fields で上書きしようとするとエラーにする
  * - logger.info は stdout、warn / error は stderr に severity 付きで書き出す
  */
-describe("buildLogEntry", () => {
+describe("ログエントリの組み立て", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-03T04:56:07.000Z"));
@@ -29,7 +29,7 @@ describe("buildLogEntry", () => {
     expect(entry).not.toContain("\n");
   });
 
-  it("fields を省略すると severity・message・time のみになる", () => {
+  it("追加フィールドを省略すると severity・message・time のみになる", () => {
     const entry = buildLogEntry("WARNING", "running in public mode");
 
     expect(JSON.parse(entry)).toEqual({
@@ -40,7 +40,7 @@ describe("buildLogEntry", () => {
   });
 
   it.each([["severity"], ["message"], ["time"]])(
-    "予約キー %s を fields に含むとエラーにする",
+    "予約キー %s を追加フィールドに含むとエラーにする",
     (reservedKey) => {
       expect(() =>
         buildLogEntry("ERROR", "boom", { [reservedKey]: "hijacked" }),
@@ -49,7 +49,7 @@ describe("buildLogEntry", () => {
   );
 });
 
-describe("logger", () => {
+describe("ログ出力", () => {
   let written: Record<"stdout" | "stderr", string[]>;
 
   beforeEach(() => {
@@ -73,7 +73,7 @@ describe("logger", () => {
     ["warn", "WARNING", "stderr"],
     ["error", "ERROR", "stderr"],
   ] as const)(
-    "logger.%s は severity=%s の JSON を %s に 1 行で書き出す",
+    "%s ログは severity=%s の JSON を %s に 1 行で書き出す",
     (method, severity, stream) => {
       logger[method]("something happened", { path: "/api/quest" });
 

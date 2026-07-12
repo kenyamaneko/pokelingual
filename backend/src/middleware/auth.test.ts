@@ -31,8 +31,8 @@ function makeReqRes(authorization?: string) {
   return { req, res, next, status, json };
 }
 
-describe("firebaseAuth ミドルウェア", () => {
-  it("Authorization ヘッダが無ければ 401 で拒否する", async () => {
+describe("API 認証", () => {
+  it("認証情報が無いリクエストは 401 で拒否する", async () => {
     const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
     const { req, res, next, status } = makeReqRes();
 
@@ -42,7 +42,7 @@ describe("firebaseAuth ミドルウェア", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("Bearer 形式でないヘッダは 401 で拒否する", async () => {
+  it("認証情報の形式が正しくないリクエストは 401 で拒否する", async () => {
     const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
     const { req, res, next, status } = makeReqRes("Basic dummy-credential");
 
@@ -66,7 +66,7 @@ describe("firebaseAuth ミドルウェア", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("メール確認済みユーザーは通過し、後続で userId が使える", async () => {
+  it("メール確認済みユーザーは通過し、後続処理でユーザー ID が使える", async () => {
     const mw = firebaseAuth(
       stubAuthClient(async () => ({ uid: "user-1", email: "anyone@example.com", email_verified: true })),
     );
@@ -79,7 +79,7 @@ describe("firebaseAuth ミドルウェア", () => {
     expect(res.locals.userId).toBe("user-1");
   });
 
-  it("メール未確認 (email_verified が false) のトークンは 403 で拒否する", async () => {
+  it("メール未確認のトークンは 403 で拒否する", async () => {
     const mw = firebaseAuth(
       stubAuthClient(async () => ({ uid: "user-1", email: "unverified@example.com", email_verified: false })),
     );
@@ -91,7 +91,7 @@ describe("firebaseAuth ミドルウェア", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("email_verified クレームを持たないトークンは 403 で拒否する", async () => {
+  it("メール確認済みかどうかの情報が無いトークンは 403 で拒否する", async () => {
     const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1", email: "no-claim@example.com" })));
     const { req, res, next, status } = makeReqRes("Bearer dummy-token");
 
