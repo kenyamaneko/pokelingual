@@ -7,13 +7,13 @@ set -euo pipefail
 #
 # 必要な環境変数:
 #   SERVICE_URL         - デプロイ済み Cloud Run サービスの URL
-#   SMOKE_USER_EMAIL    - allowed_emails に常設した、事前作成済み・メール確認済みのフィクスチャユーザのメール
-#   SMOKE_USER_PASSWORD - フィクスチャユーザのパスワード
+#   TEST_USER_EMAIL     - allowed_emails に常設した、事前作成済み・メール確認済みのフィクスチャユーザのメール
+#   TEST_USER_PASSWORD  - フィクスチャユーザのパスワード
 #   FIREBASE_API_KEY    - Firebase Auth REST 用の API キー
 
 : "${SERVICE_URL:?SERVICE_URL is not set}"
-: "${SMOKE_USER_EMAIL:?SMOKE_USER_EMAIL is not set}"
-: "${SMOKE_USER_PASSWORD:?SMOKE_USER_PASSWORD is not set}"
+: "${TEST_USER_EMAIL:?TEST_USER_EMAIL is not set}"
+: "${TEST_USER_PASSWORD:?TEST_USER_PASSWORD is not set}"
 : "${FIREBASE_API_KEY:?FIREBASE_API_KEY is not set}"
 
 # 新リビジョンのコールドスタートと --allow-unauthenticated の IAM 反映を吸収する待ち。
@@ -44,7 +44,7 @@ echo "== Acquire Firebase ID token for fixture user =="
 response=$(curl -s -X POST \
   "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"${SMOKE_USER_EMAIL}\",\"password\":\"${SMOKE_USER_PASSWORD}\",\"returnSecureToken\":true}")
+  -d "{\"email\":\"${TEST_USER_EMAIL}\",\"password\":\"${TEST_USER_PASSWORD}\",\"returnSecureToken\":true}")
 token=$(echo "${response}" | jq -r '.idToken')
 if [ "${token}" = "null" ] || [ -z "${token}" ]; then
   echo "FAIL: could not sign in fixture user (事前作成済み・メール確認済みであること)"

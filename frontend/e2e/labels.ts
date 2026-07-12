@@ -28,6 +28,7 @@ export const BUTTON = {
   close: "閉じる",
   gotIt: "わかった！",
   backToMenu: /メニューに戻る/,
+  login: "メールでログイン",
 } as const;
 
 /** getByText で参照する本文テキスト。 */
@@ -50,6 +51,8 @@ export const TEXT = {
 export const PLACEHOLDER = {
   translation: /日本語を入力してね/,
   nameGuess: /ポケモンの名前を入力してね/,
+  email: "メールアドレス",
+  password: "パスワード",
 } as const;
 
 /** getByRole("heading", { name }) で参照する見出し。 */
