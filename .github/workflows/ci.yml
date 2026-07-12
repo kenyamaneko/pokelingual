@@ -13,8 +13,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect Code Change
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.detect.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect code change
+        id: detect
+        uses: kenyamaneko/overload-party-common/.github/actions/detect-code-change@main
+
   backend-lint:
     name: Backend Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
@@ -39,6 +57,8 @@ jobs:
 
   frontend-lint:
     name: Frontend Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
@@ -63,6 +83,8 @@ jobs:
 
   backend-test:
     name: Backend Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 10
     defaults:
@@ -109,6 +131,8 @@ jobs:
 
   frontend-test:
     name: Frontend Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 10
     defaults:
@@ -147,6 +171,8 @@ jobs:
 
   e2e-test:
     name: E2E Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:
@@ -242,6 +268,8 @@ jobs:
 
   terraform-check:
     name: Terraform Format Check
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
