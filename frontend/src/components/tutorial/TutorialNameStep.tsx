@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TutorialInstructionModal } from "./TutorialInstructionModal";
+import { PokemonNameInput } from "../quest/PokemonNameInput";
 import { NAME_GUESS_LABELS } from "../quest/NameGuess";
 
 interface Props {
@@ -8,13 +9,11 @@ interface Props {
 
 /**
  * TutorialNameStep の仕様文言。テストから import される SSOT。
- * 入力欄・送信ボタンの文言は本番の NameGuess (NAME_GUESS_LABELS) をそのまま使う。
+ * 見出し・入力欄・送信ボタンの文言は本番の NameGuess (NAME_GUESS_LABELS) をそのまま使う。
  */
 export const TUTORIAL_NAME_LABELS = {
   modalTitle: "このポケモンの名前を当てよう",
   modalInstruction: "「ピカチュウ」または「pikachu」と入力してみてね",
-  inputPlaceholder: NAME_GUESS_LABELS.inputPlaceholder,
-  submitButton: NAME_GUESS_LABELS.submitButton,
   wrongNameError: "「ピカチュウ」または「pikachu」と入力してね",
 } as const;
 
@@ -26,12 +25,12 @@ export const TUTORIAL_NAME_LABELS = {
  */
 export function TutorialNameStep({ onSubmit }: Props) {
   const [showModal, setShowModal] = useState(true);
-  const [name, setName] = useState("");
   const [showError, setShowError] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async (name: string) => {
     const ok = onSubmit(name);
     setShowError(!ok);
+    return ok;
   };
 
   return (
@@ -44,33 +43,12 @@ export function TutorialNameStep({ onSubmit }: Props) {
         />
       )}
       <h3 className="text-lg font-bold text-gray-700 mb-3">
-        このポケモンの名前は？
+        {NAME_GUESS_LABELS.heading}
       </h3>
       {showError && (
         <p className="text-red-600 text-sm mb-3">{TUTORIAL_NAME_LABELS.wrongNameError}</p>
       )}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setShowError(false);
-          }}
-          placeholder={TUTORIAL_NAME_LABELS.inputPlaceholder}
-          className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl
-                     focus:border-blue-500 focus:outline-none text-lg bg-white text-gray-800"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={!name.trim()}
-          className="bg-blue-500 text-white px-6 py-3 rounded-xl font-bold
-                     hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
-                     transition-colors"
-        >
-          {TUTORIAL_NAME_LABELS.submitButton}
-        </button>
-      </div>
+      <PokemonNameInput onSubmit={handleSubmit} onChangeText={() => setShowError(false)} />
     </div>
   );
 }

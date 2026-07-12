@@ -8,6 +8,7 @@ import { TUTORIAL_MODAL_LABELS } from "./TutorialInstructionModal";
 import { TUTORIAL_TRANSLATION_LABELS } from "./TutorialTranslationStep";
 import { TUTORIAL_NAME_LABELS } from "./TutorialNameStep";
 import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
+import { NAME_GUESS_LABELS } from "../quest/NameGuess";
 import { CAPTURE_RESULT_LABELS } from "../quest/CaptureResult";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
@@ -32,8 +33,8 @@ async function dismissModalAndSubmitTranslation(user: UserEvent, translation: st
  */
 async function dismissModalAndSubmitName(user: UserEvent, name: string): Promise<void> {
   await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
-  await user.type(screen.getByPlaceholderText(TUTORIAL_NAME_LABELS.inputPlaceholder), name);
-  await user.click(screen.getByRole("button", { name: TUTORIAL_NAME_LABELS.submitButton }));
+  await user.type(screen.getByPlaceholderText(NAME_GUESS_LABELS.inputPlaceholder), name);
+  await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }));
 }
 
 describe("チュートリアルへの遷移", () => {
@@ -118,6 +119,17 @@ describe("チュートリアル (名前当てステップ)", () => {
     await dismissModalAndSubmitName(user, "ピカチュウ");
 
     expect(await screen.findByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton })).toBeInTheDocument();
+  });
+
+  it("間違った名前のエラーが出た後、名前を入力し直すとエラー表示が消える", async () => {
+    const user = await proceedToNameStep();
+
+    await dismissModalAndSubmitName(user, "raichu");
+    expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText(NAME_GUESS_LABELS.inputPlaceholder), "pika");
+
+    expect(screen.queryByText(TUTORIAL_NAME_LABELS.wrongNameError)).not.toBeInTheDocument();
   });
 });
 

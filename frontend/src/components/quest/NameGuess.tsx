@@ -1,5 +1,5 @@
-import { useState } from "react";
 import type { GuessResponse } from "../../../../shared/api-types/quest";
+import { PokemonNameInput } from "./PokemonNameInput";
 
 interface NameGuessProps {
   onSubmit: (guess: string) => Promise<void>;
@@ -13,6 +13,7 @@ interface NameGuessProps {
  * 文言変更は実装・テスト同時更新になる。
  */
 export const NAME_GUESS_LABELS = {
+  heading: "このポケモンの名前は？",
   inputPlaceholder: "ポケモンの名前を入力してね",
   submitButton: "君に　決めた！",
   skipButton: "わからないのでスキップ →",
@@ -27,34 +28,18 @@ export const NAME_GUESS_LABELS = {
  * @returns 名前推測 UI の要素。
  */
 export function NameGuess({ onSubmit, onSkip, onProceed, guessResult }: NameGuessProps) {
-  const [guess, setGuess] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
   const isFinished =
     guessResult?.correct || guessResult?.attempts_remaining === 0;
 
-  const handleSubmit = async () => {
-    if (!guess.trim() || submitting || isFinished) return;
-    setSubmitting(true);
-    try {
-      await onSubmit(guess);
-      setGuess("");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      handleSubmit();
-    }
+  const handleSubmit = async (guess: string) => {
+    await onSubmit(guess);
+    return true;
   };
 
   return (
     <div className="mt-4 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
       <h3 className="text-lg font-bold text-gray-700 mb-2">
-        このポケモンの名前は？
+        {NAME_GUESS_LABELS.heading}
       </h3>
       <p className="text-sm text-gray-500 mb-1">
         英語の名前を当てると捕まえやすいよ！　日本語でもいいよ
@@ -98,29 +83,7 @@ export function NameGuess({ onSubmit, onSkip, onProceed, guessResult }: NameGues
         </div>
       )}
 
-      {!isFinished && (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={guess}
-            onChange={(e) => setGuess(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={NAME_GUESS_LABELS.inputPlaceholder}
-            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl
-                       focus:border-blue-500 focus:outline-none text-lg bg-white text-gray-800"
-            disabled={submitting}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!guess.trim() || submitting}
-            className="bg-blue-500 text-white px-6 py-3 rounded-xl font-bold
-                       hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-colors"
-          >
-            {submitting ? "…" : NAME_GUESS_LABELS.submitButton}
-          </button>
-        </div>
-      )}
+      {!isFinished && <PokemonNameInput onSubmit={handleSubmit} />}
 
       <button
         onClick={isFinished ? onProceed : onSkip}
