@@ -299,6 +299,14 @@ resource "google_project_iam_member" "terraform_plan_service_usage_consumer" {
   member  = "serviceAccount:${google_service_account.terraform_plan.email}"
 }
 
+# roles/viewer は Firebase Rules リソース (firebaserules.rulesets.get 等) の読み取りを
+# 含まないため、main.tf が管理する google_firebaserules_ruleset の状態読み取りに不足する。
+resource "google_project_iam_member" "terraform_plan_firebaserules_viewer" {
+  project = var.project_id
+  role    = "roles/firebaserules.viewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
 resource "google_monitoring_notification_channel" "email" {
   project      = var.project_id
   display_name = "PokeLingual Alert Email (${var.environment})"
