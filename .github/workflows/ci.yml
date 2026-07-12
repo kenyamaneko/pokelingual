@@ -331,7 +331,6 @@ jobs:
       - name: Format check
         run: terraform fmt -check -recursive .
 
-  # ドリフト検知の第一段階。apply は手動のまま、PR時点の差分だけ job summary に可視化する。
   terraform-plan:
     name: Terraform Plan (dev)
     needs: changes
@@ -349,7 +348,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 書き込み権限を持つデプロイ用 SA (WIF_SERVICE_ACCOUNT) とは分離した読み取り専用 SA を使う。
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -362,8 +360,6 @@ jobs:
       - name: Terraform init
         run: terraform init -backend-config=environments/dev/backend.gcs.tfbackend
 
-      # -lock=false: このSAは読み取り専用でapplyを実行しないため、状態ロック用オブジェクトへの
-      # 書き込み権限を持たせる必要がない。
       - name: Terraform plan
         run: |
           {
