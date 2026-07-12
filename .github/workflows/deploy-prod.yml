@@ -12,6 +12,7 @@ concurrency:
 
 env:
   GOOGLE_CLOUD_REGION: asia-northeast1
+  TEST_USER_EMAIL: test@pokelingual.dev
 
 jobs:
   determine-version:
@@ -96,6 +97,48 @@ jobs:
             --region ${{ env.GOOGLE_CLOUD_REGION }} \
             --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --to-latest
+
+  # prod のレート制限枠は実ユーザーと共有するため、Gemini 経路までは広げず health + 認証付き
+  # read のみに留める。
+  smoke-prod:
+    name: Smoke Test (prod)
+    needs: deploy-backend
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SERVICE_NAME: pokelingual-api-prod
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Cloud Run service URL
+        id: service-url
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GOOGLE_CLOUD_REGION }} \
+            --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
+            --format 'value(status.url)')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Run smoke test
+        env:
+          SERVICE_URL: ${{ steps.service-url.outputs.url }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+        run: bash scripts/smoke-dev.sh
 
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting
