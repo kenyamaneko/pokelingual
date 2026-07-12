@@ -242,6 +242,26 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
+  behavior-catalog-test:
+    name: Test Perspective Catalog Generator Tests
+    needs: test
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run catalog generator unit tests
+        run: python -m pytest scripts
+
   # テスト観点カタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
   publish-reports:
     name: Publish Test Perspective Catalog & Coverage to GitHub Pages

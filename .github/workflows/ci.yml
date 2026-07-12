@@ -272,6 +272,7 @@ jobs:
   behavior-catalog:
     name: Test Perspective Catalog
     needs: [backend-test, frontend-test, e2e-test]
+    if: github.event_name == 'pull_request'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     steps:
