@@ -18,6 +18,7 @@ concurrency:
 
 env:
   GOOGLE_CLOUD_REGION: asia-northeast1
+  TEST_USER_EMAIL: test@pokelingual.dev
 
 jobs:
   test:
@@ -70,25 +71,23 @@ jobs:
 
       # デプロイ後スモークがサインインする恒久フィクスチャユーザを許可リストに常設する (冪等)
       - name: Ensure smoke user email in allowed_emails
-        env:
-          SMOKE_USER_EMAIL: test@pokelingual.dev
         run: |
           ACCESS_TOKEN=$(gcloud auth print-access-token)
           PROJECT_ID="${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
           BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
           DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
           EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
-          if echo "${EXISTING}" | grep -qx "${SMOKE_USER_EMAIL}"; then
+          if echo "${EXISTING}" | grep -qx "${TEST_USER_EMAIL}"; then
             echo "Smoke user email already in allowed_emails"
           else
             echo "Adding smoke user email to allowed_emails..."
-            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${SMOKE_USER_EMAIL}"'"}]')
+            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${TEST_USER_EMAIL}"'"}]')
             curl -s -X PATCH \
               -H "Authorization: Bearer ${ACCESS_TOKEN}" \
               -H "Content-Type: application/json" \
               "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
               -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
-            echo "Added ${SMOKE_USER_EMAIL} to allowed_emails"
+            echo "Added ${TEST_USER_EMAIL} to allowed_emails"
           fi
 
       - name: Build and push Docker image
@@ -165,8 +164,7 @@ jobs:
       - name: Run smoke test
         env:
           SERVICE_URL: ${{ steps.service-url.outputs.url }}
-          SMOKE_USER_EMAIL: test@pokelingual.dev
-          SMOKE_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
         run: bash scripts/smoke-dev.sh
 
@@ -249,7 +247,7 @@ jobs:
         env:
           E2E_MODE: dev
           E2E_BASE_URL: https://pokelingual-dev.web.app
-          E2E_EMAIL: test@pokelingual.dev
+          E2E_EMAIL: ${{ env.TEST_USER_EMAIL }}
           E2E_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
         run: npx playwright test
 
