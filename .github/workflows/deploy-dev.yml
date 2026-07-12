@@ -257,8 +257,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-dev
-          path: frontend/playwright-report/
+          name: e2e-dev-results
+          path: frontend/test-results/
           retention-days: 7
 
   # 振る舞いカタログはマージ時点の仕様として公開する (テストが走るのはこのマージ実行のみ)
