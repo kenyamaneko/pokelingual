@@ -38,3 +38,12 @@ Accepted
 
 - `deploy.yml` は `deploy-dev.yml` と `deploy-prod.yml` に分割されている (ADR-015)
 - カタログが表すのは main マージ時点の仕様である。main への push は dev 環境へのデプロイをトリガーするものであり、prod への反映はタグ push で別に行われる。カタログの公開はテスト実行に紐づいて起きるため、prod のデプロイ状況とは独立している
+
+## Amendment: 2026-07-12 テスト観点カタログへの改称と読者別カテゴリの追加
+
+名称を**振る舞いカタログ**から**テスト観点カタログ**に改める。backend のテストを「API を使う人」向けと「backend 開発者」向けに分ける裁定 (test-name-remediation.md) を機に、frontend・E2E も含めた全セクションを次の 2 カテゴリに整理した。
+
+- **外から見た振る舞い**: backend API の振る舞い (`router/`, `middleware/`)、frontend、E2E。製品・API の利用者が読める言葉で書く
+- **内部の挙動**: backend 内部部品の検証 (`adapter/`, `domain/`, `service/`, `config/`, `util/`)。backend 開発者が読める、部品の契約の言葉で書く
+
+`scripts/generate_behavior_catalog.py` の `--section` は「カテゴリ:セクション名:JUnit XML のパス[:振り分けプレフィクス]」形式に拡張し、1 つの JUnit XML を由来テストファイルのパスで複数セクションに振り分けられるようにした。振り分けプレフィクスに一致しない testcase が残った場合はエラーで停止する (新しいディレクトリが増えたときに黙って未分類のまま出力しないため)。
