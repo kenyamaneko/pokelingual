@@ -86,20 +86,6 @@ if (cfg.appMode === "mock") {
     location: cfg.googleCloudLocation,
   });
 
-  // ホワイトリストは config/auth.allowed_emails で運用。
-  // 空配列 or ドキュメント不在は「公開モード（誰でも認証通過後にアクセス可）」として明示的に許容する
-  const configDoc = await firestoreClient.collection("config").doc("auth").get();
-  const allowedEmails: string[] = configDoc.exists
-    ? (configDoc.data()?.allowed_emails as string[]) ?? []
-    : [];
-  if (allowedEmails.length === 0) {
-    logger.warn("config/auth.allowed_emails is empty — running in PUBLIC mode (any authenticated user allowed)");
-  } else {
-    logger.info("loaded allowed emails from Firestore (whitelist mode)", {
-      allowed_email_count: allowedEmails.length,
-    });
-  }
-
   pokemonConfig = { maxPokemonID: cfg.maxPokemonID, environment: cfg.environment };
   randomSource = new SystemRandomSource();
   pokemonClient = new PokeAPIClient(pokemonConfig, (url) => fetch(url));
@@ -108,7 +94,7 @@ if (cfg.appMode === "mock") {
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
   userRepo = new UserRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
-  authMiddleware = firebaseAuth(authClient, allowedEmails);
+  authMiddleware = firebaseAuth(authClient);
 }
 
 logger.info("rate limits configured", {

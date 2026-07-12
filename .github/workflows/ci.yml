@@ -146,9 +146,9 @@ jobs:
       - name: Build
         run: npm run build
 
-      # ローカル (Makefile:test-backend) と同一コマンドにし、CI とテスト実行経路を乖離させない。
-      - name: Run tests (Firestore emulator)
-        run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
+      # ローカル (Makefile:coverage-backend) と同一コマンドにし、CI とテスト実行経路を乖離させない。
+      - name: Run tests with coverage (Firestore emulator)
+        run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage"
 
       # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML
@@ -156,6 +156,14 @@ jobs:
         with:
           name: junit-backend
           path: backend/test-results/junit.xml
+          retention-days: 1
+
+      # 同一 run 内でカバレッジページを組むためだけに使うので保持は最短にする。
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: backend/coverage
           retention-days: 1
 
   frontend-test:
@@ -184,8 +192,9 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Run tests
-        run: npx vitest run
+      # ローカル (Makefile:coverage-frontend) と同一コマンドにし、CI とテスト実行経路を乖離させない。
+      - name: Run tests with coverage
+        run: npm run test:coverage
 
       # 同一 run 内で振る舞いカタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML
@@ -193,6 +202,14 @@ jobs:
         with:
           name: junit-frontend
           path: frontend/test-results/vitest-junit.xml
+          retention-days: 1
+
+      # 同一 run 内でカバレッジページを組むためだけに使うので保持は最短にする。
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage
           retention-days: 1
 
       - name: Build

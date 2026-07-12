@@ -69,27 +69,6 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev
 
-      # デプロイ後スモークがサインインする恒久フィクスチャユーザを許可リストに常設する (冪等)
-      - name: Ensure smoke user email in allowed_emails
-        run: |
-          ACCESS_TOKEN=$(gcloud auth print-access-token)
-          PROJECT_ID="${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
-          BASE="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
-          DOC=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" "${BASE}/config/auth")
-          EXISTING=$(echo "${DOC}" | jq -r '.fields.allowed_emails.arrayValue.values[]?.stringValue // empty')
-          if echo "${EXISTING}" | grep -qx "${TEST_USER_EMAIL}"; then
-            echo "Smoke user email already in allowed_emails"
-          else
-            echo "Adding smoke user email to allowed_emails..."
-            VALUES=$(echo "${DOC}" | jq -c '[.fields.allowed_emails.arrayValue.values[]? // empty] + [{"stringValue":"'"${TEST_USER_EMAIL}"'"}]')
-            curl -s -X PATCH \
-              -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              "${BASE}/config/auth?updateMask.fieldPaths=allowed_emails" \
-              -d "{\"fields\":{\"allowed_emails\":{\"arrayValue\":{\"values\":${VALUES}}}}}"
-            echo "Added ${TEST_USER_EMAIL} to allowed_emails"
-          fi
-
       - name: Build and push Docker image
         run: |
           IMAGE_BASE="${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api"
@@ -100,6 +79,9 @@ jobs:
             .
           docker push "${IMAGE_BASE}" --all-tags
 
+      # --max-instances 1: クエストセッションをインスタンスのメモリ内に保持するため、
+      # 複数インスタンスにスケールすると別インスタンスに振られたユーザーのセッションが
+      # 見つからず 404 になる。
       # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
       # これはエンドユーザー向け API での Google 推奨パターン。
       # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
@@ -114,6 +96,7 @@ jobs:
             --service-account "pokelingual-api-dev@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
             --remove-secrets "GEMINI_API_KEY" \
             --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
+            --max-instances 1 \
             --allow-unauthenticated
 
       # ロールバックで --to-revisions を使うとトラフィックが特定リビジョンにピン留めされ、
@@ -259,9 +242,9 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
-  # 振る舞いカタログはマージ時点の仕様として公開する (テストが走るのはこのマージ実行のみ)
-  publish-behavior-catalog:
-    name: Publish Behavior Catalog to GitHub Pages
+  # 振る舞いカタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
+  publish-reports:
+    name: Publish Behavior Catalog & Coverage to GitHub Pages
     needs: test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
@@ -287,6 +270,7 @@ jobs:
           pattern: junit-*
           path: junit-artifacts
 
+      # 振る舞いカタログ (index.html) とは別ページにするため、既存 URL に影響しないルート直下に生成する。
       - name: Generate catalog HTML
         run: |
           mkdir -p _site
@@ -297,6 +281,19 @@ jobs:
             --section "frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
             --section "E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
             > _site/index.html
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+
+      # backend/frontend は別プロセスで計測しておりマージできないため、サブパスで並置する。
+      - name: Assemble coverage pages
+        run: |
+          mkdir -p _site/coverage/backend _site/coverage/frontend
+          cp -r coverage-artifacts/coverage-backend/. _site/coverage/backend/
+          cp -r coverage-artifacts/coverage-frontend/. _site/coverage/frontend/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
