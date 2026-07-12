@@ -60,6 +60,8 @@ const defaultHandlers = [
     HttpResponse.json({ excluded_pokemon_ids: [], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] }),
   ),
   http.put(apiUrl("/settings/excluded-pokemon"), () => HttpResponse.json({})),
+  http.get(apiUrl("/tutorial-status"), () => HttpResponse.json({ tutorial_completed: false })),
+  http.put(apiUrl("/tutorial-status/complete"), () => HttpResponse.json({ status: "ok" })),
 ];
 
 /** テスト用の MSW サーバ。HTTP 境界でバックエンド API をモックする。 */

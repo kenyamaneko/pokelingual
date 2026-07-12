@@ -4,6 +4,7 @@ import type { GuessResponse } from "../../../../shared/api-types/quest";
 interface NameGuessProps {
   onSubmit: (guess: string) => Promise<void>;
   onSkip: () => void;
+  onProceed: () => void;
   guessResult: GuessResponse | null;
 }
 
@@ -22,10 +23,10 @@ export const NAME_GUESS_LABELS = {
 
 /**
  * ポケモン名の推測入力 UI。残り試行数・正誤・最終正解の表示を担う。
- * @param props onSubmit / onSkip / guessResult を含む props。
+ * @param props onSubmit / onSkip / onProceed / guessResult を含む props。
  * @returns 名前推測 UI の要素。
  */
-export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
+export function NameGuess({ onSubmit, onSkip, onProceed, guessResult }: NameGuessProps) {
   const [guess, setGuess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -122,7 +123,7 @@ export function NameGuess({ onSubmit, onSkip, guessResult }: NameGuessProps) {
       )}
 
       <button
-        onClick={onSkip}
+        onClick={isFinished ? onProceed : onSkip}
         className="mt-3 w-full text-gray-500 hover:text-gray-700 py-2 text-sm
                    transition-colors"
       >

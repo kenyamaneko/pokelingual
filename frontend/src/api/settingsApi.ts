@@ -1,5 +1,9 @@
 import api from "./client";
 import type { SettingsResponse } from "../../../shared/api-types/settings";
+import type {
+  UpdateExcludedPokemonRequest,
+  UpdateEnabledGenerationsRequest,
+} from "../../../shared/api-types/settings";
 
 /** ユーザ設定エンドポイントを呼ぶ API クライアント。 */
 export const settingsApi = {
@@ -14,12 +18,14 @@ export const settingsApi = {
    * @returns 更新結果のレスポンス。
    */
   updateExcludedPokemon: (pokemonIDs: number[]) =>
-    api.put("/settings/excluded-pokemon", { pokemon_ids: pokemonIDs }),
+    api.put("/settings/excluded-pokemon", {
+      pokemon_ids: pokemonIDs,
+    } satisfies UpdateExcludedPokemonRequest),
   /**
    * PUT /settings/generations — 出題対象の世代を更新する。
    * @param generations 出題対象の世代番号の配列 (最低1世代)。
    * @returns 更新結果のレスポンス。
    */
   updateEnabledGenerations: (generations: number[]) =>
-    api.put("/settings/generations", { generations }),
+    api.put("/settings/generations", { generations } satisfies UpdateEnabledGenerationsRequest),
 };

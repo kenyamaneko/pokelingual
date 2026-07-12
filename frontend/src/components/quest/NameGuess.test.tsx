@@ -11,12 +11,13 @@ import type { GuessResponse } from "../../../../shared/api-types/quest";
  * - 不正解 + 残り 0 → 入力欄消失、名前が公開される
  * - 正解 → 入力欄消失、進む系のボタンに切り替わる
  *
- * submit で入力名が渡り判定へ進む・スキップで捕獲へ進む結合は、実際に判定結果や
- * 捕獲画面が出る結果を観測するため QuestPage.test.tsx (公開入口からのフロー) で確かめる。
+ * submit で入力名が渡り判定へ進む結合、下部ボタン (skip/proceed) を押した先で捕獲フェーズの
+ * 正しいボールが出る結果は、実際に画面が切り替わる結果として観測するため QuestPage.test.tsx
+ * (公開入口からのフロー) で確かめる。
  */
 describe("NameGuess", () => {
   it("guessResult が null のとき入力欄と送信ボタンが描画される", () => {
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={null} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={null} />);
 
     expect(screen.getByRole("textbox")).toBeEnabled();
     expect(
@@ -25,7 +26,7 @@ describe("NameGuess", () => {
   });
 
   it("空テキストのときは送信ボタンが disabled", () => {
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={null} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={null} />);
     expect(
       screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
     ).toBeDisabled();
@@ -33,7 +34,7 @@ describe("NameGuess", () => {
 
   it("不正解で残り試行があるときは入力欄を維持する", () => {
     const guess: GuessResponse = { correct: false, attempts_remaining: 2 };
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={guess} />);
 
     expect(screen.getByRole("textbox")).toBeInTheDocument();
     expect(
@@ -43,13 +44,13 @@ describe("NameGuess", () => {
 
   it("不正解で残り 2 回は「もう一度」を表示する", () => {
     const guess: GuessResponse = { correct: false, attempts_remaining: 2 };
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={guess} />);
     expect(screen.getByText(/もう一度/)).toBeInTheDocument();
   });
 
   it("不正解で残り 1 回は「ラストチャンス」を表示する", () => {
     const guess: GuessResponse = { correct: false, attempts_remaining: 1 };
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={guess} />);
     expect(screen.getByText(/ラストチャンス/)).toBeInTheDocument();
   });
 
@@ -60,7 +61,7 @@ describe("NameGuess", () => {
       reveal_name_en: "Pikachu",
       reveal_name_ja: "ピカチュウ",
     };
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={guess} />);
 
     expect(screen.getByText(spec(NAME_GUESS_LABELS.wrongFinalTitle))).toBeInTheDocument();
     expect(screen.getByText(/Pikachu/)).toBeInTheDocument();
@@ -75,7 +76,7 @@ describe("NameGuess", () => {
       language: "en",
       attempts_remaining: 2,
     };
-    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} guessResult={guess} />);
+    render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={guess} />);
 
     expect(screen.getByText(spec(NAME_GUESS_LABELS.correctTitle))).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();

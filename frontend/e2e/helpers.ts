@@ -12,6 +12,17 @@ export async function registerViaUi(page: Page, email: string, password: string)
   await page.waitForURL("/");
 }
 
+const LOCAL_BACKEND_URL = "http://localhost:15100";
+
+/**
+ * backend の mock 認証は全リクエストが同一 uid (dev-user) に固定されるため、
+ * 対象ユーザーを指定せず直接チュートリアル完了状態を立てる。local (mock) 専用。
+ * @param page APIRequestContext を共有する Playwright の Page。
+ */
+export async function completeTutorialViaApi(page: Page) {
+  await page.request.put(`${LOCAL_BACKEND_URL}/api/tutorial-status/complete`);
+}
+
 // クエストを1回完走させる（翻訳→採点→名前スキップ→捕獲→結果カード表示まで）。
 export async function completeQuest(page: Page) {
   await page.goto("/quest");

@@ -4,6 +4,7 @@ import type { QuestHandler } from "../handler/quest-handler.js";
 import type { PokedexHandler } from "../handler/pokedex-handler.js";
 import type { SettingsHandler } from "../handler/settings-handler.js";
 import type { UsageHandler } from "../handler/usage-handler.js";
+import type { TutorialHandler } from "../handler/tutorial-handler.js";
 
 /**
  * 認証ミドルウェアを噛ませた API ルータを構築して返す。
@@ -13,6 +14,7 @@ import type { UsageHandler } from "../handler/usage-handler.js";
  * @param pokedexHandler 図鑑系ハンドラ。
  * @param settingsHandler 設定系ハンドラ。
  * @param usageHandler 利用状況ハンドラ。
+ * @param tutorialHandler チュートリアル完了フラグハンドラ。
  * @returns 構築済みの Express ルータ。
  */
 export function setupRoutes(
@@ -22,6 +24,7 @@ export function setupRoutes(
   pokedexHandler: PokedexHandler,
   settingsHandler: SettingsHandler,
   usageHandler: UsageHandler,
+  tutorialHandler: TutorialHandler,
 ): Router {
   const router = Router();
   router.use(authMiddleware);
@@ -42,6 +45,9 @@ export function setupRoutes(
   router.put("/settings/generations", settingsHandler.updateEnabledGenerations);
 
   router.get("/usage", usageHandler.getUsage);
+
+  router.get("/tutorial-status", tutorialHandler.getStatus);
+  router.put("/tutorial-status/complete", tutorialHandler.markCompleted);
 
   return router;
 }

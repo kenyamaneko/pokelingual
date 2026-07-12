@@ -21,11 +21,13 @@ import { QuestService } from "./service/quest-service.js";
 import { PokedexService } from "./service/pokedex-service.js";
 import { UserPokemonRepo } from "./adapter/repository/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./adapter/repository/user-settings-repo.js";
+import { UserRepo } from "./adapter/repository/user-repo.js";
 import { RateLimitRepo } from "./adapter/repository/rate-limit-repo.js";
 import { QuestHandler } from "./handler/quest-handler.js";
 import { PokedexHandler } from "./handler/pokedex-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
+import { TutorialHandler } from "./handler/tutorial-handler.js";
 import { setupRoutes } from "./router/router.js";
 import type {
   LLMClient,
@@ -34,6 +36,7 @@ import type {
   RandomSource,
   UserPokemonRepository,
   UserSettingsRepository,
+  UserRepository,
   RateLimitRepository,
 } from "./domain/ports.js";
 import type { RequestHandler } from "express";
@@ -46,6 +49,7 @@ let randomSource: RandomSource;
 let pokemonConfig: PokemonConfig;
 let userPokemonRepo: UserPokemonRepository;
 let userSettingsRepo: UserSettingsRepository;
+let userRepo: UserRepository;
 let rateLimitRepo: RateLimitRepository;
 let authMiddleware: RequestHandler;
 
@@ -67,6 +71,7 @@ if (cfg.appMode === "mock") {
   pokemonConfig = { maxPokemonID: cfg.maxPokemonID, environment: cfg.environment };
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
+  userRepo = new UserRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
   authMiddleware = devAuth();
 } else {
@@ -101,6 +106,7 @@ if (cfg.appMode === "mock") {
   llmClient = new GeminiClient(vertexAI, cfg.geminiModel);
   userPokemonRepo = new UserPokemonRepo(firestoreClient);
   userSettingsRepo = new UserSettingsRepo(firestoreClient);
+  userRepo = new UserRepo(firestoreClient);
   rateLimitRepo = new RateLimitRepo(firestoreClient, cfg.perUserDailyLimit, cfg.globalDailyLimit);
   authMiddleware = firebaseAuth(authClient, allowedEmails);
 }
@@ -117,6 +123,7 @@ const questHandler = new QuestHandler(questService, userPokemonRepo);
 const pokedexHandler = new PokedexHandler(pokedexService);
 const settingsHandler = new SettingsHandler(userSettingsRepo, pokemonConfig);
 const usageHandler = new UsageHandler(rateLimitRepo);
+const tutorialHandler = new TutorialHandler(userRepo);
 
 const app = express();
 app.use(express.json());
@@ -135,6 +142,7 @@ const apiRouter = setupRoutes(
   pokedexHandler,
   settingsHandler,
   usageHandler,
+  tutorialHandler,
 );
 app.use("/api", apiRouter);
 

@@ -1,6 +1,10 @@
 terraform {
   required_version = ">= 1.5"
 
+  # dev/prod は別 Google Cloud プロジェクトのため bucket を静的に書けない。
+  # 環境ごとの値は `terraform init -backend-config=environments/<env>/backend.gcs.tfbackend` で渡す。
+  backend "gcs" {}
+
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -90,11 +94,8 @@ resource "google_firebaserules_ruleset" "firestore" {
         rules_version = '2';
         service cloud.firestore {
           match /databases/{database}/documents {
-            // Users can only access their own data
-            match /users/{userId}/{document=**} {
-              allow read, write: if request.auth != null && request.auth.uid == userId;
-            }
-            // Deny all other access
+            // backend の Admin SDK がルールをバイパスする唯一のアクセス経路であり、
+            // クライアントの直接アクセスはレート制限カウンタ等の改ざんを許すため全拒否する
             match /{document=**} {
               allow read, write: if false;
             }
@@ -120,12 +121,24 @@ resource "google_identity_platform_config" "auth" {
   provider = google-beta
   project  = var.project_id
 
+  # multi_tenant / sign_in.phone_number は未使用機能だが、GCP側がこれらを未設定にできず
+  # 常に false/{} を返すため、宣言を省略すると null との間で terraform plan が恒久的に
+  # 差分を出す。実際の値に合わせて明示的に宣言する。
+  multi_tenant {
+    allow_tenants = false
+  }
+
   sign_in {
     allow_duplicate_emails = false
 
     email {
       enabled           = true
       password_required = true
+    }
+
+    phone_number {
+      enabled            = false
+      test_phone_numbers = {}
     }
   }
 

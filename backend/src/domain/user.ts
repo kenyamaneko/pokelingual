@@ -16,3 +16,8 @@ export interface UserSettings {
   /** 出題対象の世代。null なら未設定 (= 全世代)。 */
   enabled_generations: number[] | null;
 }
+
+/** ユーザ本体 (users/{uid} ルートドキュメント)。Firestore 永続化対象。 */
+export interface User {
+  tutorial_completed: boolean;
+}

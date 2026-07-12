@@ -1,7 +1,8 @@
 import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
-import { ScoreDisplay } from "../components/quest/ScoreDisplay";
+import { TranslationResult } from "../components/quest/TranslationResult";
 import { NameGuess } from "../components/quest/NameGuess";
+import { CaptureEffect } from "../components/quest/CaptureEffect";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { LocationSelect } from "../components/quest/LocationSelect";
 import { useQuest, type BallType } from "../hooks/useQuest";
@@ -38,7 +39,9 @@ export function QuestPage() {
     submitTranslation,
     submitGuess,
     skipGuess,
+    proceedToCapture,
     capture,
+    revealCaptureResult,
   } = useQuest();
 
   const isSpecial = quest?.is_legendary || quest?.is_mythical;
@@ -108,32 +111,11 @@ export function QuestPage() {
         {phase === "guessing" && quest && score && (
           <>
             <QuestCard description={quest.description_en} />
-            <div className="mt-4 bg-white rounded-2xl shadow-lg p-5 border border-gray-200">
-              <div className="mb-3">
-                <p className="text-xs font-semibold text-gray-400 mb-1">君の翻訳</p>
-                <p className="text-gray-800 text-sm leading-relaxed">
-                  {userTranslation}
-                </p>
-              </div>
-              {score.review && (
-                <div className="mb-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 mb-1">博士からのコメント</p>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {score.review}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs font-semibold text-gray-400 mb-1">日本語の説明文</p>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  「{score.description_ja}」
-                </p>
-              </div>
-            </div>
-            <ScoreDisplay score={score} />
+            <TranslationResult userTranslation={userTranslation} score={score} />
             <NameGuess
               onSubmit={submitGuess}
               onSkip={skipGuess}
+              onProceed={proceedToCapture}
               guessResult={guessResult}
             />
           </>
@@ -158,6 +140,15 @@ export function QuestPage() {
               {BALL_NAMES[ballType]}を　使う
             </button>
           </div>
+        )}
+
+        {phase === "revealing" && captureResult && (
+          <CaptureEffect
+            ballSprite={BALL_SPRITES[captureResult.ball_type]}
+            ballName={BALL_NAMES[captureResult.ball_type]}
+            captured={captureResult.captured}
+            onComplete={revealCaptureResult}
+          />
         )}
 
         {phase === "result" && captureResult && (

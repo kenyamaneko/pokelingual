@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import type { User } from "firebase/auth";
 import { AuthContext } from "../contexts/AuthContext";
 import { UsageProvider } from "../contexts/UsageContext";
+import { TutorialProvider } from "../contexts/TutorialContext";
 
 interface ProviderOptions extends Omit<RenderOptions, "wrapper"> {
   user?: User | null;
@@ -27,7 +28,9 @@ export function renderWithProviders(
   };
   const tree = (
     <AuthContext.Provider value={auth}>
-      <UsageProvider>{ui}</UsageProvider>
+      <UsageProvider>
+        <TutorialProvider>{ui}</TutorialProvider>
+      </UsageProvider>
     </AuthContext.Provider>
   );
   return render(withRouter ? <BrowserRouter>{tree}</BrowserRouter> : tree, rest);

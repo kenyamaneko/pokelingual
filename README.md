@@ -31,17 +31,15 @@
 
 ```
 ├── backend/
-│   ├── cmd/server/          # エントリーポイント、依存性注入
-│   ├── internal/
+│   ├── src/
 │   │   ├── config/          # 環境変数の読み込み
-│   │   ├── domain/          # インターフェース定義
+│   │   ├── domain/          # ドメインロジック、インターフェース定義
 │   │   ├── handler/         # HTTP ハンドラー
-│   │   ├── middleware/      # 認証、CORS
-│   │   ├── types/           # データモデル
-│   │   ├── repository/      # Firestore 実装
+│   │   ├── middleware/      # 認証、レート制限
+│   │   ├── adapter/         # Firestore・PokeAPI・Gemini 実装
 │   │   ├── router/          # ルーティング定義
-│   │   ├── service/         # ビジネスロジック（PokeAPI, Gemini, Quest）
-│   │   └── apperror/        # アプリケーション固有エラー型
+│   │   ├── service/         # ビジネスロジック（Quest, Pokedex）
+│   │   └── util/            # ロガー等の共通ユーティリティ
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
@@ -49,10 +47,12 @@
 │   │   ├── components/      # 共通コンポーネント
 │   │   ├── contexts/        # AuthContext, DevAuthContext
 │   │   ├── hooks/           # カスタムフック
-│   │   └── config/          # Firebase 設定
+│   │   ├── api/             # バックエンド API クライアント
+│   │   └── firebase.ts      # Firebase 設定
 │   └── Dockerfile.dev
+├── shared/api-types/        # backend↔frontend API 契約型 (SSoT)
 ├── terraform/               # Google Cloud インフラ（dev/prod）
-├── scripts/                 # 結合テストスクリプト
+├── scripts/                 # デプロイ後スモーク・振る舞いカタログ生成スクリプト
 ├── docs/                    # ドキュメント
 ├── docker-compose.dev.yml   # ローカル開発環境
 └── Makefile
@@ -104,23 +104,37 @@ gcloud billing projects link my-pokelingual-prod --billing-account=BILLING_ACCOU
 
 ### Terraform でインフラ構築
 
+state は環境ごとに別プロジェクトの GCS バケットへ保存する（dev/prod が別プロジェクトのため）。
+
+```bash
+# tfstate 用バケットを環境ごとに作成（初回のみ）
+gcloud storage buckets create gs://my-pokelingual-dev-tfstate \
+  --project=my-pokelingual-dev --location=asia-northeast1 \
+  --uniform-bucket-level-access --public-access-prevention=enforced
+gcloud storage buckets update gs://my-pokelingual-dev-tfstate --versioning
+
+gcloud storage buckets create gs://my-pokelingual-prod-tfstate \
+  --project=my-pokelingual-prod --location=asia-northeast1 \
+  --uniform-bucket-level-access --public-access-prevention=enforced
+gcloud storage buckets update gs://my-pokelingual-prod-tfstate --versioning
+```
+
 ```bash
 cd terraform
 
-# tfvars を自分のプロジェクトに合わせて編集
-# environments/dev/terraform.tfvars
+# tfvars と backend 設定を自分のプロジェクトに合わせて編集
+# environments/dev/terraform.tfvars, environments/dev/backend.gcs.tfbackend
 #   project_id  = "my-pokelingual-dev"
 #   environment = "dev"
 #   region      = "asia-northeast1"
+#   (backend.gcs.tfbackend の bucket も上で作成したバケット名に合わせる)
 
 # dev 環境
-terraform init
-terraform workspace select default  # dev workspace
+terraform init -backend-config=environments/dev/backend.gcs.tfbackend
 terraform apply -var-file=environments/dev/terraform.tfvars
 
-# prod 環境
-terraform workspace new prod  # 初回のみ
-terraform workspace select prod
+# prod 環境 (別プロジェクトの state に切り替えるため -reconfigure が必要)
+terraform init -backend-config=environments/prod/backend.gcs.tfbackend -reconfigure
 terraform apply -var-file=environments/prod/terraform.tfvars
 ```
 
@@ -129,24 +143,13 @@ Terraform が作成するリソース:
 - Firestore データベース + セキュリティルール
 - Identity Platform（メール/パスワード認証）
 - Artifact Registry（Docker イメージ保管）
-- Secret Manager（Gemini API キー）
 - Workload Identity Federation（GitHub Actions → Google Cloud 認証）
 - Cloud Monitoring アラート
-- サービスアカウント + IAM
+- サービスアカウント + IAM（Vertex AI 呼び出し用の `roles/aiplatform.user` を含む）
 
 > API 有効化直後にリソース作成が失敗する場合がある。その場合は再度 `terraform apply` を実行。
 
-### Gemini API キーの設定
-
-```bash
-# Gemini API キーを取得（https://aistudio.google.com/apikey）
-
-# Secret Manager にキーを保存
-echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key \
-  --project=my-pokelingual-dev --data-file=-
-echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key \
-  --project=my-pokelingual-prod --data-file=-
-```
+Gemini はサービスアカウントの ADC（Application Default Credentials）経由で Vertex AI を呼び出すため、API キーの発行・保存は不要。
 
 ### Firebase ユーザーの作成
 
@@ -215,16 +218,14 @@ variable "github_repo" {
 初回は Cloud Run サービスがまだ存在しないため、手動でデプロイする:
 
 ```bash
-# バックエンド
-cd backend
-docker build -t REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial .
+# バックエンド（ビルドコンテキストはリポジトリルート。shared/api-types を含むため）
+docker build -f backend/Dockerfile -t REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial .
 docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
 gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
-  --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
-  --update-env-vars "APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500" \
+  --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定
@@ -372,10 +373,10 @@ git push origin v1.0.0
 
 ```bash
 cd terraform
-terraform workspace select default  # dev
+terraform init -backend-config=environments/dev/backend.gcs.tfbackend -reconfigure
 terraform apply -var-file=environments/dev/terraform.tfvars
 
-terraform workspace select prod
+terraform init -backend-config=environments/prod/backend.gcs.tfbackend -reconfigure
 terraform apply -var-file=environments/prod/terraform.tfvars
 ```
 
