@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import type { Auth, DecodedIdToken } from "firebase-admin/auth";
 import { firebaseAuth } from "./auth.js";
 
-// HTTP 境界での仕様: トークン検証と許可リスト判定の結果をレスポンスで確かめる。
+// HTTP 境界での仕様: トークン検証の結果をレスポンスで確かめる。
 // Firebase Auth は外部境界なので verifyIdToken だけをスタブに差し替える。
 
 /**
@@ -33,7 +33,7 @@ function makeReqRes(authorization?: string) {
 
 describe("firebaseAuth ミドルウェア", () => {
   it("Authorization ヘッダが無ければ 401 で拒否する", async () => {
-    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })), []);
+    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
     const { req, res, next, status } = makeReqRes();
 
     await mw(req, res, next);
@@ -43,7 +43,7 @@ describe("firebaseAuth ミドルウェア", () => {
   });
 
   it("Bearer 形式でないヘッダは 401 で拒否する", async () => {
-    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })), []);
+    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
     const { req, res, next, status } = makeReqRes("Basic dummy-credential");
 
     await mw(req, res, next);
@@ -57,7 +57,6 @@ describe("firebaseAuth ミドルウェア", () => {
       stubAuthClient(async () => {
         throw new Error("token expired");
       }),
-      [],
     );
     const { req, res, next, status } = makeReqRes("Bearer dummy-token");
 
@@ -67,10 +66,9 @@ describe("firebaseAuth ミドルウェア", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("許可リストが空 (公開モード) なら、メール確認済みユーザーは通過し後続で userId が使える", async () => {
+  it("メール確認済みユーザーは通過し、後続で userId が使える", async () => {
     const mw = firebaseAuth(
       stubAuthClient(async () => ({ uid: "user-1", email: "anyone@example.com", email_verified: true })),
-      [],
     );
     const { req, res, next, status } = makeReqRes("Bearer dummy-token");
 
@@ -81,49 +79,9 @@ describe("firebaseAuth ミドルウェア", () => {
     expect(res.locals.userId).toBe("user-1");
   });
 
-  it("許可リストに含まれるメール確認済みの email は通過し、後続で userId が使える", async () => {
-    const mw = firebaseAuth(
-      stubAuthClient(async () => ({ uid: "user-1", email: "allowed@example.com", email_verified: true })),
-      ["allowed@example.com"],
-    );
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
-
-    await mw(req, res, next);
-
-    expect(next).toHaveBeenCalledOnce();
-    expect(status).not.toHaveBeenCalled();
-    expect(res.locals.userId).toBe("user-1");
-  });
-
-  it("メール確認済みでも許可リストに含まれない email は 403 で拒否する", async () => {
-    const mw = firebaseAuth(
-      stubAuthClient(async () => ({ uid: "user-1", email: "other@example.com", email_verified: true })),
-      ["allowed@example.com"],
-    );
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
-
-    await mw(req, res, next);
-
-    expect(status).toHaveBeenLastCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("許可リスト運用時、メール確認済みでも email クレームの無いトークンは 403 で拒否する", async () => {
-    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1", email_verified: true })), [
-      "allowed@example.com",
-    ]);
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
-
-    await mw(req, res, next);
-
-    expect(status).toHaveBeenLastCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("メール未確認 (email_verified が false) のトークンは公開モードでも 403 で拒否する", async () => {
+  it("メール未確認 (email_verified が false) のトークンは 403 で拒否する", async () => {
     const mw = firebaseAuth(
       stubAuthClient(async () => ({ uid: "user-1", email: "unverified@example.com", email_verified: false })),
-      [],
     );
     const { req, res, next, status } = makeReqRes("Bearer dummy-token");
 
@@ -134,10 +92,7 @@ describe("firebaseAuth ミドルウェア", () => {
   });
 
   it("email_verified クレームを持たないトークンは 403 で拒否する", async () => {
-    const mw = firebaseAuth(
-      stubAuthClient(async () => ({ uid: "user-1", email: "no-claim@example.com" })),
-      [],
-    );
+    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1", email: "no-claim@example.com" })));
     const { req, res, next, status } = makeReqRes("Bearer dummy-token");
 
     await mw(req, res, next);

@@ -7,7 +7,7 @@ set -euo pipefail
 #
 # 必要な環境変数:
 #   SERVICE_URL         - デプロイ済み Cloud Run サービスの URL
-#   TEST_USER_EMAIL     - allowed_emails に常設した、事前作成済み・メール確認済みのフィクスチャユーザのメール
+#   TEST_USER_EMAIL     - 事前作成済み・メール確認済みのフィクスチャユーザのメール
 #   TEST_USER_PASSWORD  - フィクスチャユーザのパスワード
 #   FIREBASE_API_KEY    - Firebase Auth REST 用の API キー
 
