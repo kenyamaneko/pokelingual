@@ -13,8 +13,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect Code Change
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.detect.outputs.changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # paths-ignore はトリガー自体を止めるため、無視対象のみの変更では required check が
+      # 一度も報告されず branch protection が永久にブロックする。job 側の if で skip させて
+      # 必ず何らかの結論 (skipped も含む) を報告させるための判定に使う。
+      - name: Detect code change
+        id: detect
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          base="${PR_BASE_SHA:-$PUSH_BEFORE_SHA}"
+          # base が解決できない (force push 等) ときは判定できないので全実行に倒す
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed_files=$(git diff --name-only "$base" HEAD -- . \
+            ':(exclude)*.md' ':(exclude)docs/**' ':(exclude)rules/**' \
+            ':(exclude).claude/**' ':(exclude).vscode/**' \
+            ':(exclude).gitignore' ':(exclude)LICENSE')
+          if [ -n "$changed_files" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   backend-lint:
     name: Backend Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
@@ -39,6 +78,8 @@ jobs:
 
   frontend-lint:
     name: Frontend Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
@@ -63,6 +104,8 @@ jobs:
 
   backend-test:
     name: Backend Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 10
     defaults:
@@ -109,6 +152,8 @@ jobs:
 
   frontend-test:
     name: Frontend Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 10
     defaults:
@@ -147,6 +192,8 @@ jobs:
 
   e2e-test:
     name: E2E Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:
@@ -242,6 +289,8 @@ jobs:
 
   terraform-check:
     name: Terraform Format Check
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     defaults:
