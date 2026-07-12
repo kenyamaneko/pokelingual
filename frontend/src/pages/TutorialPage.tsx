@@ -1,12 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { QuestCard } from "../components/quest/QuestCard";
 import { ScoreDisplay } from "../components/quest/ScoreDisplay";
+import { CaptureStandby } from "../components/quest/CaptureStandby";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { TutorialTranslationStep } from "../components/tutorial/TutorialTranslationStep";
 import { TutorialNameStep } from "../components/tutorial/TutorialNameStep";
 import { useTutorialQuest } from "../hooks/useTutorialQuest";
-
-const BALL_SPRITE_URL = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
 
 /**
  * TutorialPage の仕様文言。テストから import される SSOT。
@@ -45,23 +44,7 @@ export function TutorialPage() {
           </>
         )}
 
-        {phase === "capturing" && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <img
-              src={BALL_SPRITE_URL}
-              alt="モンスターボール"
-              className="w-24 h-24 animate-bounce mb-6"
-            />
-            <button
-              onClick={capture}
-              className="bg-red-500 text-white py-4 px-12 rounded-2xl font-bold text-xl
-                         hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
-                         active:scale-95 transform"
-            >
-              {TUTORIAL_PAGE_LABELS.captureButton}
-            </button>
-          </div>
-        )}
+        {phase === "capturing" && <CaptureStandby ballType="poke" onUse={capture} />}
 
         {phase === "result" && captureResult && (
           <CaptureResult result={captureResult} onNewQuest={() => navigate("/quest")} />
