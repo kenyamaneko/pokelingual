@@ -24,7 +24,8 @@
 |---|---|
 | [技術判断記録（ADR）](docs/adr/) | 各設計判断の背景・理由・結果 |
 | [業務判断記録（BDR）](docs/bdr/) | 仕様・ゲームルールの背景・理由・結果 |
-| [トラブルシューティング](docs/troubleshooting.md) | 開発中に遭遇した問題と解決策 |
+| [運用手順書](docs/ops/) | prod ロールバック・アラート対応と緊急停止・Firestore バックアップ復旧の手順 |
+| [トラブルシューティング](docs/ops/troubleshooting.md) | 開発中に遭遇した問題と解決策 |
 | [振る舞いカタログ](https://kenyamaneko.github.io/pokelingual/) | テスト名から自動生成したテスト済みの振る舞い一覧（main の CI が更新） |
 
 ## ディレクトリ構成
@@ -334,6 +335,8 @@ git push origin v1.0.0
 ```
 
 タグ付け後に `main` へ追加コミットが積まれれば、dev 環境のバージョンは `v1.0.0-N-g<sha>`（リリースから N コミット先）と表示される。
+
+リリース後に不具合が発覚したときの切り戻しは[ロールバック手順](docs/ops/rollback-prod.md)に従う。
 
 ## API エンドポイント
 
