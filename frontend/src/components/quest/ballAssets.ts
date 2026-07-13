@@ -13,3 +13,12 @@ export const BALL_NAMES: Record<BallType, string> = {
   great: "スーパーボール",
   ultra: "ハイパーボール",
 };
+
+/**
+ * ボール種別に対応する使用ボタンの文言。
+ * @param ballType ボール種別。
+ * @returns 使用ボタンの表示文言。
+ */
+export function captureUseButtonLabel(ballType: BallType): string {
+  return `${BALL_NAMES[ballType]}を　使う`;
+}

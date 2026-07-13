@@ -14,8 +14,6 @@ interface NameGuessProps {
  */
 export const NAME_GUESS_LABELS = {
   heading: "このポケモンの名前は？",
-  inputPlaceholder: "ポケモンの名前を入力してね",
-  submitButton: "君に　決めた！",
   skipButton: "わからないのでスキップ →",
   proceedButton: "次へ進む",
   correctTitle: "正解！",
