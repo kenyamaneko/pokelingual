@@ -13,9 +13,9 @@ export const SHAKE_DURATION_MS = 900;
 /** 成否エフェクト (成功時は粒子の飛散、失敗時は煙) の再生時間 (ミリ秒)。CSS 側のアニメーション時間と揃える。 */
 const EFFECT_DURATION_MS = 700;
 
-const BURST_PARTICLE_COUNT = 10;
-const BURST_MIN_DISTANCE_PX = 24;
-const BURST_MAX_DISTANCE_PX = 56;
+const BURST_PARTICLE_COUNT = 18;
+const BURST_MIN_DISTANCE_PX = 32;
+const BURST_MAX_DISTANCE_PX = 96;
 const BURST_COLORS = ["#facc15", "#fb923c"];
 
 const SMOKE_CIRCLE_COUNT = 6;
@@ -107,7 +107,7 @@ export function CaptureEffect({ ballSprite, ballName, captured, onComplete }: Ca
                   <span
                     key={particle.id}
                     style={{ ...particle.style, backgroundColor: particle.color }}
-                    className="absolute left-1/2 top-1/2 w-2 h-2 rounded-full animate-[particle-burst_0.7s_ease-out]"
+                    className="absolute left-1/2 top-1/2 w-3 h-3 rounded-full animate-[particle-burst_0.7s_ease-out]"
                   />
                 ))
               : smokeCircles.map((circle) => (
