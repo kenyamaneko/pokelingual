@@ -269,43 +269,6 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.dev.yml down
 
-  behavior-catalog:
-    name: Test Perspective Catalog
-    needs: [backend-test, frontend-test, e2e-test]
-    if: github.event_name == 'pull_request'
-    runs-on: ubicloud-standard-2
-    timeout-minutes: 5
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install pytest
-        run: pip install pytest
-
-      - name: Run catalog generator unit tests
-        run: python -m pytest scripts
-
-      - name: Download JUnit XML
-        uses: actions/download-artifact@v4
-        with:
-          pattern: junit-*
-          path: junit-artifacts
-
-      - name: Generate catalog and publish to job summary
-        run: |
-          python scripts/generate_behavior_catalog.py \
-            --format markdown \
-            --section "外から見た振る舞い:backend API の振る舞い:junit-artifacts/junit-backend/junit.xml:src/router/,src/middleware/" \
-            --section "内部の挙動:backend 内部部品の検証（開発者向け）:junit-artifacts/junit-backend/junit.xml:src/adapter/,src/domain/,src/service/,src/config/,src/util/" \
-            --section "外から見た振る舞い:frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
-            --section "外から見た振る舞い:E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
-            >> "$GITHUB_STEP_SUMMARY"
-
   terraform-check:
     name: Terraform Format Check
     needs: changes

@@ -265,7 +265,7 @@ jobs:
   # テスト観点カタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
   publish-reports:
     name: Publish Test Perspective Catalog & Coverage to GitHub Pages
-    needs: test
+    needs: behavior-catalog-test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     permissions:
