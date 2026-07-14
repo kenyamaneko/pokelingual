@@ -4,7 +4,6 @@ import { describe, it, expect } from "vitest";
 import type { User } from "firebase/auth";
 import App from "../../App";
 import { TutorialPage } from "../../pages/TutorialPage";
-import { TUTORIAL_MODAL_LABELS } from "./TutorialInstructionModal";
 import { TUTORIAL_TRANSLATION_LABELS } from "./TutorialTranslationStep";
 import { TUTORIAL_NAME_LABELS } from "./TutorialNameStep";
 import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
@@ -17,24 +16,22 @@ import { spec } from "../../test/labels";
 const fakeUser = { uid: "trainer-test" } as unknown as User;
 
 /**
- * 案内モーダルを閉じ、訳文を入力して送信する。
+ * 訳文を入力して送信する。
  * @param user userEvent インスタンス。
  * @param translation 送信する訳文。
  */
-async function dismissModalAndSubmitTranslation(user: UserEvent, translation: string): Promise<void> {
-  await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
-  await user.type(screen.getByRole("textbox"), translation);
+async function fillAndSubmitTranslation(user: UserEvent, translation: string): Promise<void> {
+  await user.type(await screen.findByRole("textbox"), translation);
   await user.click(screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }));
 }
 
 /**
- * 案内モーダルを閉じ、名前を入力して送信する。
+ * 名前を入力して送信する。
  * @param user userEvent インスタンス。
  * @param name 送信する名前。
  */
-async function dismissModalAndSubmitName(user: UserEvent, name: string): Promise<void> {
-  await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
-  await user.type(screen.getByPlaceholderText(POKEMON_NAME_INPUT_LABELS.inputPlaceholder), name);
+async function fillAndSubmitName(user: UserEvent, name: string): Promise<void> {
+  await user.type(await screen.findByPlaceholderText(POKEMON_NAME_INPUT_LABELS.inputPlaceholder), name);
   await user.click(screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }));
 }
 
@@ -53,18 +50,32 @@ describe("チュートリアルへの遷移", () => {
 });
 
 describe("チュートリアル (訳文入力ステップ)", () => {
-  it("固定ポケモンの英文と、入力すべき訳文を案内するモーダルが表示される", async () => {
+  it("固定ポケモンの英文と、入力すべき訳文を案内する吹き出しが表示される", async () => {
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    expect(await screen.findByText(spec(TUTORIAL_TRANSLATION_LABELS.modalInstruction))).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(spec(TUTORIAL_TRANSLATION_LABELS.instruction))).toBeVisible();
+    });
     await screen.findByTestId("quest-description");
+  });
+
+  it("訳文を入力している間も、案内の吹き出しは表示されたままになる", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+
+    await waitFor(() => {
+      expect(screen.getByText(spec(TUTORIAL_TRANSLATION_LABELS.instruction))).toBeVisible();
+    });
+    await user.type(screen.getByRole("textbox"), "電気タイプのねずみポケモン");
+
+    expect(screen.getByText(spec(TUTORIAL_TRANSLATION_LABELS.instruction))).toBeVisible();
   });
 
   it("「ねずみポケモン」と入力しても、採点画面に進めない", async () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    await dismissModalAndSubmitTranslation(user, "ねずみポケモン");
+    await fillAndSubmitTranslation(user, "ねずみポケモン");
 
     expect(await screen.findByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).toBeInTheDocument();
     expect(screen.queryByText("100")).not.toBeInTheDocument();
@@ -74,7 +85,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+    await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
     expect(await screen.findByText("100")).toBeInTheDocument();
   });
@@ -83,7 +94,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+    await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
     expect(await screen.findByText("電気タイプのねずみポケモン")).toBeInTheDocument();
   });
@@ -92,7 +103,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+    await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
     expect(await screen.findByText("「電気タイプのねずみポケモン」")).toBeInTheDocument();
   });
@@ -101,7 +112,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+    await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
     // タイプライター演出がダメージメーターのアニメーション完了後 (1000ms) に始まるため、既定の待機時間を延長する。
     expect(
@@ -113,7 +124,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     const user = userEvent.setup();
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-    await dismissModalAndSubmitTranslation(user, "ねずみポケモン");
+    await fillAndSubmitTranslation(user, "ねずみポケモン");
     expect(await screen.findByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).toBeInTheDocument();
 
     await user.type(screen.getByRole("textbox"), "電気タイプの");
@@ -129,16 +140,27 @@ describe("チュートリアル (訳文入力ステップ)", () => {
 async function proceedToNameStep(): Promise<UserEvent> {
   const user = userEvent.setup();
   renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
-  await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+  await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
   await screen.findByText("100");
   return user;
 }
 
 describe("チュートリアル (名前当てステップ)", () => {
+  it("名前を入力している間も、案内の吹き出しは表示されたままになる", async () => {
+    const user = await proceedToNameStep();
+
+    await waitFor(() => {
+      expect(screen.getByText(spec(TUTORIAL_NAME_LABELS.instruction))).toBeVisible();
+    });
+    await user.type(screen.getByPlaceholderText(POKEMON_NAME_INPUT_LABELS.inputPlaceholder), "pika");
+
+    expect(screen.getByText(spec(TUTORIAL_NAME_LABELS.instruction))).toBeVisible();
+  });
+
   it("「raichu」と入力しても、捕獲画面に進めない", async () => {
     const user = await proceedToNameStep();
 
-    await dismissModalAndSubmitName(user, "raichu");
+    await fillAndSubmitName(user, "raichu");
 
     expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: captureUseButtonLabel("poke") })).not.toBeInTheDocument();
@@ -147,7 +169,7 @@ describe("チュートリアル (名前当てステップ)", () => {
   it("「ピカチュウ」と入力すると捕獲画面に進む", async () => {
     const user = await proceedToNameStep();
 
-    await dismissModalAndSubmitName(user, "ピカチュウ");
+    await fillAndSubmitName(user, "ピカチュウ");
 
     expect(await screen.findByRole("button", { name: captureUseButtonLabel("poke") })).toBeInTheDocument();
   });
@@ -155,7 +177,7 @@ describe("チュートリアル (名前当てステップ)", () => {
   it("間違った名前のエラーが出た後、名前を入力し直すとエラー表示が消える", async () => {
     const user = await proceedToNameStep();
 
-    await dismissModalAndSubmitName(user, "raichu");
+    await fillAndSubmitName(user, "raichu");
     expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText(POKEMON_NAME_INPUT_LABELS.inputPlaceholder), "pika");
@@ -171,9 +193,9 @@ describe("チュートリアル (捕獲〜完了記録)", () => {
     render(<App />);
 
     await user.click(await screen.findByRole("link", { name: "ポケモンを探しに行く" }));
-    await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+    await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
     await screen.findByText("100");
-    await dismissModalAndSubmitName(user, "ピカチュウ");
+    await fillAndSubmitName(user, "ピカチュウ");
     await user.click(await screen.findByRole("button", { name: captureUseButtonLabel("poke") }));
     expect(await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")))).toBeInTheDocument();
 
