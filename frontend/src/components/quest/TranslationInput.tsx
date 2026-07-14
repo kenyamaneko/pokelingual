@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 interface TranslationInputProps {
-  onSubmit: (translation: string) => Promise<void>;
+  onSubmit: (translation: string) => Promise<boolean>;
   onChangeText?: (text: string) => void;
 }
 
@@ -14,6 +14,7 @@ export const TRANSLATION_INPUT_LABELS = {
 
 /**
  * 翻訳文を入力して採点へ送信する UI。送信中はスピナーを表示する。
+ * onSubmit が真を返すと入力欄を空にし、偽を返すと入力を残す。
  * @param props onSubmit / onChangeText を含む props。
  * @returns 翻訳入力 UI の要素。
  */
@@ -25,7 +26,8 @@ export function TranslationInput({ onSubmit, onChangeText }: TranslationInputPro
     if (!text.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await onSubmit(text);
+      const accepted = await onSubmit(text);
+      if (accepted) setText("");
     } finally {
       setSubmitting(false);
     }
