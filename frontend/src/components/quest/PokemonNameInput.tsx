@@ -1,10 +1,17 @@
 import { useState } from "react";
-import { NAME_GUESS_LABELS } from "./NameGuess";
 
 interface PokemonNameInputProps {
   onSubmit: (name: string) => Promise<boolean>;
   onChangeText?: (text: string) => void;
 }
+
+/**
+ * PokemonNameInput の仕様文言。テストから import される SSOT。
+ */
+export const POKEMON_NAME_INPUT_LABELS = {
+  inputPlaceholder: "ポケモンの名前を入力してね",
+  submitButton: "君に　決めた！",
+} as const;
 
 /**
  * ポケモン名の入力行 (入力欄 + 送信ボタン)。Enter キー送信 (IME 変換確定中は無視) に対応する。
@@ -44,7 +51,7 @@ export function PokemonNameInput({ onSubmit, onChangeText }: PokemonNameInputPro
           onChangeText?.(e.target.value);
         }}
         onKeyDown={handleKeyDown}
-        placeholder={NAME_GUESS_LABELS.inputPlaceholder}
+        placeholder={POKEMON_NAME_INPUT_LABELS.inputPlaceholder}
         className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl
                    focus:border-blue-500 focus:outline-none text-lg bg-white text-gray-800"
         disabled={submitting}
@@ -56,7 +63,7 @@ export function PokemonNameInput({ onSubmit, onChangeText }: PokemonNameInputPro
                    hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
                    transition-colors"
       >
-        {submitting ? "…" : NAME_GUESS_LABELS.submitButton}
+        {submitting ? "…" : POKEMON_NAME_INPUT_LABELS.submitButton}
       </button>
     </div>
   );

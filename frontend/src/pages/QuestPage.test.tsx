@@ -8,6 +8,7 @@ import { server, apiUrl } from "../test/mswServer";
 import { spec } from "../test/labels";
 import { TRANSLATION_INPUT_LABELS } from "../components/quest/TranslationInput";
 import { NAME_GUESS_LABELS } from "../components/quest/NameGuess";
+import { POKEMON_NAME_INPUT_LABELS } from "../components/quest/PokemonNameInput";
 import { CAPTURE_RESULT_LABELS } from "../components/quest/CaptureResult";
 import type { CaptureResponse } from "../../../shared/api-types/quest";
 
@@ -87,7 +88,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
 
     await user.type(screen.getByRole("textbox"), "テストモン");
     await user.click(
-      screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     );
     expect(await screen.findByText(spec(NAME_GUESS_LABELS.correctTitle))).toBeInTheDocument();
 
@@ -180,7 +181,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
       async (user: ReturnType<typeof userEvent.setup>) => {
         await user.type(await screen.findByRole("textbox"), "テストモン");
         await user.click(
-          screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+          screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
         );
         await user.click(
           await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
@@ -205,7 +206,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
       async (user: ReturnType<typeof userEvent.setup>) => {
         await user.type(await screen.findByRole("textbox"), "Testmon");
         await user.click(
-          screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+          screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
         );
         await user.click(
           await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),

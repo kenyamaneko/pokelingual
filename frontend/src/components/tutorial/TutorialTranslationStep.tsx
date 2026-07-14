@@ -26,7 +26,9 @@ export function TutorialTranslationStep({ onSubmit }: Props) {
   const [showError, setShowError] = useState(false);
 
   const handleSubmit = async (translation: string) => {
-    setShowError(!onSubmit(translation));
+    const ok = onSubmit(translation);
+    setShowError(!ok);
+    return ok;
   };
 
   return (

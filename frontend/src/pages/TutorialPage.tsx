@@ -12,7 +12,6 @@ import { useTutorialQuest } from "../hooks/useTutorialQuest";
  */
 export const TUTORIAL_PAGE_LABELS = {
   intro: "あ！　野生の　ポケモンが　飛び出してきた！",
-  captureButton: "モンスターボールを　使う",
 } as const;
 
 /**

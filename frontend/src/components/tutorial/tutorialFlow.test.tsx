@@ -3,13 +3,14 @@ import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import type { User } from "firebase/auth";
 import App from "../../App";
-import { TutorialPage, TUTORIAL_PAGE_LABELS } from "../../pages/TutorialPage";
+import { TutorialPage } from "../../pages/TutorialPage";
 import { TUTORIAL_MODAL_LABELS } from "./TutorialInstructionModal";
 import { TUTORIAL_TRANSLATION_LABELS } from "./TutorialTranslationStep";
 import { TUTORIAL_NAME_LABELS } from "./TutorialNameStep";
 import { TRANSLATION_INPUT_LABELS } from "../quest/TranslationInput";
-import { NAME_GUESS_LABELS } from "../quest/NameGuess";
+import { POKEMON_NAME_INPUT_LABELS } from "../quest/PokemonNameInput";
 import { CAPTURE_RESULT_LABELS } from "../quest/CaptureResult";
+import { captureUseButtonLabel } from "../quest/ballAssets";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
 
@@ -33,8 +34,8 @@ async function dismissModalAndSubmitTranslation(user: UserEvent, translation: st
  */
 async function dismissModalAndSubmitName(user: UserEvent, name: string): Promise<void> {
   await user.click(await screen.findByRole("button", { name: TUTORIAL_MODAL_LABELS.dismissButton }));
-  await user.type(screen.getByPlaceholderText(NAME_GUESS_LABELS.inputPlaceholder), name);
-  await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }));
+  await user.type(screen.getByPlaceholderText(POKEMON_NAME_INPUT_LABELS.inputPlaceholder), name);
+  await user.click(screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }));
 }
 
 describe("チュートリアルへの遷移", () => {
@@ -140,7 +141,7 @@ describe("チュートリアル (名前当てステップ)", () => {
     await dismissModalAndSubmitName(user, "raichu");
 
     expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: captureUseButtonLabel("poke") })).not.toBeInTheDocument();
   });
 
   it("「ピカチュウ」と入力すると捕獲画面に進む", async () => {
@@ -148,7 +149,7 @@ describe("チュートリアル (名前当てステップ)", () => {
 
     await dismissModalAndSubmitName(user, "ピカチュウ");
 
-    expect(await screen.findByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: captureUseButtonLabel("poke") })).toBeInTheDocument();
   });
 
   it("間違った名前のエラーが出た後、名前を入力し直すとエラー表示が消える", async () => {
@@ -157,7 +158,7 @@ describe("チュートリアル (名前当てステップ)", () => {
     await dismissModalAndSubmitName(user, "raichu");
     expect(await screen.findByText(TUTORIAL_NAME_LABELS.wrongNameError)).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText(NAME_GUESS_LABELS.inputPlaceholder), "pika");
+    await user.type(screen.getByPlaceholderText(POKEMON_NAME_INPUT_LABELS.inputPlaceholder), "pika");
 
     expect(screen.queryByText(TUTORIAL_NAME_LABELS.wrongNameError)).not.toBeInTheDocument();
   });
@@ -173,7 +174,7 @@ describe("チュートリアル (捕獲〜完了記録)", () => {
     await dismissModalAndSubmitTranslation(user, "電気タイプのねずみポケモン");
     await screen.findByText("100");
     await dismissModalAndSubmitName(user, "ピカチュウ");
-    await user.click(await screen.findByRole("button", { name: TUTORIAL_PAGE_LABELS.captureButton }));
+    await user.click(await screen.findByRole("button", { name: captureUseButtonLabel("poke") }));
     expect(await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")))).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.backToMenuButton }));

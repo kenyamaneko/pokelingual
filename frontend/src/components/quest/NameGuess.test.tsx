@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { spec } from "../../test/labels";
 import { NameGuess, NAME_GUESS_LABELS } from "./NameGuess";
+import { POKEMON_NAME_INPUT_LABELS } from "./PokemonNameInput";
 import type { GuessResponse } from "../../../../shared/api-types/quest";
 
 /**
@@ -21,14 +22,14 @@ describe("名前当ての入力と結果表示", () => {
 
     expect(screen.getByRole("textbox")).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     ).toBeInTheDocument();
   });
 
   it("空テキストのときは送信ボタンが押せない", () => {
     render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={null} />);
     expect(
-      screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     ).toBeDisabled();
   });
 
@@ -38,7 +39,7 @@ describe("名前当ての入力と結果表示", () => {
 
     expect(screen.getByRole("textbox")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: NAME_GUESS_LABELS.submitButton }),
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     ).toBeInTheDocument();
   });
 

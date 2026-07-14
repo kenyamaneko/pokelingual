@@ -11,8 +11,6 @@ import type {
   BallType,
 } from "../../../shared/api-types/quest";
 
-export type { BallType };
-
 /** クエストフェーズの遷移ステート。 */
 export type QuestPhase =
   | "selectLocation"
@@ -38,7 +36,7 @@ export interface UseQuestResult {
 
   startNewQuest: () => Promise<void>;
   selectLocation: (locationId: string) => Promise<void>;
-  submitTranslation: (translation: string) => Promise<void>;
+  submitTranslation: (translation: string) => Promise<boolean>;
   submitGuess: (guess: string) => Promise<void>;
   skipGuess: () => Promise<void>;
   proceedToCapture: () => void;
@@ -166,8 +164,10 @@ export function useQuest(): UseQuestResult {
       setScore(res.data);
       setPhase("guessing");
       refreshUsage();
+      return true;
     } catch (err) {
       handleActionError(err, "採点に失敗しました");
+      return false;
     }
   };
 
