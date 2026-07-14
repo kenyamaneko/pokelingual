@@ -4,7 +4,7 @@ import { getScoreLabel } from "../../utils/scoreLabel";
 
 interface ScoreDisplayProps {
   score: ScoreResponse;
-  onSettled?: () => void;
+  isActive: boolean;
 }
 
 /** スコア最大値。HP バー (100 - score) の上限としても使う。 */
@@ -12,6 +12,12 @@ const MAX_SCORE = 100;
 
 /** ダメージメーターのアニメーション時間 (ミリ秒)。バーの transitionDuration と揃える。 */
 export const METER_ANIMATION_DURATION_MS = 1000;
+
+/** HP 数値のカウントダウン更新間隔 (ミリ秒)。 */
+const HP_COUNTDOWN_TICK_MS = 50;
+
+/** アニメーション時間内のカウントダウン更新回数。 */
+const HP_COUNTDOWN_TICK_COUNT = METER_ANIMATION_DURATION_MS / HP_COUNTDOWN_TICK_MS;
 
 /** スコアに応じた色クラスを返すための閾値。 */
 const SCORE_COLOR_THRESHOLDS = {
@@ -52,39 +58,57 @@ function getHPBarColor(remainingHP: number): string {
 }
 
 /**
- * 採点結果をダメージ表現で表示する。HPバーは満タンから残量まで動的に減少し、
- * こうかラベルはそのアニメーションが完了してから表示する。
- * @param props score / onSettled を含む props。
+ * 採点結果をダメージ表現で表示する。isActive になると HP バーとその数値表示が
+ * 満タンから残量まで連動して減少し、ダメージ数値とこうかラベルはそのアニメーションが
+ * 完了してから表示する。
+ * @param props score / isActive を含む props。
  * @returns スコア表示の要素。
  */
-export function ScoreDisplay({ score, onSettled }: ScoreDisplayProps) {
+export function ScoreDisplay({ score, isActive }: ScoreDisplayProps) {
   const remainingHP = MAX_SCORE - score.score;
   const [barWidth, setBarWidth] = useState(MAX_SCORE);
+  const [displayedHP, setDisplayedHP] = useState(MAX_SCORE);
   const [hasSettled, setHasSettled] = useState(false);
 
   useEffect(() => {
+    if (!isActive) return;
     const raf = requestAnimationFrame(() => setBarWidth(remainingHP));
+    let tickCount = 0;
+    const countdown = setInterval(() => {
+      tickCount += 1;
+      const progress = Math.min(tickCount / HP_COUNTDOWN_TICK_COUNT, 1);
+      setDisplayedHP(Math.round(MAX_SCORE - progress * (MAX_SCORE - remainingHP)));
+    }, HP_COUNTDOWN_TICK_MS);
     const settleTimer = setTimeout(() => {
+      clearInterval(countdown);
+      setDisplayedHP(remainingHP);
       setHasSettled(true);
-      onSettled?.();
     }, METER_ANIMATION_DURATION_MS);
     return () => {
       cancelAnimationFrame(raf);
+      clearInterval(countdown);
       clearTimeout(settleTimer);
     };
-  }, [remainingHP, onSettled]);
+  }, [isActive, remainingHP]);
 
   return (
     <div className="mt-4 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
       <div className="text-center mb-4">
-        <span className={`text-5xl font-bold ${getScoreColor(score.score)}`}>
-          {score.score}
-        </span>
-        <span className="text-gray-400 text-xl"> ダメージ</span>
-        {hasSettled && getScoreLabel(score.score) && (
-          <p className={`text-sm font-semibold mt-1 ${getScoreColor(score.score)}`}>
-            {getScoreLabel(score.score)}
-          </p>
+        {hasSettled && (
+          <>
+            <span
+              data-testid="damage-value"
+              className={`text-5xl font-bold ${getScoreColor(score.score)}`}
+            >
+              {score.score}%
+            </span>
+            <span className="text-gray-400 text-xl"> ダメージ</span>
+            {getScoreLabel(score.score) && (
+              <p className={`text-sm font-semibold mt-1 ${getScoreColor(score.score)}`}>
+                {getScoreLabel(score.score)}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -99,7 +123,7 @@ export function ScoreDisplay({ score, onSettled }: ScoreDisplayProps) {
             }}
           />
         </div>
-        <span className="text-xs text-gray-500 shrink-0">{remainingHP}/{MAX_SCORE}</span>
+        <span className="text-xs text-gray-500 shrink-0">{displayedHP}%</span>
       </div>
     </div>
   );
