@@ -58,7 +58,7 @@ export function Header() {
               location.pathname === "/quest" ? "underline underline-offset-4" : ""
             }`}
           >
-            探検
+            ぼうけん
           </Link>
           <Link
             to="/pokedex"
@@ -68,7 +68,7 @@ export function Header() {
                 : ""
             }`}
           >
-            図鑑
+            ずかん
           </Link>
           <Link
             to="/settings"
@@ -78,7 +78,7 @@ export function Header() {
                 : ""
             }`}
           >
-            設定
+            せってい
           </Link>
         </nav>
       </div>

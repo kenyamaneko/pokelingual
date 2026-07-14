@@ -32,7 +32,9 @@ export function HomePage() {
           </span>
         </h1>
         <p className="text-gray-500 mb-8">
-          英語を翻訳してポケモンを捕まえよう
+          いまは　AIで　えいごを　ほんやくして
+          <br />
+          ポケモンを　つかまえられるんだと
         </p>
 
         <div className="space-y-4">
