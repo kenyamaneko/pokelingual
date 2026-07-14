@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.detect.outputs.changed }}
+      terraform: ${{ steps.detect.outputs.terraform_changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,6 +39,7 @@ jobs:
           # base が解決できない (force push 等) ときは判定できないので全実行に倒す
           if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "terraform_changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           changed_files=$(git diff --name-only "$base" HEAD -- . \
@@ -48,6 +50,12 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+          terraform_changed_files=$(git diff --name-only "$base" HEAD -- terraform/)
+          if [ -n "$terraform_changed_files" ]; then
+            echo "terraform_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "terraform_changed=false" >> "$GITHUB_OUTPUT"
           fi
 
   backend-lint:
@@ -287,3 +295,40 @@ jobs:
 
       - name: Format check
         run: terraform fmt -check -recursive .
+
+  terraform-plan:
+    name: Terraform Plan (dev)
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.terraform == 'true'
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.TERRAFORM_PLAN_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -backend-config=environments/dev/backend.gcs.tfbackend
+
+      - name: Terraform plan
+        run: |
+          {
+            echo '```'
+            terraform plan -input=false -no-color -lock=false -var-file=environments/dev/terraform.tfvars
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

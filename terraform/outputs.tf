@@ -21,6 +21,11 @@ output "wif_service_account" {
   value       = google_service_account.github_actions.email
 }
 
+output "terraform_plan_service_account" {
+  description = "Terraform plan-only service account email (set as TERRAFORM_PLAN_SERVICE_ACCOUNT in GitHub Environments)"
+  value       = google_service_account.terraform_plan.email
+}
+
 output "firebase_api_key" {
   description = "Firebase API Key (set as FIREBASE_API_KEY in GitHub Environments)"
   value       = data.google_firebase_web_app_config.frontend.api_key

@@ -263,6 +263,44 @@ resource "google_project_iam_member" "github_actions_firebase_hosting" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# PR での terraform plan は読み取りのみのため、書き込み権限を持つ github_actions SA とは
+# 分離した専用 SA を使う。
+resource "google_service_account" "terraform_plan" {
+  project      = var.project_id
+  account_id   = "terraform-plan"
+  display_name = "Terraform Plan (${var.environment})"
+}
+
+resource "google_service_account_iam_member" "terraform_plan_wif" {
+  service_account_id = google_service_account.terraform_plan.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repo}"
+}
+
+resource "google_project_iam_member" "terraform_plan_viewer" {
+  project = var.project_id
+  role    = "roles/viewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
+resource "google_project_iam_member" "terraform_plan_security_reviewer" {
+  project = var.project_id
+  role    = "roles/iam.securityReviewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
+resource "google_project_iam_member" "terraform_plan_service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
+resource "google_project_iam_member" "terraform_plan_firebaserules_viewer" {
+  project = var.project_id
+  role    = "roles/firebaserules.viewer"
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
 resource "google_monitoring_notification_channel" "email" {
   project      = var.project_id
   display_name = "PokeLingual Alert Email (${var.environment})"
