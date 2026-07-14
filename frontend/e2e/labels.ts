@@ -11,9 +11,9 @@ export const LINK = {
   startQuest: /ポケモンを探しに行く/,
   viewPokedex: /図鑑を見る/,
   logo: "PokeLingual",
-  navQuest: "探検",
-  navPokedex: "図鑑",
-  settings: "設定",
+  navQuest: "ぼうけん",
+  navPokedex: "ずかん",
+  settings: "せってい",
 } as const;
 
 /** getByRole("button", { name }) で参照するボタン名。 */
