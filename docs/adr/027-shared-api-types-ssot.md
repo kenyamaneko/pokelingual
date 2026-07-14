@@ -1,4 +1,4 @@
-# ADR-017: API 契約型を shared/api-types 配下の SSOT に統一する
+# ADR-027: API 契約型を shared/api-types 配下の SSOT に統一する
 
 ## ステータス
 

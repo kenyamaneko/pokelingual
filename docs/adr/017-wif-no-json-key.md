@@ -1,4 +1,4 @@
-# ADR-007: Workload Identity Federation（WIF）による JSON キーレス認証
+# ADR-017: Workload Identity Federation（WIF）による JSON キーレス認証
 
 ## ステータス
 

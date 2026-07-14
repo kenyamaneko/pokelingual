@@ -1,4 +1,4 @@
-# ADR-014: テスト名から振る舞いカタログを生成して GitHub Pages に公開する
+# ADR-024: テスト名から振る舞いカタログを生成して GitHub Pages に公開する
 
 ## ステータス
 
@@ -36,7 +36,7 @@ Accepted
 
 詳細にある「main への push では deploy.yml が... カタログは prod の仕様を表すため develop では公開しない」は、develop 廃止・main 一本化 (GitHub Flow 移行) 以前の表記であり、現在は次の通り読み替える。
 
-- `deploy.yml` は `deploy-dev.yml` と `deploy-prod.yml` に分割されている (ADR-015)
+- `deploy.yml` は `deploy-dev.yml` と `deploy-prod.yml` に分割されている (ADR-025)
 - カタログが表すのは main マージ時点の仕様である。main への push は dev 環境へのデプロイをトリガーするものであり、prod への反映はタグ push で別に行われる。カタログの公開はテスト実行に紐づいて起きるため、prod のデプロイ状況とは独立している
 
 ## Amendment: 2026-07-12 テスト観点カタログへの改称と読者別カテゴリの追加

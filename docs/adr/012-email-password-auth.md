@@ -1,8 +1,8 @@
-# ADR-002: メール/パスワード認証 + ホワイトリスト
+# ADR-012: メール/パスワード認証 + ホワイトリスト
 
 ## ステータス
 
-Superseded by [ADR-012](012-google-signin-and-public-mode.md)（メール/パスワード認証は併存維持）
+Superseded by [ADR-022](022-google-signin-and-public-mode.md)（メール/パスワード認証は併存維持）
 
 ## 結論
 

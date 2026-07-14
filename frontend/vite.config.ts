@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // port/strictPort: 素の npm run dev / preview を compose・Playwright と同じ 15151 に固定する (docs/adr/013)。
+  // port/strictPort: 素の npm run dev / preview を compose・Playwright と同じ 15151 に固定する (docs/adr/023)。
   //   strictPort で 15151 が塞がっていれば黙って別ポートに逃げず起動失敗させ、ポート統一の意図を守る。
   // fs.allow: 上位ディレクトリ ../shared/api-types/*.d.ts を読み込めるよう許可。
   //   型のみの import で実行時には何も bundle されないが、Vite の fs ガードは事前に効くため明示する。

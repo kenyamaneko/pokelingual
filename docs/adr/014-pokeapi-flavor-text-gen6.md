@@ -1,4 +1,4 @@
-# ADR-004: PokeAPI の説明文を Gen 6 以降から取得
+# ADR-014: PokeAPI の説明文を Gen 6 以降から取得
 
 ## ステータス
 

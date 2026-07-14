@@ -4,7 +4,7 @@ services:
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
     command: gcloud emulators firestore start --host-port=0.0.0.0:15180 --project=pokelingual-mock
     # ホストへは公開しない。利用者は backend (compose ネットワーク経由) のみで、
-    # ホストへ公開すると他プロジェクトの emulator とポート衝突する火種にしかならないため (docs/adr/013)
+    # ホストへ公開すると他プロジェクトの emulator とポート衝突する火種にしかならないため (docs/adr/023)
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:15180/ || exit 1"]
       interval: 2s
