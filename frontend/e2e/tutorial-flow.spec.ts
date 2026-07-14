@@ -1,29 +1,33 @@
 import { test, expect } from "@playwright/test";
-import { PLACEHOLDER } from "./labels";
-
-// mock モード専用。dev は dev-quest-flow.spec.ts が担当。
-// 「チュートリアルを見る」導線と同じ /tutorial への直接遷移を使うため、tutorial_completed の
-// 状態に依存しない (他 spec の完了操作の前後どちらで実行しても影響を受けない)。
+import { BUTTON, LINK, PLACEHOLDER, TEXT } from "./labels";
 
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
-test("案内の吹き出しが表示されている間も、訳文・名前の入力欄を操作できる", async ({ page }) => {
+test("チュートリアル全フロー（訳文入力 → 名前当て → 捕獲 → 本番クエストへの導線切り替え）", async ({ page }) => {
   await page.goto("/tutorial");
 
   const translationInput = page.getByPlaceholder(PLACEHOLDER.translation);
-  await page.getByText("この英文を訳してみよう").waitFor();
+  await page.getByText(TEXT.tutorialTranslationInstruction).waitFor();
   // click は要素が他の要素に覆われていないかを検査するため、fill だけでは検出できない
   // 「吹き出しが入力欄を覆っている」という回帰をここで検出できる
   await translationInput.click();
   await translationInput.fill("電気タイプのねずみポケモン");
   await expect(translationInput).toHaveValue("電気タイプのねずみポケモン");
-
-  await page.getByRole("button", { name: /この翻訳に決めた/ }).click();
+  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
   await expect(page.getByText("100", { exact: true })).toBeVisible();
 
   const nameInput = page.getByPlaceholder(PLACEHOLDER.nameGuess);
-  await page.getByText("このポケモンの名前を当てよう").waitFor();
+  await page.getByText(TEXT.tutorialNameInstruction).waitFor();
   await nameInput.click();
   await nameInput.fill("pikachu");
   await expect(nameInput).toHaveValue("pikachu");
+  await page.getByRole("button", { name: BUTTON.decideName }).click();
+
+  await page.getByRole("button", { name: BUTTON.useBall }).click();
+  await expect(page.getByText(TEXT.captured)).toBeVisible();
+  await expect(page.getByTestId("captured-name-en")).toHaveText("Pikachu");
+
+  await page.getByRole("button", { name: BUTTON.backToMenu }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("link", { name: LINK.startQuest })).toHaveAttribute("href", "/quest");
 });

@@ -44,6 +44,8 @@ export const TEXT = {
   escaped: /逃げ出した/,
   bestScore: /最高スコア/,
   captureCount: /捕獲回数/,
+  tutorialTranslationInstruction: "この英文を訳してみよう",
+  tutorialNameInstruction: "このポケモンの名前を当てよう",
 } as const;
 
 /** getByPlaceholder で参照するプレースホルダ。 */
