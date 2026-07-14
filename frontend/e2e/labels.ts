@@ -26,7 +26,6 @@ export const BUTTON = {
   nextQuest: /次のポケモンを探す/,
   selectPowerPlant: /廃墟の発電所/,
   close: "閉じる",
-  gotIt: "わかった！",
   backToMenu: /メニューに戻る/,
   login: "メールでログイン",
 } as const;

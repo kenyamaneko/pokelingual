@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TutorialInstructionModal } from "./TutorialInstructionModal";
+import { TutorialInstructionCallout } from "./TutorialInstructionCallout";
 import { PokemonNameInput } from "../quest/PokemonNameInput";
 import { NAME_GUESS_LABELS } from "../quest/NameGuess";
 
@@ -12,19 +12,18 @@ interface Props {
  * 見出し・入力欄・送信ボタンの文言は本番の NameGuess (NAME_GUESS_LABELS) をそのまま使う。
  */
 export const TUTORIAL_NAME_LABELS = {
-  modalTitle: "このポケモンの名前を当てよう",
-  modalInstruction: "「ピカチュウ」または「pikachu」と入力してみてね",
+  title: "このポケモンの名前を当てよう",
+  instruction: "「ピカチュウ」または「pikachu」と入力してみてね",
   wrongNameError: "「ピカチュウ」または「pikachu」と入力してね",
 } as const;
 
 /**
- * チュートリアルの名前当て入力 UI。入力すべき内容をモーダルで案内し、
+ * チュートリアルの名前当て入力 UI。入力すべき内容を吹き出しで案内し、
  * 一致しない入力はクライアント側で送信を拒否する。
  * @param props onSubmit を含む props。
  * @returns 名前入力 UI の要素。
  */
 export function TutorialNameStep({ onSubmit }: Props) {
-  const [showModal, setShowModal] = useState(true);
   const [showError, setShowError] = useState(false);
 
   const handleSubmit = async (name: string) => {
@@ -35,13 +34,10 @@ export function TutorialNameStep({ onSubmit }: Props) {
 
   return (
     <div className="mt-4 bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-      {showModal && (
-        <TutorialInstructionModal
-          title={TUTORIAL_NAME_LABELS.modalTitle}
-          instruction={TUTORIAL_NAME_LABELS.modalInstruction}
-          onDismiss={() => setShowModal(false)}
-        />
-      )}
+      <TutorialInstructionCallout
+        title={TUTORIAL_NAME_LABELS.title}
+        instruction={TUTORIAL_NAME_LABELS.instruction}
+      />
       <h3 className="text-lg font-bold text-gray-700 mb-3">
         {NAME_GUESS_LABELS.heading}
       </h3>
