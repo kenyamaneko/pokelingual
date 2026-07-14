@@ -151,6 +151,13 @@ jobs:
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
         run: bash scripts/smoke-dev.sh
 
+      - name: Run quest smoke test
+        env:
+          SERVICE_URL: ${{ steps.service-url.outputs.url }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+        run: bash scripts/smoke-dev-quest.sh
+
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting
     needs: [test, deploy-backend, determine-version]
