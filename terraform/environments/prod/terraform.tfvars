@@ -2,6 +2,9 @@ project_id  = "pokelingual-prod"
 environment = "prod"
 region      = "asia-northeast1"
 
+pitr_enabled   = true
+alerts_enabled = true
+
 firebase_web_app_display_name = "PokeLingual"
 github_repo                   = "kenyamaneko/pokelingual"
 alert_email                   = "kenya.m.amaoto@gmail.com"
