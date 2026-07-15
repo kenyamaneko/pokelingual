@@ -195,7 +195,7 @@ resource "google_project_iam_member" "backend_vertex_ai" {
 }
 
 # ポケモン種別データのスナップショット置き場。ポケモン社の著作物を含むため公開せず、
-# public_access_prevention で外部公開を封じる (BDR-007 / ADR-022)。
+# public_access_prevention で外部公開を封じる。
 # スナップショットの生成・アップロードは手動運用で、CI では触らない。
 resource "google_storage_bucket" "pokemon_snapshot" {
   project                     = var.project_id

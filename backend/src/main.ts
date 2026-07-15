@@ -1,8 +1,6 @@
-import { readFile } from "node:fs/promises";
 import express from "express";
 import { VertexAI } from "@google-cloud/vertexai";
 import { Firestore } from "@google-cloud/firestore";
-import { Storage } from "@google-cloud/storage";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -17,6 +15,7 @@ import { MockLLMClient } from "./adapter/llm/mock.js";
 import { GeminiClient } from "./adapter/llm/gemini.js";
 import { MockPokemonClient } from "./adapter/pokemon/mock.js";
 import { SnapshotPokemonClient, loadPokemonSnapshot } from "./adapter/pokemon/snapshot.js";
+import { createSnapshotReader } from "./adapter/pokemon/snapshot-reader.js";
 import { SystemRandomSource } from "./adapter/random/system.js";
 import { MockRandomSource } from "./adapter/random/mock.js";
 import { QuestService } from "./service/quest-service.js";
@@ -31,7 +30,6 @@ import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
 import { TutorialHandler } from "./handler/tutorial-handler.js";
 import { setupRoutes } from "./router/router.js";
-import type { SnapshotReader } from "./adapter/pokemon/snapshot.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -42,28 +40,6 @@ import type {
   RateLimitRepository,
 } from "./domain/ports.js";
 import type { RequestHandler } from "express";
-
-/**
- * スナップショットの読み込み元 URI から reader を作る。
- * @param uri `gs://bucket/object` なら Cloud Storage、それ以外はローカルファイルパス。
- * @returns スナップショット JSON テキストを返す reader。
- * @throws gs:// でオブジェクトパスが欠けている場合。
- */
-function createSnapshotReader(uri: string): SnapshotReader {
-  if (uri.startsWith("gs://")) {
-    const path = uri.slice("gs://".length);
-    const slash = path.indexOf("/");
-    if (slash === -1) throw new Error(`invalid snapshot URI (missing object path): ${uri}`);
-    const bucketName = path.slice(0, slash);
-    const objectName = path.slice(slash + 1);
-    const storage = new Storage();
-    return async () => {
-      const [contents] = await storage.bucket(bucketName).file(objectName).download();
-      return contents.toString("utf-8");
-    };
-  }
-  return async () => readFile(uri, "utf-8");
-}
 
 /** アプリを起動する。real モードでは起動時にポケモンのスナップショットを読み込んでメモリへ載せる。 */
 async function main(): Promise<void> {
@@ -128,7 +104,7 @@ async function main(): Promise<void> {
     global_daily_limit: cfg.globalDailyLimit,
   });
 
-  // 除外設定の妥当性は「供給できる図鑑番号」を SSoT に判定する (env の上限値と二重管理しない。ADR-022)。
+  // 除外設定の妥当性は「供給できる図鑑番号」を SSoT に判定する (env の上限値と二重管理しない)。
   const servablePokemonIDs = new Set(pokemonClient.getServableIDs());
 
   const questService = new QuestService(pokemonClient, llmClient, cfg.environment, userSettingsRepo, randomSource);

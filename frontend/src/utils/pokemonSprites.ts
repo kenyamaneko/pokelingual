@@ -1,5 +1,5 @@
 // 画像は jsDelivr (GitHub 公開リポ向け CDN) から配信する。ブランチではなくコミットに固定し、
-// 同一 URL を immutable キャッシュで長期配信させ、GitHub raw のレート制限を避ける (ADR-022 / BDR-007)。
+// 同一 URL を immutable キャッシュで長期配信させ、GitHub raw のレート制限を避ける。
 const SPRITE_SOURCE_REF = "bf4c47ac82c33b330e33d98b8882d1cedb2f53e7";
 
 const SPRITES_BASE_URL = `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@${SPRITE_SOURCE_REF}/sprites`;

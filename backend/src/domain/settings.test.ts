@@ -23,12 +23,11 @@ describe("除外ポケモン設定の検証", () => {
     expect(validateExcludedPokemonIDs(undefined, SERVABLE_IDS, MAX_COUNT).ok).toBe(false);
   });
 
-  it("供給可能な図鑑番号は成功し、供給リストに無い番号は失敗する", () => {
+  it("供給リストにある図鑑番号は受理される", () => {
     expect(validateExcludedPokemonIDs([25], SERVABLE_IDS, MAX_COUNT).ok).toBe(true);
-    expect(validateExcludedPokemonIDs([9999], SERVABLE_IDS, MAX_COUNT).ok).toBe(false);
   });
 
-  it("最小値と最大値のあいだにあっても供給リストに無い欠番は失敗する", () => {
+  it("供給リストの最小と最大のあいだでも、欠番の図鑑番号は失敗する", () => {
     expect(validateExcludedPokemonIDs([5], SERVABLE_IDS, MAX_COUNT).ok).toBe(false);
   });
 

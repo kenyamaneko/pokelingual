@@ -20,7 +20,7 @@ export async function loadPokemonSnapshot(read: SnapshotReader): Promise<Pokemon
   return parsed as PokemonRecord[];
 }
 
-/** スナップショットからポケモンの種別情報を供給する PokemonClient 実装。全件をメモリに載せる (ADR-022)。 */
+/** スナップショットからポケモンの種別情報を供給する PokemonClient 実装。全件をメモリに載せる。 */
 export class SnapshotPokemonClient implements PokemonClient {
   private readonly byID = new Map<number, PokemonRecord>();
   private readonly idsByType = new Map<PokemonType, number[]>();

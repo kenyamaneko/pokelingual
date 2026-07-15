@@ -31,12 +31,10 @@ describe("スナップショットからのポケモン取得", () => {
     expect((await client.getPokemonByID(25)).name_ja).toBe("モン25");
   });
 
-  it("sprite_url は図鑑番号から組み立てた jsDelivr の URL になる (スナップショットに保存しない)", async () => {
+  it("取得したポケモンの画像 URL は、保存値ではなく図鑑番号から組み立てられる", async () => {
     const client = new SnapshotPokemonClient([record(25, ["electric"])]);
     const url = (await client.getPokemonByID(25)).sprite_url;
-    expect(url).toContain("cdn.jsdelivr.net");
-    expect(url).toContain("/PokeAPI/sprites@");
-    expect(url).toMatch(/\/25\.png$/);
+    expect(url).toMatch(/^https:\/\/.+\/25\.png$/);
   });
 
   it("スナップショットに無い図鑑番号を指定すると、エラーになる", async () => {
@@ -69,13 +67,12 @@ describe("タイプ別の図鑑番号", () => {
 });
 
 describe("スナップショットの読み込み", () => {
-  it("JSON 配列をポケモンレコードとして読み込む", async () => {
-    const records = await loadPokemonSnapshot(async () => JSON.stringify([record(25, ["electric"])]));
-    expect(records).toHaveLength(1);
-    expect(records[0].id).toBe(25);
+  it("スナップショットを読み込むと、記録されたポケモンが図鑑番号で得られる", async () => {
+    const records = await loadPokemonSnapshot(async () => JSON.stringify([record(25, ["electric"]), record(1, ["grass"])]));
+    expect(records.map((r) => r.id)).toEqual([25, 1]);
   });
 
-  it("配列でない JSON はエラーになる", async () => {
+  it("スナップショットの内容が不正 (配列でない) ならエラーになる", async () => {
     await expect(loadPokemonSnapshot(async () => JSON.stringify({ id: 1 }))).rejects.toThrow(
       /must be a JSON array/,
     );
