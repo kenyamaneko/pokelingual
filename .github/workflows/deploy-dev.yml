@@ -304,9 +304,10 @@ jobs:
           python scripts/generate_behavior_catalog.py \
             --format html \
             --commit "${GITHUB_SHA}" \
-            --section "外から見た振る舞い:backend API の振る舞い:junit-artifacts/junit-backend/junit.xml:src/router/,src/middleware/" \
-            --section "内部の挙動:backend 内部部品の検証（開発者向け）:junit-artifacts/junit-backend/junit.xml:src/adapter/,src/domain/,src/service/,src/config/,src/util/,scripts/" \
-            --section "外から見た振る舞い:frontend:junit-artifacts/junit-frontend/vitest-junit.xml" \
+            --section "外から見た振る舞い:backend（API仕様）:junit-artifacts/junit-backend/junit.xml:src/router/,src/middleware/" \
+            --section "内部の挙動:backend（内部仕様）:junit-artifacts/junit-backend/junit.xml:src/adapter/,src/domain/,src/service/,src/config/,src/util/,scripts/" \
+            --section "外から見た振る舞い:frontend（画面仕様）:junit-artifacts/junit-frontend/vitest-junit.xml:src/App,src/components/,src/contexts/,src/hooks/,src/pages/,src/utils/" \
+            --section "内部の挙動:frontend（内部仕様）:junit-artifacts/junit-frontend/vitest-junit.xml:src/api/" \
             --section "外から見た振る舞い:E2E:junit-artifacts/junit-e2e/e2e-junit.xml" \
             > _site/index.html
 

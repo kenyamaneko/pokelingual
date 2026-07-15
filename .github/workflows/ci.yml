@@ -40,9 +40,12 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # deploy-*.yml は main への push でのみ実行され PR CI では走らないので、変更してもテストで検証できない。
+          # PR で変更版がそのまま走る ci.yml / terraform.yml は除外せず、変更がテストに反映されるようにする。
           changed_files=$(git diff --name-only "$base" HEAD -- . \
             ':(exclude)*.md' ':(exclude)docs/**' ':(exclude)rules/**' \
             ':(exclude).claude/**' ':(exclude).vscode/**' \
+            ':(exclude).github/workflows/deploy-*.yml' \
             ':(exclude).gitignore' ':(exclude)LICENSE')
           if [ -n "$changed_files" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
