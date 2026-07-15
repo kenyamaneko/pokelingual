@@ -10,7 +10,7 @@ Accepted
 
 ## 背景・課題
 
-Datadog を検討したが、コストがかかりすぎる。また実行基盤が Cloud Run・Firestore という Google Cloud ネイティブなサービスに閉じているため、外部の統合監視サービスを導入しても受けられる恩恵が少なかった。
+実行基盤は Cloud Run・Firestore という Google Cloud ネイティブなサービスに閉じている。個人開発でコストも抑えたい。
 
 ## 不採用案
 
