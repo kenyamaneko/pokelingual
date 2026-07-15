@@ -95,7 +95,7 @@ jobs:
             --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --service-account "pokelingual-api-dev@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
             --remove-secrets "GEMINI_API_KEY" \
-            --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
+            --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json" \
             --max-instances 1 \
             --allow-unauthenticated
 

@@ -7,7 +7,7 @@ import {
   BALL_MULTIPLIER,
 } from "./quest-service.js";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
-import type { LLMClient, PokemonConfig, RandomSource, UserSettingsRepository } from "../domain/ports.js";
+import type { LLMClient, RandomSource, UserSettingsRepository } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 
@@ -146,7 +146,8 @@ function makeService(o: ServiceOverrides = {}): QuestService {
     generateText: async (prompt) =>
       o.llmRespond?.(prompt) ?? o.llmText ?? JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
   };
-  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
+  // 出題ロジックは環境非依存に確かめたいので prod (開発者除外なし) 固定。
+  const environment = "prod" as const;
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({
       excluded_pokemon_ids: o.excludedIDs ?? null,
@@ -156,7 +157,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
     updateEnabledGenerations: async () => {},
   };
   const random: RandomSource = { next: () => o.randomValue ?? 0 };
-  return new QuestService(pokemonClient, llm, config, settingsRepo, random);
+  return new QuestService(pokemonClient, llm, environment, settingsRepo, random);
 }
 
 describe("クエストの出題", () => {

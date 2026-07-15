@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { GoogleLogo } from "../components/auth/GoogleLogo";
 import { CONTACT_FORM_URL } from "../constants/links";
 import { mapAuthErrorMessage } from "../utils/authErrors";
+import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
 
 /**
  * ログインページ。Email/Password と Google サインインを提供する。
@@ -54,7 +55,7 @@ export function LoginPage() {
       <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
         <div className="text-6xl mb-4">
           <img
-            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+            src={POKE_BALL_SPRITE_URL}
             alt="Pokeball"
             className="w-20 h-20 mx-auto"
           />

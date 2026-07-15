@@ -2,14 +2,13 @@ import { describe, it, expect } from "vitest";
 import { PokedexService } from "./pokedex-service.js";
 import type {
   PokemonClient,
-  PokemonConfig,
   UserPokemonRepository,
   UserSettingsRepository,
 } from "../domain/ports.js";
 import type { UserPokemon } from "../domain/user.js";
 import { makePokemon } from "../testing/pokemon-fixtures.js";
 
-// 依存 (Firestore リポジトリ / PokeAPI クライアント) は外部境界なのでポート経由のスタブで注入する。
+// 依存 (Firestore リポジトリ / ポケモン種別データのクライアント) は外部境界なのでポート経由のスタブで注入する。
 
 /**
  * テスト用のダミー図鑑レコードを作る。
@@ -56,7 +55,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   };
   const pokemonClient: PokemonClient = {
     getPokemonByID: async (id) => {
-      if (failing.has(id)) throw new Error("pokeapi down");
+      if (failing.has(id)) throw new Error("pokemon data unavailable");
       // メタ情報を id ごとに区別可能にし、どの図鑑レコードにどのポケモンの情報が乗ったかを検証できるようにする。
       return makePokemon({
         id,
@@ -74,9 +73,9 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     updateExcludedPokemon: async () => {},
     updateEnabledGenerations: async () => {},
   };
-  // 図鑑表示は環境非依存に確かめたいので prod (開発者除外なし) 固定。maxPokemonID は本サービスでは未使用のためダミー。
-  const config: PokemonConfig = { maxPokemonID: 10, environment: "prod" };
-  return new PokedexService(repo, pokemonClient, settingsRepo, config);
+  // 図鑑表示は環境非依存に確かめたいので prod (開発者除外なし) 固定。
+  const environment = "prod" as const;
+  return new PokedexService(repo, pokemonClient, settingsRepo, environment);
 }
 
 describe("図鑑一覧の取得", () => {

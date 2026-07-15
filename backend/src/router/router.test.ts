@@ -15,7 +15,6 @@ import { RateLimitError } from "../domain/errors.js";
 import { LOCATION_CHOICE_COUNT } from "../domain/location.js";
 import type {
   LLMClient,
-  PokemonConfig,
   RandomSource,
   RateLimitRepository,
   UserPokemonRepository,
@@ -33,7 +32,7 @@ interface AppOverrides {
   rateLimitKind?: RateLimitKind;
   /** settings 取得が投げるエラー (想定外エラー→500 の検証用)。 */
   settingsError?: Error;
-  /** PokeAPI クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
+  /** ポケモン種別クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
   pokemonError?: Error;
   /** 図鑑詳細エンドポイントの検証用に、事前に保存済みとして扱うユーザ実績。 */
   seededUserPokemon?: UserPokemon[];
@@ -52,7 +51,9 @@ function makeApp(o: AppOverrides = {}) {
       return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
     },
   };
-  const config: PokemonConfig = { maxPokemonID: 100, environment: "prod" };
+  const environment = "prod" as const;
+  // 除外設定の検証用の供給可能な図鑑番号 (ダミー)。1..100 を供給リストとして扱う。
+  const servablePokemonIDs = new Set(Array.from({ length: 100 }, (_, i) => i + 1));
   const random: RandomSource = { next: () => 0 };
 
   // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
@@ -110,8 +111,8 @@ function makeApp(o: AppOverrides = {}) {
     getUserUsage: async () => ({ count: 3, limit: 30 }),
   };
 
-  const questService = new QuestService(pokemonClient, llm, config, settingsRepo, random);
-  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, config);
+  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random);
+  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
 
   const app = express();
   app.use(express.json());
@@ -122,7 +123,7 @@ function makeApp(o: AppOverrides = {}) {
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
       new PokedexHandler(pokedexService),
-      new SettingsHandler(settingsRepo, config),
+      new SettingsHandler(settingsRepo, servablePokemonIDs),
       new UsageHandler(rateLimitRepo),
       new TutorialHandler(userRepo),
     ),
@@ -146,7 +147,7 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
   });
 
   it("ポケモン情報の取得に失敗した出題リクエストは 502 を返す", async () => {
-    const app = makeApp({ pokemonError: new Error("pokeapi down") });
+    const app = makeApp({ pokemonError: new Error("pokemon data unavailable") });
     const res = await request(app).get("/api/quest/new");
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: "external service unavailable" });
@@ -154,7 +155,7 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
 
   it("ポケモン情報の取得に失敗した図鑑詳細リクエストは 502 を返す", async () => {
     const app = makeApp({
-      pokemonError: new Error("pokeapi down"),
+      pokemonError: new Error("pokemon data unavailable"),
       seededUserPokemon: [
         {
           pokemon_id: 1,
@@ -221,13 +222,8 @@ describe("入力バリデーションの 400 (公開入口経由)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("範囲外の除外 ID 0 は 400", async () => {
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [0] });
-    expect(res.status).toBe(400);
-  });
-
-  it("設定上限を 1 超える除外 ID は 400", async () => {
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [101] });
+  it.each([0, 101])("供給リストに無い除外 ID %s は 400", async (id) => {
+    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [id] });
     expect(res.status).toBe(400);
   });
 

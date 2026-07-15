@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
 
 /**
  * NotFoundPage の表示文言。テストから import される SSOT。
@@ -18,7 +19,7 @@ export function NotFoundPage() {
     <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 flex items-center justify-center">
       <div className="text-center max-w-md mx-4" data-testid="not-found">
         <img
-          src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+          src={POKE_BALL_SPRITE_URL}
           alt="Pokeball"
           className="w-24 h-24 mx-auto mb-6 opacity-60"
         />

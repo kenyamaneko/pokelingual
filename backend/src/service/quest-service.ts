@@ -7,10 +7,10 @@ import { findLocation, pickRandomLocations, LOCATION_CHOICE_COUNT } from "../dom
 import type {
   LLMClient,
   PokemonClient,
-  PokemonConfig,
   RandomSource,
   UserSettingsRepository,
 } from "../domain/ports.js";
+import type { AppEnvironment } from "../domain/environment.js";
 import type { Pokemon } from "../domain/pokemon.js";
 import type { QuestSession, ScoreResult } from "../domain/quest.js";
 import type {
@@ -58,14 +58,14 @@ export class QuestService {
   /**
    * @param pokemonClient ポケモン情報の取得クライアント。
    * @param llm 採点・講評に用いる LLM クライアント。
-   * @param pokemonConfig ポケモン関連のアプリ設定。
+   * @param environment 実行環境。開発者除外 (prod 以外で適用) の判定に使う。
    * @param settingsRepo ユーザ設定リポジトリ。
    * @param random 乱数ソース。
    */
   constructor(
     private pokemonClient: PokemonClient,
     private llm: LLMClient,
-    private pokemonConfig: PokemonConfig,
+    private environment: AppEnvironment,
     private settingsRepo: UserSettingsRepository,
     private random: RandomSource,
   ) {}
@@ -78,7 +78,7 @@ export class QuestService {
    */
   async newQuest(userId: string, locationId?: string): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
-    const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
+    const excluded = buildExcludedPokemonIDs(this.environment, settings.excluded_pokemon_ids);
     const generations = settings.enabled_generations ?? ALL_GENERATIONS;
     const generationPool = buildQuestPoolIDs(generations, excluded);
 
@@ -93,7 +93,7 @@ export class QuestService {
     try {
       pokemon = await this.pokemonClient.getPokemonByID(pokemonID);
     } catch (err) {
-      throw new ExternalServiceError("PokemonAPI", err as Error);
+      throw new ExternalServiceError("pokemon data", err as Error);
     }
 
     let descEN = pokemon.description_en;

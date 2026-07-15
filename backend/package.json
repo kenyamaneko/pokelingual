@@ -7,6 +7,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "dev": "tsx watch src/main.ts",
+    "generate-snapshot": "tsx scripts/generate-pokemon-snapshot.ts",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -14,6 +15,7 @@
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.0",
+    "@google-cloud/storage": "^7.21.0",
     "@google-cloud/vertexai": "^1.9.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
