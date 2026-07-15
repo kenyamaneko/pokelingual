@@ -24,12 +24,12 @@ export interface Config {
 
 /** mock モード時に許容するデフォルト値。real モードでは必須 env が未設定なら起動エラーにする。 */
 const MOCK_DEFAULTS = {
-  // 素の npm run dev (PORT 未指定) を compose と同じ 151xx 帯へ載せ、汎用ポートの衝突を避ける (docs/adr/013)
+  // 素の npm run dev (PORT 未指定) を compose と同じ 151xx 帯へ載せ、汎用ポートの衝突を避ける (docs/adr/023)
   port: "15100",
   // Firestore Emulator は projectId が非空であることを要求する。本番プロジェクトと混同しないよう専用名にする
   googleCloudProject: "pokelingual-mock",
   googleCloudLocation: "us-central1",
-  // CORS 許可オリジン。frontend の素起動も 151xx 帯に統一している (docs/adr/013)
+  // CORS 許可オリジン。frontend の素起動も 151xx 帯に統一している (docs/adr/023)
   frontendURL: "http://localhost:15151",
   // mock モードでは GeminiClient を構築しないため参照されない (Config の形を揃えるためだけの値)
   geminiModel: "gemini-2.5-flash",

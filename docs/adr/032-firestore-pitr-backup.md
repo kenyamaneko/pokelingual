@@ -1,4 +1,4 @@
-# ADR-021: prod Firestore の復旧手段に PITR を採用する
+# ADR-032: prod Firestore の復旧手段に PITR を採用する
 
 ## ステータス
 

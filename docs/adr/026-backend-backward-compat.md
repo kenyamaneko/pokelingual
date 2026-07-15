@@ -1,4 +1,4 @@
-# ADR-016: backend は常に直近の frontend と後方互換を保つ
+# ADR-026: backend は常に直近の frontend と後方互換を保つ
 
 ## ステータス
 
