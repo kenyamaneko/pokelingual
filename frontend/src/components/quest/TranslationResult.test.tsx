@@ -7,11 +7,13 @@ import type { ScoreResponse } from "../../../../shared/api-types/quest";
 
 /**
  * TranslationResult の仕様:
- * ダメージメーターのアニメーションが完了するまでは博士のコメントを表示せず、
- * 完了後にタイプライター演出で表示を始める。この演出状態は問題ごとに独立する。
+ * 博士のコメント → 日本語の説明文 → ダメージメーターの順に段階的に開示する。
  */
-function buildScore(overrides: Partial<ScoreResponse> = {}): ScoreResponse {
-  return { score: 85, review: "いいね", description_ja: "テストの せつめい", ...overrides };
+const REVIEW = "いいね";
+const DESCRIPTION = "テストの せつめい";
+
+function buildScore(): ScoreResponse {
+  return { score: 85, review: REVIEW, description_ja: DESCRIPTION };
 }
 
 beforeEach(() => {
@@ -23,41 +25,65 @@ afterEach(() => {
 });
 
 describe("翻訳結果表示", () => {
-  it("表示直後は、博士のコメントが表示されない", () => {
+  it("表示直後から、博士のコメントが1文字ずつ表示され最終的に全文になる", () => {
     render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
-    expect(screen.queryByText("いいね")).not.toBeInTheDocument();
-  });
-
-  it("ダメージメーターのアニメーション完了後、博士のコメントが1文字ずつ表示され最終的に全文になる", () => {
-    render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
-    act(() => {
-      vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
-    });
     act(() => {
       vi.advanceTimersByTime(CHAR_INTERVAL_MS);
     });
     expect(screen.getByText("い")).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(CHAR_INTERVAL_MS * "いいね".length);
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS * REVIEW.length);
     });
-    expect(screen.getByText("いいね")).toBeInTheDocument();
+    expect(screen.getByText(REVIEW)).toBeInTheDocument();
   });
 
-  it("次の問題に進むと、前の問題の演出状態は引き継がれず、博士のコメントは表示されない", () => {
-    const { unmount } = render(
-      <TranslationResult userTranslation="やくぶん" score={buildScore()} />,
-    );
+  it("博士のコメントの表示が終わるまでは、日本語の説明文が表示されない", () => {
+    render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
     act(() => {
-      vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS);
+    });
+    expect(screen.getByText("「」")).toBeInTheDocument();
+  });
+
+  it("日本語の説明文は、1文字ずつ表示され最終的に全文になる", () => {
+    render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
+    act(() => {
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS * REVIEW.length);
     });
     act(() => {
       vi.advanceTimersByTime(CHAR_INTERVAL_MS);
     });
-    expect(screen.getByText("い")).toBeInTheDocument();
-    unmount();
+    expect(screen.getByText(`「${DESCRIPTION[0]}」`)).toBeInTheDocument();
 
-    render(<TranslationResult userTranslation="つぎのやくぶん" score={buildScore()} />);
-    expect(screen.queryByText("い")).not.toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS * DESCRIPTION.length);
+    });
+    expect(screen.getByText(`「${DESCRIPTION}」`)).toBeInTheDocument();
+  });
+
+  it("日本語の説明文の表示が終わるまでは、HP は満タンの 100% のまま表示される", () => {
+    render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
+    act(() => {
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS * REVIEW.length);
+    });
+    act(() => {
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS);
+    });
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("スコア 85 のとき、日本語の説明文が全文表示された後に HP が減少して残り 15% と表示される", () => {
+    render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
+    act(() => {
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS * REVIEW.length);
+    });
+    act(() => {
+      vi.advanceTimersByTime(CHAR_INTERVAL_MS * DESCRIPTION.length);
+    });
+    act(() => {
+      vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+    });
+    expect(screen.getByText("15%")).toBeInTheDocument();
   });
 });

@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 
 /** 1文字を表示する間隔 (ミリ秒)。 */
-export const CHAR_INTERVAL_MS = 40;
+export const CHAR_INTERVAL_MS = 20;
 
 interface TypewriterTextProps {
   text: string;
   isActive: boolean;
+  onComplete?: () => void;
 }
 
 /**
  * isActive が true になってから、text を1文字ずつ送り出して表示する。
- * @param props text / isActive を含む props。
+ * 全文を表示し終えると onComplete を呼ぶ。
+ * @param props text / isActive / onComplete を含む props。
  * @returns 表示中の文字列を含む要素。
  */
-export function TypewriterText({ text, isActive }: TypewriterTextProps) {
+export function TypewriterText({ text, isActive, onComplete }: TypewriterTextProps) {
   const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
@@ -27,6 +29,10 @@ export function TypewriterText({ text, isActive }: TypewriterTextProps) {
     }, CHAR_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [isActive, text]);
+
+  useEffect(() => {
+    if (isActive && visibleCount >= text.length) onComplete?.();
+  }, [isActive, visibleCount, text, onComplete]);
 
   return <>{text.slice(0, visibleCount)}</>;
 }

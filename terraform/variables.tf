@@ -17,6 +17,16 @@ variable "environment" {
   }
 }
 
+variable "pitr_enabled" {
+  description = "Whether to enable Point-in-Time Recovery on the Firestore database"
+  type        = bool
+}
+
+variable "alerts_enabled" {
+  description = "Whether to create Cloud Monitoring alert policies for the backend service"
+  type        = bool
+}
+
 variable "firebase_web_app_display_name" {
   description = "Display name for the Firebase web app"
   type        = string

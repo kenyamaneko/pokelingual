@@ -2,6 +2,11 @@ project_id  = "pokelingual-dev"
 environment = "dev"
 region      = "asia-northeast1"
 
+# dev は使い捨てデータのため PITR は無効。動作確認・テストでエラーパスを意図的に踏むため
+# アラートポリシーも作らない。
+pitr_enabled   = false
+alerts_enabled = false
+
 firebase_web_app_display_name = "PokeLingual"
 github_repo                   = "kenyamaneko/pokelingual"
 alert_email                   = "kenya.m.amaoto@gmail.com"
