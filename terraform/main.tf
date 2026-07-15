@@ -39,6 +39,7 @@ resource "google_project_service" "apis" {
     "cloudbuild.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
+    "storage.googleapis.com",
     "aiplatform.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
@@ -191,6 +192,25 @@ resource "google_project_iam_member" "backend_vertex_ai" {
   project = var.project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
+# ポケモン種別データのスナップショット置き場。ポケモン社の著作物を含むため公開せず、
+# public_access_prevention で外部公開を封じる (BDR-007 / ADR-022)。
+# スナップショットの生成・アップロードは手動運用で、CI では触らない。
+resource "google_storage_bucket" "pokemon_snapshot" {
+  project                     = var.project_id
+  name                        = "${var.project_id}-pokemon-snapshot"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_storage_bucket_iam_member" "backend_snapshot_reader" {
+  bucket = google_storage_bucket.pokemon_snapshot.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.backend.email}"
 }
 
 resource "google_iam_workload_identity_pool" "github" {

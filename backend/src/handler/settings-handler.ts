@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { PokemonConfig, UserSettingsRepository } from "../domain/ports.js";
+import type { UserSettingsRepository } from "../domain/ports.js";
 import type {
   SettingsResponse,
   UpdateExcludedPokemonRequest,
@@ -13,7 +13,7 @@ import { handleError } from "./error.js";
 /**
  * ユーザが除外指定できるポケモン数の上限。
  * Why: quest-service の出題抽選は除外比率が上がるとリトライ失敗の確率が上がる。
- * maxPokemonID=898 想定でこの値以下なら 10 回リトライで実質衝突しない (確率 < 1e-14)。
+ * 図鑑が約 898 件ある前提で、除外がこの件数以下なら 10 回リトライで実質衝突しない (確率 < 1e-14)。
  */
 export const MAX_EXCLUDED_POKEMON_COUNT = 30;
 
@@ -21,11 +21,11 @@ export const MAX_EXCLUDED_POKEMON_COUNT = 30;
 export class SettingsHandler {
   /**
    * @param settingsRepo ユーザ設定リポジトリ。
-   * @param pokemonConfig ポケモン関連のアプリ設定。
+   * @param servablePokemonIDs 供給可能な図鑑番号の集合。除外設定の妥当性検証に使う。
    */
   constructor(
     private settingsRepo: UserSettingsRepository,
-    private pokemonConfig: PokemonConfig,
+    private servablePokemonIDs: ReadonlySet<number>,
   ) {}
 
   /**
@@ -59,7 +59,7 @@ export class SettingsHandler {
     const body = req.body as Partial<UpdateExcludedPokemonRequest>;
     const result = validateExcludedPokemonIDs(
       body.pokemon_ids,
-      this.pokemonConfig.maxPokemonID,
+      this.servablePokemonIDs,
       MAX_EXCLUDED_POKEMON_COUNT,
     );
     if (!result.ok) {

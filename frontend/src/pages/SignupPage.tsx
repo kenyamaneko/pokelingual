@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { mapAuthErrorMessage } from "../utils/authErrors";
+import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
 
 /**
  * サインアップページ。Email/Password で新規登録する。
@@ -76,7 +77,7 @@ export function SignupPage() {
       <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
         <div className="text-6xl mb-4">
           <img
-            src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+            src={POKE_BALL_SPRITE_URL}
             alt="Pokeball"
             className="w-20 h-20 mx-auto"
           />

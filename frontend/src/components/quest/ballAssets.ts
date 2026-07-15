@@ -1,10 +1,11 @@
 import type { BallType } from "../../../../shared/api-types/quest";
+import { itemSpriteURL } from "../../utils/pokemonSprites";
 
 /** ボール種別ごとのスプライト画像 URL。 */
 export const BALL_SPRITES: Record<BallType, string> = {
-  poke: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
-  great: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png",
-  ultra: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png",
+  poke: itemSpriteURL("poke-ball"),
+  great: itemSpriteURL("great-ball"),
+  ultra: itemSpriteURL("ultra-ball"),
 };
 
 /** ボール種別ごとの表示名。 */

@@ -1,11 +1,11 @@
 import type { QuestNewResponse, ScoreResponse, CaptureResponse } from "../../../shared/api-types/quest";
+import { officialArtworkURL } from "./pokemonSprites";
 
 const TUTORIAL_POKEMON_ID = 25;
 const TUTORIAL_DESCRIPTION_EN = "It is an Electric-type Mouse Pokémon.";
 const TUTORIAL_DESCRIPTION_JA = "電気タイプのねずみポケモン";
 const TUTORIAL_SCORE = 100;
-const TUTORIAL_SPRITE_URL =
-  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png";
+const TUTORIAL_SPRITE_URL = officialArtworkURL(TUTORIAL_POKEMON_ID);
 const TUTORIAL_BASE_STAT_TOTAL = 320;
 
 /** チュートリアル専用の固定出題データ。 */

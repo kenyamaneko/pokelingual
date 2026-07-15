@@ -2,10 +2,10 @@ import { ExternalServiceError } from "../domain/errors.js";
 import { logger } from "../util/logger.js";
 import type {
   PokemonClient,
-  PokemonConfig,
   UserPokemonRepository,
   UserSettingsRepository,
 } from "../domain/ports.js";
+import type { AppEnvironment } from "../domain/environment.js";
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import type {
   PokedexEntry,
@@ -14,7 +14,7 @@ import type {
 
 // PokedexEntry / PokemonDetailResponse / FlavorTextPair の API 契約型は shared/api-types/pokedex.d.ts を参照
 
-/** getPokedex の戻り値。表示可能なエントリと、PokeAPI 取得失敗で除外された件数を返す。 */
+/** getPokedex の戻り値。表示可能なエントリと、種別データ取得失敗で除外された件数を返す。 */
 interface PokedexResult {
   entries: PokedexEntry[];
   unavailable_count: number;
@@ -25,28 +25,28 @@ export class PokedexService {
   private repo: UserPokemonRepository;
   private pokemonClient: PokemonClient;
   private settingsRepo: UserSettingsRepository;
-  private pokemonConfig: PokemonConfig;
+  private environment: AppEnvironment;
 
   /**
    * @param repo ユーザの図鑑進捗リポジトリ。
    * @param pokemonClient ポケモンのメタ情報取得クライアント。
    * @param settingsRepo ユーザ設定リポジトリ (除外の反映に使う)。
-   * @param pokemonConfig ポケモン関連のアプリ設定 (開発者除外 ID を含む)。
+   * @param environment 実行環境。開発者除外 (prod 以外で適用) の判定に使う。
    */
   constructor(
     repo: UserPokemonRepository,
     pokemonClient: PokemonClient,
     settingsRepo: UserSettingsRepository,
-    pokemonConfig: PokemonConfig,
+    environment: AppEnvironment,
   ) {
     this.repo = repo;
     this.pokemonClient = pokemonClient;
     this.settingsRepo = settingsRepo;
-    this.pokemonConfig = pokemonConfig;
+    this.environment = environment;
   }
 
   /**
-   * ユーザの図鑑一覧を取得し、PokeAPI からのメタ情報を付与して返す。除外対象は含めない。
+   * ユーザの図鑑一覧を取得し、ポケモンの種別情報を付与して返す。除外対象は含めない。
    * @param userId ユーザ ID。
    * @returns 表示可能なエントリと、取得失敗で除外された件数。
    */
@@ -55,7 +55,7 @@ export class PokedexService {
       this.repo.getPokedex(userId),
       this.settingsRepo.getSettings(userId),
     ]);
-    const excluded = buildExcludedPokemonIDs(this.pokemonConfig.environment, settings.excluded_pokemon_ids);
+    const excluded = buildExcludedPokemonIDs(this.environment, settings.excluded_pokemon_ids);
     const entries: PokedexEntry[] = [];
     let unavailableCount = 0;
 
@@ -73,7 +73,7 @@ export class PokedexService {
           best_score: up.best_score,
         });
       } catch (err) {
-        // PokeAPI 単体の取得失敗を全体失敗にすると図鑑が完全に開けなくなる。
+        // 1 匹の取得失敗を全体失敗にすると図鑑が完全に開けなくなる。
         // 件数をクライアントに伝えてユーザにフィードバックする方針。
         unavailableCount++;
         logger.error("failed to fetch pokemon data", { pokemon_id: up.pokemon_id, error: String(err) });
@@ -84,10 +84,10 @@ export class PokedexService {
   }
 
   /**
-   * 特定ポケモンのユーザ実績と PokeAPI 詳細を合成して返す。
+   * 特定ポケモンのユーザ実績と種別詳細を合成して返す。
    * @param userId ユーザ ID。
    * @param pokemonID ポケモン ID。
-   * @returns ユーザ実績と PokeAPI 詳細を合成したレスポンス。
+   * @returns ユーザ実績とポケモンの種別詳細を合成したレスポンス。
    */
   async getPokemonDetail(userId: string, pokemonID: number): Promise<PokemonDetailResponse> {
     const userPokemon = await this.repo.getPokemon(userId, pokemonID);
@@ -96,7 +96,7 @@ export class PokedexService {
     try {
       pokemon = await this.pokemonClient.getPokemonByID(pokemonID);
     } catch (err) {
-      throw new ExternalServiceError("PokeAPI", err as Error);
+      throw new ExternalServiceError("pokemon data", err as Error);
     }
 
     return {

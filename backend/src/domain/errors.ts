@@ -9,7 +9,7 @@ export class NotFoundError extends Error {
   }
 }
 
-/** PokeAPI/Gemini など外部サービス呼び出し失敗を表す。handleError で 502 にマップされる。 */
+/** Gemini/Firestore など外部依存の呼び出し失敗を表す。handleError で 502 にマップされる。 */
 export class ExternalServiceError extends Error {
   service: string;
   cause: Error;

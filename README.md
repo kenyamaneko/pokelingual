@@ -201,6 +201,26 @@ variable "github_repo" {
 > `TEST_USER_EMAIL` は deploy.yml 内でハードコード（`test@pokelingual.dev`）
 > Firebase Web API キー・プロジェクト ID 等はブラウザに出荷される公開値のため、Secret ではなく Variable として扱う。
 
+#### ポケモンスナップショットの生成と配置
+
+real モードの backend は起動時に、非公開の Cloud Storage バケットからポケモンの種別データのスナップショットを読み込む（ADR-022）。スナップショットが未配置だと起動に失敗するため、backend をデプロイする前に次を済ませておく。`main` への push は dev へ自動デプロイされるので、この変更をマージする前に dev で 1〜3 を実行する。prod も次の `v*` タグ push の前に同じ手順を行う。
+
+1. `terraform apply`（前述「Terraform でインフラ構築」）でバケット `PROJECT_ID-pokemon-snapshot` を作成する。
+2. `PokeAPI/api-data` のローカルクローンからスナップショットを生成する。生成物はポケモン社の著作物を含むため、公開リポジトリにコミットしない（BDR-007）。
+   ```bash
+   git clone --depth 1 https://github.com/PokeAPI/api-data.git
+   cd backend
+   npm run generate-snapshot -- --api-data ../api-data --out pokemon-snapshot.json
+   ```
+3. バケットへアップロードする。
+   ```bash
+   gcloud storage cp pokemon-snapshot.json gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json
+   ```
+
+生成スクリプトを再実行するのは、取得範囲（`--max-id`、既定 898）を広げるときと、レコードに含める項目を増やすときに限る。
+
+ローカルの real モードで動かす場合は、`POKEMON_SNAPSHOT_URI` にローカルの JSON パス（例: `./pokemon-snapshot.json`）を指定すると Cloud Storage の代わりにそのファイルを読む。
+
 #### 初回デプロイ
 
 初回は Cloud Run サービスがまだ存在しないため、手動でデプロイする:
@@ -213,7 +233,7 @@ gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
-  --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,MAX_POKEMON_ID=898" \
+  --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定
