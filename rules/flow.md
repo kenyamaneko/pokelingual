@@ -13,11 +13,11 @@
 
 ## [flow] バージョニング
 
-タグ形式 (`vMAJOR.MINOR.PATCH`) とバージョン検出 (`git describe --tags --always`) の詳細は `docs/adr/009-semver-versioning.md` を参照。
+タグ形式 (`vMAJOR.MINOR.PATCH`) とバージョン検出 (`git describe --tags --always`) の詳細は `docs/adr/019-semver-versioning.md` を参照。
 
 ## [flow] デプロイ後の検証と prod デプロイ
 
-dev デプロイ後は検出専用スモークのみ (ヘルス＋認証付き read、ロールバックなし)。dev と prod は別プロジェクト・別レジストリのため、prod は共通戦略の同一成果物昇格ではなく、タグ時に同一コミットを再ビルドする (テストは走らせない)。詳細は `docs/adr/015-deploy-pipeline-and-smoke.md`。
+dev デプロイ後は検出専用スモークのみ (ヘルス＋認証付き read、ロールバックなし)。dev と prod は別プロジェクト・別レジストリのため、prod は共通戦略の同一成果物昇格ではなく、タグ時に同一コミットを再ビルドする (テストは走らせない)。詳細は `docs/adr/025-deploy-pipeline-and-smoke.md`。
 
 ## [flow] ブランチ保護 (GitHub Rulesets)
 

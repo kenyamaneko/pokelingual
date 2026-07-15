@@ -151,7 +151,7 @@ resource "google_identity_platform_config" "auth" {
 
 # Google Sign-In (google.com IdP) の有効化は Terraform 管理外。
 # client_secret を TF 変数経由で渡すと tfstate に平文で残り iac.md に反するため、
-# Google Cloud コンソール/gcloud で設定する (ADR-012 参照)。
+# Google Cloud コンソール/gcloud で設定する (ADR-022 参照)。
 
 resource "google_artifact_registry_repository" "backend" {
   provider      = google-beta
