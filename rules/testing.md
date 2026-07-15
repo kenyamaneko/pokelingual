@@ -10,7 +10,7 @@
 
 - テスト名は振る舞いカタログ (GitHub Pages) の仕様文としてそのまま公開される。カタログは「backend（API仕様）」「backend（内部仕様）」「frontend（画面仕様）」「frontend（内部仕様）」「E2E」の読者別セクションで構成する
   - backend（API仕様）: `router/`、`middleware/`
-  - backend（内部仕様） (共通ルールの「内部の境界」に当たる区分): `adapter/`、`domain/`、`service/`、`config/`、`util/`
+  - backend（内部仕様） (共通ルールの「内部の境界」に当たる区分): `adapter/`、`domain/`、`service/`、`config/`、`util/`、`scripts/` (カタログ生成スクリプト自身のテスト)
   - frontend（内部仕様） (画面に対応物の無い内部配線): `api/`
   - frontend（画面仕様）: `api/` 以外の frontend テストディレクトリ (`App`、`components/`、`contexts/`、`hooks/`、`pages/`、`utils/`)
   - 例外: 外部 API の応答構造そのものを検証する防御テスト (Gemini・PokeAPI アダプタ) に限り、応答フィールド名で Given を書いてよい (構造の検証がそのテストの仕様そのもののため)
