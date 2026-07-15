@@ -12,12 +12,12 @@ type RevealStage = "review" | "description" | "meter";
 
 /**
  * 翻訳の採点結果を表示する。博士のコメント → 日本語の説明文 → ダメージメーターの
- * 順に段階的に開示し、博士のコメントが無いときは説明文から開示を始める。
+ * 順に段階的に開示する。
  * @param props userTranslation / score を含む props。
  * @returns 採点結果表示の要素。
  */
 export function TranslationResult({ userTranslation, score }: TranslationResultProps) {
-  const [stage, setStage] = useState<RevealStage>(score.review ? "review" : "description");
+  const [stage, setStage] = useState<RevealStage>("review");
 
   const handleReviewComplete = useCallback(() => setStage("description"), []);
   const handleDescriptionComplete = useCallback(() => setStage("meter"), []);
@@ -31,14 +31,12 @@ export function TranslationResult({ userTranslation, score }: TranslationResultP
             {userTranslation}
           </p>
         </div>
-        {score.review && (
-          <div className="mb-3 pt-3 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-400 mb-1">博士からのコメント</p>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              <TypewriterText text={score.review} isActive={true} onComplete={handleReviewComplete} />
-            </p>
-          </div>
-        )}
+        <div className="mb-3 pt-3 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-400 mb-1">博士からのコメント</p>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            <TypewriterText text={score.review} isActive={true} onComplete={handleReviewComplete} />
+          </p>
+        </div>
         <div>
           <p className="text-xs font-semibold text-gray-400 mb-1">日本語の説明文</p>
           <p className="text-gray-600 text-sm leading-relaxed">
