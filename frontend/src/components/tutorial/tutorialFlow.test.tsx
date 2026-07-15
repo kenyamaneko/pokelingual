@@ -78,7 +78,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     await fillAndSubmitTranslation(user, "ねずみポケモン");
 
     expect(await screen.findByText(TUTORIAL_TRANSLATION_LABELS.missingKeywordsError)).toBeInTheDocument();
-    expect(screen.queryByText("100")).not.toBeInTheDocument();
+    expect(screen.queryByText("100%")).not.toBeInTheDocument();
   });
 
   it("「電気タイプのねずみポケモン」と入力すると、採点画面に進み満点が表示される", async () => {
@@ -87,7 +87,11 @@ describe("チュートリアル (訳文入力ステップ)", () => {
 
     await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
-    expect(await screen.findByText("100")).toBeInTheDocument();
+    // ダメージ数値は博士のコメント・説明文のタイプライターと HP 減少アニメーションの完了後に
+    // 表示されるため、既定の待機時間を延長する。
+    expect(
+      await screen.findByTestId("damage-value", {}, { timeout: 3000 }),
+    ).toHaveTextContent("100%");
   });
 
   it("「電気タイプのねずみポケモン」と入力すると、採点画面に君の翻訳として入力した訳文が表示される", async () => {
@@ -114,10 +118,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
 
     await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
-    // タイプライター演出がダメージメーターのアニメーション完了後 (1000ms) に始まるため、既定の待機時間を延長する。
-    expect(
-      await screen.findByText(spec("かんぺきな　ほんやくだ！"), {}, { timeout: 3000 }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(spec("かんぺきな　ほんやくだ！"))).toBeInTheDocument();
   });
 
   it("必須キーワード不足のエラーが出た後、訳文を入力し直すとエラー表示が消える", async () => {
@@ -141,7 +142,7 @@ async function proceedToNameStep(): Promise<UserEvent> {
   const user = userEvent.setup();
   renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
   await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
-  await screen.findByText("100");
+  await screen.findByText("100%");
   return user;
 }
 
@@ -194,7 +195,7 @@ describe("チュートリアル (捕獲〜完了記録)", () => {
 
     await user.click(await screen.findByRole("link", { name: "ポケモンを探しに行く" }));
     await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
-    await screen.findByText("100");
+    await screen.findByText("100%");
     await fillAndSubmitName(user, "ピカチュウ");
     await user.click(await screen.findByRole("button", { name: captureUseButtonLabel("poke") }));
     expect(await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")))).toBeInTheDocument();
