@@ -1,0 +1,58 @@
+name: Mutation Testing
+
+on:
+  # 毎週月曜 05:00 JST (= 日曜 20:00 UTC)。schedule は default branch (main) 上で実行される。
+  schedule:
+    - cron: "0 20 * * 0"
+  # baseline 更新や設定調整時に手動実行する
+  workflow_dispatch:
+  # mutation 設定自体を変更する PR でのみ動作検証する。
+  # required status check ではないので paths 絞り込みによるチェック未報告問題は起きない。
+  pull_request:
+    paths:
+      - ".github/workflows/mutation.yml"
+      - "backend/stryker.config.js"
+      - "backend/vitest.stryker.config.ts"
+
+permissions:
+  contents: read
+
+# 同一 ref での連続実行は最新のみ残す (コスト削減)
+concurrency:
+  group: mutation-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation-backend:
+    name: Backend Mutation Testing
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ローカル (Makefile:mutation-backend) と同一コマンド。Emulator 不要 (対象は純粋ロジックのみ)。
+      - name: Run mutation tests
+        run: npm run mutation
+
+      # 週次実行なので次回実行まで参照できれば十分
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-backend
+          path: backend/reports/mutation/
+          retention-days: 7
