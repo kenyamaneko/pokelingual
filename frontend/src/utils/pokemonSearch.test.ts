@@ -3,10 +3,10 @@ import { searchPokemonByName } from "./pokemonSearch";
 
 // 五十音順への並べ替えを検証できるよう、あえて五十音順ではない順で並べる。
 const entries = [
-  { name_ja: "アズマオウ" },
-  { name_ja: "アーボック" },
-  { name_ja: "イーブイ" },
-  { name_ja: "アーボ" },
+  { name_ja: "モジャポン" },
+  { name_ja: "モグランガー" },
+  { name_ja: "ロコット" },
+  { name_ja: "モグラン" },
 ];
 
 /**
@@ -22,23 +22,23 @@ describe("ポケモン名の検索", () => {
   });
 
   it("1文字のクエリでは、その文字から始まる候補が五十音順に並んで複数ヒットする", () => {
-    expect(searchPokemonByName(entries, "ア").map((e) => e.name_ja)).toEqual([
-      "アーボ",
-      "アーボック",
-      "アズマオウ",
+    expect(searchPokemonByName(entries, "モ").map((e) => e.name_ja)).toEqual([
+      "モグラン",
+      "モグランガー",
+      "モジャポン",
     ]);
   });
 
   it("一部の文字だけ一致し完全には前方一致しない候補が混ざるとき、完全一致する候補だけが五十音順に並んでヒットする", () => {
-    expect(searchPokemonByName(entries, "アー").map((e) => e.name_ja)).toEqual([
-      "アーボ",
-      "アーボック",
+    expect(searchPokemonByName(entries, "モグ").map((e) => e.name_ja)).toEqual([
+      "モグラン",
+      "モグランガー",
     ]);
   });
 
   it("クエリの文字数を増やすと、一致する候補を1件まで絞り込める", () => {
-    expect(searchPokemonByName(entries, "アーボッ").map((e) => e.name_ja)).toEqual([
-      "アーボック",
+    expect(searchPokemonByName(entries, "モグランガ").map((e) => e.name_ja)).toEqual([
+      "モグランガー",
     ]);
   });
 });
