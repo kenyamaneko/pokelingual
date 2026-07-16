@@ -161,7 +161,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   }, [api]);
 
   useEffect(() => {
-    // autoStart は場所選択を飛ばし、固定の出題を直接取得する。
+    // autoStart は場所選択を経ないため、場所指定なしで出題を取得する。
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
     if (autoStart) selectLocation("");
     else startNewQuest();

@@ -101,7 +101,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     expect(screen.getByText(TUTORIAL_PAGE_LABELS.translation.title)).toBeInTheDocument();
   });
 
-  it("案内どおりでない訳文では、採点画面に進めない", async () => {
+  it("「電気」を含まない訳文では、採点画面に進めない", async () => {
     const user = await renderTutorialPastIntro();
 
     await fillAndSubmitTranslation(user, "ねずみポケモン");
@@ -110,12 +110,11 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     expect(screen.queryByTestId("damage-value")).not.toBeInTheDocument();
   });
 
-  it("案内どおりの訳文を入力すると、採点画面に進み満点が表示される", async () => {
+  it("「電気」と「ネズミ」を両方含む訳文を入力すると、採点画面に進み満点が表示される", async () => {
     const user = await renderTutorialPastIntro();
 
     await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
-    // ダメージ数値は博士のコメント・説明文のタイプライターと HP 減少アニメーションの完了後に表示される。
     expect(await screen.findByTestId("damage-value", {}, { timeout: 3000 })).toHaveTextContent("100%");
   });
 });
@@ -130,7 +129,7 @@ describe("チュートリアル (名前当てステップ)", () => {
     expect(screen.getByText(TUTORIAL_PAGE_LABELS.name.title)).toBeInTheDocument();
   });
 
-  it("案内どおりでない名前では、捕獲画面に進めない", async () => {
+  it("「raichu」を入力すると、捕獲画面に進めない", async () => {
     const user = await proceedToNameStep();
 
     await fillAndSubmitName(user, "raichu");
@@ -139,7 +138,7 @@ describe("チュートリアル (名前当てステップ)", () => {
     expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.proceedButton })).not.toBeInTheDocument();
   });
 
-  it("案内どおりの名前を入力すると、獲得したボールを持って捕獲画面に進む", async () => {
+  it("「pikachu」を入力すると、ハイパーボールを持って捕獲画面に進む", async () => {
     const user = await proceedToNameStep();
 
     await fillAndSubmitName(user, "pikachu");
