@@ -55,6 +55,7 @@ const defaultHandlers = [
       description_en: "",
       is_legendary: false,
       is_mythical: false,
+      max_guess_attempts: 3,
     }),
   ),
   http.post(apiUrl("/quest/score"), () =>
@@ -62,6 +63,9 @@ const defaultHandlers = [
   ),
   http.post(apiUrl("/quest/guess-name"), () =>
     HttpResponse.json({ correct: false, ball_type: "poke", language: "en", attempts_remaining: 0 }),
+  ),
+  http.post(apiUrl("/quest/hint"), () =>
+    HttpResponse.json({ types: ["normal"], attempts_remaining: 2 }),
   ),
   http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
   http.post(apiUrl("/quest/capture"), () => HttpResponse.json({})),
@@ -71,6 +75,7 @@ const defaultHandlers = [
       description_en: "It is an Electric-type Mouse Pokémon.",
       is_legendary: false,
       is_mythical: false,
+      max_guess_attempts: 3,
     }),
   ),
   http.post(apiUrl("/tutorial/quest/score"), () =>

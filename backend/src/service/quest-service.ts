@@ -20,6 +20,7 @@ import type {
   GuessResponse,
   CaptureResponse,
   SkipGuessResponse,
+  HintResponse,
   BallType,
 } from "../../../shared/api-types/quest.js";
 
@@ -28,6 +29,9 @@ const MAX_NAME_GUESS_ATTEMPTS = 3;
 
 /** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
 const FUZZY_MATCH_MIN_NAME_LENGTH = 4;
+
+/** ヒント要求に必要な最小残り挑戦回数。消費後も1回は名前当てへの挑戦が残るようにする。 */
+const MIN_REMAINING_ATTEMPTS_FOR_HINT = 2;
 
 /** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
 const FUZZY_MATCH_MAX_DISTANCE = 2;
@@ -126,6 +130,7 @@ export class QuestService {
       ball_type: null,
       guess_attempts: 0,
       name_guessed: false,
+      hint_used: false,
     };
     this.sessions.set(userId, session);
 
@@ -134,6 +139,7 @@ export class QuestService {
       description_en: maskPokemonNameEN(descEN, pokemon.name_en),
       is_legendary: pokemon.is_legendary,
       is_mythical: pokemon.is_mythical,
+      max_guess_attempts: MAX_NAME_GUESS_ATTEMPTS,
     };
   }
 
@@ -288,6 +294,30 @@ export class QuestService {
     }
 
     return { correct: false, attempts_remaining: remaining };
+  }
+
+  /**
+   * ヒントを要求し、出題ポケモンのタイプを返す。名前推測の挑戦回数を1回消費する。
+   * @param userId ユーザ ID。
+   * @returns タイプと消費後の残り挑戦回数。
+   * @throws 名前当てが完了済み、ヒント要求済み、または残り挑戦回数が不足している場合
+   * (正しく実装されたフロントエンドからは到達しない不正な呼び出し)。
+   */
+  requestHint(userId: string): HintResponse {
+    const session = this.getSession(userId);
+
+    if (session.name_guessed || session.hint_used) {
+      throw new Error("hint requested on a session that cannot accept one (already guessed or already used)");
+    }
+    const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
+    if (remaining < MIN_REMAINING_ATTEMPTS_FOR_HINT) {
+      throw new Error("hint requested with insufficient guess attempts remaining");
+    }
+
+    session.guess_attempts++;
+    session.hint_used = true;
+
+    return { types: session.types, attempts_remaining: MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts };
   }
 
   /**

@@ -201,6 +201,16 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: "internal server error" });
   });
+
+  it("残り試行回数が不足した状態でヒントを要求すると 500 を返す", async () => {
+    const app = makeApp();
+    await request(app).get("/api/quest/new");
+    await request(app).post("/api/quest/guess-name").send({ guess: "wrong1" });
+    await request(app).post("/api/quest/guess-name").send({ guess: "wrong2" });
+    const res = await request(app).post("/api/quest/hint").send({});
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: "internal server error" });
+  });
 });
 
 describe("入力バリデーションの 400 (公開入口経由)", () => {
@@ -275,6 +285,14 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.pokemon).toHaveLength(1);
     expect(pokedex.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
     expect(pokedex.body.captured_count).toBe(1);
+  });
+
+  it("出題後にヒントを要求すると、出題ポケモンのタイプと消費後の残り試行回数が返る", async () => {
+    const app = makeApp();
+    await request(app).get("/api/quest/new");
+    const res = await request(app).post("/api/quest/hint").send({});
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ types: ["grass", "poison"], attempts_remaining: 2 });
   });
 
   it("重複や順序を含む除外設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {

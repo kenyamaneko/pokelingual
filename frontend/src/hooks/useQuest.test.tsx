@@ -39,6 +39,7 @@ const questResp: QuestNewResponse = {
   description_en: "A wild creature.",
   is_legendary: false,
   is_mythical: false,
+  max_guess_attempts: 3,
 };
 
 const scoreResp: ScoreResponse = {
@@ -157,6 +158,7 @@ describe("クエスト進行", () => {
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
     ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
+    ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 429 が返っても、エラー文言を出さずフェーズも変えない (上限は利用上限モーダルに委譲)", async (
     _api,
@@ -184,6 +186,7 @@ describe("クエスト進行", () => {
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
     ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
+    ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 5xx が返っても、エラーメッセージを保持しフェーズは変えない", async (
     _api,
@@ -207,6 +210,7 @@ describe("クエスト進行", () => {
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
     ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
+    ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 404 (セッション切断) になると、エラー画面へ切り替わり切断を案内する", async (
     _api,
@@ -246,6 +250,25 @@ describe("クエスト進行", () => {
 
     expect(result.current.guessResult).toEqual(guess);
     expect(result.current.ballType).toBe("ultra");
+  });
+
+  it("ヒントを要求すると、タイプと残り試行回数を保持する", async () => {
+    mockNewQuest();
+    server.use(
+      http.post(apiUrl("/quest/hint"), () =>
+        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+      ),
+    );
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await result.current.requestHint();
+    });
+
+    expect(result.current.hintResult).toEqual({ types: ["electric"], attempts_remaining: 2 });
+    expect(result.current.attemptsRemaining).toBe(2);
   });
 
   it("名前当て確定後に捕獲の段階へ進んでも、スキップの通信は発生しない", async () => {
@@ -376,6 +399,11 @@ describe("クエスト進行", () => {
     });
     expect(result.current.phase).toBe("guessing");
 
+    await act(async () => {
+      await result.current.requestHint();
+    });
+    expect(result.current.hintResult).not.toBeNull();
+
     const second: QuestNewResponse = { ...questResp, pokemon_id: 1 };
     mockNewQuest(second);
 
@@ -387,6 +415,8 @@ describe("クエスト進行", () => {
     expect(result.current.score).toBeNull();
     expect(result.current.userTranslation).toBe("");
     expect(result.current.ballType).toBeNull();
+    expect(result.current.attemptsRemaining).toBeNull();
+    expect(result.current.hintResult).toBeNull();
 
     await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
     await act(async () => {

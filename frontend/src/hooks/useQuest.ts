@@ -8,6 +8,7 @@ import type {
   ScoreResponse,
   GuessResponse,
   CaptureResponse,
+  HintResponse,
   BallType,
 } from "../../../shared/api-types/quest";
 
@@ -32,12 +33,16 @@ export interface UseQuestResult {
   captureResult: CaptureResponse | null;
   userTranslation: string;
   ballType: BallType | null;
+  attemptsRemaining: number | null;
+  maxGuessAttempts: number | null;
+  hintResult: HintResponse | null;
   error: string | null;
 
   startNewQuest: () => Promise<void>;
   selectLocation: (locationId: string) => Promise<void>;
   submitTranslation: (translation: string) => Promise<boolean>;
   submitGuess: (guess: string) => Promise<void>;
+  requestHint: () => Promise<void>;
   skipGuess: () => Promise<void>;
   proceedToCapture: () => void;
   capture: () => Promise<void>;
@@ -124,6 +129,8 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   const [captureResult, setCaptureResult] = useState<CaptureResponse | null>(null);
   const [userTranslation, setUserTranslation] = useState("");
   const [ballType, setBallType] = useState<BallType | null>(null);
+  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
+  const [hintResult, setHintResult] = useState<HintResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { refresh: refreshUsage } = useUsage();
 
@@ -135,6 +142,8 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     setCaptureResult(null);
     setUserTranslation("");
     setBallType(null);
+    setAttemptsRemaining(null);
+    setHintResult(null);
     setError(null);
     setLocations([]);
 
@@ -153,6 +162,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     try {
       const res = await api.newQuest(locationId);
       setQuest(res.data);
+      setAttemptsRemaining(res.data.max_guess_attempts);
       setPhase("translating");
     } catch (err) {
       setError(getErrorMessage(err, "データの読み込みに失敗しました。もう一度試してください。続く場合はお問い合わせください"));
@@ -195,11 +205,22 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     try {
       const res = await api.guessName(guess);
       setGuessResult(res.data);
+      setAttemptsRemaining(res.data.attempts_remaining);
       if (res.data.ball_type) {
         setBallType(res.data.ball_type);
       }
     } catch (err) {
       handleActionError(err, "名前の判定に失敗しました");
+    }
+  };
+
+  const requestHint = async () => {
+    try {
+      const res = await api.requestHint();
+      setHintResult(res.data);
+      setAttemptsRemaining(res.data.attempts_remaining);
+    } catch (err) {
+      handleActionError(err, "ヒントの取得に失敗しました");
     }
   };
 
@@ -248,11 +269,15 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     captureResult,
     userTranslation,
     ballType,
+    attemptsRemaining,
+    maxGuessAttempts: quest?.max_guess_attempts ?? null,
+    hintResult,
     error,
     startNewQuest,
     selectLocation,
     submitTranslation,
     submitGuess,
+    requestHint,
     skipGuess,
     proceedToCapture,
     capture,

@@ -53,6 +53,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
             newQuestCall === 1 ? "The first wild creature." : "A second wild creature.",
           is_legendary: false,
           is_mythical: false,
+          max_guess_attempts: 3,
         });
       }),
       http.post(apiUrl("/quest/score"), () =>
@@ -125,6 +126,7 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
           description_en: "A wild creature.",
           is_legendary: false,
           is_mythical: false,
+          max_guess_attempts: 3,
         }),
       ),
       http.post(apiUrl("/quest/score"), () =>
@@ -146,6 +148,42 @@ describe("クエストの正常系フロー (公開入口経由)", () => {
       await screen.findByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
     );
     expect(await screen.findByRole("button", { name: /使う/ })).toBeInTheDocument();
+  });
+
+  it("名前当てでヒントを要求すると、出題ポケモンのタイプが表示され残り回数が減る", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(apiUrl("/quest/new"), () =>
+        HttpResponse.json({
+          pokemon_id: 9001,
+          description_en: "A wild creature.",
+          is_legendary: false,
+          is_mythical: false,
+          max_guess_attempts: 3,
+        }),
+      ),
+      http.post(apiUrl("/quest/score"), () =>
+        HttpResponse.json({ score: 50, review: "", description_ja: "せつめい" }),
+      ),
+      http.post(apiUrl("/quest/hint"), () =>
+        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+      ),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+
+    expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "残り挑戦回数" })).toHaveAttribute("aria-valuenow", "2");
   });
 
   it.each([

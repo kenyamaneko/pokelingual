@@ -1,11 +1,24 @@
-import type { GuessResponse } from "../../../../shared/api-types/quest";
+import type { GuessResponse, HintResponse } from "../../../../shared/api-types/quest";
+import type { PokemonType } from "../../../../shared/api-types/pokemon";
 import { PokemonNameInput } from "./PokemonNameInput";
+import { getTypeLabel } from "../../utils/pokemonTypes";
+import { BALL_SPRITES } from "./ballAssets";
+
+/** ヒントボタンを表示するために必要な最小残り挑戦回数。backend の判定と合わせている。 */
+const MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON = 2;
 
 interface NameGuessProps {
   onSubmit: (guess: string) => Promise<void>;
   onSkip: () => void;
   onProceed: () => void;
   guessResult: GuessResponse | null;
+  /** 残り挑戦回数 (推測・ヒントのどちらの操作でも更新される)。 */
+  attemptsRemaining: number | null;
+  /** 名前当ての最大挑戦回数。残り挑戦回数の表示に使う。 */
+  maxGuessAttempts: number | null;
+  /** ヒント要求。省略時はヒント関連の表示ごと出さない (本番のみ有効)。 */
+  onHint?: () => Promise<void>;
+  hintResult: HintResponse | null;
 }
 
 /**
@@ -14,6 +27,8 @@ interface NameGuessProps {
  */
 export const NAME_GUESS_LABELS = {
   heading: "このポケモンの名前は？",
+  hintButton: "ヒントを見る（挑戦1回を消費）",
+  hintUnavailable: "もうヒントは使えないよ",
   skipButton: "わからないのでスキップ →",
   proceedButton: "次へ進む",
   correctTitle: "正解！",
@@ -21,13 +36,72 @@ export const NAME_GUESS_LABELS = {
 } as const;
 
 /**
- * ポケモン名の推測入力 UI。残り試行数・正誤・最終正解の表示を担う。
- * @param props onSubmit / onSkip / onProceed / guessResult を含む props。
+ * ヒントで判明したタイプから案内文を組み立てる。
+ * @param types 出題ポケモンのタイプ (1〜2種)。
+ * @returns 「〜タイプのポケモンだよ」形式の案内文。
+ */
+function formatTypeHint(types: PokemonType[]): string {
+  return `${types.map(getTypeLabel).join("・")}タイプのポケモンだよ`;
+}
+
+interface GuessAttemptsBallsProps {
+  total: number;
+  remaining: number;
+}
+
+/**
+ * 残り挑戦回数をモンスターボールの並びで表示する。消費済みの回数分をグレースケールにする。
+ * @param props total (最大挑戦回数) / remaining (残り挑戦回数) を含む props。
+ * @returns 残り挑戦回数の視覚表示。
+ */
+function GuessAttemptsBalls({ total, remaining }: GuessAttemptsBallsProps) {
+  const consumed = total - remaining;
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span className="text-sm text-gray-400">残り</span>
+      <div
+        role="meter"
+        aria-label="残り挑戦回数"
+        aria-valuenow={remaining}
+        aria-valuemin={0}
+        aria-valuemax={total}
+        className="flex gap-1"
+      >
+        {Array.from({ length: total }, (_, i) => (
+          <img
+            key={i}
+            src={BALL_SPRITES.poke}
+            alt=""
+            aria-hidden="true"
+            className={`w-6 h-6 ${i < consumed ? "grayscale opacity-40" : ""}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ポケモン名の推測入力 UI。残り試行数・正誤・最終正解・ヒントの表示を担う。
+ * @param props onSubmit / onSkip / onProceed / guessResult / attemptsRemaining / maxGuessAttempts / onHint / hintResult を含む props。
  * @returns 名前推測 UI の要素。
  */
-export function NameGuess({ onSubmit, onSkip, onProceed, guessResult }: NameGuessProps) {
+export function NameGuess({
+  onSubmit,
+  onSkip,
+  onProceed,
+  guessResult,
+  attemptsRemaining,
+  maxGuessAttempts,
+  onHint,
+  hintResult,
+}: NameGuessProps) {
   const isFinished =
     guessResult?.correct || guessResult?.attempts_remaining === 0;
+  const hintAvailable =
+    attemptsRemaining === null || attemptsRemaining >= MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON;
+  const canRequestHint = !!onHint && !hintResult && !isFinished && hintAvailable;
+  const hintExpired = !!onHint && !hintResult && !isFinished && !hintAvailable;
 
   const handleSubmit = async (guess: string) => {
     await onSubmit(guess);
@@ -42,10 +116,14 @@ export function NameGuess({ onSubmit, onSkip, onProceed, guessResult }: NameGues
       <p className="text-sm text-gray-500 mb-1">
         英語の名前を当てると捕まえやすいよ！　日本語でもいいよ
       </p>
-      {!isFinished && guessResult && (
-        <p className="text-sm text-gray-400 mb-3">
-          残り{guessResult.attempts_remaining}回
-        </p>
+      {!isFinished && attemptsRemaining !== null && maxGuessAttempts !== null && (
+        <GuessAttemptsBalls total={maxGuessAttempts} remaining={attemptsRemaining} />
+      )}
+
+      {hintResult && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
+          <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
+        </div>
       )}
 
       {guessResult?.correct && (
@@ -82,6 +160,19 @@ export function NameGuess({ onSubmit, onSkip, onProceed, guessResult }: NameGues
       )}
 
       {!isFinished && <PokemonNameInput onSubmit={handleSubmit} />}
+
+      {canRequestHint && (
+        <button
+          onClick={onHint}
+          className="mt-2 w-full text-blue-500 hover:text-blue-700 py-2 text-sm
+                     border border-blue-200 rounded-xl transition-colors"
+        >
+          {NAME_GUESS_LABELS.hintButton}
+        </button>
+      )}
+      {hintExpired && (
+        <p className="mt-2 text-center text-xs text-gray-400">{NAME_GUESS_LABELS.hintUnavailable}</p>
+      )}
 
       <button
         onClick={isFinished ? onProceed : onSkip}

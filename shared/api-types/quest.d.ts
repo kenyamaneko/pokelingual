@@ -30,6 +30,7 @@ export interface QuestNewResponse {
   description_en: string;
   is_legendary: boolean;
   is_mythical: boolean;
+  max_guess_attempts: number;
 }
 
 /** POST /api/quest/score のレスポンス。スコア・講評・日本語版説明 (マスク済み) を含む。 */
@@ -53,6 +54,12 @@ export interface GuessResponse {
 /** POST /api/quest/skip-guess のレスポンス。名前当て未確定からのスキップは常にモンスターボール、確定済みならその値を維持する。 */
 export interface SkipGuessResponse {
   ball_type: BallType;
+}
+
+/** POST /api/quest/hint のレスポンス。出題ポケモンのタイプと、消費後の残り試行回数を含む。 */
+export interface HintResponse {
+  types: PokemonType[];
+  attempts_remaining: number;
 }
 
 /** POST /api/quest/capture のレスポンス。捕獲成否と表示用のポケモン情報を含む。 */

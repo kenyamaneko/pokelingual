@@ -20,6 +20,7 @@ export interface QuestSession {
   ball_type: BallType | null;
   guess_attempts: number;
   name_guessed: boolean;
+  hint_used: boolean;
 }
 
 /** 翻訳採点結果。スコアと講評文 (LLM が直接返す内部表現)。 */

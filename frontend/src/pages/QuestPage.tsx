@@ -24,6 +24,8 @@ interface QuestPageProps {
   slots?: QuestGuidanceSlots;
   /** 結果画面の「次のポケモンを探す」導線 (省略時は新しいクエストを開始)。 */
   onNewQuest?: () => void;
+  /** 名前当てのヒントボタンを表示するか (既定 true)。 */
+  enableHint?: boolean;
 }
 
 /**
@@ -31,7 +33,7 @@ interface QuestPageProps {
  * @param props 依存注入・案内スロット・次クエスト導線。
  * @returns クエストページの要素。
  */
-export function QuestPage({ questOptions, slots, onNewQuest }: QuestPageProps = {}) {
+export function QuestPage({ questOptions, slots, onNewQuest, enableHint = true }: QuestPageProps = {}) {
   const {
     phase,
     quest,
@@ -40,12 +42,16 @@ export function QuestPage({ questOptions, slots, onNewQuest }: QuestPageProps = 
     captureResult,
     userTranslation,
     ballType,
+    attemptsRemaining,
+    maxGuessAttempts,
+    hintResult,
     error,
     locations,
     startNewQuest,
     selectLocation,
     submitTranslation,
     submitGuess,
+    requestHint,
     skipGuess,
     proceedToCapture,
     capture,
@@ -128,6 +134,10 @@ export function QuestPage({ questOptions, slots, onNewQuest }: QuestPageProps = 
               onSkip={skipGuess}
               onProceed={proceedToCapture}
               guessResult={guessResult}
+              attemptsRemaining={attemptsRemaining}
+              maxGuessAttempts={maxGuessAttempts}
+              onHint={enableHint ? requestHint : undefined}
+              hintResult={hintResult}
             />
           </>
         )}
