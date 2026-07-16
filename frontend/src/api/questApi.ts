@@ -8,42 +8,36 @@ import type {
   CaptureResponse,
 } from "../../../shared/api-types/quest";
 
-/** クエスト関連エンドポイント (場所選択・出題・採点・推測・捕獲) を呼ぶ API クライアント。 */
-export const questApi = {
-  /**
-   * GET /quest/locations — 場所選択の候補を取得する。
-   * @returns 場所候補レスポンス。
-   */
-  getLocations: () => api.get<QuestLocationsResponse>("/quest/locations"),
-  /**
-   * GET /quest/new — 選んだ場所で新しい出題ポケモンを取得する。
-   * @param locationId 選んだ探索場所 ID。
-   * @returns 出題レスポンス。
-   */
-  newQuest: (locationId: string) =>
-    api.get<QuestNewResponse>("/quest/new", { params: { location: locationId } }),
-  /**
-   * POST /quest/score — 翻訳を採点する。
-   * @param translation ユーザの日本語訳。
-   * @returns 採点レスポンス。
-   */
-  scoreTranslation: (translation: string) =>
-    api.post<ScoreResponse>("/quest/score", { translation }),
-  /**
-   * POST /quest/guess-name — ポケモン名の推測を判定する。
-   * @param guess ユーザの推測名。
-   * @returns 判定レスポンス。
-   */
-  guessName: (guess: string) =>
-    api.post<GuessResponse>("/quest/guess-name", { guess }),
-  /**
-   * POST /quest/skip-guess — 名前当てをスキップする。
-   * @returns スキップ結果 (常に poke)。
-   */
-  skipGuess: () => api.post<SkipGuessResponse>("/quest/skip-guess"),
-  /**
-   * POST /quest/capture — 捕獲を試行する。
-   * @returns 捕獲結果レスポンス。
-   */
-  attemptCapture: () => api.post<CaptureResponse>("/quest/capture"),
-};
+/** useQuest が依存する quest API の形。 */
+export interface QuestApi {
+  getLocations: () => Promise<{ data: QuestLocationsResponse }>;
+  newQuest: (locationId: string) => Promise<{ data: QuestNewResponse }>;
+  scoreTranslation: (translation: string) => Promise<{ data: ScoreResponse }>;
+  guessName: (guess: string) => Promise<{ data: GuessResponse }>;
+  skipGuess: () => Promise<{ data: SkipGuessResponse }>;
+  attemptCapture: () => Promise<{ data: CaptureResponse }>;
+}
+
+/**
+ * 指定プレフィックスのクエストエンドポイント (場所選択・出題・採点・推測・捕獲) を呼ぶ API クライアントを作る。
+ * @param basePath エンドポイントのプレフィックス (本番は /quest、チュートリアルは /tutorial/quest)。
+ * @returns QuestApi 実装。
+ */
+export function createQuestApi(basePath: string): QuestApi {
+  return {
+    getLocations: () => api.get<QuestLocationsResponse>(`${basePath}/locations`),
+    newQuest: (locationId: string) =>
+      api.get<QuestNewResponse>(`${basePath}/new`, { params: { location: locationId } }),
+    scoreTranslation: (translation: string) =>
+      api.post<ScoreResponse>(`${basePath}/score`, { translation }),
+    guessName: (guess: string) => api.post<GuessResponse>(`${basePath}/guess-name`, { guess }),
+    skipGuess: () => api.post<SkipGuessResponse>(`${basePath}/skip-guess`),
+    attemptCapture: () => api.post<CaptureResponse>(`${basePath}/capture`),
+  };
+}
+
+/** 本番クエストの API クライアント。 */
+export const questApi: QuestApi = createQuestApi("/quest");
+
+/** チュートリアルの API クライアント。本番と同じロジックにチュートリアル用アダプタを組み合わせた backend を叩く。 */
+export const tutorialQuestApi: QuestApi = createQuestApi("/tutorial/quest");

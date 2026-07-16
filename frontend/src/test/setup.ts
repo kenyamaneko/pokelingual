@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { vi, beforeAll, afterEach, afterAll } from "vitest";
-import { server, requestLog } from "./mswServer";
+import { server, requestLog, resetTutorialQuestState } from "./mswServer";
 
 // jsdom は scrollIntoView を実装しないため、テストでチャット UI などを描画すると例外になる。
 // テスト全体で安全側に倒してスタブ化する。
@@ -11,5 +11,6 @@ beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
   server.resetHandlers();
   requestLog.length = 0;
+  resetTutorialQuestState();
 });
 afterAll(() => server.close());

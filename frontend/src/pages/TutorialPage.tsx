@@ -1,55 +1,64 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { QuestCard } from "../components/quest/QuestCard";
-import { TranslationResult } from "../components/quest/TranslationResult";
-import { CaptureStandby } from "../components/quest/CaptureStandby";
-import { CaptureResult } from "../components/quest/CaptureResult";
-import { TutorialTranslationStep } from "../components/tutorial/TutorialTranslationStep";
-import { TutorialNameStep } from "../components/tutorial/TutorialNameStep";
-import { useTutorialQuest } from "../hooks/useTutorialQuest";
+import { QuestPage } from "./QuestPage";
+import { TutorialInstructionCallout } from "../components/tutorial/TutorialInstructionCallout";
+import { TutorialIntroModal } from "../components/tutorial/TutorialIntroModal";
+import { TutorialCompletionCallout } from "../components/tutorial/TutorialCompletionCallout";
+import { useTutorial } from "../contexts/TutorialContext";
+import { tutorialQuestApi } from "../api/questApi";
+import { validateTutorialTranslation, validateTutorialName } from "../utils/tutorialValidation";
 
 /**
- * TutorialPage の仕様文言。テストから import される SSOT。
+ * TutorialPage の案内文言。テストから import される SSOT。
  */
 export const TUTORIAL_PAGE_LABELS = {
-  intro: "あ！　野生の　ポケモンが　飛び出してきた！",
+  translation: {
+    title: "この英文を訳してみよう",
+    instruction: "「電気タイプのねずみポケモン」と入力してみてね",
+  },
+  name: {
+    title: "このポケモンの名前を当てよう",
+    instruction: "「ピカチュウ」または「pikachu」と入力してみてね",
+  },
 } as const;
 
 /**
- * 初回チュートリアルのページ。固定シナリオ (ピカチュウ固定・常に満点・常に捕獲成功) を進行させる。
+ * 初回チュートリアルのページ。本番の QuestPage をチュートリアル用 API・入力検証・案内で駆動する。
  * @returns チュートリアルページの要素。
  */
 export function TutorialPage() {
   const navigate = useNavigate();
-  const { phase, quest, score, userTranslation, captureResult, submitTranslation, submitName, capture } =
-    useTutorialQuest();
+  const { markCompleted } = useTutorial();
+  const [introDismissed, setIntroDismissed] = useState(false);
 
   return (
-    <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {phase === "translating" && (
-          <>
-            <p className="text-center text-gray-700 font-bold text-lg mb-4">
-              {TUTORIAL_PAGE_LABELS.intro}
-            </p>
-            <QuestCard description={quest.description_en} />
-            <TutorialTranslationStep onSubmit={submitTranslation} />
-          </>
-        )}
-
-        {phase === "guessing" && score && (
-          <>
-            <QuestCard description={quest.description_en} />
-            <TranslationResult userTranslation={userTranslation} score={score} />
-            <TutorialNameStep onSubmit={submitName} />
-          </>
-        )}
-
-        {phase === "capturing" && <CaptureStandby ballType="poke" onUse={capture} />}
-
-        {phase === "result" && captureResult && (
-          <CaptureResult result={captureResult} onNewQuest={() => navigate("/quest")} />
-        )}
-      </div>
-    </div>
+    <>
+      {!introDismissed && <TutorialIntroModal onDismiss={() => setIntroDismissed(true)} />}
+      <QuestPage
+        questOptions={{
+          api: tutorialQuestApi,
+          hasLocationChoice: false,
+          validateBeforeScore: validateTutorialTranslation,
+          validateBeforeGuess: validateTutorialName,
+          onResult: markCompleted,
+        }}
+        slots={{
+          translating: (
+            <TutorialInstructionCallout
+              title={TUTORIAL_PAGE_LABELS.translation.title}
+              instruction={TUTORIAL_PAGE_LABELS.translation.instruction}
+            />
+          ),
+          guessing: (
+            <TutorialInstructionCallout
+              title={TUTORIAL_PAGE_LABELS.name.title}
+              instruction={TUTORIAL_PAGE_LABELS.name.instruction}
+            />
+          ),
+          result: <TutorialCompletionCallout />,
+        }}
+        onNewQuest={() => navigate("/quest")}
+      />
+    </>
   );
 }

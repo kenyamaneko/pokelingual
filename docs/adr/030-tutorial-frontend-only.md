@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Accepted
+Superseded by ADR-034
 
 ## 結論
 

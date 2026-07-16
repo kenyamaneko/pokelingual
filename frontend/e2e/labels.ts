@@ -28,6 +28,7 @@ export const BUTTON = {
   close: "閉じる",
   backToMenu: /メニューに戻る/,
   login: "メールでログイン",
+  startTutorial: /はじめる/,
 } as const;
 
 /** getByText で参照する本文テキスト。 */
@@ -44,8 +45,10 @@ export const TEXT = {
   escaped: /逃げ出した/,
   bestScore: /最高スコア/,
   captureCount: /捕獲回数/,
+  tutorialHowToPlay: "遊び方の説明をします",
   tutorialTranslationInstruction: "この英文を訳してみよう",
   tutorialNameInstruction: "このポケモンの名前を当てよう",
+  tutorialComplete: /これでチュートリアルは完了だよ/,
 } as const;
 
 /** getByPlaceholder で参照するプレースホルダ。 */
