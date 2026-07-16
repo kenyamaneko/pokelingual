@@ -258,7 +258,7 @@ describe("正常系フロー (公開入口経由)", () => {
 
     const score = await request(app).post("/api/quest/score").send({ translation: "はやい" });
     expect(score.status).toBe(200);
-    expect(score.body.score).toBe(70);
+    expect(score.body.score).toBe(66);
 
     const skip = await request(app).post("/api/quest/skip-guess").send({});
     expect(skip.status).toBe(200);
@@ -341,12 +341,12 @@ describe("チュートリアル用クエスト (公開入口経由)", () => {
     expect(res.body.description_en).toBe("It is an Electric-type Mouse Pokémon.");
   });
 
-  it("採点は満点になる", async () => {
+  it("採点は最終評価点の上限 (99) になる", async () => {
     const app = makeApp();
     await request(app).get("/api/tutorial/quest/new");
     const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
     expect(res.status).toBe(200);
-    expect(res.body.score).toBe(100);
+    expect(res.body.score).toBe(99);
   });
 
   it("英語名で正解すると、ハイパーボールが手に入る", async () => {
@@ -393,6 +393,6 @@ describe("チュートリアル用クエスト (公開入口経由)", () => {
     await request(app).get("/api/tutorial/quest/new");
     const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
     expect(res.status).toBe(200);
-    expect(res.body.score).toBe(100);
+    expect(res.body.score).toBe(99);
   });
 });

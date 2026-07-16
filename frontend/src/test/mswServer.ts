@@ -74,7 +74,7 @@ const defaultHandlers = [
     }),
   ),
   http.post(apiUrl("/tutorial/quest/score"), () =>
-    HttpResponse.json({ score: 100, review: "かんぺきな　ほんやくだ！", description_ja: "電気タイプのねずみポケモン" }),
+    HttpResponse.json({ score: 99, review: "かんぺきな　ほんやくだ！", description_ja: "電気タイプのねずみポケモン" }),
   ),
   http.post(apiUrl("/tutorial/quest/guess-name"), async ({ request }) => {
     const { guess } = (await request.json()) as { guess: string };
@@ -96,7 +96,7 @@ const defaultHandlers = [
       name_en: "Pikachu",
       name_ja: "ピカチュウ",
       sprite_url: "https://example.test/pikachu.png",
-      score: 100,
+      score: 99,
       description_en: "It is an Electric-type Mouse Pokémon.",
       description_ja: "電気タイプのねずみポケモン",
       base_stat_total: 320,
