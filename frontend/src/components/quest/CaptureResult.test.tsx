@@ -31,9 +31,7 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   };
 }
 
-/** 実データの仕様変更でテストが壊れないよう、実ポケモンでなくダミーの ID/名前を使う。 */
-const DUMMY_NAME = "テストポケモン";
-const DUMMY_IDENTITY = { pokemon_id: 9999, name_ja: DUMMY_NAME };
+const LEGENDARY_IDENTITY = { pokemon_id: 150, name_en: "Mewtwo", name_ja: "ミュウツー" };
 
 /**
  * CaptureResult の仕様:
@@ -99,10 +97,7 @@ describe("捕獲結果画面", () => {
 
   it("タイプを日本語表示名 (electric → でんき) で表示する", () => {
     renderWithProviders(
-      <CaptureResult
-        result={baseResult({ ...DUMMY_IDENTITY, types: ["electric"] })}
-        onNewQuest={vi.fn()}
-      />,
+      <CaptureResult result={baseResult()} onNewQuest={vi.fn()} />,
       { withRouter: true },
     );
     expect(screen.getByText("でんき")).toBeInTheDocument();
@@ -113,7 +108,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
-            ...DUMMY_IDENTITY,
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 600,
             is_legendary: false,
             is_mythical: false,
@@ -123,7 +118,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedStrongTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedStrongTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
 
@@ -131,7 +126,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
-            ...DUMMY_IDENTITY,
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 599,
             is_legendary: false,
             is_mythical: false,
@@ -141,7 +136,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
 
@@ -149,7 +144,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
-            ...DUMMY_IDENTITY,
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 680,
             is_legendary: true,
             is_mythical: false,
@@ -159,7 +154,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedLegendaryTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedLegendaryTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
 
@@ -167,7 +162,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
-            ...DUMMY_IDENTITY,
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 680,
             is_legendary: false,
             is_mythical: true,
@@ -177,7 +172,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedMythicalTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedMythicalTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
   });

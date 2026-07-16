@@ -162,7 +162,9 @@ function makeService(o: ServiceOverrides = {}): QuestService {
 
 describe("クエストの出題", () => {
   it("出題される英語説明文は、ポケモン名が伏せ字になっている", async () => {
-    const service = makeService();
+    const service = makeService({
+      pokemons: [makePokemon({ description_en: "Bulbasaur is fast." })],
+    });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(1);
     expect(res.description_en).toBe("This Pokémon is fast.");
@@ -236,13 +238,17 @@ describe("クエストの出題", () => {
   it("説明文の候補が無ければ、基本の説明文で出題する", async () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: undefined })] });
     const res = await service.newQuest("alice");
-    expect(res.description_en).toBe("This Pokémon is fast.");
+    expect(res.description_en).toBe(
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    );
   });
 
   it("説明文の候補が空配列でも、基本の説明文で出題する", async () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
     const res = await service.newQuest("alice");
-    expect(res.description_en).toBe("This Pokémon is fast.");
+    expect(res.description_en).toBe(
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    );
   });
 
   it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
@@ -294,7 +300,10 @@ describe("翻訳の採点", () => {
   });
 
   it("スコア・講評・マスク済み日本語説明を返す", async () => {
-    const service = makeService({ llmText: JSON.stringify({ score: 70, review: "よい" }) });
+    const service = makeService({
+      pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
+      llmText: JSON.stringify({ score: 70, review: "よい" }),
+    });
     await service.newQuest("alice");
     const res = await service.scoreTranslation("alice", "はやい");
     expect(res.score).toBe(70);

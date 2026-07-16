@@ -2,7 +2,7 @@ import type { PokemonClient } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
 
 /**
- * テスト用のポケモンを作る。既定値は実在ポケモンのデータ。
+ * テスト用のポケモンを作る。
  * @param overrides 上書きするフィールド。
  * @returns ポケモン。
  */
@@ -11,8 +11,9 @@ export function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
     id: 1,
     name_en: "Bulbasaur",
     name_ja: "フシギダネ",
-    description_en: "Bulbasaur is fast.",
-    description_ja: "フシギダネは 速い。",
+    description_en:
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
     sprite_url: "https://example.com/1.png",
     base_stat_total: 318,
     types: ["grass", "poison"],

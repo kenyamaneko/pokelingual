@@ -250,7 +250,9 @@ describe("正常系フロー (公開入口経由)", () => {
 
     const quest = await request(app).get("/api/quest/new");
     expect(quest.status).toBe(200);
-    expect(quest.body.description_en).toBe("This Pokémon is fast.");
+    expect(quest.body.description_en).toBe(
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    );
 
     const score = await request(app).post("/api/quest/score").send({ translation: "はやい" });
     expect(score.status).toBe(200);
