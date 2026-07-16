@@ -8,8 +8,22 @@ import type {
   CaptureResponse,
 } from "../../../shared/api-types/quest";
 
+/**
+ * useQuest が依存する quest API の形。本番の HTTP 実装 (questApi) と、
+ * チュートリアルのインメモリ実装 (createTutorialQuestApi) が満たす契約。
+ * 各メソッドの振る舞いは実装側の docs を参照する。
+ */
+export interface QuestApi {
+  getLocations: () => Promise<{ data: QuestLocationsResponse }>;
+  newQuest: (locationId: string) => Promise<{ data: QuestNewResponse }>;
+  scoreTranslation: (translation: string) => Promise<{ data: ScoreResponse }>;
+  guessName: (guess: string) => Promise<{ data: GuessResponse }>;
+  skipGuess: () => Promise<{ data: SkipGuessResponse }>;
+  attemptCapture: () => Promise<{ data: CaptureResponse }>;
+}
+
 /** クエスト関連エンドポイント (場所選択・出題・採点・推測・捕獲) を呼ぶ API クライアント。 */
-export const questApi = {
+export const questApi: QuestApi = {
   /**
    * GET /quest/locations — 場所選択の候補を取得する。
    * @returns 場所候補レスポンス。

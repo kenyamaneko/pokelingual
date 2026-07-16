@@ -3,7 +3,7 @@ import { TutorialInstructionCallout } from "./TutorialInstructionCallout";
 import { TranslationInput } from "../quest/TranslationInput";
 
 interface Props {
-  onSubmit: (translation: string) => boolean;
+  onSubmit: (translation: string) => Promise<boolean>;
 }
 
 /**
@@ -25,7 +25,7 @@ export function TutorialTranslationStep({ onSubmit }: Props) {
   const [showError, setShowError] = useState(false);
 
   const handleSubmit = async (translation: string) => {
-    const ok = onSubmit(translation);
+    const ok = await onSubmit(translation);
     setShowError(!ok);
     return ok;
   };

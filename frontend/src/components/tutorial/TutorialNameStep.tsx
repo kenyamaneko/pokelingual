@@ -4,7 +4,7 @@ import { PokemonNameInput } from "../quest/PokemonNameInput";
 import { NAME_GUESS_LABELS } from "../quest/NameGuess";
 
 interface Props {
-  onSubmit: (name: string) => boolean;
+  onSubmit: (name: string) => Promise<boolean>;
 }
 
 /**
@@ -27,7 +27,7 @@ export function TutorialNameStep({ onSubmit }: Props) {
   const [showError, setShowError] = useState(false);
 
   const handleSubmit = async (name: string) => {
-    const ok = onSubmit(name);
+    const ok = await onSubmit(name);
     setShowError(!ok);
     return ok;
   };
