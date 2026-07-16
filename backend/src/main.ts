@@ -29,6 +29,7 @@ import { PokedexHandler } from "./handler/pokedex-handler.js";
 import { SettingsHandler } from "./handler/settings-handler.js";
 import { UsageHandler } from "./handler/usage-handler.js";
 import { TutorialHandler } from "./handler/tutorial-handler.js";
+import { createTutorialQuestHandler } from "./composition/tutorial-quest.js";
 import { setupRoutes } from "./router/router.js";
 import type {
   LLMClient,
@@ -111,6 +112,7 @@ async function main(): Promise<void> {
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, cfg.environment);
 
   const questHandler = new QuestHandler(questService, userPokemonRepo);
+  const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment);
   const pokedexHandler = new PokedexHandler(pokedexService);
   const settingsHandler = new SettingsHandler(userSettingsRepo, servablePokemonIDs);
   const usageHandler = new UsageHandler(rateLimitRepo);
@@ -130,6 +132,7 @@ async function main(): Promise<void> {
     authMiddleware,
     rateLimitMiddleware,
     questHandler,
+    tutorialQuestHandler,
     pokedexHandler,
     settingsHandler,
     usageHandler,

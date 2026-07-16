@@ -11,6 +11,7 @@ import { PokedexHandler } from "../handler/pokedex-handler.js";
 import { SettingsHandler } from "../handler/settings-handler.js";
 import { UsageHandler } from "../handler/usage-handler.js";
 import { TutorialHandler } from "../handler/tutorial-handler.js";
+import { createTutorialQuestHandler } from "../composition/tutorial-quest.js";
 import { RateLimitError } from "../domain/errors.js";
 import { LOCATION_CHOICE_COUNT } from "../domain/location.js";
 import type {
@@ -122,6 +123,7 @@ function makeApp(o: AppOverrides = {}) {
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
+      createTutorialQuestHandler(environment),
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsRepo, servablePokemonIDs),
       new UsageHandler(rateLimitRepo),
@@ -328,5 +330,69 @@ describe("正常系フロー (公開入口経由)", () => {
       description: expect.any(String),
       types: expect.any(Array),
     });
+  });
+});
+
+describe("チュートリアル用クエスト (公開入口経由)", () => {
+  it("出題は常にピカチュウで、初心者向けの単純な英文が返る", async () => {
+    const res = await request(makeApp()).get("/api/tutorial/quest/new");
+    expect(res.status).toBe(200);
+    expect(res.body.pokemon_id).toBe(25);
+    expect(res.body.description_en).toBe("It is an Electric-type Mouse Pokémon.");
+  });
+
+  it("採点はどの訳文でも必ず満点になる", async () => {
+    const app = makeApp();
+    await request(app).get("/api/tutorial/quest/new");
+    const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
+    expect(res.status).toBe(200);
+    expect(res.body.score).toBe(100);
+  });
+
+  it("英語名で正解すると、ハイパーボールが手に入る", async () => {
+    const app = makeApp();
+    await request(app).get("/api/tutorial/quest/new");
+    const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "pikachu" });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ correct: true, ball_type: "ultra" });
+  });
+
+  it("日本語名で正解すると、スーパーボールが手に入る", async () => {
+    const app = makeApp();
+    await request(app).get("/api/tutorial/quest/new");
+    const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ correct: true, ball_type: "great" });
+  });
+
+  it("採点して名前を当てた後の捕獲は必ず成功する", async () => {
+    const app = makeApp();
+    await request(app).get("/api/tutorial/quest/new");
+    await request(app).post("/api/tutorial/quest/score").send({ translation: "電気タイプのねずみポケモン" });
+    await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
+    const res = await request(app).post("/api/tutorial/quest/capture").send({});
+    expect(res.status).toBe(200);
+    expect(res.body.captured).toBe(true);
+  });
+
+  it("捕獲まで進めても、ユーザーの図鑑には記録されない", async () => {
+    const app = makeApp();
+    await request(app).get("/api/tutorial/quest/new");
+    await request(app).post("/api/tutorial/quest/score").send({ translation: "電気タイプのねずみポケモン" });
+    await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
+    await request(app).post("/api/tutorial/quest/capture").send({});
+
+    const pokedex = await request(app).get("/api/pokedex");
+    expect(pokedex.status).toBe(200);
+    expect(pokedex.body.pokemon).toHaveLength(0);
+    expect(pokedex.body.captured_count).toBe(0);
+  });
+
+  it("採点は利用上限に達していても実行できる", async () => {
+    const app = makeApp({ rateLimitKind: "user" });
+    await request(app).get("/api/tutorial/quest/new");
+    const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
+    expect(res.status).toBe(200);
+    expect(res.body.score).toBe(100);
   });
 });
