@@ -48,8 +48,8 @@ export interface UseQuestResult {
 export interface UseQuestOptions {
   /** 場所選択・出題・採点・推測・捕獲を担う実装。既定は本番の HTTP クライアント。 */
   api?: QuestApi;
-  /** true なら場所選択を経ず、マウント時に出題を取得して開始する。 */
-  autoStart?: boolean;
+  /** 場所選択の候補があるか。無ければ、場所を指定せず出題を直接取得する。 */
+  hasLocationChoice?: boolean;
   /** 採点送信前の入力検証。false を返すと採点へ進めない。 */
   validateBeforeScore?: (translation: string) => boolean;
   /** 名前推測送信前の入力検証。false を返すと判定へ進めない。 */
@@ -115,8 +115,8 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * @returns フェーズ・各種データ・操作関数を含むクエスト状態。
  */
 export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
-  const { api = questApi, autoStart = false, validateBeforeScore, validateBeforeGuess, onResult } = options;
-  const [phase, setPhase] = useState<QuestPhase>(autoStart ? "loading" : "selectLocation");
+  const { api = questApi, hasLocationChoice = true, validateBeforeScore, validateBeforeGuess, onResult } = options;
+  const [phase, setPhase] = useState<QuestPhase>(hasLocationChoice ? "selectLocation" : "loading");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);
   const [locations, setLocations] = useState<QuestLocation[]>([]);
   const [score, setScore] = useState<ScoreResponse | null>(null);
@@ -161,11 +161,10 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   }, [api]);
 
   useEffect(() => {
-    // autoStart は場所選択を経ないため、場所指定なしで出題を取得する。
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
-    if (autoStart) selectLocation("");
-    else startNewQuest();
-  }, [autoStart, startNewQuest, selectLocation]);
+    if (hasLocationChoice) startNewQuest();
+    else selectLocation("");
+  }, [hasLocationChoice, startNewQuest, selectLocation]);
 
   const handleActionError = (err: unknown, fallback: string) => {
     if (isRateLimitError(err)) return;

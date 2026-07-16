@@ -334,14 +334,14 @@ describe("正常系フロー (公開入口経由)", () => {
 });
 
 describe("チュートリアル用クエスト (公開入口経由)", () => {
-  it("出題は常にピカチュウで、初心者向けの単純な英文が返る", async () => {
+  it("出題はピカチュウ固定で、決まった英文が返る", async () => {
     const res = await request(makeApp()).get("/api/tutorial/quest/new");
     expect(res.status).toBe(200);
     expect(res.body.pokemon_id).toBe(25);
     expect(res.body.description_en).toBe("It is an Electric-type Mouse Pokémon.");
   });
 
-  it("採点はどの訳文でも必ず満点になる", async () => {
+  it("採点は満点になる", async () => {
     const app = makeApp();
     await request(app).get("/api/tutorial/quest/new");
     const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });

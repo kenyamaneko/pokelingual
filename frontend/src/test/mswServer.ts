@@ -1,5 +1,6 @@
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
+import type { BallType } from "../../../shared/api-types/quest";
 
 // client.ts と同じ baseURL 組み立てにすることで、ハンドラ URL と実リクエスト URL を確実に一致させる。
 const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api`;
@@ -23,6 +24,14 @@ export const requestLog: { method: string; path: string }[] = [];
  */
 export function countRequests(path: string): number {
   return requestLog.filter((r) => r.path.endsWith(path)).length;
+}
+
+/** チュートリアルの名前当てで直近に獲得したボール種別。guess-name と capture の応答を一致させるために保持する。 */
+let tutorialEarnedBall: BallType = "ultra";
+
+/** テストケース間で tutorialEarnedBall を初期状態に戻す。afterEach から呼ぶ。 */
+export function resetTutorialQuestState(): void {
+  tutorialEarnedBall = "ultra";
 }
 
 // 既定ハンドラ: 背景取得 (UsageProvider の /usage 等) を含む全エンドポイントに無害な既定応答を与える。
@@ -67,9 +76,17 @@ const defaultHandlers = [
   http.post(apiUrl("/tutorial/quest/score"), () =>
     HttpResponse.json({ score: 100, review: "かんぺきな　ほんやくだ！", description_ja: "電気タイプのねずみポケモン" }),
   ),
-  http.post(apiUrl("/tutorial/quest/guess-name"), () =>
-    HttpResponse.json({ correct: true, ball_type: "ultra", language: "en", attempts_remaining: 0 }),
-  ),
+  http.post(apiUrl("/tutorial/quest/guess-name"), async ({ request }) => {
+    const { guess } = (await request.json()) as { guess: string };
+    const isEnglish = guess.trim().toLowerCase() === "pikachu";
+    tutorialEarnedBall = isEnglish ? "ultra" : "great";
+    return HttpResponse.json({
+      correct: true,
+      ball_type: tutorialEarnedBall,
+      language: isEnglish ? "en" : "ja",
+      attempts_remaining: 0,
+    });
+  }),
   http.post(apiUrl("/tutorial/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
   http.post(apiUrl("/tutorial/quest/capture"), () =>
     HttpResponse.json({
@@ -83,7 +100,7 @@ const defaultHandlers = [
       description_en: "It is an Electric-type Mouse Pokémon.",
       description_ja: "電気タイプのねずみポケモン",
       base_stat_total: 320,
-      ball_type: "ultra",
+      ball_type: tutorialEarnedBall,
       types: ["electric"],
       height: 4,
       weight: 60,

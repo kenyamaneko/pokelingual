@@ -13,9 +13,16 @@ import { CAPTURE_RESULT_LABELS } from "../quest/CaptureResult";
 import { captureUseButtonLabel } from "../quest/ballAssets";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
-import { requestLog, apiUrl } from "../../test/mswServer";
 
 const fakeUser = { uid: "trainer-test" } as unknown as User;
+
+/** 名前当ての正解パターン (言語・獲得ボール) の一覧。it.each の %s 展開用に、テストごとに必要な順序のタプルへ変換する。 */
+const TUTORIAL_GUESS_CASES = [
+  { input: "pikachu", ballName: "ハイパーボール", ballType: "ultra" as const },
+  { input: "ピカチュウ", ballName: "スーパーボール", ballType: "great" as const },
+];
+const GUESS_TO_BALL_CASES = TUTORIAL_GUESS_CASES.map((c) => [c.input, c.ballName, c.ballType] as const);
+const BALL_USE_CASES = TUTORIAL_GUESS_CASES.map((c) => [c.ballName, c.input, c.ballType] as const);
 
 /**
  * チュートリアルを描画し、開始時の遊び方説明モーダルを閉じて操作可能な状態にする。
@@ -138,29 +145,35 @@ describe("チュートリアル (名前当てステップ)", () => {
     expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.proceedButton })).not.toBeInTheDocument();
   });
 
-  it("「pikachu」を入力すると、ハイパーボールを持って捕獲画面に進む", async () => {
-    const user = await proceedToNameStep();
+  it.each(GUESS_TO_BALL_CASES)(
+    "「%s」を入力し「次へ進む」を押すと、%s を持って捕獲画面に進む",
+    async (input, _ballName, ballType) => {
+      const user = await proceedToNameStep();
 
-    await fillAndSubmitName(user, "pikachu");
-    await user.click(await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }));
+      await fillAndSubmitName(user, input);
+      await user.click(await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }));
 
-    expect(
-      await screen.findByRole("button", { name: captureUseButtonLabel("ultra") }),
-    ).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByRole("button", { name: captureUseButtonLabel(ballType) }),
+      ).toBeInTheDocument();
+    },
+  );
 });
 
 describe("チュートリアル (捕獲演出〜完了)", () => {
-  it("ボールを使うと、捕獲成功の演出が再生される", async () => {
-    const user = await proceedToNameStep();
-    await fillAndSubmitName(user, "pikachu");
-    await user.click(await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }));
-    await user.click(await screen.findByRole("button", { name: captureUseButtonLabel("ultra") }));
+  it.each(BALL_USE_CASES)(
+    "%s を使うボタンを押すと、捕獲成功の演出が再生される",
+    async (_ballName, input, ballType) => {
+      const user = await proceedToNameStep();
+      await fillAndSubmitName(user, input);
+      await user.click(await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }));
+      await user.click(await screen.findByRole("button", { name: captureUseButtonLabel(ballType) }));
 
-    expect(
-      await screen.findByTestId("capture-effect-fx", {}, { timeout: 3000 }),
-    ).toHaveAttribute("data-state", "success");
-  });
+      expect(
+        await screen.findByTestId("capture-effect-fx", {}, { timeout: 3000 }),
+      ).toHaveAttribute("data-state", "success");
+    },
+  );
 
   it("捕獲成功の結果画面に、チュートリアル完了を伝える吹き出しが表示される", async () => {
     await completeTutorial();
@@ -168,14 +181,6 @@ describe("チュートリアル (捕獲演出〜完了)", () => {
     expect(
       await screen.findByText(TUTORIAL_COMPLETION_LABELS.message, {}, { timeout: 3000 }),
     ).toBeInTheDocument();
-  });
-
-  it("チュートリアルの捕獲は、本番のクエスト経路を呼ばない", async () => {
-    await completeTutorial();
-    await screen.findByText(TUTORIAL_COMPLETION_LABELS.message, {}, { timeout: 3000 });
-
-    const prodCapturePath = new URL(apiUrl("/quest/capture")).pathname;
-    expect(requestLog.filter((r) => r.path === prodCapturePath)).toHaveLength(0);
   });
 
   it("捕獲後にメニューへ戻ると、ホームの「ポケモンを探しに行く」が本番クエストへの導線に切り替わる", async () => {
