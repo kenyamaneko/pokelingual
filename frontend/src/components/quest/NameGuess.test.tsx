@@ -59,14 +59,14 @@ describe("名前当ての入力と結果表示", () => {
     const guess: GuessResponse = {
       correct: false,
       attempts_remaining: 0,
-      reveal_name_en: "Pikachu",
-      reveal_name_ja: "ピカチュウ",
+      reveal_name_en: "Testmon",
+      reveal_name_ja: "テストモン",
     };
     render(<NameGuess onSubmit={vi.fn()} onSkip={vi.fn()} onProceed={vi.fn()} guessResult={guess} />);
 
     expect(screen.getByText(spec(NAME_GUESS_LABELS.wrongFinalTitle))).toBeInTheDocument();
-    expect(screen.getByText(/Pikachu/)).toBeInTheDocument();
-    expect(screen.getByText(/ピカチュウ/)).toBeInTheDocument();
+    expect(screen.getByText(/Testmon/)).toBeInTheDocument();
+    expect(screen.getByText(/テストモン/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 

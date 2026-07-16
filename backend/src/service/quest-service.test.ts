@@ -57,37 +57,37 @@ describe("英語説明文のポケモン名マスク", () => {
   });
 
   it("ポケモン名が本文に無ければ原文のまま", () => {
-    expect(maskPokemonNameEN("Hello world", "Pikachu")).toBe("Hello world");
+    expect(maskPokemonNameEN("Hello world", "Testmon")).toBe("Hello world");
   });
 
   it("文中の出現は小文字始まりの this Pokémon に置換", () => {
-    expect(maskPokemonNameEN("A wild Pikachu appeared.", "Pikachu")).toBe(
+    expect(maskPokemonNameEN("A wild Testmon appeared.", "Testmon")).toBe(
       "A wild this Pokémon appeared.",
     );
   });
 
   it("文頭の出現は大文字始まりの This Pokémon に置換", () => {
-    expect(maskPokemonNameEN("Pikachu is yellow.", "Pikachu")).toBe("This Pokémon is yellow.");
+    expect(maskPokemonNameEN("Testmon is yellow.", "Testmon")).toBe("This Pokémon is yellow.");
   });
 
   it("文末記号 (.!?) の直後も文頭扱いで大文字化", () => {
-    expect(maskPokemonNameEN("Hello. Pikachu runs.", "Pikachu")).toBe("Hello. This Pokémon runs.");
+    expect(maskPokemonNameEN("Hello. Testmon runs.", "Testmon")).toBe("Hello. This Pokémon runs.");
   });
 
   it("複数形ヒント (several 等) の直後は of these Pokémon に置換", () => {
-    expect(maskPokemonNameEN("Several Pikachu gather.", "Pikachu")).toBe(
+    expect(maskPokemonNameEN("Several Testmon gather.", "Testmon")).toBe(
       "Several of these Pokémon gather.",
     );
   });
 
   it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
-    expect(maskPokemonNameEN("Pikachu and Pikachu", "Pikachu")).toBe(
+    expect(maskPokemonNameEN("Testmon and Testmon", "Testmon")).toBe(
       "This Pokémon and this Pokémon",
     );
   });
 
   it("大文字小文字を無視して一致する", () => {
-    expect(maskPokemonNameEN("A pikachu here", "Pikachu")).toBe("A this Pokémon here");
+    expect(maskPokemonNameEN("A testmon here", "Testmon")).toBe("A this Pokémon here");
   });
 });
 
@@ -96,11 +96,11 @@ describe("英語説明文のポケモン名マスク", () => {
  */
 describe("日本語説明文のポケモン名マスク", () => {
   it("本文中のポケモン名を「この ポケモン」に置換する", () => {
-    expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
+    expect(maskPokemonNameJA("テストモンは黄色い", "テストモン")).toBe("この ポケモンは黄色い");
   });
 
   it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
-    expect(maskPokemonNameJA("ピカチュウとピカチュウ", "ピカチュウ")).toBe(
+    expect(maskPokemonNameJA("テストモンとテストモン", "テストモン")).toBe(
       "この ポケモンとこの ポケモン",
     );
   });
@@ -110,7 +110,7 @@ describe("日本語説明文のポケモン名マスク", () => {
   });
 
   it("ポケモン名が本文に無ければ原文のまま", () => {
-    expect(maskPokemonNameJA("あいうえお", "ピカチュウ")).toBe("あいうえお");
+    expect(maskPokemonNameJA("あいうえお", "テストモン")).toBe("あいうえお");
   });
 });
 
@@ -318,7 +318,7 @@ describe("翻訳の採点", () => {
   it("説明文にポケモン名が含まれるとき、AI に渡す英文はポケモン名を伏せたものになる (講評でのネタバレ防止)", async () => {
     let sentPrompt = "";
     const service = makeService({
-      pokemons: [makePokemon({ name_en: "Pikachu", description_en: "Pikachu is yellow." })],
+      pokemons: [makePokemon({ name_en: "Testmon", description_en: "Testmon is yellow." })],
       llmRespond: (prompt) => {
         sentPrompt = prompt;
         return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
@@ -326,7 +326,7 @@ describe("翻訳の採点", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    expect(sentPrompt).not.toContain("Pikachu");
+    expect(sentPrompt).not.toContain("Testmon");
   });
 
   it.each([
