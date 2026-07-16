@@ -44,14 +44,18 @@ export interface UseQuestResult {
   revealCaptureResult: () => void;
 }
 
-/** useQuest の依存差し替え口。本番は既定値を使い、チュートリアルは固定 API・出題・副作用を注入する。 */
+/** useQuest の依存差し替え口。本番は既定値で動き、チュートリアルは別 API と入力検証・副作用を注入する。 */
 export interface UseQuestOptions {
   /** 場所選択・出題・採点・推測・捕獲を担う実装。既定は本番の HTTP クライアント。 */
   api?: QuestApi;
-  /** 指定すると場所選択を経ず、この出題で translating フェーズから開始する。 */
-  initialQuest?: QuestNewResponse | null;
-  /** 採点成功後に呼ぶ副作用。既定は利用状況の再取得。 */
-  onScored?: () => void;
+  /** true なら場所選択を経ず、マウント時に出題を取得して開始する。 */
+  autoStart?: boolean;
+  /** 採点送信前の入力検証。false を返すと採点へ進めない。 */
+  validateBeforeScore?: (translation: string) => boolean;
+  /** 名前推測送信前の入力検証。false を返すと判定へ進めない。 */
+  validateBeforeGuess?: (guess: string) => boolean;
+  /** result フェーズ到達時に一度呼ぶ副作用。 */
+  onResult?: () => void;
 }
 
 /**
@@ -111,9 +115,9 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * @returns フェーズ・各種データ・操作関数を含むクエスト状態。
  */
 export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
-  const { api = questApi, initialQuest = null } = options;
-  const [phase, setPhase] = useState<QuestPhase>(initialQuest ? "translating" : "selectLocation");
-  const [quest, setQuest] = useState<QuestNewResponse | null>(initialQuest);
+  const { api = questApi, autoStart = false, validateBeforeScore, validateBeforeGuess, onResult } = options;
+  const [phase, setPhase] = useState<QuestPhase>(autoStart ? "loading" : "selectLocation");
+  const [quest, setQuest] = useState<QuestNewResponse | null>(null);
   const [locations, setLocations] = useState<QuestLocation[]>([]);
   const [score, setScore] = useState<ScoreResponse | null>(null);
   const [guessResult, setGuessResult] = useState<GuessResponse | null>(null);
@@ -122,7 +126,6 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   const [ballType, setBallType] = useState<BallType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { refresh: refreshUsage } = useUsage();
-  const onScored = options.onScored ?? refreshUsage;
 
   const startNewQuest = useCallback(async () => {
     setPhase("selectLocation");
@@ -158,10 +161,11 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   }, [api]);
 
   useEffect(() => {
-    // 出題済みで開始する (initialQuest 指定) 場合は場所選択フローを起動しない。
-    if (initialQuest) return;
-    startNewQuest(); // eslint-disable-line react-hooks/set-state-in-effect -- initial data fetch on mount
-  }, [startNewQuest, initialQuest]);
+    // autoStart は場所選択を飛ばし、固定の出題を直接取得する。
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
+    if (autoStart) selectLocation("");
+    else startNewQuest();
+  }, [autoStart, startNewQuest, selectLocation]);
 
   const handleActionError = (err: unknown, fallback: string) => {
     if (isRateLimitError(err)) return;
@@ -173,12 +177,13 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   };
 
   const submitTranslation = async (translation: string) => {
+    if (validateBeforeScore && !validateBeforeScore(translation)) return false;
     try {
       setUserTranslation(translation);
       const res = await api.scoreTranslation(translation);
       setScore(res.data);
       setPhase("guessing");
-      onScored();
+      refreshUsage();
       return true;
     } catch (err) {
       handleActionError(err, "採点に失敗しました");
@@ -187,6 +192,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   };
 
   const submitGuess = async (guess: string) => {
+    if (validateBeforeGuess && !validateBeforeGuess(guess)) return;
     try {
       const res = await api.guessName(guess);
       setGuessResult(res.data);
@@ -229,6 +235,10 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   const revealCaptureResult = useCallback(() => {
     setPhase("result");
   }, []);
+
+  useEffect(() => {
+    if (phase === "result") onResult?.();
+  }, [phase, onResult]);
 
   return {
     phase,

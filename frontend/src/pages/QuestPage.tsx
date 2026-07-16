@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
 import { TranslationResult } from "../components/quest/TranslationResult";
@@ -7,13 +8,30 @@ import { CaptureEffect } from "../components/quest/CaptureEffect";
 import { CaptureResult } from "../components/quest/CaptureResult";
 import { LocationSelect } from "../components/quest/LocationSelect";
 import { BALL_SPRITES, BALL_NAMES } from "../components/quest/ballAssets";
-import { useQuest } from "../hooks/useQuest";
+import { useQuest, type UseQuestOptions } from "../hooks/useQuest";
+
+/** 各入力フェーズの上に差し込む案内 (チュートリアルの吹き出し等)。本番は未指定。 */
+interface QuestGuidanceSlots {
+  translating?: ReactNode;
+  guessing?: ReactNode;
+  result?: ReactNode;
+}
+
+interface QuestPageProps {
+  /** useQuest への依存注入 (省略時は本番既定)。 */
+  questOptions?: UseQuestOptions;
+  /** 各フェーズに差し込む案内。 */
+  slots?: QuestGuidanceSlots;
+  /** 結果画面の「次のポケモンを探す」導線 (省略時は新しいクエストを開始)。 */
+  onNewQuest?: () => void;
+}
 
 /**
  * クエストの主要ページ。フェーズに応じた UI を描画するだけで、状態は useQuest に委譲する。
+ * @param props 依存注入・案内スロット・次クエスト導線。
  * @returns クエストページの要素。
  */
-export function QuestPage() {
+export function QuestPage({ questOptions, slots, onNewQuest }: QuestPageProps = {}) {
   const {
     phase,
     quest,
@@ -32,9 +50,10 @@ export function QuestPage() {
     proceedToCapture,
     capture,
     revealCaptureResult,
-  } = useQuest();
+  } = useQuest(questOptions);
 
   const isSpecial = quest?.is_legendary || quest?.is_mythical;
+  const handleNewQuest = onNewQuest ?? startNewQuest;
 
   const bgClass = quest?.is_mythical
     ? "min-h-[calc(100vh-var(--header-h))] bg-gradient-to-b from-purple-50 to-gray-50 py-8"
@@ -94,6 +113,7 @@ export function QuestPage() {
               </p>
             )}
             <QuestCard description={quest.description_en} />
+            {slots?.translating}
             <TranslationInput onSubmit={submitTranslation} />
           </>
         )}
@@ -102,6 +122,7 @@ export function QuestPage() {
           <>
             <QuestCard description={quest.description_en} />
             <TranslationResult userTranslation={userTranslation} score={score} />
+            {slots?.guessing}
             <NameGuess
               onSubmit={submitGuess}
               onSkip={skipGuess}
@@ -125,10 +146,10 @@ export function QuestPage() {
         )}
 
         {phase === "result" && captureResult && (
-          <CaptureResult
-            result={captureResult}
-            onNewQuest={startNewQuest}
-          />
+          <>
+            {slots?.result}
+            <CaptureResult result={captureResult} onNewQuest={handleNewQuest} />
+          </>
         )}
       </div>
     </div>

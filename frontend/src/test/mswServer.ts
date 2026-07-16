@@ -56,6 +56,41 @@ const defaultHandlers = [
   ),
   http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
   http.post(apiUrl("/quest/capture"), () => HttpResponse.json({})),
+  http.get(apiUrl("/tutorial/quest/new"), () =>
+    HttpResponse.json({
+      pokemon_id: 25,
+      description_en: "It is an Electric-type Mouse Pokémon.",
+      is_legendary: false,
+      is_mythical: false,
+    }),
+  ),
+  http.post(apiUrl("/tutorial/quest/score"), () =>
+    HttpResponse.json({ score: 100, review: "かんぺきな　ほんやくだ！", description_ja: "電気タイプのねずみポケモン" }),
+  ),
+  http.post(apiUrl("/tutorial/quest/guess-name"), () =>
+    HttpResponse.json({ correct: true, ball_type: "ultra", language: "en", attempts_remaining: 0 }),
+  ),
+  http.post(apiUrl("/tutorial/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
+  http.post(apiUrl("/tutorial/quest/capture"), () =>
+    HttpResponse.json({
+      captured: true,
+      probability: 1,
+      pokemon_id: 25,
+      name_en: "Pikachu",
+      name_ja: "ピカチュウ",
+      sprite_url: "https://example.test/pikachu.png",
+      score: 100,
+      description_en: "It is an Electric-type Mouse Pokémon.",
+      description_ja: "電気タイプのねずみポケモン",
+      base_stat_total: 320,
+      ball_type: "ultra",
+      types: ["electric"],
+      height: 4,
+      weight: 60,
+      is_legendary: false,
+      is_mythical: false,
+    }),
+  ),
   http.get(apiUrl("/settings"), () =>
     HttpResponse.json({ excluded_pokemon_ids: [], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] }),
   ),
