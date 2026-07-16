@@ -35,6 +35,7 @@ export function TutorialPage() {
     <>
       {!introDismissed && <TutorialIntroModal onDismiss={() => setIntroDismissed(true)} />}
       <QuestPage
+        enableHint={false}
         questOptions={{
           api: tutorialQuestApi,
           hasLocationChoice: false,

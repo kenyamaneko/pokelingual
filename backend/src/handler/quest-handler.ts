@@ -84,6 +84,21 @@ export class QuestHandler {
   };
 
   /**
+   * POST /quest/hint — ヒントを要求し、出題ポケモンのタイプと消費後の残り挑戦回数を返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
+  requestHint = (req: Request, res: Response) => {
+    const userId = res.locals.userId as string;
+    try {
+      const resp = this.questService.requestHint(userId);
+      res.json(resp);
+    } catch (err) {
+      handleError(res, err, req.path);
+    }
+  };
+
+  /**
    * POST /quest/skip-guess — 名前当てをスキップして、ボールを確定する。
    * @param req Express リクエスト。
    * @param res Express レスポンス。

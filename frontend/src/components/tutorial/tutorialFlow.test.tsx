@@ -145,6 +145,12 @@ describe("チュートリアル (名前当てステップ)", () => {
     expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.proceedButton })).not.toBeInTheDocument();
   });
 
+  it("名前当てステップは固定シナリオのため、ヒントボタンが出ない", async () => {
+    await proceedToNameStep();
+
+    expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.hintButton })).not.toBeInTheDocument();
+  });
+
   it.each(GUESS_TO_BALL_CASES)(
     "「%s」を入力し「次へ進む」を押すと、%s を持って捕獲画面に進む",
     async (input, _ballName, ballType) => {

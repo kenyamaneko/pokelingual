@@ -25,6 +25,7 @@ function mountQuestRoutes(
   router.get(`${prefix}/new`, handler.newQuest);
   router.post(`${prefix}/score`, ...scoreMiddleware, handler.scoreTranslation);
   router.post(`${prefix}/guess-name`, handler.guessName);
+  router.post(`${prefix}/hint`, handler.requestHint);
   router.post(`${prefix}/skip-guess`, handler.skipGuess);
   router.post(`${prefix}/capture`, handler.attemptCapture);
 }

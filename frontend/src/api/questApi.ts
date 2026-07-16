@@ -6,6 +6,7 @@ import type {
   GuessResponse,
   SkipGuessResponse,
   CaptureResponse,
+  HintResponse,
 } from "../../../shared/api-types/quest";
 
 /** useQuest が依存する quest API の形。 */
@@ -14,6 +15,7 @@ export interface QuestApi {
   newQuest: (locationId: string) => Promise<{ data: QuestNewResponse }>;
   scoreTranslation: (translation: string) => Promise<{ data: ScoreResponse }>;
   guessName: (guess: string) => Promise<{ data: GuessResponse }>;
+  requestHint: () => Promise<{ data: HintResponse }>;
   skipGuess: () => Promise<{ data: SkipGuessResponse }>;
   attemptCapture: () => Promise<{ data: CaptureResponse }>;
 }
@@ -31,6 +33,7 @@ export function createQuestApi(basePath: string): QuestApi {
     scoreTranslation: (translation: string) =>
       api.post<ScoreResponse>(`${basePath}/score`, { translation }),
     guessName: (guess: string) => api.post<GuessResponse>(`${basePath}/guess-name`, { guess }),
+    requestHint: () => api.post<HintResponse>(`${basePath}/hint`),
     skipGuess: () => api.post<SkipGuessResponse>(`${basePath}/skip-guess`),
     attemptCapture: () => api.post<CaptureResponse>(`${basePath}/capture`),
   };

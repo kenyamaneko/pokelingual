@@ -226,6 +226,12 @@ describe("クエストの出題", () => {
     await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
   });
 
+  it("出題レスポンスには、名前当ての最大挑戦回数が含まれる", async () => {
+    const service = makeService();
+    const res = await service.newQuest("alice");
+    expect(res.max_guess_attempts).toBe(3);
+  });
+
   it("説明文が複数あるポケモンでは、そのうちの 1 つが選ばれて出題される", async () => {
     const service = makeService({
       pokemons: [
@@ -448,6 +454,59 @@ describe("名前当ての判定", () => {
     service.guessName("alice", "bulbasaur");
     const res = service.guessName("alice", "whatever");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", attempts_remaining: 0 });
+  });
+});
+
+describe("名前当てのヒント", () => {
+  it("まだ一度も推測していないとき、ヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
+    const service = makeService({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
+    await service.newQuest("alice");
+    const res = service.requestHint("alice");
+    expect(res).toEqual({ types: ["grass", "poison"], attempts_remaining: 2 });
+  });
+
+  it("1回不正解で残り2回のとき、ヒントを要求できる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.guessName("alice", "wrong");
+    const res = service.requestHint("alice");
+    expect(res.attempts_remaining).toBe(1);
+  });
+
+  it("2回不正解で残り1回のとき、ヒントを要求するとエラーになる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.guessName("alice", "wrong1");
+    service.guessName("alice", "wrong2");
+    expect(() => service.requestHint("alice")).toThrow(/insufficient guess attempts remaining/);
+  });
+
+  it("名前当てが正解済みのとき、ヒントを要求するとエラーになる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.guessName("alice", "bulbasaur");
+    expect(() => service.requestHint("alice")).toThrow(/already guessed or already used/);
+  });
+
+  it("既にヒントを1回要求済みのとき、再度要求するとエラーになる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.requestHint("alice");
+    expect(() => service.requestHint("alice")).toThrow(/already guessed or already used/);
+  });
+
+  it("セッションが無いままヒントを要求すると、セッション不明のエラーになる", () => {
+    const service = makeService();
+    expect(() => service.requestHint("nobody")).toThrow(NotFoundError);
+  });
+
+  it("残り2回でヒントを使い切った直後に不正解にすると、試行が尽きてモンスターボールが確定する", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    service.guessName("alice", "wrong1");
+    service.requestHint("alice");
+    const res = service.guessName("alice", "wrong2");
+    expect(res).toMatchObject({ correct: false, ball_type: "poke", attempts_remaining: 0 });
   });
 });
 
