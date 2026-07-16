@@ -7,15 +7,19 @@ import {
 } from "./convert.js";
 
 /**
- * EN/JA の名前と説明を持つ species データを作る。
+ * EN/JA の名前とバージョン別の説明を持つ species データを作る。
  * @param id 図鑑番号。
  * @param nameEN 英名。
  * @param nameJA 和名。
- * @param descEN 英語説明。
- * @param descJA 日本語説明。
+ * @param flavorTexts バージョンごとの EN/JA 説明。
  * @returns species データ。
  */
-function speciesOf(id: number, nameEN: string, nameJA: string, descEN: string, descJA: string): PokeAPISpeciesData {
+function speciesOf(
+  id: number,
+  nameEN: string,
+  nameJA: string,
+  flavorTexts: { version: string; en: string; ja: string }[],
+): PokeAPISpeciesData {
   return {
     id,
     is_legendary: false,
@@ -24,10 +28,10 @@ function speciesOf(id: number, nameEN: string, nameJA: string, descEN: string, d
       { name: nameEN, language: { name: "en" } },
       { name: nameJA, language: { name: "ja" } },
     ],
-    flavor_text_entries: [
-      { flavor_text: descEN, language: { name: "en" }, version: { name: "x" } },
-      { flavor_text: descJA, language: { name: "ja" }, version: { name: "x" } },
-    ],
+    flavor_text_entries: flavorTexts.flatMap(({ version, en, ja }) => [
+      { flavor_text: en, language: { name: "en" }, version: { name: version } },
+      { flavor_text: ja, language: { name: "ja" }, version: { name: version } },
+    ]),
   };
 }
 
@@ -65,29 +69,77 @@ describe("説明文の整形", () => {
 describe("ポケモンレコードへの変換", () => {
   it.each([
     {
-      species: speciesOf(9001, "Testmon", "テストモン", "A test creature.", "テスト用の 生き物。"),
-      pokemon: pokemonOf([10, 20, 30], ["fire", "flying"], 5, 50),
+      species: speciesOf(1, "Bulbasaur", "フシギダネ", [
+        {
+          version: "x",
+          en: "A strange seed was planted on its back at birth.\nThe plant sprouts and grows with this Pokémon.",
+          ja: "生まれたときから　背中に\n不思議な　タネが　植えてあって\n体と　ともに　育つという。",
+        },
+        {
+          version: "y",
+          en: "For some time after its birth, it grows by gaining\nnourishment from the seed on its back.",
+          ja: "生まれてから　しばらくの　あいだは\n背中の　タネから　栄養を　もらって\n大きく　育つ。",
+        },
+      ]),
+      pokemon: pokemonOf([45, 49, 49, 65, 65, 45], ["grass", "poison"], 7, 69),
       expected: {
-        id: 9001, name_en: "Testmon", name_ja: "テストモン",
-        description_en: "A test creature.", description_ja: "テスト用の 生き物。",
-        base_stat_total: 60, types: ["fire", "flying"], height: 5, weight: 50,
+        id: 1, name_en: "Bulbasaur", name_ja: "フシギダネ",
+        description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+        description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
+        base_stat_total: 318, types: ["grass", "poison"], height: 7, weight: 69,
+        flavor_texts: [
+          {
+            version_names: ["X"],
+            description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+            description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
+          },
+          {
+            version_names: ["Y"],
+            description_en: "For some time after its birth, it grows by gaining nourishment from the seed on its back.",
+            description_ja: "生まれてから　しばらくの　あいだは 背中の　タネから　栄養を　もらって 大きく　育つ。",
+          },
+        ],
       },
     },
     {
-      species: speciesOf(9002, "Duomon", "デュオモン", "Another test creature.", "もう一体の テスト用の 生き物。"),
-      pokemon: pokemonOf([15, 25, 15], ["water"], 3, 20),
+      species: speciesOf(4, "Charmander", "ヒトカゲ", [
+        {
+          version: "x",
+          en: "The flame on its tail indicates Charmander’s life\nforce. If it is healthy, the flame burns brightly.",
+          ja: "尻尾の　炎は\nヒトカゲの　生命力の　証。\n元気だと　さかんに　燃えさかる。",
+        },
+        {
+          version: "y",
+          en: "From the time it is born, a flame burns at the tip of\nits tail. Its life would end if the flame were to\ngo out.",
+          ja: "生まれたときから　尻尾に　炎が\n点っている。炎が　消えたとき\nその　命は　終わってしまう。",
+        },
+      ]),
+      pokemon: pokemonOf([39, 52, 43, 60, 50, 65], ["fire"], 6, 85),
       expected: {
-        id: 9002, name_en: "Duomon", name_ja: "デュオモン",
-        description_en: "Another test creature.", description_ja: "もう一体の テスト用の 生き物。",
-        base_stat_total: 55, types: ["water"], height: 3, weight: 20,
+        id: 4, name_en: "Charmander", name_ja: "ヒトカゲ",
+        description_en: "The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.",
+        description_ja: "尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。",
+        base_stat_total: 309, types: ["fire"], height: 6, weight: 85,
+        flavor_texts: [
+          {
+            version_names: ["X"],
+            description_en: "The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.",
+            description_ja: "尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。",
+          },
+          {
+            version_names: ["Y"],
+            description_en: "From the time it is born, a flame burns at the tip of its tail. Its life would end if the flame were to go out.",
+            description_ja: "生まれたときから　尻尾に　炎が 点っている。炎が　消えたとき その　命は　終わってしまう。",
+          },
+        ],
       },
     },
-  ])("$expected.name_ja を変換すると、英名・和名・種族値合計・タイプ・説明が出力される", ({ species, pokemon, expected }) => {
+  ])("$expected.name_ja を変換すると、英名・和名・種族値合計・タイプ・説明・バージョン別説明一覧が出力される", ({ species, pokemon, expected }) => {
     expect(convertToPokemonRecord(species, pokemon)).toMatchObject(expected);
   });
 
   it("未知のタイプ名はエラーになる", () => {
-    const species = speciesOf(1, "Testmon", "テスト", "en", "ja");
+    const species = speciesOf(1, "Testmon", "テスト", [{ version: "x", en: "en", ja: "ja" }]);
     expect(() => convertToPokemonRecord(species, pokemonOf([1], ["shadow"], 1, 1))).toThrow(
       /unknown pokemon type/,
     );
@@ -95,7 +147,7 @@ describe("ポケモンレコードへの変換", () => {
 
   it("EN/JA の説明ペアが揃わないとエラーになる", () => {
     const species: PokeAPISpeciesData = {
-      ...speciesOf(1, "Testmon", "テスト", "en", "ja"),
+      ...speciesOf(1, "Testmon", "テスト", [{ version: "x", en: "en", ja: "ja" }]),
       flavor_text_entries: [{ flavor_text: "en only", language: { name: "en" }, version: { name: "x" } }],
     };
     expect(() => convertToPokemonRecord(species, pokemonOf([1], ["fire"], 1, 1))).toThrow(

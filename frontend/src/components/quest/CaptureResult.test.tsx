@@ -9,23 +9,20 @@ import type { CaptureResponse } from "../../../../shared/api-types/quest";
 
 // API モックは MSW の既定ハンドラで賄う (このコンポーネントは未ログイン描画のため /usage も飛ばない)。
 
-/** 実データの仕様変更でテストが壊れないよう、実ポケモンでなくダミーの ID/名前を使う。 */
-const DUMMY_NAME = "テストポケモン";
-
 function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   return {
     captured: true,
     probability: 0.85,
-    pokemon_id: 9999,
-    name_en: "Testmon",
-    name_ja: DUMMY_NAME,
-    sprite_url: "https://example.com/testmon.png",
+    pokemon_id: 25,
+    name_en: "Pikachu",
+    name_ja: "ピカチュウ",
+    sprite_url: "https://example.com/pikachu.png",
     score: 90,
     description_en: "desc en",
     description_ja: "desc ja",
-    base_stat_total: 300,
+    base_stat_total: 320,
     ball_type: "ultra",
-    types: ["normal"],
+    types: ["electric"],
     height: 4,
     weight: 60,
     is_legendary: false,
@@ -33,6 +30,8 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
     ...overrides,
   };
 }
+
+const LEGENDARY_IDENTITY = { pokemon_id: 150, name_en: "Mewtwo", name_ja: "ミュウツー" };
 
 /**
  * CaptureResult の仕様:
@@ -53,7 +52,7 @@ describe("捕獲結果画面", () => {
       { withRouter: true },
     );
     expect(
-      screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle(DUMMY_NAME))),
+      screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ"))),
     ).toBeInTheDocument();
   });
 
@@ -66,7 +65,7 @@ describe("捕獲結果画面", () => {
       { withRouter: true },
     );
     expect(
-      screen.getByText(spec(CAPTURE_RESULT_LABELS.escapedTitle(DUMMY_NAME))),
+      screen.getByText(spec(CAPTURE_RESULT_LABELS.escapedTitle("ピカチュウ"))),
     ).toBeInTheDocument();
   });
 
@@ -98,10 +97,7 @@ describe("捕獲結果画面", () => {
 
   it("タイプを日本語表示名 (electric → でんき) で表示する", () => {
     renderWithProviders(
-      <CaptureResult
-        result={baseResult({ types: ["electric"] })}
-        onNewQuest={vi.fn()}
-      />,
+      <CaptureResult result={baseResult()} onNewQuest={vi.fn()} />,
       { withRouter: true },
     );
     expect(screen.getByText("でんき")).toBeInTheDocument();
@@ -112,6 +108,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 600,
             is_legendary: false,
             is_mythical: false,
@@ -121,7 +118,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedStrongTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedStrongTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
 
@@ -129,6 +126,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 599,
             is_legendary: false,
             is_mythical: false,
@@ -138,7 +136,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
 
@@ -146,6 +144,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 680,
             is_legendary: true,
             is_mythical: false,
@@ -155,7 +154,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedLegendaryTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedLegendaryTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
 
@@ -163,6 +162,7 @@ describe("捕獲結果画面", () => {
       renderWithProviders(
         <CaptureResult
           result={baseResult({
+            ...LEGENDARY_IDENTITY,
             base_stat_total: 680,
             is_legendary: false,
             is_mythical: true,
@@ -172,7 +172,7 @@ describe("捕獲結果画面", () => {
         { withRouter: true },
       );
       expect(
-        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedMythicalTitle(DUMMY_NAME))),
+        screen.getByText(spec(CAPTURE_RESULT_LABELS.capturedMythicalTitle(LEGENDARY_IDENTITY.name_ja))),
       ).toBeInTheDocument();
     });
   });

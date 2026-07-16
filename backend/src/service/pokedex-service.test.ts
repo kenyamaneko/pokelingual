@@ -196,7 +196,7 @@ describe("図鑑詳細の取得", () => {
       best_score: 80,
       name_en: "Testmon-7",
       name_ja: "テストモン7",
-      types: ["normal"],
+      types: ["grass", "poison"],
     });
   });
 

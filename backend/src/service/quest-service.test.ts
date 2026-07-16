@@ -57,37 +57,37 @@ describe("英語説明文のポケモン名マスク", () => {
   });
 
   it("ポケモン名が本文に無ければ原文のまま", () => {
-    expect(maskPokemonNameEN("Hello world", "Testmon")).toBe("Hello world");
+    expect(maskPokemonNameEN("Hello world", "Pikachu")).toBe("Hello world");
   });
 
   it("文中の出現は小文字始まりの this Pokémon に置換", () => {
-    expect(maskPokemonNameEN("A wild Testmon appeared.", "Testmon")).toBe(
+    expect(maskPokemonNameEN("A wild Pikachu appeared.", "Pikachu")).toBe(
       "A wild this Pokémon appeared.",
     );
   });
 
   it("文頭の出現は大文字始まりの This Pokémon に置換", () => {
-    expect(maskPokemonNameEN("Testmon is yellow.", "Testmon")).toBe("This Pokémon is yellow.");
+    expect(maskPokemonNameEN("Pikachu is yellow.", "Pikachu")).toBe("This Pokémon is yellow.");
   });
 
   it("文末記号 (.!?) の直後も文頭扱いで大文字化", () => {
-    expect(maskPokemonNameEN("Hello. Testmon runs.", "Testmon")).toBe("Hello. This Pokémon runs.");
+    expect(maskPokemonNameEN("Hello. Pikachu runs.", "Pikachu")).toBe("Hello. This Pokémon runs.");
   });
 
   it("複数形ヒント (several 等) の直後は of these Pokémon に置換", () => {
-    expect(maskPokemonNameEN("Several Testmon gather.", "Testmon")).toBe(
+    expect(maskPokemonNameEN("Several Pikachu gather.", "Pikachu")).toBe(
       "Several of these Pokémon gather.",
     );
   });
 
   it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
-    expect(maskPokemonNameEN("Testmon and Testmon", "Testmon")).toBe(
+    expect(maskPokemonNameEN("Pikachu and Pikachu", "Pikachu")).toBe(
       "This Pokémon and this Pokémon",
     );
   });
 
   it("大文字小文字を無視して一致する", () => {
-    expect(maskPokemonNameEN("A testmon here", "Testmon")).toBe("A this Pokémon here");
+    expect(maskPokemonNameEN("A pikachu here", "Pikachu")).toBe("A this Pokémon here");
   });
 });
 
@@ -96,11 +96,11 @@ describe("英語説明文のポケモン名マスク", () => {
  */
 describe("日本語説明文のポケモン名マスク", () => {
   it("本文中のポケモン名を「この ポケモン」に置換する", () => {
-    expect(maskPokemonNameJA("テストモンは黄色い", "テストモン")).toBe("この ポケモンは黄色い");
+    expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
   });
 
   it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
-    expect(maskPokemonNameJA("テストモンとテストモン", "テストモン")).toBe(
+    expect(maskPokemonNameJA("ピカチュウとピカチュウ", "ピカチュウ")).toBe(
       "この ポケモンとこの ポケモン",
     );
   });
@@ -110,7 +110,7 @@ describe("日本語説明文のポケモン名マスク", () => {
   });
 
   it("ポケモン名が本文に無ければ原文のまま", () => {
-    expect(maskPokemonNameJA("あいうえお", "テストモン")).toBe("あいうえお");
+    expect(maskPokemonNameJA("あいうえお", "ピカチュウ")).toBe("あいうえお");
   });
 });
 
@@ -162,7 +162,9 @@ function makeService(o: ServiceOverrides = {}): QuestService {
 
 describe("クエストの出題", () => {
   it("出題される英語説明文は、ポケモン名が伏せ字になっている", async () => {
-    const service = makeService();
+    const service = makeService({
+      pokemons: [makePokemon({ description_en: "Bulbasaur is fast." })],
+    });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(1);
     expect(res.description_en).toBe("This Pokémon is fast.");
@@ -223,7 +225,7 @@ describe("クエストの出題", () => {
       pokemons: [
         makePokemon({
           flavor_texts: [
-            { version_names: ["X"], description_en: "Alpha Testmon runs.", description_ja: "テストモンは 走る。" },
+            { version_names: ["X"], description_en: "Alpha Bulbasaur runs.", description_ja: "フシギダネは 走る。" },
             { version_names: ["Y"], description_en: "Beta text.", description_ja: "ベータ。" },
           ],
         }),
@@ -236,13 +238,17 @@ describe("クエストの出題", () => {
   it("説明文の候補が無ければ、基本の説明文で出題する", async () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: undefined })] });
     const res = await service.newQuest("alice");
-    expect(res.description_en).toBe("This Pokémon is fast.");
+    expect(res.description_en).toBe(
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    );
   });
 
   it("説明文の候補が空配列でも、基本の説明文で出題する", async () => {
     const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
     const res = await service.newQuest("alice");
-    expect(res.description_en).toBe("This Pokémon is fast.");
+    expect(res.description_en).toBe(
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    );
   });
 
   it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
@@ -294,7 +300,10 @@ describe("翻訳の採点", () => {
   });
 
   it("スコア・講評・マスク済み日本語説明を返す", async () => {
-    const service = makeService({ llmText: JSON.stringify({ score: 70, review: "よい" }) });
+    const service = makeService({
+      pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
+      llmText: JSON.stringify({ score: 70, review: "よい" }),
+    });
     await service.newQuest("alice");
     const res = await service.scoreTranslation("alice", "はやい");
     expect(res.score).toBe(70);
@@ -318,7 +327,7 @@ describe("翻訳の採点", () => {
   it("説明文にポケモン名が含まれるとき、AI に渡す英文はポケモン名を伏せたものになる (講評でのネタバレ防止)", async () => {
     let sentPrompt = "";
     const service = makeService({
-      pokemons: [makePokemon({ name_en: "Testmon", description_en: "Testmon is yellow." })],
+      pokemons: [makePokemon({ name_en: "Pikachu", description_en: "Pikachu is yellow." })],
       llmRespond: (prompt) => {
         sentPrompt = prompt;
         return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
@@ -326,7 +335,7 @@ describe("翻訳の採点", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    expect(sentPrompt).not.toContain("Testmon");
+    expect(sentPrompt).not.toContain("Pikachu");
   });
 
   it.each([
@@ -353,28 +362,28 @@ describe("名前当ての判定", () => {
   it("英語名の完全一致はハイパーボール (大文字小文字・前後空白を無視)", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "  testmon ");
+    const res = service.guessName("alice", "  bulbasaur ");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", language: "en" });
   });
 
   it("日本語名の一致はスーパーボール", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "テストモン");
+    const res = service.guessName("alice", "フシギダネ");
     expect(res).toMatchObject({ correct: true, ball_type: "great", language: "ja" });
   });
 
   it("名前が 4 文字以上のとき、綴りが 2 文字までずれていても正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "testmxx");
+    const res = service.guessName("alice", "bulbasaxx");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", fuzzy: true });
   });
 
   it("名前が 4 文字以上のとき、綴りが 3 文字ずれていると不正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "testxxx");
+    const res = service.guessName("alice", "bulbasxxx");
     expect(res.correct).toBe(false);
   });
 
@@ -407,8 +416,8 @@ describe("名前当ての判定", () => {
       correct: false,
       ball_type: "poke",
       attempts_remaining: 0,
-      reveal_name_en: "Testmon",
-      reveal_name_ja: "テストモン",
+      reveal_name_en: "Bulbasaur",
+      reveal_name_ja: "フシギダネ",
     });
     expect(service.attemptCapture("alice").ball_type).toBe("poke");
   });
@@ -416,7 +425,7 @@ describe("名前当ての判定", () => {
   it("正解済みで再送信すると確定済みボールを返す", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "testmon");
+    service.guessName("alice", "bulbasaur");
     const res = service.guessName("alice", "whatever");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", attempts_remaining: 0 });
   });
@@ -437,7 +446,7 @@ describe("名前当てスキップと捕獲", () => {
   it("英語名正解 (ハイパーボール確定) 後に名前当てをスキップしても、ハイパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "testmon");
+    service.guessName("alice", "bulbasaur");
     expect(service.skipGuess("alice")).toEqual({ ball_type: "ultra" });
     expect(service.attemptCapture("alice").ball_type).toBe("ultra");
   });
@@ -445,7 +454,7 @@ describe("名前当てスキップと捕獲", () => {
   it("日本語名正解 (スーパーボール確定) 後に名前当てをスキップしても、スーパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "テストモン");
+    service.guessName("alice", "フシギダネ");
     expect(service.skipGuess("alice")).toEqual({ ball_type: "great" });
     expect(service.attemptCapture("alice").ball_type).toBe("great");
   });
@@ -464,7 +473,7 @@ describe("名前当てスキップと捕獲", () => {
     expect(res).toMatchObject({
       captured: true,
       pokemon_id: 1,
-      name_en: "Testmon",
+      name_en: "Bulbasaur",
       ball_type: "poke",
     });
     expect(res.probability).toBeGreaterThan(0);

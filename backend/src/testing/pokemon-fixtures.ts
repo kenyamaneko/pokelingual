@@ -2,22 +2,23 @@ import type { PokemonClient } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
 
 /**
- * テスト用のダミーポケモンを作る。
+ * テスト用のポケモンを作る。
  * @param overrides 上書きするフィールド。
- * @returns ダミーポケモン。
+ * @returns ポケモン。
  */
 export function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
   return {
     id: 1,
-    name_en: "Testmon",
-    name_ja: "テストモン",
-    description_en: "Testmon is fast.",
-    description_ja: "テストモンは 速い。",
+    name_en: "Bulbasaur",
+    name_ja: "フシギダネ",
+    description_en:
+      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
     sprite_url: "https://example.com/1.png",
-    base_stat_total: 300,
-    types: ["normal"],
-    height: 1,
-    weight: 1,
+    base_stat_total: 318,
+    types: ["grass", "poison"],
+    height: 7,
+    weight: 69,
     is_legendary: false,
     is_mythical: false,
     ...overrides,
