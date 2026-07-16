@@ -1,6 +1,8 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
+import type { ReactNode } from "react";
+import type { User } from "firebase/auth";
 import type {
   QuestNewResponse,
   ScoreResponse,
@@ -8,17 +10,33 @@ import type {
   CaptureResponse,
 } from "../../../shared/api-types/quest";
 import { server, apiUrl, countRequests } from "../test/mswServer";
-
-const refreshUsageMock = vi.fn();
-vi.mock("../contexts/UsageContext", () => ({
-  useUsage: () => ({ usage: null, refresh: refreshUsageMock }),
-}));
-
+import { AuthContext } from "../contexts/AuthContext";
+import { UsageProvider } from "../contexts/UsageContext";
 import { useQuest } from "./useQuest";
+
+const fakeUser = { uid: "trainer-test" } as unknown as User;
+
+/** AuthContext + UsageProvider を被せる renderHook 用ラッパー。useQuest が依存する UsageContext を本物のまま通す。 */
+function Wrapper({ children }: { children: ReactNode }) {
+  const auth = {
+    user: fakeUser,
+    loading: false,
+    login: async () => {},
+    signup: async () => {},
+    loginWithGoogle: async () => {},
+    resetPassword: async () => {},
+    logout: async () => {},
+  };
+  return (
+    <AuthContext.Provider value={auth}>
+      <UsageProvider>{children}</UsageProvider>
+    </AuthContext.Provider>
+  );
+}
 
 const questResp: QuestNewResponse = {
   pokemon_id: 25,
-  description_en: "When several of these Pokemon gather, ...",
+  description_en: "A wild creature.",
   is_legendary: false,
   is_mythical: false,
 };
@@ -42,7 +60,7 @@ function mockNewQuest(resp: QuestNewResponse = questResp) {
  * @returns renderHook の戻り値。
  */
 async function mountAndSelectLocation() {
-  const hook = renderHook(() => useQuest());
+  const hook = renderHook(() => useQuest(), { wrapper: Wrapper });
   await waitFor(() => expect(hook.result.current.locations.length).toBeGreaterThan(0));
   await act(async () => {
     await hook.result.current.selectLocation(hook.result.current.locations[0].id);
@@ -56,18 +74,15 @@ async function mountAndSelectLocation() {
  * - 全 API 呼び出しで 429 は UsageProvider のモーダルに委譲し、ローカル error は設定しない
  * - 全 API 呼び出しで 5xx (および 401/403/404 等) は error メッセージを保持しつつフェーズは保留
  *
- * フェーズ遷移と副作用 (refreshUsage) の整合性、エラー処理の振り分けを検証する。
- * API 境界は MSW でモックし、UsageContext だけは別コンテキストの境界としてスタブする。
+ * フェーズ遷移とエラー処理の振り分けを検証する。採点成功時の refreshUsage 副作用
+ * (残量表示の同期) は scoreUsageSync.test.tsx が別ファイルで確かめる。
+ * API 境界は MSW でモックし、UsageContext は AuthContext 同様に本物の Provider を通す。
  */
 describe("クエスト進行", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("マウント時に場所選択が表示され、場所を選ぶと訳文入力の段階へ遷移する", async () => {
     mockNewQuest();
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.phase).toBe("selectLocation"));
     await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
 
@@ -82,7 +97,7 @@ describe("クエスト進行", () => {
   it("場所の取得に失敗すると、エラー画面に遷移してメッセージを保持する", async () => {
     server.use(http.get(apiUrl("/quest/locations"), () => HttpResponse.json({}, { status: 500 })));
 
-    const { result } = renderHook(() => useQuest());
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.phase).toBe("error"));
 
     expect(result.current.error).not.toBeNull();
@@ -121,7 +136,7 @@ describe("クエスト進行", () => {
     expect(result.current.error).toMatch(/接続できません/);
   });
 
-  it("採点が成功すると名前当てに進み、残り利用回数の表示が更新される", async () => {
+  it("採点が成功すると名前当てに進み、得点と翻訳内容を保持する", async () => {
     mockNewQuest();
     server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
 
@@ -135,14 +150,13 @@ describe("クエスト進行", () => {
     expect(result.current.phase).toBe("guessing");
     expect(result.current.score).toEqual(scoreResp);
     expect(result.current.userTranslation).toBe("テスト翻訳");
-    expect(refreshUsageMock).toHaveBeenCalled();
   });
 
   // submitTranslation / submitGuess / capture すべてのフェーズで「429 は UsageProvider に委譲、
   // 5xx はローカル error 文言として保持」する仕様。3 API 分まとめて検証する。
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 429 が返っても、エラー文言を出さずフェーズも変えない (上限は利用上限モーダルに委譲)", async (
     _api,
@@ -169,7 +183,7 @@ describe("クエスト進行", () => {
 
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 5xx が返っても、エラーメッセージを保持しフェーズは変えない", async (
     _api,
@@ -192,7 +206,7 @@ describe("クエスト進行", () => {
 
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 404 (セッション切断) になると、エラー画面へ切り替わり切断を案内する", async (
     _api,
@@ -227,7 +241,7 @@ describe("クエスト進行", () => {
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
-      await result.current.submitGuess("Pikachu");
+      await result.current.submitGuess("Testmon");
     });
 
     expect(result.current.guessResult).toEqual(guess);
@@ -248,7 +262,7 @@ describe("クエスト進行", () => {
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
-      await result.current.submitGuess("Pikachu");
+      await result.current.submitGuess("Testmon");
     });
 
     act(() => {
