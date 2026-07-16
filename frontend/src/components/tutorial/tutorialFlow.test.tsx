@@ -117,12 +117,12 @@ describe("チュートリアル (訳文入力ステップ)", () => {
     expect(screen.queryByTestId("damage-value")).not.toBeInTheDocument();
   });
 
-  it("「電気」と「ネズミ」を両方含む訳文を入力すると、採点画面に進み満点が表示される", async () => {
+  it("「電気」と「ネズミ」を両方含む訳文を入力すると、採点画面に進み最終評価点の上限 (99%) が表示される", async () => {
     const user = await renderTutorialPastIntro();
 
     await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
-    expect(await screen.findByTestId("damage-value", {}, { timeout: 3000 })).toHaveTextContent("100%");
+    expect(await screen.findByTestId("damage-value", {}, { timeout: 3000 })).toHaveTextContent("99%");
   });
 });
 

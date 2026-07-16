@@ -36,10 +36,15 @@ const FUZZY_MATCH_MAX_DISTANCE = 2;
 const SCORE_MIN = 0;
 const SCORE_MAX = 100;
 
-/** ボール種別ごとの捕獲確率倍率。 */
-export const BALL_MULTIPLIER: Record<BallType, number> = {
-  poke: 1.0,
-  great: 2.0,
+/** 最終評価点変換: この値以下の素点は最終評価点 0 (効果なし) に切り下げる。 */
+const SCORE_TRANSLATION_FLOOR = 10;
+/** 最終評価点変換: 素点 (0-100) を最終評価点 (0-99) へ圧縮する係数。 */
+const SCORE_TRANSLATION_SCALE = 1.1;
+
+/** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。 */
+export const BALL_CAPTURE_BONUS: Record<BallType, number> = {
+  poke: 0,
+  great: 1.5,
   ultra: 3.0,
 };
 
@@ -198,10 +203,10 @@ export class QuestService {
       throw new ExternalServiceError("LLM", err as Error);
     }
 
-    session.score = result.score;
+    session.score = translateToFinalScore(result.score);
 
     return {
-      score: result.score,
+      score: session.score,
       review: result.review,
       description_ja: maskPokemonNameJA(session.description_ja, session.name_ja),
     };
@@ -305,7 +310,7 @@ export class QuestService {
   }
 
   /**
-   * スコア・種族値合計・ボール倍率から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
+   * スコア・種族値合計・ボール補正から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
    * @param userId ユーザ ID。
    * @returns 捕獲成否と表示用ポケモン情報。
    */
@@ -316,8 +321,8 @@ export class QuestService {
       // 名前当て/スキップを経ずに capture に到達するのは不正な状態 (フォールバックせず失敗させる)。
       throw new Error("capture attempted before a ball was selected (guess or skip required)");
     }
-    const ballMultiplier = BALL_MULTIPLIER[session.ball_type];
-    const probability = calculateCaptureRate(session.score, session.base_stat_total, ballMultiplier);
+    const ballBonus = BALL_CAPTURE_BONUS[session.ball_type];
+    const probability = calculateCaptureRate(session.score, session.base_stat_total, ballBonus);
     const captured = this.random.next() < probability;
 
     this.sessions.delete(userId);
@@ -396,13 +401,13 @@ Respond with ONLY the JSON, no other text.`;
 }
 
 /**
- * スコアと種族値合計から捕獲確率を返す。ロジスティック関数とボール倍率を合成する。
- * @param score 採点スコア (0-100)。
+ * スコアと種族値合計から捕獲確率を返す。ロジスティック関数にボール補正を加算で合成する。
+ * @param score 採点スコア (最終評価点、0-99)。
  * @param baseStatTotal 種族値合計。
- * @param ballMultiplier ボール種別ごとの捕獲確率倍率。
+ * @param ballBonus ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。
  * @returns 0.0〜1.0 の捕獲確率。
  */
-export function calculateCaptureRate(score: number, baseStatTotal: number, ballMultiplier: number): number {
+export function calculateCaptureRate(score: number, baseStatTotal: number, ballBonus: number): number {
   // 種族値とスコアを 0〜10 程度に正規化。ロジット係数のスケールを揃えるため。
   const x = baseStatTotal / 100.0;
   const s = score / 100.0;
@@ -410,11 +415,19 @@ export function calculateCaptureRate(score: number, baseStatTotal: number, ballM
   // ロジット係数はフィッティング済みモデルの値。個々の係数に単独の意味は無いため、
   // 定数化せずマジックナンバーの例外としてインラインで持つ。
   // 種族値合計が高いほど捕獲難、スコア高ほど易、相互作用項で「強いポケモンは高スコアでないと捕まらない」を表現する。
-  const logit = 2.5 - 0.34 * x - 0.17 * x * x + 14.5 * s - 4.2 * x * s + 0.52 * x * x * s;
-  const baseRate = 1.0 / (1.0 + Math.exp(-logit));
+  // ボール補正はロジットへの加算のため、シグモイドの値域 (0.0〜1.0) を超えず、上限クランプが不要になる。
+  const logit = 2.5 - 0.34 * x - 0.17 * x * x + 14.5 * s - 4.2 * x * s + 0.52 * x * x * s + ballBonus;
+  return 1.0 / (1.0 + Math.exp(-logit));
+}
 
-  // ボール倍率を掛けた結果は 1.0 を超えうるので確率の上限でクランプする。
-  return Math.min(1.0, baseRate * ballMultiplier);
+/**
+ * LLM が返した素点 (0-100) を最終評価点 (0-99) に変換する。ポケモン世界の「瀕死にすると
+ * 捕まえられない」という世界観に合わせ、最終評価が満点に達しないようにする。
+ * @param rawScore LLM が返した素点 (0-100)。
+ * @returns 最終評価点 (0-99)。
+ */
+function translateToFinalScore(rawScore: number): number {
+  return Math.max(0, Math.round((rawScore - SCORE_TRANSLATION_FLOOR) * SCORE_TRANSLATION_SCALE));
 }
 
 const pluralHints = new Set([

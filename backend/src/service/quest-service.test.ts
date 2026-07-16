@@ -4,7 +4,7 @@ import {
   calculateCaptureRate,
   maskPokemonNameEN,
   maskPokemonNameJA,
-  BALL_MULTIPLIER,
+  BALL_CAPTURE_BONUS,
 } from "./quest-service.js";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import type { LLMClient, RandomSource, UserSettingsRepository } from "../domain/ports.js";
@@ -15,36 +15,42 @@ import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
  */
 describe("捕獲確率の計算", () => {
-  it("種族値合計が高くスコア0 + モンスターボールなら捕獲は困難 (確率は低い)", () => {
-    expect(calculateCaptureRate(0, 680, 1.0)).toBeLessThan(0.05);
+  it("種族値合計が高く最終評価点0 + モンスターボールなら捕獲は困難 (確率は低い)", () => {
+    expect(calculateCaptureRate(0, 680, BALL_CAPTURE_BONUS.poke)).toBeLessThan(0.05);
   });
 
-  it("倍率で 1.0 を超える場合は、捕獲確率の上限 1.0 で頭打ちになる", () => {
-    expect(calculateCaptureRate(100, 100, 3.0)).toBe(1);
+  it("最終評価点・種族値合計・ボール補正が最も捕獲しやすい組み合わせでも、捕獲確率は1.0を超えない", () => {
+    expect(calculateCaptureRate(99, 200, BALL_CAPTURE_BONUS.ultra)).toBeLessThanOrEqual(1);
   });
 
-  it("同じ種族値合計・同じボールなら、スコアが高いほど捕獲確率が上がる", () => {
-    expect(calculateCaptureRate(90, 300, 1.0)).toBeGreaterThan(calculateCaptureRate(30, 300, 1.0));
+  it("同じ種族値合計・同じボールなら、最終評価点が高いほど捕獲確率が上がる", () => {
+    expect(calculateCaptureRate(90, 300, BALL_CAPTURE_BONUS.poke)).toBeGreaterThan(
+      calculateCaptureRate(30, 300, BALL_CAPTURE_BONUS.poke),
+    );
   });
 
-  it("同じスコア・同じボールなら、種族値合計が高いほど捕獲確率が下がる", () => {
-    expect(calculateCaptureRate(50, 300, 1.0)).toBeGreaterThan(calculateCaptureRate(50, 680, 1.0));
+  it("同じ最終評価点・同じボールなら、種族値合計が高いほど捕獲確率が下がる", () => {
+    expect(calculateCaptureRate(50, 300, BALL_CAPTURE_BONUS.poke)).toBeGreaterThan(
+      calculateCaptureRate(50, 680, BALL_CAPTURE_BONUS.poke),
+    );
   });
 
-  it("ボール倍率が高いほど捕獲確率が上がる", () => {
-    expect(calculateCaptureRate(0, 680, 3.0)).toBeGreaterThan(calculateCaptureRate(0, 680, 1.0));
+  it("ボール補正が大きいほど捕獲確率が上がる", () => {
+    expect(calculateCaptureRate(0, 680, BALL_CAPTURE_BONUS.ultra)).toBeGreaterThan(
+      calculateCaptureRate(0, 680, BALL_CAPTURE_BONUS.poke),
+    );
   });
 
-  it("スコアとポケモンの種族値が同一ならモンスターボール<スーパーボール<ハイパーボールの順に捕獲確率が上がる", () => {
-    const pokeRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.poke);
-    const greatRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.great);
-    const ultraRate = calculateCaptureRate(20, 500, BALL_MULTIPLIER.ultra);
+  it("最終評価点とポケモンの種族値が同一ならモンスターボール<スーパーボール<ハイパーボールの順に捕獲確率が上がる", () => {
+    const pokeRate = calculateCaptureRate(20, 500, BALL_CAPTURE_BONUS.poke);
+    const greatRate = calculateCaptureRate(20, 500, BALL_CAPTURE_BONUS.great);
+    const ultraRate = calculateCaptureRate(20, 500, BALL_CAPTURE_BONUS.ultra);
     expect(greatRate).toBeGreaterThan(pokeRate);
     expect(ultraRate).toBeGreaterThan(greatRate);
   });
 
-  it("スコア90 + スーパーボールなら種族値合計が高い (680) でもほぼ確実", () => {
-    expect(calculateCaptureRate(90, 680, 2.0)).toBeGreaterThan(0.99);
+  it("最終評価点が上限 (99) + ハイパーボールなら、種族値合計が高い (680) でもほぼ確実に捕獲できる", () => {
+    expect(calculateCaptureRate(99, 680, BALL_CAPTURE_BONUS.ultra)).toBeGreaterThan(0.99);
   });
 });
 
@@ -299,26 +305,40 @@ describe("翻訳の採点", () => {
     await expect(service.scoreTranslation("nobody", "訳")).rejects.toBeInstanceOf(NotFoundError);
   });
 
-  it("スコア・講評・マスク済み日本語説明を返す", async () => {
+  it("最終評価点・講評・マスク済み日本語説明を返す", async () => {
     const service = makeService({
       pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
       llmText: JSON.stringify({ score: 70, review: "よい" }),
     });
     await service.newQuest("alice");
     const res = await service.scoreTranslation("alice", "はやい");
-    expect(res.score).toBe(70);
+    expect(res.score).toBe(66);
     expect(res.review).toBe("よい");
     expect(res.description_ja).toBe("この ポケモンは 速い。");
   });
 
-  it.each([0, 100])("スコア %i は受理される", async (score) => {
-    const service = makeService({ llmText: JSON.stringify({ score, review: "r" }) });
+  it.each([
+    [0, 0],
+    [100, 99],
+  ])("素点 %i は受理され、最終評価点は %i になる", async (rawScore, finalScore) => {
+    const service = makeService({ llmText: JSON.stringify({ score: rawScore, review: "r" }) });
     await service.newQuest("alice");
     const res = await service.scoreTranslation("alice", "訳");
-    expect(res.score).toBe(score);
+    expect(res.score).toBe(finalScore);
   });
 
-  it.each([-1, 101])("範囲外スコア %i は外部サービスのエラーとして拒否される", async (score) => {
+  it.each([
+    [10, 0],
+    [11, 1],
+    [15, 6],
+  ])("素点 %i のとき、最終評価点は %i になる", async (rawScore, finalScore) => {
+    const service = makeService({ llmText: JSON.stringify({ score: rawScore, review: "r" }) });
+    await service.newQuest("alice");
+    const res = await service.scoreTranslation("alice", "訳");
+    expect(res.score).toBe(finalScore);
+  });
+
+  it.each([-1, 101])("範囲外の素点 %i は外部サービスのエラーとして拒否される", async (score) => {
     const service = makeService({ llmText: JSON.stringify({ score, review: "r" }) });
     await service.newQuest("alice");
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
