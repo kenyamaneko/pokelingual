@@ -65,21 +65,21 @@ describe("説明文の整形", () => {
 describe("ポケモンレコードへの変換", () => {
   it.each([
     {
-      species: speciesOf(9001, "Testmon", "テストモン", "A test creature.", "テスト用の 生き物。"),
-      pokemon: pokemonOf([10, 20, 30], ["fire", "flying"], 5, 50),
+      species: speciesOf(1, "Bulbasaur", "フシギダネ", "A strange seed.", "不思議な タネ。"),
+      pokemon: pokemonOf([45, 49, 49], ["grass", "poison"], 7, 69),
       expected: {
-        id: 9001, name_en: "Testmon", name_ja: "テストモン",
-        description_en: "A test creature.", description_ja: "テスト用の 生き物。",
-        base_stat_total: 60, types: ["fire", "flying"], height: 5, weight: 50,
+        id: 1, name_en: "Bulbasaur", name_ja: "フシギダネ",
+        description_en: "A strange seed.", description_ja: "不思議な タネ。",
+        base_stat_total: 143, types: ["grass", "poison"], height: 7, weight: 69,
       },
     },
     {
-      species: speciesOf(9002, "Duomon", "デュオモン", "Another test creature.", "もう一体の テスト用の 生き物。"),
-      pokemon: pokemonOf([15, 25, 15], ["water"], 3, 20),
+      species: speciesOf(4, "Charmander", "ヒトカゲ", "It likes hot places.", "暑い ところが 好き。"),
+      pokemon: pokemonOf([39, 52, 43], ["fire"], 6, 85),
       expected: {
-        id: 9002, name_en: "Duomon", name_ja: "デュオモン",
-        description_en: "Another test creature.", description_ja: "もう一体の テスト用の 生き物。",
-        base_stat_total: 55, types: ["water"], height: 3, weight: 20,
+        id: 4, name_en: "Charmander", name_ja: "ヒトカゲ",
+        description_en: "It likes hot places.", description_ja: "暑い ところが 好き。",
+        base_stat_total: 134, types: ["fire"], height: 6, weight: 85,
       },
     },
   ])("$expected.name_ja を変換すると、英名・和名・種族値合計・タイプ・説明が出力される", ({ species, pokemon, expected }) => {
