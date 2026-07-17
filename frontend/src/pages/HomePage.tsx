@@ -26,7 +26,7 @@ export function HomePage() {
           alt="Pokeball"
           className="w-24 h-24 mx-auto mb-6"
         />
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className="font-dot text-3xl font-bold text-gray-800 mb-2">
           かがくのちからって　すげー！
           <span className="block text-lg font-normal text-gray-500 mt-1">
             Technology is incredible!
@@ -42,7 +42,7 @@ export function HomePage() {
           <div>
             <Link
               to={questLinkTo}
-              className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
+              className="font-dot block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
                          font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
             >
               ポケモンを探しに行く
@@ -56,14 +56,14 @@ export function HomePage() {
           </div>
           <Link
             to="/pokedex"
-            className="block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
+            className="font-dot block w-full bg-white hover:bg-gray-100 text-gray-700 py-4 px-6 rounded-2xl
                        font-bold text-lg transition-colors shadow border border-gray-200"
           >
             図鑑を見る
           </Link>
           <Link
             to="/settings"
-            className="block w-full bg-white hover:bg-gray-100 text-gray-500 py-3 px-6 rounded-2xl
+            className="font-dot block w-full bg-white hover:bg-gray-100 text-gray-500 py-3 px-6 rounded-2xl
                        font-bold text-base transition-colors border border-gray-200"
           >
             設定

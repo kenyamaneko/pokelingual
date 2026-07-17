@@ -51,7 +51,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         {result.captured ? (
           <>
             <div className="text-4xl mb-2">&#11088;</div>
-            <h2 className={`text-2xl font-bold mb-4 ${
+            <h2 className={`font-dot text-2xl font-bold mb-4 ${
               result.is_mythical
                 ? "text-purple-700"
                 : result.is_legendary
@@ -72,7 +72,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
         ) : (
           <>
             <div className="text-4xl mb-2">&#128168;</div>
-            <h2 className="text-2xl font-bold text-gray-600 mb-4">
+            <h2 className="font-dot text-2xl font-bold text-gray-600 mb-4">
               {CAPTURE_RESULT_LABELS.escapedTitle(result.name_ja)}
             </h2>
           </>
@@ -124,7 +124,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
 
       <button
         onClick={onNewQuest}
-        className="mt-6 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
+        className="font-dot mt-6 w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg
                    hover:bg-red-600 transition-colors shadow-lg"
       >
         {CAPTURE_RESULT_LABELS.nextButton}
@@ -132,7 +132,7 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
 
       <button
         onClick={() => navigate("/")}
-        className="mt-3 w-full bg-white text-gray-600 py-3 rounded-2xl font-bold text-base
+        className="font-dot mt-3 w-full bg-white text-gray-600 py-3 rounded-2xl font-bold text-base
                    border-2 border-gray-200 hover:bg-gray-50 transition-colors"
       >
         {CAPTURE_RESULT_LABELS.backToMenuButton}

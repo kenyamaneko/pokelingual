@@ -100,7 +100,7 @@ export function ScoreDisplay({ score, isActive }: ScoreDisplayProps) {
           <>
             <span
               data-testid="damage-value"
-              className={`text-5xl font-bold ${getScoreColor(score.score)}`}
+              className={`font-dot text-5xl font-bold ${getScoreColor(score.score)}`}
             >
               {score.score}%
             </span>

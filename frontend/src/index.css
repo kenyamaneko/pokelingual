@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --font-dot: "DotGothic16", ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
   /* ヘッダーの高さ。各ページは最小高 (100vh - この値) を取り、本文が短くても背景を画面下端まで満たす。 */
   --header-h: 56px;
