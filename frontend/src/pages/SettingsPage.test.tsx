@@ -8,7 +8,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { server, apiUrl } from "../test/mswServer";
 import { SettingsPage } from "./SettingsPage";
 import { spec } from "../test/labels";
-import { CONTACT_FORM_URL } from "../constants/links";
+import { CONTACT_FORM_URL, GITHUB_REPO_URL } from "../constants/links";
 
 const fakeUser = { uid: "alice", email: "alice@example.com" } as unknown as User;
 
@@ -374,5 +374,20 @@ describe("設定画面のサイト情報リンク", () => {
     renderSettings();
     const link = await screen.findByRole("link", { name: "利用規約" });
     expect(link).toHaveAttribute("href", "/terms");
+  });
+
+  it("GitHub リポジトリリンクがリポジトリページを新しいタブで開く", async () => {
+    renderSettings();
+    const link = await screen.findByRole("link", { name: "GitHub リポジトリ" });
+    expect(link).toHaveAttribute("href", GITHUB_REPO_URL);
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("GitHub リポジトリリンクに、自分の環境にホスティングできる旨の説明が添えられる", async () => {
+    renderSettings();
+    await screen.findByRole("link", { name: "GitHub リポジトリ" });
+    expect(
+      screen.getByText("回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます"),
+    ).toBeInTheDocument();
   });
 });
