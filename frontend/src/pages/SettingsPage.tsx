@@ -7,7 +7,7 @@ import { formatPokemonId } from "../utils/pokemonFormat";
 import { searchPokemonByName } from "../utils/pokemonSearch";
 import { logger } from "../utils/logger";
 import type { PokedexEntry } from "../../../shared/api-types/pokedex";
-import { CONTACT_FORM_URL } from "../constants/links";
+import { CONTACT_FORM_URL, GITHUB_REPO_URL } from "../constants/links";
 
 /** 選択可能な世代 (第1〜8世代) と代表作。数字だけだと分かりにくいのでバージョン名を併記する。backend の GENERATION_RANGES と対応。 */
 const GENERATION_OPTIONS = [
@@ -291,6 +291,17 @@ export function SettingsPage() {
             <Link to="/terms" className="text-blue-500 hover:underline">
               利用規約
             </Link>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              GitHub リポジトリ
+            </a>
+            <p className="text-gray-500 text-xs">
+              回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます
+            </p>
           </div>
         </div>
       </div>
