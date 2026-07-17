@@ -12,6 +12,10 @@ coverage/
 # Test reports (JUnit XML 等)
 test-results/
 
+# Stryker (mutation testing)
+.stryker-tmp/
+backend/reports/
+
 # Python
 __pycache__/
 .pytest_cache/

@@ -1,4 +1,4 @@
-.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down
+.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend
 
 # ローカル開発環境（Docker Compose）
 dev: dev-up
@@ -45,3 +45,9 @@ coverage-backend:
 
 coverage-frontend:
 	cd frontend && npm run test:coverage
+
+# Mutation testing (StrykerJS)。純粋ロジックのみ対象のため Emulator 不要 = emulators:exec で包まない。
+mutation: mutation-backend
+
+mutation-backend:
+	cd backend && npm run mutation
