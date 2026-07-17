@@ -6,12 +6,14 @@ import pytest
 
 from generate_behavior_catalog import (
     SKIPPED_NOTE,
+    UNTAGGED_GROUP_LABEL,
     BehaviorCase,
     GroupNode,
     SectionSpec,
     build_group_tree,
     build_sections,
     count_cases,
+    extract_top_level_tag,
     main,
     parse_junit_file,
     parse_section_arg,
@@ -19,6 +21,7 @@ from generate_behavior_catalog import (
     render_markdown,
     route_cases_to_specs,
     split_test_name,
+    tag_sort_key,
 )
 
 
@@ -59,6 +62,60 @@ from generate_behavior_catalog import (
 )
 def test_split_test_name(raw_name, expected_chain, expected_case):
     assert split_test_name(raw_name) == (expected_chain, expected_case)
+
+
+@pytest.mark.parametrize(
+    ("chain", "expected"),
+    [
+        pytest.param((), (), id="グループ連鎖が空のとき、そのまま返される"),
+        pytest.param(
+            ("グループA",),
+            (UNTAGGED_GROUP_LABEL, "グループA"),
+            id="トップレベル要素にタグが無いとき、その他とタグ無しの名前の連鎖になる",
+        ),
+        pytest.param(
+            ("[認証系] ログイン画面",),
+            ("認証系", "ログイン画面"),
+            id="トップレベル要素の先頭に空白区切りのタグがあるとき、タグとタグを取り除いた名前の連鎖になる",
+        ),
+        pytest.param(
+            ("[認証系]ログイン画面",),
+            ("認証系", "ログイン画面"),
+            id="タグの直後に空白が無いときも、タグと名前の連鎖になる",
+        ),
+        pytest.param(
+            ("[認証系] ログイン画面", "[サブ] 入力欄"),
+            ("認証系", "ログイン画面", "[サブ] 入力欄"),
+            id="連鎖が2段以上のとき、2段目以降の要素はタグの抽出対象にならない",
+        ),
+        pytest.param(
+            ("[認証系 ログイン画面",),
+            (UNTAGGED_GROUP_LABEL, "[認証系 ログイン画面"),
+            id="先頭の角括弧が閉じていないとき、タグとして扱われずその他になる",
+        ),
+    ],
+)
+def test_extract_top_level_tag(chain, expected):
+    assert extract_top_level_tag(chain) == expected
+
+
+@pytest.mark.parametrize(
+    ("tags", "expected_order"),
+    [
+        pytest.param(
+            ["その他", "認証系"],
+            ["認証系", "その他"],
+            id="タグ名がその他よりコードポイント順で後ろのとき、その他が最後になる",
+        ),
+        pytest.param(
+            ["認証系", "ヘッダー系"],
+            ["ヘッダー系", "認証系"],
+            id="タグが複数あるとき、タグ名順になる",
+        ),
+    ],
+)
+def test_tag_sort_key(tags, expected_order):
+    assert sorted(tags, key=tag_sort_key) == expected_order
 
 
 def write_junit_xml(tmp_path, body):
@@ -259,6 +316,29 @@ class TestBuildSections:
             ("内部の挙動", "backend 内部部品の検証"),
         ]
 
+    def test_トップレベル_describe_のタグは同じタグの下に集約され_タグの無いものはその他にまとまる(self, tmp_path):
+        path = write_junit_xml(
+            tmp_path,
+            '<testsuite name="dummy">'
+            + case_xml(
+                "[認証系] ログイン画面 &gt; ケース1",
+                classname="src/pages/LoginPage.test.tsx",
+            )
+            + case_xml(
+                "[認証系] 新規登録画面 &gt; ケース2",
+                classname="src/pages/SignupPage.test.tsx",
+            )
+            + case_xml("ヘッダー &gt; ケース3", classname="src/components/Header.test.tsx")
+            + "</testsuite>",
+        )
+        specs = [SectionSpec("外から見た振る舞い", "frontend", path, prefixes=None)]
+
+        tree = build_sections(specs)[0][2]
+
+        assert set(tree.subgroups) == {"認証系", UNTAGGED_GROUP_LABEL}
+        assert set(tree.subgroups["認証系"].subgroups) == {"ログイン画面", "新規登録画面"}
+        assert set(tree.subgroups[UNTAGGED_GROUP_LABEL].subgroups) == {"ヘッダー"}
+
 
 class TestRenderMarkdown:
     def test_射程の注意書きが引用として入る(self):
@@ -325,6 +405,18 @@ class TestRenderMarkdown:
         )
         output = render_markdown([("外から見た振る舞い", "backend", tree)], commit=None)
         assert output.index("#### グループA") < output.index("#### グループB")
+
+    def test_タグ見出しはタグ名順に並び_その他は文字コード順によらず最後になる(self):
+        tree = build_group_tree(
+            [
+                BehaviorCase(("認証系", "ログイン画面"), "ケース1", is_skipped=False, source_file="dummy.test.ts"),
+                BehaviorCase(
+                    (UNTAGGED_GROUP_LABEL, "ヘッダー"), "ケース2", is_skipped=False, source_file="dummy.test.ts"
+                ),
+            ]
+        )
+        output = render_markdown([("外から見た振る舞い", "frontend", tree)], commit=None)
+        assert output.index("#### 認証系") < output.index(f"#### {UNTAGGED_GROUP_LABEL}")
 
     def test_skip_中のケースには未検証の注記が付く(self):
         tree = build_group_tree([BehaviorCase((), "ケースX", is_skipped=True, source_file="dummy.test.ts")])
@@ -405,6 +497,18 @@ class TestRenderHtml:
         )
         output = render_html([("外から見た振る舞い", "backend", tree)], commit=None)
         assert output.index("グループA（全") < output.index("グループB（全")
+
+    def test_タグ見出しはタグ名順に並び_その他は文字コード順によらず最後になる(self):
+        tree = build_group_tree(
+            [
+                BehaviorCase(("認証系", "ログイン画面"), "ケース1", is_skipped=False, source_file="dummy.test.ts"),
+                BehaviorCase(
+                    (UNTAGGED_GROUP_LABEL, "ヘッダー"), "ケース2", is_skipped=False, source_file="dummy.test.ts"
+                ),
+            ]
+        )
+        output = render_html([("外から見た振る舞い", "frontend", tree)], commit=None)
+        assert output.index("認証系（全") < output.index(f"{UNTAGGED_GROUP_LABEL}（全")
 
     def test_skip_中のケースには未検証の注記とスタイル区分が付く(self):
         tree = build_group_tree([BehaviorCase((), "ケースX", is_skipped=True, source_file="dummy.test.ts")])

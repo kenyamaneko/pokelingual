@@ -9,9 +9,10 @@
 
 import argparse
 import html
+import re
 import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 # テストランナーが describe 連鎖とテスト名を連結する区切り。Vitest は " > "、Playwright は " › "
@@ -19,6 +20,12 @@ NAME_SEPARATORS = (" > ", " › ")
 
 # skip されたテストは実行されておらず「テスト済み」と言えないため、注記を付けて区別する
 SKIPPED_NOTE = "（skip 中のため未検証）"
+
+# トップレベル describe 名の先頭に付ける、カタログの上位グループ見出し用タグの記法
+TOP_LEVEL_TAG_PATTERN = re.compile(r"^\s*\[([^\]]+)\]\s*")
+
+# タグの無いトップレベル describe をまとめる見出し名
+UNTAGGED_GROUP_LABEL = "その他"
 
 # テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
 DISCLAIMER = (
@@ -92,6 +99,37 @@ def split_test_name(raw_name: str) -> tuple[tuple[str, ...], str]:
     for separator in NAME_SEPARATORS:
         segments = [part for segment in segments for part in segment.split(separator)]
     return tuple(segments[:-1]), segments[-1]
+
+
+def extract_top_level_tag(chain: tuple[str, ...]) -> tuple[str, ...]:
+    """グループ連鎖の先頭 (トップレベル describe) からタグを抽出し、連鎖の先頭に挿入する。
+
+    Args:
+        chain: split_test_name が返すグループ連鎖。
+
+    Returns:
+        タグ (無ければ UNTAGGED_GROUP_LABEL) を先頭に追加し、トップレベル要素からタグを
+        除いた連鎖。連鎖が空ならそのまま返す。
+    """
+    if not chain:
+        return chain
+    top, *rest = chain
+    match = TOP_LEVEL_TAG_PATTERN.match(top)
+    if match is None:
+        return (UNTAGGED_GROUP_LABEL, top, *rest)
+    return (match.group(1), top[match.end() :], *rest)
+
+
+def apply_tag_grouping(cases: list[BehaviorCase]) -> list[BehaviorCase]:
+    """各ケースのグループ連鎖に、トップレベル describe のタグ見出しを組み込む。
+
+    Args:
+        cases: 変換対象の BehaviorCase のリスト。
+
+    Returns:
+        extract_top_level_tag をグループ連鎖に適用した BehaviorCase のリスト。
+    """
+    return [replace(case, group_chain=extract_top_level_tag(case.group_chain)) for case in cases]
 
 
 def parse_junit_file(path: Path) -> list[BehaviorCase]:
@@ -181,7 +219,7 @@ def build_sections(specs: list[SectionSpec]) -> list[tuple[str, str, GroupNode]]
         specs_by_category.setdefault(spec.category, []).append(spec)
 
     return [
-        (spec.category, spec.label, build_group_tree(assigned[spec]))
+        (spec.category, spec.label, build_group_tree(apply_tag_grouping(assigned[spec])))
         for category_specs in specs_by_category.values()
         for spec in category_specs
     ]
@@ -215,6 +253,18 @@ def count_cases(node: GroupNode) -> int:
         起点以下の全ケース数。
     """
     return len(node.cases) + sum(count_cases(sub) for sub in node.subgroups.values())
+
+
+def tag_sort_key(tag: str) -> tuple[bool, str]:
+    """タグ見出しの並び順を決めるキー。タグ名順、UNTAGGED_GROUP_LABEL は常に最後に置く。
+
+    Args:
+        tag: 比較対象のタグ名。
+
+    Returns:
+        (UNTAGGED_GROUP_LABEL かどうか, タグ名) のタプル。
+    """
+    return (tag == UNTAGGED_GROUP_LABEL, tag)
 
 
 def escape_text(text: str) -> str:
@@ -255,7 +305,8 @@ def append_group_markdown(lines: list[str], node: GroupNode, depth: int) -> None
     indent = MARKDOWN_INDENT * depth
     for case in node.cases:
         lines.append(f"{indent}- {format_case_text(case)}")
-    for group_name, subgroup in node.subgroups.items():
+    for group_name in sorted(node.subgroups):
+        subgroup = node.subgroups[group_name]
         lines.append(f"{indent}- **{escape_text(group_name)}**")
         append_group_markdown(lines, subgroup, depth + 1)
 
@@ -283,14 +334,14 @@ def render_markdown(sections: list[tuple[str, str, GroupNode]], commit: str | No
             lines.append(f"- {format_case_text(case)}")
         if root.cases:
             lines.append("")
-        for group_name in sorted(root.subgroups):
+        for group_name in sorted(root.subgroups, key=tag_sort_key):
             lines += [f"#### {escape_text(group_name)}", ""]
             append_group_markdown(lines, root.subgroups[group_name], 0)
             lines.append("")
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
-def append_group_html(parts: list[str], node: GroupNode) -> None:
+def append_group_html(parts: list[str], node: GroupNode, *, key=None) -> None:
     """グループ内のケースと下位グループを HTML として追記する。
 
     ケースは <ul><li> で列挙し、下位グループは <details> としてケース数の注記付きで追記する。
@@ -298,6 +349,7 @@ def append_group_html(parts: list[str], node: GroupNode) -> None:
     Args:
         parts: 追記先の HTML 断片リスト。
         node: 描画するグループ。
+        key: node 直下の下位グループを並べる際のソートキー。None なら名前順。
     """
     if node.cases:
         parts.append("<ul>")
@@ -305,7 +357,7 @@ def append_group_html(parts: list[str], node: GroupNode) -> None:
             css_class = ' class="skipped"' if case.is_skipped else ""
             parts.append(f"<li{css_class}>{format_case_text(case)}</li>")
         parts.append("</ul>")
-    for group_name in sorted(node.subgroups):
+    for group_name in sorted(node.subgroups, key=key):
         subgroup = node.subgroups[group_name]
         # open 属性を付けず、ページが縦に長くなりすぎないよう既定で閉じた状態にする。
         parts.append(
@@ -356,7 +408,7 @@ def render_html(sections: list[tuple[str, str, GroupNode]], commit: str | None) 
             parts.append(f"<h2>{escape_text(category)}</h2>")
             current_category = category
         parts.append(f"<h3>{escape_text(label)}（全 {count_cases(root)} ケース）</h3>")
-        append_group_html(parts, root)
+        append_group_html(parts, root, key=tag_sort_key)
     parts += ["</body>", "</html>"]
     return "\n".join(parts) + "\n"
 
