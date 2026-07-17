@@ -34,7 +34,7 @@ export function Header() {
     <header className="bg-red-500 text-white shadow-md">
       <div className="max-w-4xl mx-auto flex justify-between items-center px-4 py-3">
         <div className="flex items-center gap-2">
-          <Link to="/" className="text-xl font-bold tracking-wide">
+          <Link to="/" className="font-dot text-xl font-bold tracking-wide">
             PokeLingual
           </Link>
           {envLabel && (
