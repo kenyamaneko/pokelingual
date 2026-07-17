@@ -2,7 +2,7 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CaptureEffect, SHAKE_DURATION_MS } from "./CaptureEffect";
 
-describe("捕獲演出", () => {
+describe("[クエスト] 捕獲演出", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });

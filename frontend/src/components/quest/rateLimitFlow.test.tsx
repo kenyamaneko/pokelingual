@@ -65,7 +65,7 @@ async function submitTranslationForScoring(): Promise<void> {
   );
 }
 
-describe("429 レート制限の結合 (採点送信 → モーダル表示・残量同期)", () => {
+describe("[レート制限・利用回数] 429 レート制限の結合 (採点送信 → モーダル表示・残量同期)", () => {
   it("採点送信が 429 に到達すると、上限モーダルが表示される", async () => {
     setupRateLimited([USAGE_AT_LIMIT]);
     renderWithProviders(<QuestPage />, { user: fakeUser, withRouter: true });
@@ -106,7 +106,7 @@ async function showRateLimitModal(): Promise<void> {
   await screen.findByText(spec(RATE_LIMIT_LABELS.userTitle));
 }
 
-describe("429 上限モーダルの解除 (各操作でモーダルが閉じる)", () => {
+describe("[レート制限・利用回数] 429 上限モーダルの解除 (各操作でモーダルが閉じる)", () => {
   it("「閉じる」ボタンでモーダルが消える", async () => {
     const user = userEvent.setup();
     await showRateLimitModal();

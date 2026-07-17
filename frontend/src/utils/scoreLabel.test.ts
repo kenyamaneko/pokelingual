@@ -5,7 +5,7 @@ import { getScoreLabel, SCORE_LABELS } from "./scoreLabel";
  * こうかラベル分類の仕様:
  * 最終評価点の値域 (0, 1-40, 41-79, 80-99) ごとに、対応する "こうか" ラベルへ分類する。
  */
-describe("こうかラベル分類", () => {
+describe("[クエスト] こうかラベル分類", () => {
   it.each([
     [99, SCORE_LABELS.superEffective],
     [80, SCORE_LABELS.superEffective],

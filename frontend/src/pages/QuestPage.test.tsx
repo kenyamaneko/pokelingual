@@ -22,7 +22,7 @@ import type { CaptureResponse } from "../../../shared/api-types/quest";
  * 「つぎの ぼうけんへ」で次の出題へ) は、単体でモック呼び出しを見るのではなく、ここで
  * 実際に画面が切り替わる結果として確かめる。ダミーの出題データを用いる。
  */
-describe("クエストの正常系フロー (公開入口経由)", () => {
+describe("[クエスト] クエストの正常系フロー (公開入口経由)", () => {
   it("翻訳→名前当て→捕獲と進み、「次のポケモンを探す」で次の出題が始まる", async () => {
     const user = userEvent.setup();
     let newQuestCall = 0;

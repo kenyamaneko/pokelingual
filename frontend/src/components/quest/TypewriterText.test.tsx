@@ -6,7 +6,7 @@ import { TypewriterText, CHAR_INTERVAL_MS } from "./TypewriterText";
  * TypewriterText の仕様:
  * 有効化されるまでは何も表示せず、有効化後は一定間隔で1文字ずつ表示していく。
  */
-describe("タイプライター表示", () => {
+describe("[クエスト] タイプライター表示", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });

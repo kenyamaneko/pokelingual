@@ -13,7 +13,7 @@ function entry(version: string, language: string, text: string): FlavorTextSourc
   return { version, language, text };
 }
 
-describe("英日説明文ペアの構築", () => {
+describe("[ポケモンデータ] 英日説明文ペアの構築", () => {
   it("対象バージョンの英語と日本語が揃えばペアになる", () => {
     const pairs = buildFlavorTextPairs([entry("x", "en", "Fast."), entry("x", "ja", "速い。")]);
     expect(pairs).toEqual([

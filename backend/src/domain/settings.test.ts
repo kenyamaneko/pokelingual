@@ -6,7 +6,7 @@ import { validateExcludedPokemonIDs } from "./settings.js";
 const SERVABLE_IDS = new Set([1, 4, 7, 25, 150]);
 const MAX_COUNT = 3;
 
-describe("除外ポケモン設定の検証", () => {
+describe("[設定] 除外ポケモン設定の検証", () => {
   it("重複を含む供給可能な ID を保存すると、重複が除かれ昇順で受理される", () => {
     expect(validateExcludedPokemonIDs([7, 1, 7, 4], SERVABLE_IDS, MAX_COUNT)).toEqual({ ok: true, ids: [1, 4, 7] });
   });

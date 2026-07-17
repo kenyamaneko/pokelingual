@@ -78,7 +78,7 @@ async function completeTutorial(): Promise<UserEvent> {
   return user;
 }
 
-describe("チュートリアル (遊び方説明モーダル)", () => {
+describe("[チュートリアル] チュートリアル (遊び方説明モーダル)", () => {
   it("チュートリアルを開くと、遊び方を説明するモーダルが表示される", async () => {
     renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
@@ -97,7 +97,7 @@ describe("チュートリアル (遊び方説明モーダル)", () => {
   });
 });
 
-describe("チュートリアル (訳文入力ステップ)", () => {
+describe("[チュートリアル] チュートリアル (訳文入力ステップ)", () => {
   it("固定ポケモンの英文と、入力すべき訳文を案内する吹き出しが表示される", async () => {
     await renderTutorialPastIntro();
 
@@ -126,7 +126,7 @@ describe("チュートリアル (訳文入力ステップ)", () => {
   });
 });
 
-describe("チュートリアル (名前当てステップ)", () => {
+describe("[チュートリアル] チュートリアル (名前当てステップ)", () => {
   it("入力すべき名前を案内する吹き出しが表示される", async () => {
     await proceedToNameStep();
 
@@ -166,7 +166,7 @@ describe("チュートリアル (名前当てステップ)", () => {
   );
 });
 
-describe("チュートリアル (捕獲演出〜完了)", () => {
+describe("[チュートリアル] チュートリアル (捕獲演出〜完了)", () => {
   it.each(BALL_USE_CASES)(
     "%s を使うボタンを押すと、捕獲成功の演出が再生される",
     async (_ballName, input, ballType) => {

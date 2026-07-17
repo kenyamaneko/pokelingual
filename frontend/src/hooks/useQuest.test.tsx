@@ -79,7 +79,7 @@ async function mountAndSelectLocation() {
  * (残量表示の同期) は scoreUsageSync.test.tsx が別ファイルで確かめる。
  * API 境界は MSW でモックし、UsageContext は AuthContext 同様に本物の Provider を通す。
  */
-describe("クエスト進行", () => {
+describe("[クエスト] クエスト進行", () => {
   it("マウント時に場所選択が表示され、場所を選ぶと訳文入力の段階へ遷移する", async () => {
     mockNewQuest();
 

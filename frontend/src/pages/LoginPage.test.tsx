@@ -66,7 +66,7 @@ async function submitLogin(
   await user.click(screen.getByRole("button", { name: "メールでログイン" }));
 }
 
-describe("ログイン画面", () => {
+describe("[認証] ログイン画面", () => {
   it("メールアドレスとパスワードでログインするとホーム画面へ遷移する", async () => {
     const user = userEvent.setup();
     renderLogin(vi.fn().mockResolvedValue(undefined));
@@ -107,7 +107,7 @@ describe("ログイン画面", () => {
 /**
  * ログイン前でも問い合わせ・利用規約に到達できる導線の仕様。
  */
-describe("ログイン画面のサイト情報リンク", () => {
+describe("[サイト情報] ログイン画面のサイト情報リンク", () => {
   it("問い合わせリンクが問い合わせフォームを新しいタブで開く", () => {
     renderLogin(vi.fn());
     const contact = screen.getByRole("link", { name: "問い合わせ" });

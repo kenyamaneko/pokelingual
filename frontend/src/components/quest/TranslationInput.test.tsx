@@ -12,7 +12,7 @@ import { TranslationInput } from "./TranslationInput";
  * 観測するため QuestPage.test.tsx (公開入口からのフロー) で確かめる。
  * 文言検証は意図的に行わない (ボタンの存在は role で取得)。
  */
-describe("訳文入力欄", () => {
+describe("[クエスト] 訳文入力欄", () => {
   it("空テキストのときは送信ボタンが押せない", () => {
     render(<TranslationInput onSubmit={vi.fn()} />);
     expect(screen.getByRole("button")).toBeDisabled();

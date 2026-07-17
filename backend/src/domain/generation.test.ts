@@ -8,7 +8,7 @@ import {
 /**
  * 選択世代を図鑑番号の集合へ展開する仕様。世代境界 (151/152 など) は純関数の定義そのものなので具体値で確かめる。
  */
-describe("選択世代に含まれる図鑑番号", () => {
+describe("[出題] 選択世代に含まれる図鑑番号", () => {
   it("第1世代は 1〜151 を含み、隣の 152 は含まない", () => {
     const ids = generationsToPokemonIDs([1]);
     expect(ids.size).toBe(151);
@@ -47,7 +47,7 @@ describe("選択世代に含まれる図鑑番号", () => {
 /**
  * 出題プール = 選択世代の展開から除外 ID を差し引いたもの。
  */
-describe("出題プールの図鑑番号", () => {
+describe("[出題] 出題プールの図鑑番号", () => {
   it("除外 ID がプールから取り除かれる", () => {
     const pool = buildQuestPoolIDs([1], new Set([5, 10]));
     expect(pool.size).toBe(149);
@@ -72,7 +72,7 @@ describe("出題プールの図鑑番号", () => {
  * 世代リストのバリデーション仕様。純関数なので具体値で直接確かめる。
  * 空配列・不正値の経路は設定画面 (チェックボックス・最低1世代) で塞がれるが、API 境界の防御として backend でも弾く。
  */
-describe("出題世代設定の検証", () => {
+describe("[設定] 出題世代設定の検証", () => {
   it("重複を含む有効な世代を渡すと、重複が除かれ昇順で受理される", () => {
     expect(validateEnabledGenerations([3, 1, 1])).toEqual({ ok: true, generations: [1, 3] });
   });

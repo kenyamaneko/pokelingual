@@ -4,7 +4,7 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("ユーザー設定の保存", () => {
+describe("[設定] ユーザー設定の保存", () => {
   beforeEach(clearFirestoreEmulator);
 
   it("一度も保存していないユーザーの設定を取得すると、苦手ポケモンは未設定が返る", async () => {

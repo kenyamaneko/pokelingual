@@ -78,7 +78,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   return new PokedexService(repo, pokemonClient, settingsRepo, environment);
 }
 
-describe("図鑑一覧の取得", () => {
+describe("[図鑑] 図鑑一覧の取得", () => {
   it("図鑑が 0 件なら、空の一覧になり取得失敗件数も 0 になる", async () => {
     const res = await makeService().getPokedex("alice");
     expect(res.entries).toEqual([]);
@@ -174,7 +174,7 @@ describe("図鑑一覧の取得", () => {
   });
 });
 
-describe("図鑑詳細の取得", () => {
+describe("[図鑑] 図鑑詳細の取得", () => {
   it("図鑑詳細には、ポケモン情報と自分の実績 (最高スコア・最終捕獲日時) がまとめて返る", async () => {
     const service = makeService({
       records: [

@@ -2,7 +2,7 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TutorialInstructionCallout, INSTRUCTION_APPEAR_DELAY_MS } from "./TutorialInstructionCallout";
 
-describe("チュートリアルの案内表示", () => {
+describe("[チュートリアル] チュートリアルの案内表示", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
