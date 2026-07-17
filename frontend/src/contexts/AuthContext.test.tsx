@@ -43,7 +43,7 @@ function renderAuth() {
   return renderHook(() => useAuth(), { wrapper: AuthProvider }).result;
 }
 
-describe("メール本人確認", () => {
+describe("[認証] メール本人確認", () => {
   beforeEach(() => {
     h.signInResult = null;
   });

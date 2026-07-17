@@ -41,7 +41,7 @@ function renderGuarded(auth: { user: User | null; loading: boolean }) {
   );
 }
 
-describe("ログイン必須画面の保護", () => {
+describe("[認証] ログイン必須画面の保護", () => {
   it("ログイン済みなら、保護対象の画面が表示される", () => {
     renderGuarded({ user: fakeUser, loading: false });
 

@@ -57,7 +57,7 @@ describe("捕獲確率の計算", () => {
 /**
  * 英語名の伏せ字仕様。純関数なので具体値で直接確かめる。
  */
-describe("英語説明文のポケモン名マスク", () => {
+describe("[ポケモン名マスク] 英語説明文のポケモン名マスク", () => {
   it("ポケモン名が空文字なら原文のまま", () => {
     expect(maskPokemonNameEN("A wild creature.", "")).toBe("A wild creature.");
   });
@@ -100,7 +100,7 @@ describe("英語説明文のポケモン名マスク", () => {
 /**
  * 日本語名の伏せ字仕様。
  */
-describe("日本語説明文のポケモン名マスク", () => {
+describe("[ポケモン名マスク] 日本語説明文のポケモン名マスク", () => {
   it("本文中のポケモン名を「この ポケモン」に置換する", () => {
     expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
   });
@@ -166,7 +166,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   return new QuestService(pokemonClient, llm, environment, settingsRepo, random);
 }
 
-describe("クエストの出題", () => {
+describe("[出題] クエストの出題", () => {
   it("出題される英語説明文は、ポケモン名が伏せ字になっている", async () => {
     const service = makeService({
       pokemons: [makePokemon({ description_en: "Bulbasaur is fast." })],
@@ -384,7 +384,7 @@ describe("翻訳の採点", () => {
   });
 });
 
-describe("名前当ての判定", () => {
+describe("[名前当て] 名前当ての判定", () => {
   it("英語名の完全一致はハイパーボール (大文字小文字・前後空白を無視)", async () => {
     const service = makeService();
     await service.newQuest("alice");
@@ -457,7 +457,7 @@ describe("名前当ての判定", () => {
   });
 });
 
-describe("名前当てのヒント", () => {
+describe("[名前当て] 名前当てのヒント", () => {
   it("まだ一度も推測していないとき、ヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
     const service = makeService({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
     await service.newQuest("alice");
@@ -510,7 +510,7 @@ describe("名前当てのヒント", () => {
   });
 });
 
-describe("名前当てスキップと捕獲", () => {
+describe("[名前当て] 名前当てスキップと捕獲", () => {
   it("名前当てをスキップすると、モンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");

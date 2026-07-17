@@ -26,7 +26,7 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-describe("AI 利用回数の取得と表示", () => {
+describe("[レート制限・利用回数] AI 利用回数の取得と表示", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });

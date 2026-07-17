@@ -26,7 +26,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("採点スコアの演出", () => {
+describe("[クエスト] 採点スコアの演出", () => {
   it("メーターの減少が始まった直後は、メーターが満タンで HP が 100% と表示される", () => {
     render(<ScoreDisplay score={withScore(30)} isActive={true} />);
     expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "100");

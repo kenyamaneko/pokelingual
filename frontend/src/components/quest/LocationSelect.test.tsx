@@ -8,7 +8,7 @@ const locations: QuestLocation[] = [
   { id: "place-b", name: "テスト洞窟", description: "くらい洞窟", types: ["rock"] },
 ];
 
-describe("場所選択画面", () => {
+describe("[クエスト] 場所選択画面", () => {
   it("候補の場所を名前・説明付きで表示する", () => {
     render(<LocationSelect locations={locations} onSelect={() => {}} />);
     expect(screen.getByText("テスト草原")).toBeInTheDocument();

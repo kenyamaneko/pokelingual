@@ -43,7 +43,7 @@ function renderAuthRoutes(initialPath: string, user: User | null = null) {
 
 const authenticatedUser = { uid: "alice" } as unknown as User;
 
-describe("認証画面間の遷移", () => {
+describe("[認証] 認証画面間の遷移", () => {
   it("ログイン画面からサインアップ画面へ行ける", async () => {
     const user = userEvent.setup();
     renderAuthRoutes("/login");
@@ -86,7 +86,7 @@ describe("認証画面間の遷移", () => {
  * - ログイン/サインアップ成功で user が確定すると、各画面はホーム (/) へリダイレクトする
  *   (ログイン・登録成功後にホームへ着地する導線そのもの)
  */
-describe("ログイン済みユーザーが認証画面を開いたときの遷移", () => {
+describe("[認証] ログイン済みユーザーが認証画面を開いたときの遷移", () => {
   it("認証済みでログイン画面を開くと、ホーム画面へ遷移する", async () => {
     renderAuthRoutes("/login", authenticatedUser);
 

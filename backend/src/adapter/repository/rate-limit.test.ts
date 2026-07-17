@@ -5,7 +5,7 @@ import { RateLimitError } from "../../domain/errors.js";
 
 const db = requireFirestoreEmulator();
 
-describe("AI 利用回数の記録", () => {
+describe("[レート制限・利用回数] AI 利用回数の記録", () => {
   beforeEach(clearFirestoreEmulator);
 
   it("ユーザーは設定された上限の回数まで AI 呼び出しを記録できる", async () => {
@@ -71,7 +71,7 @@ describe("AI 利用回数の記録", () => {
   });
 });
 
-describe("レート制限の日次リセット", () => {
+describe("[レート制限・利用回数] レート制限の日次リセット", () => {
   // Date のみフェイクし、setTimeout 等の timer はリアルに保つ。
   // 全 timer をフェイクすると Firestore SDK の内部タイマー (gRPC keepalive 等) が止まる可能性があるため。
   beforeEach(async () => {

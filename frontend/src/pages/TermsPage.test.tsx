@@ -9,7 +9,7 @@ import { TermsPage } from "./TermsPage";
  * - 非営利のファンサイトである旨を含む利用規約を表示する
  * - 「戻る」で直前の画面へ戻る
  */
-describe("利用規約画面", () => {
+describe("[サイト情報] 利用規約画面", () => {
   it("非営利のファンサイトである旨を含む利用規約を表示する", () => {
     render(
       <MemoryRouter initialEntries={["/terms"]}>

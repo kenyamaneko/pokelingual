@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { validateTutorialTranslation, validateTutorialName } from "./tutorialValidation";
 
-describe("チュートリアルの訳文判定", () => {
+describe("[チュートリアル] チュートリアルの訳文判定", () => {
   it.each([
     "電気タイプのねずみポケモン",
     "でんきタイプのねずみポケモン",
@@ -19,7 +19,7 @@ describe("チュートリアルの訳文判定", () => {
   });
 });
 
-describe("チュートリアルの名前当て判定", () => {
+describe("[チュートリアル] チュートリアルの名前当て判定", () => {
   it.each([
     "ピカチュウ",
     "pikachu",

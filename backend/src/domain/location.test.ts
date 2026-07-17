@@ -16,7 +16,7 @@ function fixedRandom(value: number): RandomSource {
 /**
  * 場所の設計上の不変条件: 全18タイプがそれぞれちょうど2か所に登場する。
  */
-describe("クエストの場所定義", () => {
+describe("[出題] クエストの場所定義", () => {
   const allTypes: PokemonType[] = [
     "normal", "fire", "water", "electric", "grass", "ice",
     "fighting", "poison", "ground", "flying", "psychic", "bug",
@@ -38,7 +38,7 @@ describe("クエストの場所定義", () => {
   );
 });
 
-describe("場所の取得 (ID 指定)", () => {
+describe("[出題] 場所の取得 (ID 指定)", () => {
   it("存在する ID の場所を返す", () => {
     expect(findLocation("crystal-cave")?.name).toBe("きらめく水晶の洞窟");
   });
@@ -48,7 +48,7 @@ describe("場所の取得 (ID 指定)", () => {
   });
 });
 
-describe("場所の抽選", () => {
+describe("[出題] 場所の抽選", () => {
   it("指定した数だけ重複なく場所を返す", () => {
     const picked = pickRandomLocations(fixedRandom(0), LOCATION_CHOICE_COUNT);
     expect(picked).toHaveLength(LOCATION_CHOICE_COUNT);

@@ -13,7 +13,7 @@ const allTypes: PokemonType[] = [
  * 色の割り当てそのものを突き合わせると実装のコピーになるため、UI 仕様上の不変条件
  * 「どのタイプも必ず bg- クラスを返す (= バッジが色を持つ)」を全タイプで確かめる。
  */
-describe("タイプの表示色", () => {
+describe("[表示整形] タイプの表示色", () => {
   it.each(allTypes.map((type) => [type, getTypeLabel(type)] as const))(
     "%s (%s) タイプには、背景色が定義されている",
     (type) => {
@@ -27,7 +27,7 @@ describe("タイプの表示色", () => {
  * 全対応を書き写すと実装の二重管理になるため、不変条件「どのタイプも空でないラベルを
  * 返す」を全タイプで確かめたうえで、命名規則を代表的な具体値で固定する。
  */
-describe("タイプの日本語表示名", () => {
+describe("[表示整形] タイプの日本語表示名", () => {
   it.each(allTypes)("%s は空でない日本語ラベルを返す", (type) => {
     expect(getTypeLabel(type)).not.toBe("");
   });

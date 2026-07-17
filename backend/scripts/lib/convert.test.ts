@@ -52,7 +52,7 @@ function pokemonOf(baseStats: number[], typeNames: string[], height: number, wei
   };
 }
 
-describe("説明文の整形", () => {
+describe("[ポケモンデータ] 説明文の整形", () => {
   it("改行や制御文字はスペースに置き換わる", () => {
     expect(cleanFlavorText("A\fB\nC\rD")).toBe("A B C D");
   });
@@ -66,7 +66,7 @@ describe("説明文の整形", () => {
   });
 });
 
-describe("ポケモンレコードへの変換", () => {
+describe("[ポケモンデータ] ポケモンレコードへの変換", () => {
   it.each([
     {
       species: speciesOf(1, "Bulbasaur", "フシギダネ", [

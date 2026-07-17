@@ -6,7 +6,7 @@ import { buildExcludedPokemonIDs } from "./exclusion.js";
  * - ユーザー設定による除外は全環境で適用する
  * - 開発者除外 (固定 6 匹) は prod 以外の環境でのみ合成する
  */
-describe("出題除外の決定", () => {
+describe("[出題] 出題除外の決定", () => {
   // 開発者除外の 6 匹 (exclusion.ts の固定リストが仕様なので具体値で確かめる)
   const DEVELOPER_EXCLUDED = [167, 168, 595, 596, 751, 752];
 

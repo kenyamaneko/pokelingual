@@ -12,7 +12,7 @@ const entries = [
 /**
  * 苦手ポケモン検索の前方一致仕様。純粋な検索ロジックなので具体値で直接確かめる。
  */
-describe("ポケモン名の検索", () => {
+describe("[設定] ポケモン名の検索", () => {
   it("クエリが空文字なら候補は出ない", () => {
     expect(searchPokemonByName(entries, "")).toEqual([]);
   });

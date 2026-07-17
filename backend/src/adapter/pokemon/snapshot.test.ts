@@ -25,7 +25,7 @@ function record(id: number, types: PokemonType[]): PokemonRecord {
   };
 }
 
-describe("スナップショットからのポケモン取得", () => {
+describe("[ポケモンデータ] スナップショットからのポケモン取得", () => {
   it("図鑑番号を指定すると、その番号のポケモンが返る", async () => {
     const client = new SnapshotPokemonClient([record(25, ["electric"])]);
     expect((await client.getPokemonByID(25)).name_ja).toBe("モン25");
@@ -43,14 +43,14 @@ describe("スナップショットからのポケモン取得", () => {
   });
 });
 
-describe("出題可能な図鑑番号", () => {
+describe("[ポケモンデータ] 出題可能な図鑑番号", () => {
   it("スナップショットに含まれる図鑑番号が昇順で返る", () => {
     const client = new SnapshotPokemonClient([record(25, []), record(1, []), record(4, [])]);
     expect(client.getServableIDs()).toEqual([1, 4, 25]);
   });
 });
 
-describe("タイプ別の図鑑番号", () => {
+describe("[ポケモンデータ] タイプ別の図鑑番号", () => {
   it("指定したタイプを持つポケモンの図鑑番号だけが返る", async () => {
     const client = new SnapshotPokemonClient([
       record(1, ["grass", "poison"]),
@@ -66,7 +66,7 @@ describe("タイプ別の図鑑番号", () => {
   });
 });
 
-describe("スナップショットの読み込み", () => {
+describe("[ポケモンデータ] スナップショットの読み込み", () => {
   it("スナップショットを読み込むと、記録されたポケモンが図鑑番号で得られる", async () => {
     const records = await loadPokemonSnapshot(async () => JSON.stringify([record(25, ["electric"]), record(1, ["grass"])]));
     expect(records.map((r) => r.id)).toEqual([25, 1]);

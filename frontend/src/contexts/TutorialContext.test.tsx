@@ -33,7 +33,7 @@ function renderProbe(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-describe("チュートリアル完了状態の管理", () => {
+describe("[チュートリアル] チュートリアル完了状態の管理", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });

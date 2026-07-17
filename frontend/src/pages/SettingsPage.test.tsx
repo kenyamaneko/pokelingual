@@ -118,7 +118,7 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
  * SettingsPage の遷移仕様:
  * - ログアウトボタン押下で logout を実行し、/login へ遷移する
  */
-describe("設定画面の遷移", () => {
+describe("[設定] 設定画面の遷移", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -151,7 +151,7 @@ describe("設定画面の遷移", () => {
  *
  * ID の範囲・件数上限・重複のバリデーションは backend の責務のため、ここでは検証しない。
  */
-describe("設定画面の苦手ポケモン管理", () => {
+describe("[設定] 設定画面の苦手ポケモン管理", () => {
   beforeEach(() => {
     lastSavedIDs = null;
   });
@@ -292,7 +292,7 @@ describe("設定画面の苦手ポケモン管理", () => {
  *
  * 世代番号・未知値のバリデーションは backend の責務のため、ここでは検証しない。
  */
-describe("設定画面の出題世代", () => {
+describe("[設定] 設定画面の出題世代", () => {
   beforeEach(() => {
     lastSavedGenerations = null;
   });
@@ -358,7 +358,7 @@ describe("設定画面の出題世代", () => {
  * - 問い合わせリンクは問い合わせフォームを新しいタブで開く
  * - 利用規約リンクは利用規約ページ (/terms) を指す
  */
-describe("設定画面のサイト情報リンク", () => {
+describe("[サイト情報] 設定画面のサイト情報リンク", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });

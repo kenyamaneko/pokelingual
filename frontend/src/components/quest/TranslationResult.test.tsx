@@ -24,7 +24,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("翻訳結果表示", () => {
+describe("[クエスト] 翻訳結果表示", () => {
   it("表示直後から、博士のコメントが1文字ずつ表示され最終的に全文になる", () => {
     render(<TranslationResult userTranslation="やくぶん" score={buildScore()} />);
     act(() => {

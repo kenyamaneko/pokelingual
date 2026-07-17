@@ -4,7 +4,7 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("図鑑記録の保存", () => {
+describe("[図鑑] 図鑑記録の保存", () => {
   beforeEach(clearFirestoreEmulator);
 
   it("初めて遭遇したポケモンは、遭遇済みとして記録される", async () => {

@@ -34,7 +34,7 @@ function setupScoreSuccess(usageResponses: DailyUsage[]): void {
   );
 }
 
-describe("採点成功時の残量同期 (採点送信 → ヘッダー表示の更新)", () => {
+describe("[レート制限・利用回数] 採点成功時の残量同期 (採点送信 → ヘッダー表示の更新)", () => {
   it("残り 25/30 の表示中に採点が成功すると、ヘッダーの表示が残り 24/30 に変わる", async () => {
     setupScoreSuccess([
       { count: 5, limit: DAILY_LIMIT },
