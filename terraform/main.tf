@@ -147,6 +147,13 @@ resource "google_identity_platform_config" "auth" {
     }
   }
 
+  # dev 環境を意図せず部外者に利用されないようにするため
+  client {
+    permissions {
+      disabled_user_signup = var.disable_new_user_signup
+    }
+  }
+
   depends_on = [google_project_service.apis]
 }
 

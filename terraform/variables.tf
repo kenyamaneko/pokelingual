@@ -27,6 +27,11 @@ variable "alerts_enabled" {
   type        = bool
 }
 
+variable "disable_new_user_signup" {
+  description = "Whether to block new Firebase Auth user creation (existing users can still sign in)"
+  type        = bool
+}
+
 variable "firebase_web_app_display_name" {
   description = "Display name for the Firebase web app"
   type        = string
