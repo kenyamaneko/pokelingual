@@ -120,15 +120,32 @@ def extract_top_level_tag(chain: tuple[str, ...]) -> tuple[str, ...]:
     return (match.group(1), top[match.end() :], *rest)
 
 
-def apply_tag_grouping(cases: list[BehaviorCase]) -> list[BehaviorCase]:
-    """各ケースのグループ連鎖に、トップレベル describe のタグ見出しを組み込む。
+def has_top_level_tag(chain: tuple[str, ...]) -> bool:
+    """グループ連鎖のトップレベル要素にタグが付いているかどうかを返す。
 
     Args:
-        cases: 変換対象の BehaviorCase のリスト。
+        chain: split_test_name が返すグループ連鎖。
 
     Returns:
-        extract_top_level_tag をグループ連鎖に適用した BehaviorCase のリスト。
+        トップレベル要素の先頭にタグがあれば True。
     """
+    return bool(chain) and TOP_LEVEL_TAG_PATTERN.match(chain[0]) is not None
+
+
+def apply_tag_grouping(cases: list[BehaviorCase]) -> list[BehaviorCase]:
+    """1 セクション分のケースに、トップレベル describe のタグ見出しを組み込む。
+
+    セクション内にタグ付き describe が 1 件も無ければ、タグ見出しを挿入せずそのまま返す。
+
+    Args:
+        cases: 変換対象の BehaviorCase のリスト (1 セクション分)。
+
+    Returns:
+        タグ付き describe が無ければそのままの cases。1 件でもあれば、
+        全ケースのグループ連鎖の先頭にタグ見出しを挿入したリスト。
+    """
+    if not any(has_top_level_tag(case.group_chain) for case in cases):
+        return cases
     return [replace(case, group_chain=extract_top_level_tag(case.group_chain)) for case in cases]
 
 

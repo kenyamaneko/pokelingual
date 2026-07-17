@@ -14,6 +14,7 @@ from generate_behavior_catalog import (
     build_sections,
     count_cases,
     extract_top_level_tag,
+    has_top_level_tag,
     main,
     parse_junit_file,
     parse_section_arg,
@@ -97,6 +98,18 @@ def test_split_test_name(raw_name, expected_chain, expected_case):
 )
 def test_extract_top_level_tag(chain, expected):
     assert extract_top_level_tag(chain) == expected
+
+
+@pytest.mark.parametrize(
+    ("chain", "expected"),
+    [
+        pytest.param((), False, id="グループ連鎖が空のとき、タグ無しになる"),
+        pytest.param(("グループA",), False, id="トップレベル要素にタグが無いとき、タグ無しになる"),
+        pytest.param(("[認証系] ログイン画面",), True, id="トップレベル要素にタグがあるとき、タグ有りになる"),
+    ],
+)
+def test_トップレベル要素のタグ有無を判定する(chain, expected):
+    assert has_top_level_tag(chain) == expected
 
 
 @pytest.mark.parametrize(
@@ -338,6 +351,20 @@ class TestBuildSections:
         assert set(tree.subgroups) == {"認証系", UNTAGGED_GROUP_LABEL}
         assert set(tree.subgroups["認証系"].subgroups) == {"ログイン画面", "新規登録画面"}
         assert set(tree.subgroups[UNTAGGED_GROUP_LABEL].subgroups) == {"ヘッダー"}
+
+    def test_セクション内にタグ付き_describe_が_1_件も無いとき_その他でまとめずトップレベルのdescribe名がそのまま並ぶ(self, tmp_path):
+        path = write_junit_xml(
+            tmp_path,
+            '<testsuite name="dummy">'
+            + case_xml("API 認証 &gt; ケース1", classname="src/middleware/auth.test.ts")
+            + case_xml("レート制限 &gt; ケース2", classname="src/middleware/rate-limit.test.ts")
+            + "</testsuite>",
+        )
+        specs = [SectionSpec("外から見た振る舞い", "backend（API仕様）", path, prefixes=None)]
+
+        tree = build_sections(specs)[0][2]
+
+        assert set(tree.subgroups) == {"API 認証", "レート制限"}
 
 
 class TestRenderMarkdown:
