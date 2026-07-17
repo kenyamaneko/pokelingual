@@ -1,7 +1,5 @@
 /** @type {import('@stryker-mutator/core').PartialStrykerOptions} */
 const config = {
-  // 変異対象は純粋ロジックの 4 ファイルに固定する (Issue #175)。
-  // Firestore Emulator や外部 API に依存する層は対象外。
   mutate: [
     "src/domain/generation.ts",
     "src/domain/exclusion.ts",
@@ -10,7 +8,6 @@ const config = {
   ],
   testRunner: "vitest",
   vitest: {
-    // Emulator 依存テストを含まない専用 config を使う (junit reporter も外す)
     configFile: "vitest.stryker.config.ts",
   },
   reporters: ["clear-text", "progress", "html"],
