@@ -417,6 +417,7 @@ Scoring guidelines:
 - 50-69: Partially correct, missing important nuances or grammatical issues
 - 30-49: Significant errors but some understanding shown
 - 0-29: Major misunderstanding or mostly incorrect
+- Punctuation usage (commas, periods, 読点・句点 etc.) is NOT a scoring criterion — never deduct points for it or mention it in the review
 
 Review guidelines:
 - Write 2-3 short sentences in Japanese
