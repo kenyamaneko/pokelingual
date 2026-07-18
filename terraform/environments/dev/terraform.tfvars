@@ -10,6 +10,9 @@ alerts_enabled = false
 # dev 環境を意図せず部外者に利用されないようにするため
 disable_new_user_signup = true
 
+# dev は新規登録自体を止めているためサインアップスモークを実行できない
+signup_smoke_enabled = false
+
 firebase_web_app_display_name = "PokeLingual"
 github_repo                   = "kenyamaneko/pokelingual"
 alert_email                   = "kenya.m.amaoto@gmail.com"

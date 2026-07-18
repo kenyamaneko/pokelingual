@@ -293,6 +293,15 @@ resource "google_project_iam_member" "github_actions_firebase_hosting" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# サインアップスモーク (scripts/smoke-prod-signup.sh) が作成した使い捨てユーザーの
+# emailVerified 強制更新・削除に Admin 権限を要するため、実行対象環境にのみ付与する。
+resource "google_project_iam_member" "github_actions_firebase_auth_admin" {
+  count   = var.signup_smoke_enabled ? 1 : 0
+  project = var.project_id
+  role    = "roles/firebaseauth.admin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # PR での terraform plan は読み取りのみのため、書き込み権限を持つ github_actions SA とは
 # 分離した専用 SA を使う。
 resource "google_service_account" "terraform_plan" {
