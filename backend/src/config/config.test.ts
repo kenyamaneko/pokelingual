@@ -33,8 +33,24 @@ function clearConfigEnv(): void {
   }
 }
 
+function setDefaultTuningEnv(): void {
+  process.env.FUZZY_MATCH_MIN_NAME_LENGTH = "4";
+  process.env.FUZZY_MATCH_MAX_DISTANCE = "2";
+  process.env.BALL_CAPTURE_BONUS_POKE = "0";
+  process.env.BALL_CAPTURE_BONUS_GREAT = "1.5";
+  process.env.BALL_CAPTURE_BONUS_ULTRA = "3.0";
+  process.env.LEGENDARY_ENCOUNTER_RATE = "0.01";
+  process.env.LOCATION_CHOICE_COUNT = "4";
+  process.env.MASTER_BALL_MIN_SCORE = "70";
+  process.env.MAX_EXCLUDED_POKEMON_COUNT = "30";
+}
+
 describe("[起動設定] 起動設定の読み込み", () => {
-  beforeEach(clearConfigEnv);
+  // 運用チューニング値はモード問わず必須のため、個別のテストの関心事でない限り既定値を敷いておく。
+  beforeEach(() => {
+    clearConfigEnv();
+    setDefaultTuningEnv();
+  });
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
   });
@@ -48,7 +64,7 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(() => loadConfig()).toThrow(/invalid env: APP_MODE/);
   });
 
-  it("mock モードでは他の env が未設定でも既定値で起動できる", () => {
+  it("mock モードでは運用チューニング値以外の env が未設定でも既定値で起動できる", () => {
     process.env.APP_MODE = "mock";
     const cfg = loadConfig();
     expect(cfg.appMode).toBe("mock");
@@ -57,13 +73,12 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(cfg.globalDailyLimit).toBe(1500);
     expect(cfg.questSessionRedisURL).toBe("redis://valkey:6379");
     expect(cfg.questSessionTTLSeconds).toBe(3600);
-    expect(cfg.fuzzyMatchMinNameLength).toBe(4);
-    expect(cfg.fuzzyMatchMaxDistance).toBe(2);
-    expect(cfg.ballCaptureBonus).toEqual({ poke: 0, great: 1.5, ultra: 3.0 });
-    expect(cfg.legendaryEncounterRate).toBe(0.01);
-    expect(cfg.locationChoiceCount).toBe(4);
-    expect(cfg.masterBallMinScore).toBe(70);
-    expect(cfg.maxExcludedPokemonCount).toBe(30);
+  });
+
+  it("mock モードでも運用チューニング値の env が無ければ起動エラー (既定値へのフォールバックはしない)", () => {
+    process.env.APP_MODE = "mock";
+    delete process.env.FUZZY_MATCH_MIN_NAME_LENGTH;
+    expect(() => loadConfig()).toThrow(/required env not set: FUZZY_MATCH_MIN_NAME_LENGTH/);
   });
 
   it("整数 env の 1 は受理される", () => {

@@ -1,6 +1,12 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { parseAppEnvironment, type AppEnvironment } from "../domain/environment.js";
 import type { BallType } from "../../../shared/api-types/quest.js";
+
+// .env (開発者ローカルの秘密情報・上書き。gitignore 対象) を先に読み、既存の process.env を優先する。
+// .env.tuning (チェックイン対象、運用チューニング値の既定値) は dotenv が上書きしない値のみ補う。
+// real デプロイのコンテナ内では両ファイルとも存在せず、Cloud Run が注入した process.env をそのまま使う。
+dotenv.config();
+dotenv.config({ path: ".env.tuning" });
 
 /** アプリの動作モード。mock は外部 API をモックに差し替え、real は実サービスに接続する。 */
 export type AppMode = "mock" | "real";
@@ -61,15 +67,6 @@ const MOCK_DEFAULTS = {
   // docker-compose.dev.yml の valkey サービス名を指す
   questSessionRedisURL: "redis://valkey:6379",
   questSessionTTLSeconds: 3600,
-  fuzzyMatchMinNameLength: 4,
-  fuzzyMatchMaxDistance: 2,
-  ballCaptureBonusPoke: 0,
-  ballCaptureBonusGreat: 1.5,
-  ballCaptureBonusUltra: 3.0,
-  legendaryEncounterRate: 0.01,
-  locationChoiceCount: 4,
-  masterBallMinScore: 70,
-  maxExcludedPokemonCount: 30,
 } as const;
 
 /**
@@ -176,13 +173,11 @@ function requireAppMode(): AppMode {
 }
 
 /**
- * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
+ * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは追加の必須 env
  * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
  * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_URL,
- * QUEST_SESSION_TTL_SECONDS, FUZZY_MATCH_MIN_NAME_LENGTH, FUZZY_MATCH_MAX_DISTANCE,
- * BALL_CAPTURE_BONUS_POKE, BALL_CAPTURE_BONUS_GREAT, BALL_CAPTURE_BONUS_ULTRA,
- * LEGENDARY_ENCOUNTER_RATE, LOCATION_CHOICE_COUNT, MASTER_BALL_MIN_SCORE,
- * MAX_EXCLUDED_POKEMON_COUNT) が未設定なら起動エラー。
+ * QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。運用チューニング値
+ * (FUZZY_MATCH_MIN_NAME_LENGTH 等、.env.tuning が供給する9値) はモード問わず必須。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
@@ -207,34 +202,17 @@ export function loadConfig(): Config {
     questSessionTTLSeconds: isMock
       ? (getIntEnv("QUEST_SESSION_TTL_SECONDS") ?? MOCK_DEFAULTS.questSessionTTLSeconds)
       : requireIntEnv("QUEST_SESSION_TTL_SECONDS"),
-    fuzzyMatchMinNameLength: isMock
-      ? (getIntEnv("FUZZY_MATCH_MIN_NAME_LENGTH") ?? MOCK_DEFAULTS.fuzzyMatchMinNameLength)
-      : requireIntEnv("FUZZY_MATCH_MIN_NAME_LENGTH"),
-    fuzzyMatchMaxDistance: isMock
-      ? (getIntEnv("FUZZY_MATCH_MAX_DISTANCE") ?? MOCK_DEFAULTS.fuzzyMatchMaxDistance)
-      : requireIntEnv("FUZZY_MATCH_MAX_DISTANCE"),
+    // 運用チューニング値は .env.tuning が mock/real 共通で供給するため、モードで分岐しない。
+    fuzzyMatchMinNameLength: requireIntEnv("FUZZY_MATCH_MIN_NAME_LENGTH"),
+    fuzzyMatchMaxDistance: requireIntEnv("FUZZY_MATCH_MAX_DISTANCE"),
     ballCaptureBonus: {
-      poke: isMock
-        ? (getFloatEnv("BALL_CAPTURE_BONUS_POKE", 0) ?? MOCK_DEFAULTS.ballCaptureBonusPoke)
-        : requireFloatEnv("BALL_CAPTURE_BONUS_POKE", 0),
-      great: isMock
-        ? (getFloatEnv("BALL_CAPTURE_BONUS_GREAT", 0) ?? MOCK_DEFAULTS.ballCaptureBonusGreat)
-        : requireFloatEnv("BALL_CAPTURE_BONUS_GREAT", 0),
-      ultra: isMock
-        ? (getFloatEnv("BALL_CAPTURE_BONUS_ULTRA", 0) ?? MOCK_DEFAULTS.ballCaptureBonusUltra)
-        : requireFloatEnv("BALL_CAPTURE_BONUS_ULTRA", 0),
+      poke: requireFloatEnv("BALL_CAPTURE_BONUS_POKE", 0),
+      great: requireFloatEnv("BALL_CAPTURE_BONUS_GREAT", 0),
+      ultra: requireFloatEnv("BALL_CAPTURE_BONUS_ULTRA", 0),
     },
-    legendaryEncounterRate: isMock
-      ? (getFloatEnv("LEGENDARY_ENCOUNTER_RATE", 0, 1) ?? MOCK_DEFAULTS.legendaryEncounterRate)
-      : requireFloatEnv("LEGENDARY_ENCOUNTER_RATE", 0, 1),
-    locationChoiceCount: isMock
-      ? (getIntEnv("LOCATION_CHOICE_COUNT") ?? MOCK_DEFAULTS.locationChoiceCount)
-      : requireIntEnv("LOCATION_CHOICE_COUNT"),
-    masterBallMinScore: isMock
-      ? (getIntEnv("MASTER_BALL_MIN_SCORE", 0, MAX_FINAL_SCORE) ?? MOCK_DEFAULTS.masterBallMinScore)
-      : requireIntEnv("MASTER_BALL_MIN_SCORE", 0, MAX_FINAL_SCORE),
-    maxExcludedPokemonCount: isMock
-      ? (getIntEnv("MAX_EXCLUDED_POKEMON_COUNT") ?? MOCK_DEFAULTS.maxExcludedPokemonCount)
-      : requireIntEnv("MAX_EXCLUDED_POKEMON_COUNT"),
+    legendaryEncounterRate: requireFloatEnv("LEGENDARY_ENCOUNTER_RATE", 0, 1),
+    locationChoiceCount: requireIntEnv("LOCATION_CHOICE_COUNT"),
+    masterBallMinScore: requireIntEnv("MASTER_BALL_MIN_SCORE", 0, MAX_FINAL_SCORE),
+    maxExcludedPokemonCount: requireIntEnv("MAX_EXCLUDED_POKEMON_COUNT"),
   };
 }
