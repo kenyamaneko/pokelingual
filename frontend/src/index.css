@@ -13,14 +13,32 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  font-family: var(--font-dot);
 }
 
 /* Tailwind の animate-[name_..] は名前解決をグローバル CSS に頼るため、
    @keyframes をコンポーネント側に閉じ込められずここに置く。 */
+/* 周期の先頭 60% (揺れ) は元の 0.3 秒版と同じ角度・区間比率を保ち、残り 40% (静止) を追加する。
+   周期全体の秒数は CaptureEffect.tsx の SHAKE_SET_MS と揃える。 */
 @keyframes ball-shake {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-18deg); }
-  75% { transform: rotate(18deg); }
+  0%, 60%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-18deg); }
+  45% { transform: rotate(18deg); }
+}
+
+@keyframes capture-whiteout {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes result-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes result-whiteout-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @keyframes particle-burst {

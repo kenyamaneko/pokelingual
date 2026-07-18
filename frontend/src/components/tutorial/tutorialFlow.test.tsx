@@ -185,7 +185,7 @@ describe("[チュートリアル] チュートリアル (捕獲演出〜完了)"
     await completeTutorial();
 
     expect(
-      await screen.findByText(TUTORIAL_COMPLETION_LABELS.message, {}, { timeout: 3000 }),
+      await screen.findByText(TUTORIAL_COMPLETION_LABELS.message, {}, { timeout: 4000 }),
     ).toBeInTheDocument();
   });
 
@@ -201,7 +201,7 @@ describe("[チュートリアル] チュートリアル (捕獲演出〜完了)"
     await user.click(await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }));
     await user.click(await screen.findByRole("button", { name: captureUseButtonLabel("ultra") }));
     expect(
-      await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")), {}, { timeout: 3000 }),
+      await screen.findByText(spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")), {}, { timeout: 4000 }),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.backToMenuButton }));

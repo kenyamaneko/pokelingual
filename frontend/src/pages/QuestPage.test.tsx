@@ -77,8 +77,10 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
 
     const translationBox = await screen.findByRole("textbox");
-    expect(screen.getByTestId("quest-description")).toHaveTextContent(
-      "The first wild creature.",
+    await waitFor(() =>
+      expect(screen.getByTestId("quest-description")).toHaveTextContent(
+        "The first wild creature.",
+      ),
     );
 
     await user.type(translationBox, "さいしょのやくぶん");
@@ -97,12 +99,12 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     );
     await user.click(await screen.findByRole("button", { name: /ハイパーボール/ }));
-    // 捕獲演出の再生に実時間で1秒以上かかり、既定の待機時間 (1000ms) を超えるため延長する。
+    // 捕獲演出の再生に実時間で2.6秒以上かかり、既定の待機時間 (1000ms) を超えるため延長する。
     expect(
       await screen.findByText(
         spec(CAPTURE_RESULT_LABELS.capturedTitle("テストモン")),
         {},
-        { timeout: 3000 },
+        { timeout: 4000 },
       ),
     ).toBeInTheDocument();
 

@@ -1,11 +1,12 @@
 import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import type { User } from "firebase/auth";
 import type { DailyUsage } from "../../../../shared/api-types/usage";
 import { server, apiUrl, countRequests } from "../../test/mswServer";
 import { renderWithProviders } from "../../test/render";
-import { Header } from "./Header";
+import { Header, HEADER_LABELS } from "./Header";
 
 /**
  * Header の仕様:
@@ -13,6 +14,7 @@ import { Header } from "./Header";
  * - レート残量: 「残り (limit - count)/limit」を表示し、超過時はマイナスにせず 0 にクランプする
  * - usage が取得できないあいだは残量バッジを出さない
  * - 未ログイン時はヘッダ自体を描画しない
+ * - 画面幅が狭いときのナビゲーションはハンバーガーメニューの開閉で出し分ける
  */
 const fakeUser = { uid: "alice" } as unknown as User;
 
@@ -107,5 +109,43 @@ describe("ヘッダー", () => {
     renderHeader(null);
 
     expect(screen.queryByRole("banner")).not.toBeInTheDocument();
+  });
+
+  describe("ハンバーガーメニューの開閉", () => {
+    it("表示直後は、メニューボタンが閉じた状態になっている", async () => {
+      mockUsage({ count: 0, limit: 30 });
+      renderHeader();
+
+      expect(
+        await screen.findByRole("button", { name: HEADER_LABELS.menuButton }),
+      ).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("メニューボタンを押すと、開いた状態になる", async () => {
+      mockUsage({ count: 0, limit: 30 });
+      const user = userEvent.setup();
+      renderHeader();
+
+      await user.click(await screen.findByRole("button", { name: HEADER_LABELS.menuButton }));
+
+      expect(screen.getByRole("button", { name: HEADER_LABELS.menuButton })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    });
+
+    it("開いた状態でナビゲーションのリンクを押すと、閉じた状態に戻る", async () => {
+      mockUsage({ count: 0, limit: 30 });
+      const user = userEvent.setup();
+      renderHeader();
+
+      await user.click(await screen.findByRole("button", { name: HEADER_LABELS.menuButton }));
+      await user.click(screen.getByRole("link", { name: "ぼうけん" }));
+
+      expect(screen.getByRole("button", { name: HEADER_LABELS.menuButton })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+    });
   });
 });

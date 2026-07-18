@@ -7,11 +7,23 @@ interface CaptureEffectProps {
   onComplete: () => void;
 }
 
-/** ボールが揺れる演出の再生時間 (ミリ秒)。CSS 側の揺れアニメーションと揃える (0.3秒 × 3回)。 */
-export const SHAKE_DURATION_MS = 900;
+/** 揺れ1回分の再生時間 (ミリ秒)。CSS 側の揺れ区間と揃える。 */
+const SHAKE_ACTIVE_MS = 300;
+
+/** 揺れの後の静止時間 (ミリ秒)。CSS 側の静止区間と揃える。 */
+const SHAKE_PAUSE_MS = 200;
+
+/** 「揺れ→静止」1セットの周期 (ミリ秒)。CSS keyframe の周期と揃える。 */
+export const SHAKE_SET_MS = SHAKE_ACTIVE_MS + SHAKE_PAUSE_MS;
+
+/** ボールが揺れる演出の再生時間 (ミリ秒)。「揺れ→静止」を3セット行う。 */
+export const SHAKE_DURATION_MS = SHAKE_SET_MS * 3;
 
 /** 成否エフェクト (成功時は粒子の飛散、失敗時は煙) の再生時間 (ミリ秒)。CSS 側のアニメーション時間と揃える。 */
-const EFFECT_DURATION_MS = 700;
+export const EFFECT_DURATION_MS = 700;
+
+/** 捕獲演出から結果画面へ切り替わる白フェードの再生時間 (ミリ秒)。CSS 側と揃える。 */
+export const WHITEOUT_DURATION_MS = 400;
 
 const BURST_PARTICLE_COUNT = 18;
 const BURST_MIN_DISTANCE_PX = 32;
@@ -21,7 +33,7 @@ const BURST_COLORS = ["#facc15", "#fb923c"];
 const SMOKE_CIRCLE_COUNT = 6;
 const SMOKE_SPREAD_PX = 28;
 
-type Stage = "shaking" | "effect";
+type Stage = "shaking" | "effect" | "whiteout";
 
 interface BurstParticle {
   id: number;
@@ -86,7 +98,13 @@ export function CaptureEffect({ ballSprite, ballName, captured, onComplete }: Ca
 
   useEffect(() => {
     if (stage !== "effect") return;
-    const complete = setTimeout(onComplete, EFFECT_DURATION_MS);
+    const toWhiteout = setTimeout(() => setStage("whiteout"), EFFECT_DURATION_MS);
+    return () => clearTimeout(toWhiteout);
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== "whiteout") return;
+    const complete = setTimeout(onComplete, WHITEOUT_DURATION_MS);
     return () => clearTimeout(complete);
   }, [stage, onComplete]);
 
@@ -96,9 +114,17 @@ export function CaptureEffect({ ballSprite, ballName, captured, onComplete }: Ca
         <img
           src={ballSprite}
           alt={ballName}
-          className={`w-24 h-24 origin-bottom ${
-            stage === "shaking" ? "animate-[ball-shake_0.3s_ease-in-out_3]" : ""
-          }`}
+          className="w-24 h-24 origin-bottom"
+          style={
+            stage === "shaking"
+              ? {
+                  animationName: "ball-shake",
+                  animationDuration: `${SHAKE_SET_MS}ms`,
+                  animationTimingFunction: "ease-in-out",
+                  animationIterationCount: 3,
+                }
+              : undefined
+          }
         />
         {stage === "effect" && (
           <div data-testid="capture-effect-fx" data-state={captured ? "success" : "failure"} className="absolute inset-0">
@@ -120,6 +146,18 @@ export function CaptureEffect({ ballSprite, ballName, captured, onComplete }: Ca
           </div>
         )}
       </div>
+      {stage === "whiteout" && (
+        <div
+          data-testid="capture-whiteout"
+          className="fixed inset-0 bg-white pointer-events-none"
+          style={{
+            animationName: "capture-whiteout",
+            animationDuration: `${WHITEOUT_DURATION_MS}ms`,
+            animationTimingFunction: "ease-out",
+            animationFillMode: "forwards",
+          }}
+        />
+      )}
     </div>
   );
 }

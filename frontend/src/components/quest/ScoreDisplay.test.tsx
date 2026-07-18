@@ -82,4 +82,40 @@ describe("[クエスト] 採点スコアの演出", () => {
     });
     expect(screen.getByText(spec(SCORE_LABELS.notVeryEffective))).toBeInTheDocument();
   });
+
+  it("メーターの減少が始まった直後は、表示値 100% に対応して HP バーの色が緑になる", () => {
+    render(<ScoreDisplay score={withScore(85)} isActive={true} />);
+    expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "green");
+  });
+
+  it("スコア 85 のとき、メーターの減少の中間時点では表示値 49% に連動して HP バーの色が黄になる", () => {
+    render(<ScoreDisplay score={withScore(85)} isActive={true} />);
+    act(() => {
+      vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS * 0.6);
+    });
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "49");
+    expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "yellow");
+  });
+
+  it("スコア 85 のとき、メーターの減少が終わった時点では残り HP 15% に連動して HP バーの色が赤になる", () => {
+    render(<ScoreDisplay score={withScore(85)} isActive={true} />);
+    act(() => {
+      vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+    });
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "15");
+    expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "red");
+  });
+
+  it.each([
+    ["残り HP が 51% のとき、HP バーの色は緑になる", 49, "green"],
+    ["残り HP が 50% のとき、HP バーの色は黄になる", 50, "yellow"],
+    ["残り HP が 21% のとき、HP バーの色は黄になる", 79, "yellow"],
+    ["残り HP が 20% のとき、HP バーの色は赤になる", 80, "red"],
+  ] as const)("%s", (_name, score, band) => {
+    render(<ScoreDisplay score={withScore(score)} isActive={true} />);
+    act(() => {
+      vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+    });
+    expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", band);
+  });
 });

@@ -42,7 +42,7 @@ export function PokemonNameInput({ onSubmit, onChangeText }: PokemonNameInputPro
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       <input
         type="text"
         value={name}
@@ -59,7 +59,7 @@ export function PokemonNameInput({ onSubmit, onChangeText }: PokemonNameInputPro
       <button
         onClick={handleSubmit}
         disabled={!name.trim() || submitting}
-        className="bg-blue-500 text-white px-6 py-3 rounded-xl font-bold
+        className="w-full sm:w-auto bg-blue-500 text-white px-6 py-3 rounded-xl font-bold
                    hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed
                    transition-colors"
       >

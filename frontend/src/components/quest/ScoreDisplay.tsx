@@ -49,16 +49,26 @@ function getScoreColor(score: number): string {
   return "text-red-600";
 }
 
+/** HP バーの色帯。減少アニメーション中の表示値に連動して緑→黄→赤と遷移する。 */
+type HPBand = "green" | "yellow" | "red";
+
 /**
- * 残 HP に応じた HP バーの色クラスを返す。
- * @param remainingHP 残 HP (100 - score)。
- * @returns Tailwind の背景色クラス。
+ * 表示中の HP に応じた色帯を返す。
+ * @param displayedHP 減少アニメーション中の表示値。
+ * @returns 色帯。
  */
-function getHPBarColor(remainingHP: number): string {
-  if (remainingHP > HP_BAR_THRESHOLDS.green) return "bg-green-500";
-  if (remainingHP > HP_BAR_THRESHOLDS.yellow) return "bg-yellow-500";
-  return "bg-red-500";
+function getHPBand(displayedHP: number): HPBand {
+  if (displayedHP > HP_BAR_THRESHOLDS.green) return "green";
+  if (displayedHP > HP_BAR_THRESHOLDS.yellow) return "yellow";
+  return "red";
 }
+
+/** 色帯に対応する Tailwind の背景色クラス。 */
+const HP_BAND_CLASSES: Record<HPBand, string> = {
+  green: "bg-green-500",
+  yellow: "bg-yellow-500",
+  red: "bg-red-500",
+};
 
 /**
  * 採点結果をダメージ表現で表示する。isActive になるとメーターと HP 数値が満タンから
@@ -70,6 +80,7 @@ export function ScoreDisplay({ score, isActive }: ScoreDisplayProps) {
   const remainingHP = MAX_SCORE - score.score;
   const [displayedHP, setDisplayedHP] = useState(MAX_SCORE);
   const [hasSettled, setHasSettled] = useState(false);
+  const hpBand = getHPBand(displayedHP);
 
   useEffect(() => {
     if (!isActive) return;
@@ -100,7 +111,7 @@ export function ScoreDisplay({ score, isActive }: ScoreDisplayProps) {
           <>
             <span
               data-testid="damage-value"
-              className={`font-dot text-5xl font-bold ${getScoreColor(score.score)}`}
+              className={`text-5xl font-bold ${getScoreColor(score.score)}`}
             >
               {score.score}%
             </span>
@@ -125,7 +136,9 @@ export function ScoreDisplay({ score, isActive }: ScoreDisplayProps) {
           className="flex-1 bg-gray-200 rounded-full h-3"
         >
           <div
-            className={`h-3 rounded-full transition-all ease-linear ${getHPBarColor(remainingHP)}`}
+            data-testid="hp-bar"
+            data-hp-band={hpBand}
+            className={`h-3 rounded-full transition-all ease-linear ${HP_BAND_CLASSES[hpBand]}`}
             style={{
               width: `${displayedHP}%`,
               transitionDuration: `${HP_COUNTDOWN_TICK_MS}ms`,

@@ -8,7 +8,7 @@ export function TermsPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8">
+    <div className="font-sans min-h-[calc(100vh-var(--header-h))] bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">利用規約</h1>
 
