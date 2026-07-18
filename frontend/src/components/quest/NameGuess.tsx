@@ -142,9 +142,6 @@ export function NameGuess({
       {guessResult && !guessResult.correct && guessResult.attempts_remaining === 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-3">
           <p className="text-red-700 font-bold">{NAME_GUESS_LABELS.wrongFinalTitle}</p>
-          <p className="text-red-600 text-sm">
-            答えは　{guessResult.reveal_name_en}（{guessResult.reveal_name_ja}）だったよ
-          </p>
         </div>
       )}
 

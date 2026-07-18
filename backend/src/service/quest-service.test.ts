@@ -443,19 +443,13 @@ describe("[名前当て] 名前当ての判定", () => {
     expect(res).toMatchObject({ correct: false, attempts_remaining: 2 });
   });
 
-  it("3回目の不正解で正解名が公開されモンスターボールが確定する", async () => {
+  it("3回目の不正解でモンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
     await service.guessName("alice", "wrong1");
     await service.guessName("alice", "wrong2");
     const res = await service.guessName("alice", "wrong3");
-    expect(res).toMatchObject({
-      correct: false,
-      ball_type: "poke",
-      attempts_remaining: 0,
-      reveal_name_en: "Bulbasaur",
-      reveal_name_ja: "フシギダネ",
-    });
+    expect(res).toMatchObject({ correct: false, ball_type: "poke", attempts_remaining: 0 });
     expect((await service.attemptCapture("alice")).ball_type).toBe("poke");
   });
 

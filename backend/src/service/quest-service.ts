@@ -291,13 +291,7 @@ export class QuestService {
     } else if (remaining <= 0) {
       session.ball_type = "poke";
       session.name_guessed = true;
-      response = {
-        correct: false,
-        ball_type: "poke",
-        attempts_remaining: 0,
-        reveal_name_en: session.name_en,
-        reveal_name_ja: session.name_ja,
-      };
+      response = { correct: false, ball_type: "poke", attempts_remaining: 0 };
     } else {
       response = { correct: false, attempts_remaining: remaining };
     }
