@@ -253,6 +253,31 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
         );
       },
     ],
+    [
+      "名前当てでマスターボールが確定したとき、捕獲画面と捕獲演出の両方でマスターボールになる",
+      "master",
+      "マスターボール",
+      () =>
+        server.use(
+          http.post(apiUrl("/quest/guess-name"), () =>
+            HttpResponse.json({
+              correct: true,
+              ball_type: "master",
+              language: "en",
+              attempts_remaining: 2,
+            }),
+          ),
+        ),
+      async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.type(await screen.findByRole("textbox"), "Testmon");
+        await user.click(
+          screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
+        );
+        await user.click(
+          await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
+        );
+      },
+    ],
   ] as const)(
     "%s",
     async (_name, ballType, ballName, setupGuessHandler, performGuess) => {
@@ -297,6 +322,42 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
       expect(await screen.findByAltText(ballName)).toBeInTheDocument();
     },
   );
+
+  it("マスターボール確定時、捕獲待機画面に博士のセリフが吹き出しで表示される", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(apiUrl("/quest/guess-name"), () =>
+        HttpResponse.json({
+          correct: true,
+          ball_type: "master",
+          language: "en",
+          attempts_remaining: 2,
+        }),
+      ),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+    await user.type(await screen.findByRole("textbox"), "Testmon");
+    await user.click(
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("博士")).toBeVisible();
+        expect(screen.getByText(spec("今こそ　このボールを　使うときだ！"))).toBeVisible();
+      },
+      { timeout: 2000 },
+    );
+  });
 
   it("最初に場所選択画面が表示される", async () => {
     renderWithProviders(<QuestPage />, { withRouter: true });

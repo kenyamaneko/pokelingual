@@ -457,6 +457,98 @@ describe("[名前当て] 名前当ての判定", () => {
   });
 });
 
+describe("[名前当て] マスターボール確定捕獲", () => {
+  it("伝説ポケモンで最終評価点が70のとき、英語名の正解でマスターボールになる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_legendary: true })],
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    const res = service.guessName("alice", "bulbasaur");
+    expect(res).toMatchObject({ correct: true, ball_type: "master", language: "en" });
+  });
+
+  it("伝説ポケモンで最終評価点が70のとき、英語名のあいまい一致でもマスターボールになる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_legendary: true })],
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    const res = service.guessName("alice", "bulbasaxx");
+    expect(res).toMatchObject({ correct: true, ball_type: "master", fuzzy: true });
+  });
+
+  it("伝説ポケモンで最終評価点が69のとき、英語名の正解でもハイパーボールのまま", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_legendary: true })],
+      llmText: JSON.stringify({ score: 73, review: "よい" }), // 最終評価点69
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    const res = service.guessName("alice", "bulbasaur");
+    expect(res).toMatchObject({ correct: true, ball_type: "ultra" });
+  });
+
+  it("幻ポケモンで最終評価点が70のとき、日本語名の正解でマスターボールになる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_mythical: true })],
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    const res = service.guessName("alice", "フシギダネ");
+    expect(res).toMatchObject({ correct: true, ball_type: "master", language: "ja" });
+  });
+
+  it("伝説でも幻でもないポケモンは、最終評価点が70でも名前当て正解でハイパーボールのまま", async () => {
+    const service = makeService({
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    const res = service.guessName("alice", "bulbasaur");
+    expect(res).toMatchObject({ correct: true, ball_type: "ultra" });
+  });
+
+  it("伝説ポケモンで最終評価点が70でも、名前当てを外し続けるとモンスターボールが確定する", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_legendary: true })],
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    service.guessName("alice", "wrong1");
+    service.guessName("alice", "wrong2");
+    const res = service.guessName("alice", "wrong3");
+    expect(res).toMatchObject({ correct: false, ball_type: "poke" });
+  });
+
+  it("伝説ポケモンで最終評価点が70でも、名前当てをスキップするとモンスターボールが確定する", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_legendary: true })],
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    expect(service.skipGuess("alice")).toEqual({ ball_type: "poke" });
+  });
+
+  it("マスターボールでの捕獲は乱数によらず必ず成功し、捕獲確率は1.0になる", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ is_legendary: true, base_stat_total: 680 })],
+      llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+      randomValue: 0.9999,
+    });
+    await service.newQuest("alice");
+    await service.scoreTranslation("alice", "訳");
+    service.guessName("alice", "bulbasaur");
+    const res = service.attemptCapture("alice");
+    expect(res).toMatchObject({ captured: true, probability: 1.0, ball_type: "master" });
+  });
+});
+
 describe("[名前当て] 名前当てのヒント", () => {
   it("まだ一度も推測していないとき、ヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
     const service = makeService({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
