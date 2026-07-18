@@ -33,7 +33,7 @@ export function TutorialInstructionCallout({ title, instruction }: Props) {
       <h2 id="tutorial-instruction-title" className="text-sm font-bold text-gray-800 mb-1">
         {title}
       </h2>
-      <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{instruction}</p>
+      <p className="text-sm text-gray-600 leading-relaxed">{instruction}</p>
       <div className="absolute left-8 -bottom-2 w-4 h-4 bg-white border-b border-r border-gray-200 rotate-45" />
     </div>
   );

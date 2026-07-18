@@ -262,7 +262,6 @@ export class QuestService {
     const guessJA = guess.trim();
 
     const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
-    // 伝説・幻を一定の最終評価点以上で正解すると、通常より上位のボールに確定する。
     const masterEligible =
       (session.is_legendary || session.is_mythical) && session.score >= MASTER_BALL_MIN_SCORE;
 
@@ -350,7 +349,8 @@ export class QuestService {
 
   /**
    * スコア・種族値合計・ボール補正から捕獲確率を算出し、抽選結果を返す。マスターボールは
-   * 確率計算をバイパスして確定捕獲する。セッションは消費する。
+   * 確率計算をバイパスして確定捕獲する。呼び出し後はセッションが失効し、
+   * 同じユーザでの再度の呼び出しはできない。
    * @param userId ユーザ ID。
    * @returns 捕獲成否と表示用ポケモン情報。
    */

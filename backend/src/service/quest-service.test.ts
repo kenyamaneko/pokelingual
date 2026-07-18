@@ -539,6 +539,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     const service = makeService({
       pokemons: [makePokemon({ is_legendary: true, base_stat_total: 680 })],
       llmText: JSON.stringify({ score: 74, review: "よい" }), // 最終評価点70
+      randomValue: 0.9999,
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");

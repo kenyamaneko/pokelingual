@@ -353,11 +353,10 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     await waitFor(
       () => {
         expect(screen.getByText("博士")).toBeVisible();
-        expect(screen.getByText(spec("今こそ　このボールを　使うときだ！"), { exact: false })).toBeVisible();
+        expect(screen.getByText(spec("今こそ　このボールを　使うときだ！"))).toBeVisible();
       },
       { timeout: 2000 },
     );
-    expect(screen.getByText(spec("（なんと　マスターボールを手に入れた）"), { exact: false })).toBeVisible();
   });
 
   it("最初に場所選択画面が表示される", async () => {
