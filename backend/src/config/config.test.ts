@@ -18,8 +18,6 @@ function clearConfigEnv(): void {
     "GLOBAL_DAILY_LIMIT",
     "POKEMON_SNAPSHOT_URI",
     "UPSTASH_REDIS_URL",
-    "UPSTASH_REDIS_ENDPOINT",
-    "UPSTASH_REDIS_PASSWORD",
     "QUEST_SESSION_TTL_SECONDS",
   ]) {
     delete process.env[key];
@@ -85,9 +83,7 @@ describe("[起動設定] 起動設定の読み込み", () => {
     process.env.PER_USER_DAILY_LIMIT = "10";
     process.env.GLOBAL_DAILY_LIMIT = "100";
     process.env.POKEMON_SNAPSHOT_URI = "gs://bucket/pokemon-snapshot.json";
-    process.env.UPSTASH_REDIS_ENDPOINT = "redis-endpoint.upstash.io:6379";
-    // Upstash が発行するパスワードは URL の予約文字 (@ / : 等) を含みうるため、それを含む値で確かめる
-    process.env.UPSTASH_REDIS_PASSWORD = "p@ss/word:1";
+    process.env.UPSTASH_REDIS_URL = "rediss://default:token@redis-endpoint.upstash.io:6379";
     process.env.QUEST_SESSION_TTL_SECONDS = "1800";
 
     const cfg = loadConfig();
@@ -101,7 +97,7 @@ describe("[起動設定] 起動設定の読み込み", () => {
       perUserDailyLimit: 10,
       globalDailyLimit: 100,
       pokemonSnapshotURI: "gs://bucket/pokemon-snapshot.json",
-      questSessionRedisURL: "rediss://default:p%40ss%2Fword%3A1@redis-endpoint.upstash.io:6379",
+      questSessionRedisURL: "rediss://default:token@redis-endpoint.upstash.io:6379",
       questSessionTTLSeconds: 1800,
     });
   });

@@ -96,16 +96,6 @@ function requireIntEnv(key: string): number {
 }
 
 /**
- * Secret Manager 由来のエンドポイント・パスワードから Upstash Redis の接続 URL を組み立てる。
- * @param endpoint Upstash Redis のエンドポイント (ホスト:ポート)。
- * @param password Upstash Redis の接続パスワード。
- * @returns rediss:// 形式の接続 URL。
- */
-function buildUpstashRedisURL(endpoint: string, password: string): string {
-  return `rediss://default:${encodeURIComponent(password)}@${endpoint}`;
-}
-
-/**
  * APP_MODE を取得し、定義済みモードであることを検証する。
  * @returns 検証済みのアプリ動作モード。
  * @throws 未設定、または未知のモードの場合。
@@ -122,8 +112,8 @@ function requireAppMode(): AppMode {
 /**
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
  * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
- * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_ENDPOINT,
- * UPSTASH_REDIS_PASSWORD, QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。
+ * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_URL,
+ * QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
@@ -144,7 +134,7 @@ export function loadConfig(): Config {
     pokemonSnapshotURI: isMock ? (getEnv("POKEMON_SNAPSHOT_URI") ?? "") : requireEnv("POKEMON_SNAPSHOT_URI"),
     questSessionRedisURL: isMock
       ? (getEnv("UPSTASH_REDIS_URL") ?? MOCK_DEFAULTS.questSessionRedisURL)
-      : buildUpstashRedisURL(requireEnv("UPSTASH_REDIS_ENDPOINT"), requireEnv("UPSTASH_REDIS_PASSWORD")),
+      : requireEnv("UPSTASH_REDIS_URL"),
     questSessionTTLSeconds: isMock
       ? (getIntEnv("QUEST_SESSION_TTL_SECONDS") ?? MOCK_DEFAULTS.questSessionTTLSeconds)
       : requireIntEnv("QUEST_SESSION_TTL_SECONDS"),
