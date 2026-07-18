@@ -7,8 +7,7 @@ region      = "asia-northeast1"
 pitr_enabled   = false
 alerts_enabled = false
 
-# 開発者以外の新規登録を防ぐため、新規アカウント作成を無効化する。
-# 開発者アカウントは管理者が手動作成する運用のため既存ユーザーへの影響はない。
+# dev 環境を意図せず部外者に利用されないようにするため
 disable_new_user_signup = true
 
 firebase_web_app_display_name = "PokeLingual"
