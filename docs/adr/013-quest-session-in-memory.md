@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Accepted
+Superseded by [ADR-037](037-quest-session-upstash-redis.md) (2026-07-18)
 
 ## 結論
 

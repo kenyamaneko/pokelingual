@@ -12,6 +12,14 @@ services:
       retries: 30
       start_period: 10s
 
+  valkey:
+    image: valkey/valkey:8-alpine
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
   backend:
     build:
       context: .
@@ -24,8 +32,11 @@ services:
       FRONTEND_URL: http://localhost:15151
       FIRESTORE_EMULATOR_HOST: firestore-emulator:15180
       GOOGLE_CLOUD_PROJECT: pokelingual-mock
+      UPSTASH_REDIS_URL: redis://valkey:6379
     depends_on:
       firestore-emulator:
+        condition: service_healthy
+      valkey:
         condition: service_healthy
     healthcheck:
       # alpine に curl は無いため node の fetch で /health を叩く

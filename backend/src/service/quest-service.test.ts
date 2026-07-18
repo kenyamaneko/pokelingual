@@ -10,6 +10,7 @@ import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../dom
 import type { LLMClient, RandomSource, UserSettingsRepository } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
+import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 
 /**
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
@@ -138,6 +139,8 @@ interface ServiceOverrides {
   enabledGenerations?: number[] | null;
   /** 乱数値。 */
   randomValue?: number;
+  /** セッションストアが投げるエラー (指定時は get/set/delete がこのエラーを投げる)。 */
+  sessionStoreError?: Error;
 }
 
 /**
@@ -163,7 +166,8 @@ function makeService(o: ServiceOverrides = {}): QuestService {
     updateEnabledGenerations: async () => {},
   };
   const random: RandomSource = { next: () => o.randomValue ?? 0 };
-  return new QuestService(pokemonClient, llm, environment, settingsRepo, random);
+  const sessionStore = makeInMemoryQuestSessionStore({ error: o.sessionStoreError });
+  return new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
 }
 
 describe("[出題] クエストの出題", () => {
@@ -384,60 +388,67 @@ describe("翻訳の採点", () => {
   });
 });
 
+describe("セッションストアの障害", () => {
+  it("セッションストアの読み込みが失敗すると、外部サービスのエラーになる", async () => {
+    const service = makeService({ sessionStoreError: new Error("boom") });
+    await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
+  });
+});
+
 describe("[名前当て] 名前当ての判定", () => {
   it("英語名の完全一致はハイパーボール (大文字小文字・前後空白を無視)", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "  bulbasaur ");
+    const res = await service.guessName("alice", "  bulbasaur ");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", language: "en" });
   });
 
   it("日本語名の一致はスーパーボール", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "フシギダネ");
+    const res = await service.guessName("alice", "フシギダネ");
     expect(res).toMatchObject({ correct: true, ball_type: "great", language: "ja" });
   });
 
   it("名前が 4 文字以上のとき、綴りが 2 文字までずれていても正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "bulbasaxx");
+    const res = await service.guessName("alice", "bulbasaxx");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", fuzzy: true });
   });
 
   it("名前が 4 文字以上のとき、綴りが 3 文字ずれていると不正解になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "bulbasxxx");
+    const res = await service.guessName("alice", "bulbasxxx");
     expect(res.correct).toBe(false);
   });
 
   it("名前が 3 文字のポケモンは、1 文字のずれでも不正解になる (あいまい一致の対象外)", async () => {
     const service = makeService({ pokemons: [makePokemon({ name_en: "Abc" })] });
     await service.newQuest("alice");
-    expect(service.guessName("alice", "abd").correct).toBe(false);
+    expect((await service.guessName("alice", "abd")).correct).toBe(false);
   });
 
   it("名前が 4 文字のポケモンは、1 文字のずれなら正解になる (あいまい一致が有効)", async () => {
     const service = makeService({ pokemons: [makePokemon({ name_en: "Abcd" })] });
     await service.newQuest("alice");
-    expect(service.guessName("alice", "abce")).toMatchObject({ correct: true, fuzzy: true });
+    expect(await service.guessName("alice", "abce")).toMatchObject({ correct: true, fuzzy: true });
   });
 
   it("不正解なら残り試行回数が減って返る", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    const res = service.guessName("alice", "wrong");
+    const res = await service.guessName("alice", "wrong");
     expect(res).toMatchObject({ correct: false, attempts_remaining: 2 });
   });
 
   it("3回目の不正解で正解名が公開されモンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "wrong1");
-    service.guessName("alice", "wrong2");
-    const res = service.guessName("alice", "wrong3");
+    await service.guessName("alice", "wrong1");
+    await service.guessName("alice", "wrong2");
+    const res = await service.guessName("alice", "wrong3");
     expect(res).toMatchObject({
       correct: false,
       ball_type: "poke",
@@ -445,14 +456,14 @@ describe("[名前当て] 名前当ての判定", () => {
       reveal_name_en: "Bulbasaur",
       reveal_name_ja: "フシギダネ",
     });
-    expect(service.attemptCapture("alice").ball_type).toBe("poke");
+    expect((await service.attemptCapture("alice")).ball_type).toBe("poke");
   });
 
   it("正解済みで再送信すると確定済みボールを返す", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "bulbasaur");
-    const res = service.guessName("alice", "whatever");
+    await service.guessName("alice", "bulbasaur");
+    const res = await service.guessName("alice", "whatever");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra", attempts_remaining: 0 });
   });
 });
@@ -465,7 +476,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    const res = service.guessName("alice", "bulbasaur");
+    const res = await service.guessName("alice", "bulbasaur");
     expect(res).toMatchObject({ correct: true, ball_type: "master", language: "en" });
   });
 
@@ -476,7 +487,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    const res = service.guessName("alice", "bulbasaxx");
+    const res = await service.guessName("alice", "bulbasaxx");
     expect(res).toMatchObject({ correct: true, ball_type: "master", fuzzy: true });
   });
 
@@ -487,7 +498,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    const res = service.guessName("alice", "bulbasaur");
+    const res = await service.guessName("alice", "bulbasaur");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra" });
   });
 
@@ -498,7 +509,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    const res = service.guessName("alice", "フシギダネ");
+    const res = await service.guessName("alice", "フシギダネ");
     expect(res).toMatchObject({ correct: true, ball_type: "master", language: "ja" });
   });
 
@@ -508,7 +519,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    const res = service.guessName("alice", "bulbasaur");
+    const res = await service.guessName("alice", "bulbasaur");
     expect(res).toMatchObject({ correct: true, ball_type: "ultra" });
   });
 
@@ -519,9 +530,9 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    service.guessName("alice", "wrong1");
-    service.guessName("alice", "wrong2");
-    const res = service.guessName("alice", "wrong3");
+    await service.guessName("alice", "wrong1");
+    await service.guessName("alice", "wrong2");
+    const res = await service.guessName("alice", "wrong3");
     expect(res).toMatchObject({ correct: false, ball_type: "poke" });
   });
 
@@ -532,7 +543,7 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    expect(service.skipGuess("alice")).toEqual({ ball_type: "poke" });
+    expect(await service.skipGuess("alice")).toEqual({ ball_type: "poke" });
   });
 
   it("マスターボールでの捕獲は乱数によらず必ず成功し、捕獲確率は1.0になる", async () => {
@@ -543,8 +554,8 @@ describe("[名前当て] マスターボール確定捕獲", () => {
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
-    service.guessName("alice", "bulbasaur");
-    const res = service.attemptCapture("alice");
+    await service.guessName("alice", "bulbasaur");
+    const res = await service.attemptCapture("alice");
     expect(res).toMatchObject({ captured: true, probability: 1.0, ball_type: "master" });
   });
 });
@@ -553,51 +564,51 @@ describe("[名前当て] 名前当てのヒント", () => {
   it("まだ一度も推測していないとき、ヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
     const service = makeService({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
     await service.newQuest("alice");
-    const res = service.requestHint("alice");
+    const res = await service.requestHint("alice");
     expect(res).toEqual({ types: ["grass", "poison"], attempts_remaining: 2 });
   });
 
   it("1回不正解で残り2回のとき、ヒントを要求できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "wrong");
-    const res = service.requestHint("alice");
+    await service.guessName("alice", "wrong");
+    const res = await service.requestHint("alice");
     expect(res.attempts_remaining).toBe(1);
   });
 
   it("2回不正解で残り1回のとき、ヒントを要求するとエラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "wrong1");
-    service.guessName("alice", "wrong2");
-    expect(() => service.requestHint("alice")).toThrow(/insufficient guess attempts remaining/);
+    await service.guessName("alice", "wrong1");
+    await service.guessName("alice", "wrong2");
+    await expect(service.requestHint("alice")).rejects.toThrow(/insufficient guess attempts remaining/);
   });
 
   it("名前当てが正解済みのとき、ヒントを要求するとエラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "bulbasaur");
-    expect(() => service.requestHint("alice")).toThrow(/already guessed or already used/);
+    await service.guessName("alice", "bulbasaur");
+    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or already used/);
   });
 
   it("既にヒントを1回要求済みのとき、再度要求するとエラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.requestHint("alice");
-    expect(() => service.requestHint("alice")).toThrow(/already guessed or already used/);
+    await service.requestHint("alice");
+    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or already used/);
   });
 
-  it("セッションが無いままヒントを要求すると、セッション不明のエラーになる", () => {
+  it("セッションが無いままヒントを要求すると、セッション不明のエラーになる", async () => {
     const service = makeService();
-    expect(() => service.requestHint("nobody")).toThrow(NotFoundError);
+    await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
   });
 
   it("残り2回でヒントを使い切った直後に不正解にすると、試行が尽きてモンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "wrong1");
-    service.requestHint("alice");
-    const res = service.guessName("alice", "wrong2");
+    await service.guessName("alice", "wrong1");
+    await service.requestHint("alice");
+    const res = await service.guessName("alice", "wrong2");
     expect(res).toMatchObject({ correct: false, ball_type: "poke", attempts_remaining: 0 });
   });
 });
@@ -606,41 +617,41 @@ describe("[名前当て] 名前当てスキップと捕獲", () => {
   it("名前当てをスキップすると、モンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    expect(service.skipGuess("alice")).toEqual({ ball_type: "poke" });
+    expect(await service.skipGuess("alice")).toEqual({ ball_type: "poke" });
   });
 
-  it("セッションが無いまま名前当てをスキップすると、セッション不明のエラーになる", () => {
+  it("セッションが無いまま名前当てをスキップすると、セッション不明のエラーになる", async () => {
     const service = makeService();
-    expect(() => service.skipGuess("nobody")).toThrow(NotFoundError);
+    await expect(service.skipGuess("nobody")).rejects.toThrow(NotFoundError);
   });
 
   it("英語名正解 (ハイパーボール確定) 後に名前当てをスキップしても、ハイパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "bulbasaur");
-    expect(service.skipGuess("alice")).toEqual({ ball_type: "ultra" });
-    expect(service.attemptCapture("alice").ball_type).toBe("ultra");
+    await service.guessName("alice", "bulbasaur");
+    expect(await service.skipGuess("alice")).toEqual({ ball_type: "ultra" });
+    expect((await service.attemptCapture("alice")).ball_type).toBe("ultra");
   });
 
   it("日本語名正解 (スーパーボール確定) 後に名前当てをスキップしても、スーパーボールのまま捕獲できる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.guessName("alice", "フシギダネ");
-    expect(service.skipGuess("alice")).toEqual({ ball_type: "great" });
-    expect(service.attemptCapture("alice").ball_type).toBe("great");
+    await service.guessName("alice", "フシギダネ");
+    expect(await service.skipGuess("alice")).toEqual({ ball_type: "great" });
+    expect((await service.attemptCapture("alice")).ball_type).toBe("great");
   });
 
   it("名前当てにもスキップにも応答していないまま捕獲しようとすると、エラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    expect(() => service.attemptCapture("alice")).toThrow(/before a ball/);
+    await expect(service.attemptCapture("alice")).rejects.toThrow(/before a ball/);
   });
 
   it("名前当てをスキップして捕獲すると、モンスターボールでの捕獲結果になる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.skipGuess("alice");
-    const res = service.attemptCapture("alice");
+    await service.skipGuess("alice");
+    const res = await service.attemptCapture("alice");
     expect(res).toMatchObject({
       captured: true,
       pokemon_id: 1,
@@ -656,17 +667,17 @@ describe("[名前当て] 名前当てスキップと捕獲", () => {
       randomValue: 0.5,
     });
     await service.newQuest("alice");
-    service.skipGuess("alice");
-    const res = service.attemptCapture("alice");
+    await service.skipGuess("alice");
+    const res = await service.attemptCapture("alice");
     expect(res.captured).toBe(false);
   });
 
   it("捕獲するとセッションが消費され、2回目はセッション不明のエラーになる", async () => {
     const service = makeService();
     await service.newQuest("alice");
-    service.skipGuess("alice");
-    service.attemptCapture("alice");
-    expect(() => service.attemptCapture("alice")).toThrow(NotFoundError);
+    await service.skipGuess("alice");
+    await service.attemptCapture("alice");
+    await expect(service.attemptCapture("alice")).rejects.toThrow(NotFoundError);
   });
 
   it("セッションはユーザごとに分離される", async () => {

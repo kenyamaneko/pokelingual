@@ -17,6 +17,10 @@ function clearConfigEnv(): void {
     "PER_USER_DAILY_LIMIT",
     "GLOBAL_DAILY_LIMIT",
     "POKEMON_SNAPSHOT_URI",
+    "UPSTASH_REDIS_URL",
+    "UPSTASH_REDIS_ENDPOINT",
+    "UPSTASH_REDIS_PASSWORD",
+    "QUEST_SESSION_TTL_SECONDS",
   ]) {
     delete process.env[key];
   }
@@ -37,17 +41,26 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(() => loadConfig()).toThrow(/invalid env: APP_MODE/);
   });
 
-  it("mock モードでは他の env が未設定でも既定値で起動できる", () => {
+  it("mock モードでは UPSTASH_REDIS_URL 以外の env が未設定でも既定値で起動できる", () => {
     process.env.APP_MODE = "mock";
+    process.env.UPSTASH_REDIS_URL = "redis://valkey:6379";
     const cfg = loadConfig();
     expect(cfg.appMode).toBe("mock");
     expect(cfg.googleCloudProject).toBe("pokelingual-mock");
     expect(cfg.perUserDailyLimit).toBe(30);
     expect(cfg.globalDailyLimit).toBe(1500);
+    expect(cfg.questSessionRedisURL).toBe("redis://valkey:6379");
+    expect(cfg.questSessionTTLSeconds).toBe(3600);
+  });
+
+  it("mock モードで UPSTASH_REDIS_URL が未設定なら起動エラー (既定値へのフォールバックはしない)", () => {
+    process.env.APP_MODE = "mock";
+    expect(() => loadConfig()).toThrow(/required env not set: UPSTASH_REDIS_URL/);
   });
 
   it("整数 env の 1 は受理される", () => {
     process.env.APP_MODE = "mock";
+    process.env.UPSTASH_REDIS_URL = "redis://valkey:6379";
     process.env.PER_USER_DAILY_LIMIT = "1";
     expect(loadConfig().perUserDailyLimit).toBe(1);
   });
@@ -79,6 +92,9 @@ describe("[起動設定] 起動設定の読み込み", () => {
     process.env.PER_USER_DAILY_LIMIT = "10";
     process.env.GLOBAL_DAILY_LIMIT = "100";
     process.env.POKEMON_SNAPSHOT_URI = "gs://bucket/pokemon-snapshot.json";
+    process.env.UPSTASH_REDIS_ENDPOINT = "redis-endpoint.upstash.io:6379";
+    process.env.UPSTASH_REDIS_PASSWORD = "s3cret";
+    process.env.QUEST_SESSION_TTL_SECONDS = "1800";
 
     const cfg = loadConfig();
     expect(cfg).toMatchObject({
@@ -91,6 +107,26 @@ describe("[起動設定] 起動設定の読み込み", () => {
       perUserDailyLimit: 10,
       globalDailyLimit: 100,
       pokemonSnapshotURI: "gs://bucket/pokemon-snapshot.json",
+      questSessionRedisURL: "rediss://default:s3cret@redis-endpoint.upstash.io:6379",
+      questSessionTTLSeconds: 1800,
     });
+  });
+
+  it("real モードで Upstash Redis のパスワードに URL 予約文字を含む場合はエンコードされる", () => {
+    process.env.APP_MODE = "real";
+    process.env.APP_ENV = "dev";
+    process.env.GOOGLE_CLOUD_PROJECT = "proj";
+    process.env.GOOGLE_CLOUD_LOCATION = "loc";
+    process.env.FRONTEND_URL = "https://example.com";
+    process.env.GEMINI_MODEL = "gemini-test";
+    process.env.PER_USER_DAILY_LIMIT = "10";
+    process.env.GLOBAL_DAILY_LIMIT = "100";
+    process.env.POKEMON_SNAPSHOT_URI = "gs://bucket/pokemon-snapshot.json";
+    process.env.UPSTASH_REDIS_ENDPOINT = "redis-endpoint.upstash.io:6379";
+    process.env.UPSTASH_REDIS_PASSWORD = "p@ss/word:1";
+    process.env.QUEST_SESSION_TTL_SECONDS = "1800";
+
+    const cfg = loadConfig();
+    expect(cfg.questSessionRedisURL).toBe("rediss://default:p%40ss%2Fword%3A1@redis-endpoint.upstash.io:6379");
   });
 });

@@ -79,9 +79,9 @@ jobs:
             .
           docker push "${IMAGE_BASE}" --all-tags
 
-      # --max-instances 1: クエストセッションをインスタンスのメモリ内に保持するため、
-      # 複数インスタンスにスケールすると別インスタンスに振られたユーザーのセッションが
-      # 見つからず 404 になる。
+      # --max-instances 1: セッションストアを Redis に切り替えた直後の初回ロールアウトは、
+      # Upstash 配線をスモークで検証するためこの値を維持する。検証後に別デプロイで
+      # --max-instances 3 へ引き上げる。
       # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
       # これはエンドユーザー向け API での Google 推奨パターン。
       # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
@@ -95,7 +95,8 @@ jobs:
             --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --service-account "pokelingual-api-dev@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
             --remove-secrets "GEMINI_API_KEY" \
-            --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json" \
+            --update-secrets "UPSTASH_REDIS_ENDPOINT=pokelingual-upstash-redis-endpoint:latest,UPSTASH_REDIS_PASSWORD=pokelingual-upstash-redis-password:latest" \
+            --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-dev.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600" \
             --max-instances 1 \
             --allow-unauthenticated
 

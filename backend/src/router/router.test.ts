@@ -25,6 +25,7 @@ import type {
 import type { UserPokemon, UserSettings } from "../domain/user.js";
 import type { RateLimitKind } from "../domain/errors.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
+import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 
 interface AppOverrides {
   /** LLM が投げるエラー (指定時は generateText が失敗する)。 */
@@ -35,6 +36,8 @@ interface AppOverrides {
   settingsError?: Error;
   /** ポケモン種別クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
   pokemonError?: Error;
+  /** クエストセッションストアが投げるエラー (指定時は get/set/delete がこのエラーを投げる)。 */
+  sessionStoreError?: Error;
   /** 図鑑詳細エンドポイントの検証用に、事前に保存済みとして扱うユーザ実績。 */
   seededUserPokemon?: UserPokemon[];
 }
@@ -112,7 +115,9 @@ function makeApp(o: AppOverrides = {}) {
     getUserUsage: async () => ({ count: 3, limit: 30 }),
   };
 
-  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random);
+  const sessionStore = makeInMemoryQuestSessionStore({ error: o.sessionStoreError });
+  const tutorialSessionStore = makeInMemoryQuestSessionStore();
+  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
 
   const app = express();
@@ -123,7 +128,7 @@ function makeApp(o: AppOverrides = {}) {
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
-      createTutorialQuestHandler(environment),
+      createTutorialQuestHandler(environment, tutorialSessionStore),
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsRepo, servablePokemonIDs),
       new UsageHandler(rateLimitRepo),
@@ -211,6 +216,13 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: "internal server error" });
   });
+
+  it("セッションストアが障害を起こすと 502 を返す", async () => {
+    const app = makeApp({ sessionStoreError: new Error("redis unavailable") });
+    const res = await request(app).get("/api/quest/new");
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "external service unavailable" });
+  });
 });
 
 describe("入力バリデーションの 400 (公開入口経由)", () => {
@@ -285,6 +297,22 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.pokemon).toHaveLength(1);
     expect(pokedex.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
     expect(pokedex.body.captured_count).toBe(1);
+  });
+
+  it("規定回数連続で名前当てに不正解すると、最終回の応答で正解名が開示される", async () => {
+    const app = makeApp();
+    await request(app).get("/api/quest/new");
+    const first = await request(app).post("/api/quest/guess-name").send({ guess: "wrong1" });
+    expect(first.body.reveal_name_en).toBeUndefined();
+    const second = await request(app).post("/api/quest/guess-name").send({ guess: "wrong2" });
+    expect(second.body.reveal_name_en).toBeUndefined();
+    const third = await request(app).post("/api/quest/guess-name").send({ guess: "wrong3" });
+    expect(third.body).toMatchObject({
+      correct: false,
+      ball_type: "poke",
+      attempts_remaining: 0,
+      reveal_name_en: "Bulbasaur",
+    });
   });
 
   it("出題後にヒントを要求すると、出題ポケモンのタイプと消費後の残り試行回数が返る", async () => {
