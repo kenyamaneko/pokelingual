@@ -233,7 +233,8 @@ gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
-  --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json" \
+  --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600,FUZZY_MATCH_MIN_NAME_LENGTH=4,FUZZY_MATCH_MAX_DISTANCE=2,BALL_CAPTURE_BONUS_POKE=0,BALL_CAPTURE_BONUS_GREAT=1.5,BALL_CAPTURE_BONUS_ULTRA=3.0,LEGENDARY_ENCOUNTER_RATE=0.01,LOCATION_CHOICE_COUNT=4,MASTER_BALL_MIN_SCORE=70,MAX_EXCLUDED_POKEMON_COUNT=30" \
+  --update-secrets "UPSTASH_REDIS_URL=pokelingual-upstash-redis-url:latest" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定

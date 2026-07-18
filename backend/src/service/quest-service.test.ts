@@ -4,54 +4,59 @@ import {
   calculateCaptureRate,
   maskPokemonNameEN,
   maskPokemonNameJA,
-  BALL_CAPTURE_BONUS,
 } from "./quest-service.js";
 import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
 import type { LLMClient, RandomSource, UserSettingsRepository } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
+import { DEFAULT_QUEST_TUNING } from "../testing/quest-tuning-fixture.js";
 
 /**
  * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
+ * ボール補正は QuestService の設定値から独立した純関数の引数のため、テスト固有のダミー値で確かめる。
  */
 describe("捕獲確率の計算", () => {
-  it("種族値合計が高く最終評価点0 + モンスターボールなら捕獲は困難 (確率は低い)", () => {
-    expect(calculateCaptureRate(0, 680, BALL_CAPTURE_BONUS.poke)).toBeLessThan(0.05);
+  const POKE_BONUS = 0;
+  const GREAT_BONUS = 1.5;
+  const ULTRA_BONUS = 3.0;
+
+  it("種族値合計が高く最終評価点0 + ボール補正なしなら捕獲は困難 (確率は低い)", () => {
+    expect(calculateCaptureRate(0, 680, POKE_BONUS)).toBeLessThan(0.05);
   });
 
   it("最終評価点・種族値合計・ボール補正が最も捕獲しやすい組み合わせでも、捕獲確率は1.0を超えない", () => {
-    expect(calculateCaptureRate(99, 200, BALL_CAPTURE_BONUS.ultra)).toBeLessThanOrEqual(1);
+    expect(calculateCaptureRate(99, 200, ULTRA_BONUS)).toBeLessThanOrEqual(1);
   });
 
-  it("同じ種族値合計・同じボールなら、最終評価点が高いほど捕獲確率が上がる", () => {
-    expect(calculateCaptureRate(90, 300, BALL_CAPTURE_BONUS.poke)).toBeGreaterThan(
-      calculateCaptureRate(30, 300, BALL_CAPTURE_BONUS.poke),
+  it("同じ種族値合計・同じボール補正なら、最終評価点が高いほど捕獲確率が上がる", () => {
+    expect(calculateCaptureRate(90, 300, POKE_BONUS)).toBeGreaterThan(
+      calculateCaptureRate(30, 300, POKE_BONUS),
     );
   });
 
-  it("同じ最終評価点・同じボールなら、種族値合計が高いほど捕獲確率が下がる", () => {
-    expect(calculateCaptureRate(50, 300, BALL_CAPTURE_BONUS.poke)).toBeGreaterThan(
-      calculateCaptureRate(50, 680, BALL_CAPTURE_BONUS.poke),
+  it("同じ最終評価点・同じボール補正なら、種族値合計が高いほど捕獲確率が下がる", () => {
+    expect(calculateCaptureRate(50, 300, POKE_BONUS)).toBeGreaterThan(
+      calculateCaptureRate(50, 680, POKE_BONUS),
     );
   });
 
   it("ボール補正が大きいほど捕獲確率が上がる", () => {
-    expect(calculateCaptureRate(0, 680, BALL_CAPTURE_BONUS.ultra)).toBeGreaterThan(
-      calculateCaptureRate(0, 680, BALL_CAPTURE_BONUS.poke),
+    expect(calculateCaptureRate(0, 680, ULTRA_BONUS)).toBeGreaterThan(
+      calculateCaptureRate(0, 680, POKE_BONUS),
     );
   });
 
-  it("最終評価点とポケモンの種族値が同一ならモンスターボール<スーパーボール<ハイパーボールの順に捕獲確率が上がる", () => {
-    const pokeRate = calculateCaptureRate(20, 500, BALL_CAPTURE_BONUS.poke);
-    const greatRate = calculateCaptureRate(20, 500, BALL_CAPTURE_BONUS.great);
-    const ultraRate = calculateCaptureRate(20, 500, BALL_CAPTURE_BONUS.ultra);
+  it("最終評価点とポケモンの種族値が同一なら、ボール補正が大きいほど段階的に捕獲確率が上がる", () => {
+    const pokeRate = calculateCaptureRate(20, 500, POKE_BONUS);
+    const greatRate = calculateCaptureRate(20, 500, GREAT_BONUS);
+    const ultraRate = calculateCaptureRate(20, 500, ULTRA_BONUS);
     expect(greatRate).toBeGreaterThan(pokeRate);
     expect(ultraRate).toBeGreaterThan(greatRate);
   });
 
-  it("最終評価点が上限 (99) + ハイパーボールなら、種族値合計が高い (680) でもほぼ確実に捕獲できる", () => {
-    expect(calculateCaptureRate(99, 680, BALL_CAPTURE_BONUS.ultra)).toBeGreaterThan(0.99);
+  it("最終評価点が上限 (99) + 大きいボール補正なら、種族値合計が高い (680) でもほぼ確実に捕獲できる", () => {
+    expect(calculateCaptureRate(99, 680, ULTRA_BONUS)).toBeGreaterThan(0.99);
   });
 });
 
@@ -167,7 +172,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   };
   const random: RandomSource = { next: () => o.randomValue ?? 0 };
   const sessionStore = makeInMemoryQuestSessionStore({ error: o.sessionStoreError });
-  return new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
+  return new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore, DEFAULT_QUEST_TUNING);
 }
 
 describe("[出題] クエストの出題", () => {

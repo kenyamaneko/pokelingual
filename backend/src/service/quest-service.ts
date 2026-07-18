@@ -3,7 +3,7 @@ import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../dom
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
-import { findLocation, pickRandomLocations, LOCATION_CHOICE_COUNT } from "../domain/location.js";
+import { findLocation, pickRandomLocations } from "../domain/location.js";
 import { pickRandomSample } from "../domain/random.js";
 import type {
   LLMClient,
@@ -29,17 +29,11 @@ import type {
 /** ポケモン名推測の最大試行回数。これを超えるとモンスターボール固定での捕獲フェーズへ。 */
 const MAX_NAME_GUESS_ATTEMPTS = 3;
 
-/** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
-const FUZZY_MATCH_MIN_NAME_LENGTH = 4;
-
 /** ヒント要求に必要な最小残り挑戦回数。消費後も1回は名前当てへの挑戦が残るようにする。 */
 const MIN_REMAINING_ATTEMPTS_FOR_HINT = 2;
 
 /** ヒントの最大開示回数。1回目でタイプ、2回目で技を開示する。 */
 const MAX_HINT_REVEALS = 2;
-
-/** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
-const FUZZY_MATCH_MAX_DISTANCE = 2;
 
 /** LLM が返す翻訳スコアの許容範囲。プロンプト上 0-100 を指示しており、これを外れたら仕様違反。 */
 const SCORE_MIN = 0;
@@ -50,20 +44,23 @@ const SCORE_TRANSLATION_FLOOR = 10;
 /** 最終評価点変換: 素点 (0-100) を最終評価点 (0-99) へ圧縮する係数。 */
 const SCORE_TRANSLATION_SCALE = 1.1;
 
-/** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要な最終評価点の下限。 */
-const MASTER_BALL_MIN_SCORE = 70;
-
-/** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。master は確率計算をバイパスするため対象外。 */
-export const BALL_CAPTURE_BONUS: Record<Exclude<BallType, "master">, number> = {
-  poke: 0,
-  great: 1.5,
-  ultra: 3.0,
-};
-
-/** 幻・伝説を抽選する確率 (場所によらず低確率で登場させる)。乱数の上位この割合が当たり。 */
-const LEGENDARY_ENCOUNTER_RATE = 0.01;
-
 // QuestNewResponse / ScoreResponse / GuessResponse / CaptureResponse の API 契約型は shared/api-types/quest.d.ts を参照
+
+/** QuestService の運用チューニング値。env 経由で Config から供給される。 */
+export interface QuestTuningConfig {
+  /** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
+  fuzzyMatchMinNameLength: number;
+  /** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
+  fuzzyMatchMaxDistance: number;
+  /** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。master は確率計算をバイパスするため対象外。 */
+  ballCaptureBonus: Record<Exclude<BallType, "master">, number>;
+  /** 幻・伝説を抽選する確率 (場所によらず低確率で登場させる)。乱数の上位この割合が当たり。 */
+  legendaryEncounterRate: number;
+  /** 場所選択に一度に提示する場所の数。 */
+  locationChoiceCount: number;
+  /** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要な最終評価点の下限。 */
+  masterBallMinScore: number;
+}
 
 /**
  * クエストの出題・採点・名前推測・捕獲のドメインロジックを束ねるサービス。
@@ -77,6 +74,7 @@ export class QuestService {
    * @param settingsRepo ユーザ設定リポジトリ。
    * @param random 乱数ソース。
    * @param sessionStore 進行中のクエストセッションを保存するストア。
+   * @param tuning 運用チューニング値。
    */
   constructor(
     private pokemonClient: PokemonClient,
@@ -85,6 +83,7 @@ export class QuestService {
     private settingsRepo: UserSettingsRepository,
     private random: RandomSource,
     private sessionStore: QuestSessionStore,
+    private tuning: QuestTuningConfig,
   ) {}
 
   /**
@@ -165,7 +164,7 @@ export class QuestService {
    */
   private async pickQuestCandidates(locationId: string | undefined, generationPool: Set<number>): Promise<number[]> {
     const servableIDs = this.pokemonClient.getServableIDs();
-    const isLegendaryDraw = this.random.next() >= 1 - LEGENDARY_ENCOUNTER_RATE;
+    const isLegendaryDraw = this.random.next() >= 1 - this.tuning.legendaryEncounterRate;
     if (isLegendaryDraw) {
       const legendary = servableIDs.filter((id) => generationPool.has(id) && LEGENDARY_MYTHICAL_IDS.has(id));
       if (legendary.length > 0) return legendary;
@@ -202,7 +201,7 @@ export class QuestService {
    * @returns ランダムに選ばれた探索場所の配列。
    */
   getLocations(): QuestLocation[] {
-    return pickRandomLocations(this.random, LOCATION_CHOICE_COUNT);
+    return pickRandomLocations(this.random, this.tuning.locationChoiceCount);
   }
 
   /**
@@ -275,7 +274,7 @@ export class QuestService {
 
     const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
     const masterEligible =
-      (session.is_legendary || session.is_mythical) && session.score >= MASTER_BALL_MIN_SCORE;
+      (session.is_legendary || session.is_mythical) && session.score >= this.tuning.masterBallMinScore;
 
     // 分岐ごとに保存を書くと、分岐を追加・変更したときに保存の書き忘れに気づけない。
     // 応答を変数に確定してから最後に一度だけ保存し、書き忘れが起きない形にする。
@@ -291,8 +290,8 @@ export class QuestService {
       session.name_guessed = true;
       response = { correct: true, ball_type: ballType, language: "ja", attempts_remaining: remaining };
     } else if (
-      nameENNorm.length >= FUZZY_MATCH_MIN_NAME_LENGTH &&
-      levenshtein(guessNorm, nameENNorm) <= FUZZY_MATCH_MAX_DISTANCE
+      nameENNorm.length >= this.tuning.fuzzyMatchMinNameLength &&
+      levenshtein(guessNorm, nameENNorm) <= this.tuning.fuzzyMatchMaxDistance
     ) {
       const ballType = masterEligible ? "master" : "ultra";
       session.ball_type = ballType;
@@ -385,7 +384,7 @@ export class QuestService {
       probability = 1.0;
       captured = true;
     } else {
-      const ballBonus = BALL_CAPTURE_BONUS[ballType];
+      const ballBonus = this.tuning.ballCaptureBonus[ballType];
       probability = calculateCaptureRate(session.score, session.base_stat_total, ballBonus);
       captured = this.random.next() < probability;
     }

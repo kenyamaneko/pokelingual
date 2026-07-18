@@ -123,12 +123,28 @@ async function main(): Promise<void> {
   const questSessionStore = new RedisQuestSessionStore(redisClient, QUEST_SESSION_KEY_PREFIX, cfg.questSessionTTLSeconds);
   const tutorialSessionStore = new RedisQuestSessionStore(redisClient, TUTORIAL_SESSION_KEY_PREFIX, cfg.questSessionTTLSeconds);
 
-  const questService = new QuestService(pokemonClient, llmClient, cfg.environment, userSettingsRepo, randomSource, questSessionStore);
+  const questTuning = {
+    fuzzyMatchMinNameLength: cfg.fuzzyMatchMinNameLength,
+    fuzzyMatchMaxDistance: cfg.fuzzyMatchMaxDistance,
+    ballCaptureBonus: cfg.ballCaptureBonus,
+    legendaryEncounterRate: cfg.legendaryEncounterRate,
+    locationChoiceCount: cfg.locationChoiceCount,
+    masterBallMinScore: cfg.masterBallMinScore,
+  };
+  const questService = new QuestService(
+    pokemonClient,
+    llmClient,
+    cfg.environment,
+    userSettingsRepo,
+    randomSource,
+    questSessionStore,
+    questTuning,
+  );
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, cfg.environment);
-  const settingsService = new SettingsService(userSettingsRepo, servablePokemonIDs);
+  const settingsService = new SettingsService(userSettingsRepo, servablePokemonIDs, cfg.maxExcludedPokemonCount);
 
   const questHandler = new QuestHandler(questService, userPokemonRepo);
-  const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment, tutorialSessionStore);
+  const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment, tutorialSessionStore, questTuning);
   const pokedexHandler = new PokedexHandler(pokedexService);
   const settingsHandler = new SettingsHandler(settingsService);
   const usageHandler = new UsageHandler(rateLimitRepo);

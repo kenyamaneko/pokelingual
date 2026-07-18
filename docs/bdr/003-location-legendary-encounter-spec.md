@@ -18,3 +18,7 @@ Accepted
 
 - 場所・幻伝説どちらのプールも、世代フィルタ・除外設定と AND で交差する。
 - 登場ポケモンの伝説・幻フラグは PokeAPI `/api/v2/pokemon-species/{id}` の `is_legendary` / `is_mythical` から取得する。
+
+## Amendment: 2026-07-18 提示件数・出現確率を運用時に設定可能にする
+
+場所の提示件数 (4) と幻・伝説の出現確率 (`LEGENDARY_ENCOUNTER_RATE`, 1%) を env 経由で運用時に変更できる設定値にした。既定値はいずれも本文の値から変えていない。

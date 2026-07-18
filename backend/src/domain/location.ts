@@ -19,9 +19,6 @@ export const QUEST_LOCATIONS: readonly QuestLocation[] = [
   { id: "crystal-cave", name: "きらめく水晶の洞窟", description: "無数の水晶がきらめき、時おりパチッと火花が散る", types: ["rock", "ice", "electric", "fairy"] },
 ];
 
-/** 場所選択に一度に提示する場所の数。 */
-export const LOCATION_CHOICE_COUNT = 4;
-
 /**
  * 場所 ID から場所定義を返す。
  * @param id 場所 ID。
