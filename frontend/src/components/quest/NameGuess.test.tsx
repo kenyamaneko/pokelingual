@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { spec } from "../../test/labels";
@@ -369,6 +369,37 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     );
     await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton }));
     expect(onHint).toHaveBeenCalledTimes(1);
+  });
+
+  it("ヒント要求が完了する前にボタンを連打しても、ヒント要求は1回しか呼ばれない", async () => {
+    let resolveHint: () => void = () => {};
+    const onHint = vi.fn(() => new Promise<void>((resolve) => { resolveHint = resolve; }));
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={3}
+        maxGuessAttempts={3}
+        hintResult={null}
+        onHint={onHint}
+      />,
+    );
+    const button = screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton });
+
+    // userEvent は各操作の間で状態更新を待つため、同一tick内の連打を再現できない
+    await act(async () => {
+      button.click();
+      button.click();
+    });
+
+    expect(onHint).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+
+    await act(async () => {
+      resolveHint();
+    });
   });
 
   it("1回目のヒント (タイプ) 取得後にヒントボタンを押すと、2回目のヒント要求が呼ばれる", async () => {

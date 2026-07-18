@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { GuessResponse, HintResponse } from "../../../../shared/api-types/quest";
 import type { PokemonType } from "../../../../shared/api-types/pokemon";
 import { PokemonNameInput } from "./PokemonNameInput";
@@ -6,9 +7,6 @@ import { BALL_SPRITES, BALL_NAMES } from "./ballAssets";
 
 /** ヒントボタンを表示するために必要な最小残り挑戦回数。backend の判定と合わせている。 */
 const MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON = 2;
-
-/** ヒントの最大開示回数。backend の判定と合わせている。 */
-const MAX_HINT_REVEALS = 2;
 
 interface NameGuessProps {
   onSubmit: (guess: string) => Promise<void>;
@@ -108,10 +106,13 @@ export function NameGuess({
   onHint,
   hintResult,
 }: NameGuessProps) {
+  const [hintPending, setHintPending] = useState(false);
+  // setState は非同期に反映されるため、同一tick内の連打を防ぐ判定はrefで同期に行う
+  const hintPendingRef = useRef(false);
+
   const isFinished =
     guessResult?.correct || guessResult?.attempts_remaining === 0;
-  const hintRevealCount = (hintResult?.types ? 1 : 0) + (hintResult?.moves ? 1 : 0);
-  const hintExhausted = hintRevealCount >= MAX_HINT_REVEALS;
+  const hintExhausted = !!hintResult?.moves;
   const hintAvailable =
     attemptsRemaining === null || attemptsRemaining >= MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON;
   const canRequestHint = !!onHint && !hintExhausted && !isFinished && hintAvailable;
@@ -120,6 +121,18 @@ export function NameGuess({
   const handleSubmit = async (guess: string) => {
     await onSubmit(guess);
     return true;
+  };
+
+  const handleHint = async () => {
+    if (!onHint || hintPendingRef.current) return;
+    hintPendingRef.current = true;
+    setHintPending(true);
+    try {
+      await onHint();
+    } finally {
+      hintPendingRef.current = false;
+      setHintPending(false);
+    }
   };
 
   return (
@@ -134,7 +147,7 @@ export function NameGuess({
         <GuessAttemptsBalls total={maxGuessAttempts} remaining={attemptsRemaining} />
       )}
 
-      {hintResult && (hintResult.types || hintResult.moves) && (
+      {hintResult && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
           {hintResult.types && <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>}
           {hintResult.moves && <p className="text-blue-700 text-sm">{formatMovesHint(hintResult.moves)}</p>}
@@ -177,9 +190,11 @@ export function NameGuess({
 
       {canRequestHint && (
         <button
-          onClick={onHint}
+          onClick={handleHint}
+          disabled={hintPending}
           className="mt-2 w-full text-blue-500 hover:text-blue-700 py-2 text-sm
-                     border border-blue-200 rounded-xl transition-colors"
+                     border border-blue-200 rounded-xl transition-colors
+                     disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {NAME_GUESS_LABELS.hintButton}
         </button>

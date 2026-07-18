@@ -1,4 +1,5 @@
 import type { RandomSource } from "../../src/domain/ports.js";
+import { pickRandomSample } from "../../src/domain/random.js";
 
 /** 技の習得方法・バージョングループの1件 (PokeAPI pokemon.moves[].version_group_details の要素)。 */
 export interface PokeAPIMoveVersionGroupDetail {
@@ -120,13 +121,7 @@ export function pickHintMoveNames(
   moveNamesJA: ReadonlyMap<string, string>,
   random: RandomSource,
 ): string[] {
-  const pool = [...candidates];
-  const picked: MoveCandidate[] = [];
-  const n = Math.min(HINT_MOVE_COUNT, pool.length);
-  for (let i = 0; i < n; i++) {
-    const index = Math.floor(random.next() * pool.length);
-    picked.push(pool.splice(index, 1)[0]);
-  }
+  const picked = pickRandomSample(candidates, HINT_MOVE_COUNT, random);
   return picked.map((c) => {
     const ja = moveNamesJA.get(c.slug);
     if (!ja) throw new Error(`no resolved japanese name for move: ${c.slug}`);

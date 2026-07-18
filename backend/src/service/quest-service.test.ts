@@ -610,6 +610,15 @@ describe("[名前当て] 名前当てのヒント", () => {
     expect(() => service.requestHint("alice")).toThrow(/no hint moves in the snapshot/);
   });
 
+  it("技ヒントが無くエラーになったとき、挑戦回数は消費されない", async () => {
+    const service = makeService({ pokemons: [makePokemon({ hint_moves: undefined })] });
+    await service.newQuest("alice");
+    service.requestHint("alice");
+    expect(() => service.requestHint("alice")).toThrow();
+    const res = service.guessName("alice", "wrong");
+    expect(res.attempts_remaining).toBe(1);
+  });
+
   it("残り2回でヒントを使い切った直後に不正解にすると、試行が尽きてモンスターボールが確定する", async () => {
     const service = makeService();
     await service.newQuest("alice");

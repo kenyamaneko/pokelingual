@@ -325,19 +325,19 @@ export class QuestService {
     if (remaining < MIN_REMAINING_ATTEMPTS_FOR_HINT) {
       throw new Error("hint requested with insufficient guess attempts remaining");
     }
+    const isSecondReveal = session.hint_reveal_count === 1;
+    if (isSecondReveal && !session.hint_moves) {
+      // スナップショットに技ヒントが無いのはデータ不整合。挑戦回数を消費する前に失敗させる
+      throw new Error(`pokemon ${session.pokemon_id} has no hint moves in the snapshot`);
+    }
 
     session.guess_attempts++;
     session.hint_reveal_count++;
     const attemptsRemaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
 
-    if (session.hint_reveal_count === 1) {
-      return { types: session.types, attempts_remaining: attemptsRemaining };
-    }
-    if (!session.hint_moves) {
-      // スナップショットに技ヒントが無いのはデータ不整合。握りつぶさず失敗させる
-      throw new Error(`pokemon ${session.pokemon_id} has no hint moves in the snapshot`);
-    }
-    return { moves: session.hint_moves, attempts_remaining: attemptsRemaining };
+    return isSecondReveal
+      ? { moves: session.hint_moves!, attempts_remaining: attemptsRemaining }
+      : { types: session.types, attempts_remaining: attemptsRemaining };
   }
 
   /**
