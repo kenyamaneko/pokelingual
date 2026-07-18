@@ -83,13 +83,13 @@ describe("[ポケモンデータ] ポケモンレコードへの変換", () => {
         },
       ]),
       pokemon: pokemonOf([45, 49, 49, 65, 65, 45], ["grass", "poison"], 7, 69),
-      hintMoves: ["たいあたり", "なきごえ", "つるのムチ"],
+      hintMoveCandidates: ["たいあたり", "なきごえ", "つるのムチ"],
       expected: {
         id: 1, name_en: "Bulbasaur", name_ja: "フシギダネ",
         description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
         description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
         base_stat_total: 318, types: ["grass", "poison"], height: 7, weight: 69,
-        hint_moves: ["たいあたり", "なきごえ", "つるのムチ"],
+        hint_move_candidates: ["たいあたり", "なきごえ", "つるのムチ"],
         flavor_texts: [
           {
             version_names: ["X"],
@@ -118,13 +118,13 @@ describe("[ポケモンデータ] ポケモンレコードへの変換", () => {
         },
       ]),
       pokemon: pokemonOf([39, 52, 43, 60, 50, 65], ["fire"], 6, 85),
-      hintMoves: ["ひっかく", "なきごえ", "ひのこ"],
+      hintMoveCandidates: ["ひっかく", "なきごえ", "ひのこ"],
       expected: {
         id: 4, name_en: "Charmander", name_ja: "ヒトカゲ",
         description_en: "The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.",
         description_ja: "尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。",
         base_stat_total: 309, types: ["fire"], height: 6, weight: 85,
-        hint_moves: ["ひっかく", "なきごえ", "ひのこ"],
+        hint_move_candidates: ["ひっかく", "なきごえ", "ひのこ"],
         flavor_texts: [
           {
             version_names: ["X"],
@@ -139,8 +139,8 @@ describe("[ポケモンデータ] ポケモンレコードへの変換", () => {
         ],
       },
     },
-  ])("$expected.name_ja を変換すると、英名・和名・種族値合計・タイプ・説明・バージョン別説明一覧・ヒント技一覧が出力される", ({ species, pokemon, hintMoves, expected }) => {
-    expect(convertToPokemonRecord(species, pokemon, hintMoves)).toMatchObject(expected);
+  ])("$expected.name_ja を変換すると、英名・和名・種族値合計・タイプ・説明・バージョン別説明一覧・レベルアップ技候補一覧が出力される", ({ species, pokemon, hintMoveCandidates, expected }) => {
+    expect(convertToPokemonRecord(species, pokemon, hintMoveCandidates)).toMatchObject(expected);
   });
 
   it("未知のタイプ名はエラーになる", () => {

@@ -1,6 +1,3 @@
-import type { RandomSource } from "../../src/domain/ports.js";
-import { pickRandomSample } from "../../src/domain/random.js";
-
 /** 技の習得方法・バージョングループの1件 (PokeAPI pokemon.moves[].version_group_details の要素)。 */
 export interface PokeAPIMoveVersionGroupDetail {
   level_learned_at: number;
@@ -19,9 +16,6 @@ export interface PokeAPIMoveName {
   name: string;
   language: { name: string };
 }
-
-/** ヒントとして開示する技の最大数。 */
-export const HINT_MOVE_COUNT = 3;
 
 /**
  * レベルアップ技解決の対象とする version_group。新しい作品から優先して採用する
@@ -109,20 +103,17 @@ export function resolveMoveNameJA(names: PokeAPIMoveName[]): string {
 }
 
 /**
- * 技候補からランダムに最大 HINT_MOVE_COUNT 件を選び、日本語名に変換する。
+ * レベルアップ技候補を日本語名の一覧に変換する。選出 (何件見せるか) は行わない。
  * @param candidates レベルアップ技候補。
- * @param moveNamesJA 技 slug から日本語名への解決済みマップ。
- * @param random 乱数ソース。
- * @returns ランダムに選ばれた技の日本語名 (candidates が HINT_MOVE_COUNT 未満ならその件数分)。
- * @throws 選んだ技が moveNamesJA に無い場合 (呼び出し元の事前解決漏れ)。
+ * @param moveNamesJA 技 slug から日本語名への対応表。
+ * @returns candidates と対応する日本語名の一覧 (candidates の順序を保つ)。
+ * @throws 候補の技が moveNamesJA に無い場合 (呼び出し元の事前解決漏れ)。
  */
-export function pickHintMoveNames(
+export function resolveHintMoveCandidateNames(
   candidates: MoveCandidate[],
   moveNamesJA: ReadonlyMap<string, string>,
-  random: RandomSource,
 ): string[] {
-  const picked = pickRandomSample(candidates, HINT_MOVE_COUNT, random);
-  return picked.map((c) => {
+  return candidates.map((c) => {
     const ja = moveNamesJA.get(c.slug);
     if (!ja) throw new Error(`no resolved japanese name for move: ${c.slug}`);
     return ja;

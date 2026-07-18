@@ -271,7 +271,7 @@ describe("[クエスト] クエスト進行", () => {
     expect(result.current.attemptsRemaining).toBe(2);
   });
 
-  it("ヒントを2回要求すると、1回目のタイプと2回目の技をどちらも保持する", async () => {
+  it("1回目のヒントでタイプ、2回目のヒントで技を取得すると、hintResultはタイプと技の両方を含む", async () => {
     mockNewQuest();
     server.use(
       http.post(apiUrl("/quest/hint"), () =>
@@ -288,7 +288,10 @@ describe("[クエスト] クエスト進行", () => {
 
     server.use(
       http.post(apiUrl("/quest/hint"), () =>
-        HttpResponse.json({ moves: ["でんきショック"], attempts_remaining: 1 }),
+        HttpResponse.json({
+          moves: ["たいあたり", "なきごえ", "でんきショック"],
+          attempts_remaining: 1,
+        }),
       ),
     );
 
@@ -298,7 +301,7 @@ describe("[クエスト] クエスト進行", () => {
 
     expect(result.current.hintResult).toEqual({
       types: ["electric"],
-      moves: ["でんきショック"],
+      moves: ["たいあたり", "なきごえ", "でんきショック"],
       attempts_remaining: 1,
     });
     expect(result.current.attemptsRemaining).toBe(1);

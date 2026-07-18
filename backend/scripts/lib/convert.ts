@@ -66,14 +66,14 @@ export function cleanFlavorText(text: string): string {
  * PokeAPI の species / pokemon データをスナップショットのポケモンレコードへ変換する。
  * @param species pokemon-species の JSON。
  * @param pokemon pokemon の JSON。
- * @param hintMoves ヒントに使う、レベルアップ技の日本語名 (呼び出し元で解決・確定済み)。
+ * @param hintMoveCandidates レベルアップで覚えうる技の日本語名の候補 (呼び出し元で解決済み)。
  * @returns 変換済みのポケモンレコード (sprite_url は含まない)。
  * @throws EN/JA 説明ペアが無い、または未知のタイプが含まれる場合。
  */
 export function convertToPokemonRecord(
   species: PokeAPISpeciesData,
   pokemon: PokeAPIPokemonData,
-  hintMoves: string[],
+  hintMoveCandidates: string[],
 ): PokemonRecord {
   let nameEN = "";
   let nameJA = "";
@@ -109,6 +109,6 @@ export function convertToPokemonRecord(
     is_legendary: species.is_legendary,
     is_mythical: species.is_mythical,
     flavor_texts: flavorTexts,
-    hint_moves: hintMoves,
+    hint_move_candidates: hintMoveCandidates,
   };
 }

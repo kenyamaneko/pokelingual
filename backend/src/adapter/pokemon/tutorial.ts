@@ -16,7 +16,7 @@ const TUTORIAL_PIKACHU: PokemonRecord = {
   weight: 60,
   is_legendary: false,
   is_mythical: false,
-  hint_moves: ["しっぽをふる", "なきごえ", "でんきショック"],
+  hint_move_candidates: ["しっぽをふる", "なきごえ", "でんきショック"],
 };
 
 /** 出題を常にピカチュウ固定で供給する PokemonClient 実装。 */

@@ -1,16 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  resolveLevelUpMoveCandidates,
-  resolveMoveNameJA,
-  pickHintMoveNames,
-  type PokeAPIMoveEntry,
-} from "./moves.js";
-import type { RandomSource } from "../../src/domain/ports.js";
-
-/** 固定値を返す乱数ソース。 */
-function fixedRandom(value: number): RandomSource {
-  return { next: () => value };
-}
+import { resolveLevelUpMoveCandidates, resolveMoveNameJA, resolveHintMoveCandidateNames, type PokeAPIMoveEntry } from "./moves.js";
 
 /**
  * 技1件分の pokemon.moves エントリを作る。
@@ -35,31 +24,44 @@ function moveEntry(
 }
 
 describe("[スナップショット生成] レベルアップ技候補の解決", () => {
-  it("最優先のバージョングループにレベルアップ技があるとき、レベル昇順で返す", () => {
+  it("ソード・シールドにレベルアップ技があるとき、それらを候補にする", () => {
     const moves = [
       moveEntry("vine-whip", 22, [{ versionGroup: "sword-shield", level: 7 }]),
       moveEntry("tackle", 33, [{ versionGroup: "sword-shield", level: 1 }]),
       moveEntry("growl", 45, [{ versionGroup: "sword-shield", level: 1 }]),
     ];
-    expect(resolveLevelUpMoveCandidates(moves)).toEqual([
-      { slug: "tackle", id: 33 },
-      { slug: "growl", id: 45 },
-      { slug: "vine-whip", id: 22 },
-    ]);
+    const candidates = resolveLevelUpMoveCandidates(moves);
+    expect(candidates).toHaveLength(3);
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        { slug: "tackle", id: 33 },
+        { slug: "growl", id: 45 },
+        { slug: "vine-whip", id: 22 },
+      ]),
+    );
   });
 
-  it("最優先のバージョングループにレベルアップ技のデータが無いとき、優先順で次のバージョングループにフォールバックする", () => {
+  it("ソード・シールドのレベルアップ技候補が1件だけのとき、その1件を返す", () => {
+    const moves = [moveEntry("sketch", 166, [{ versionGroup: "sword-shield", level: 1 }])];
+    expect(resolveLevelUpMoveCandidates(moves)).toEqual([{ slug: "sketch", id: 166 }]);
+  });
+
+  it("ソード・シールドにレベルアップ技のデータが無いとき、優先順で次に新しいX・Yのレベルアップ技を候補にする", () => {
     const moves = [
       moveEntry("tackle", 33, [{ versionGroup: "x-y", level: 1 }]),
       moveEntry("growl", 45, [{ versionGroup: "x-y", level: 1 }]),
     ];
-    expect(resolveLevelUpMoveCandidates(moves)).toEqual([
-      { slug: "tackle", id: 33 },
-      { slug: "growl", id: 45 },
-    ]);
+    const candidates = resolveLevelUpMoveCandidates(moves);
+    expect(candidates).toHaveLength(2);
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        { slug: "tackle", id: 33 },
+        { slug: "growl", id: 45 },
+      ]),
+    );
   });
 
-  it("同じ技を同じバージョングループ内の複数レベルで習得するとき、重複を除いて1件にまとめる", () => {
+  it("同じ技をソード・シールドの複数レベルで習得できるとき、重複を除いて1件にまとめる", () => {
     const moves = [
       moveEntry("double-edge", 38, [
         { versionGroup: "sword-shield", level: 10 },
@@ -76,13 +78,13 @@ describe("[スナップショット生成] レベルアップ技候補の解決"
     expect(resolveLevelUpMoveCandidates(moves)).toEqual([]);
   });
 
-  it("どのバージョングループにもレベルアップ技が無いとき、空配列を返す", () => {
+  it("レベルアップ技のデータがどの作品にも無いとき、空配列を返す", () => {
     expect(resolveLevelUpMoveCandidates([])).toEqual([]);
   });
 });
 
 describe("[スナップショット生成] 技の日本語名解決", () => {
-  it("jaの名称があるとき、その名称を返す", () => {
+  it("通常表記の日本語名があるとき、その名称を返す", () => {
     const names = [
       { name: "Tackle", language: { name: "en" } },
       { name: "たいあたり", language: { name: "ja" } },
@@ -90,7 +92,7 @@ describe("[スナップショット生成] 技の日本語名解決", () => {
     expect(resolveMoveNameJA(names)).toBe("たいあたり");
   });
 
-  it("jaが無くja-Hrktがあるとき、ja-Hrktを返す", () => {
+  it("通常表記の日本語名が無ければ、かな表記の名称を使う", () => {
     const names = [
       { name: "Tackle", language: { name: "en" } },
       { name: "たいあたり", language: { name: "ja-Hrkt" } },
@@ -98,13 +100,13 @@ describe("[スナップショット生成] 技の日本語名解決", () => {
     expect(resolveMoveNameJA(names)).toBe("たいあたり");
   });
 
-  it("jaもja-Hrktも無いときエラーになる", () => {
+  it("通常表記もかな表記も無いときエラーになる", () => {
     const names = [{ name: "Tackle", language: { name: "en" } }];
     expect(() => resolveMoveNameJA(names)).toThrow(/no japanese name/);
   });
 });
 
-describe("[スナップショット生成] ヒント技のランダム選出", () => {
+describe("[スナップショット生成] 技候補の日本語名一覧への変換", () => {
   const moveNamesJA = new Map([
     ["tackle", "たいあたり"],
     ["growl", "なきごえ"],
@@ -112,43 +114,28 @@ describe("[スナップショット生成] ヒント技のランダム選出", (
     ["leech-seed", "やどりぎのタネ"],
   ]);
 
-  it("候補が2件のとき、2件とも日本語名で返す", () => {
-    const candidates = [
-      { slug: "tackle", id: 1 },
-      { slug: "growl", id: 2 },
-    ];
-    const picked = pickHintMoveNames(candidates, moveNamesJA, fixedRandom(0));
-    expect(picked).toEqual(["たいあたり", "なきごえ"]);
-  });
-
-  it("候補が3件のとき、3件とも日本語名で返す", () => {
-    const candidates = [
-      { slug: "tackle", id: 1 },
-      { slug: "growl", id: 2 },
-      { slug: "vine-whip", id: 3 },
-    ];
-    const picked = pickHintMoveNames(candidates, moveNamesJA, fixedRandom(0));
-    expect(picked).toEqual(["たいあたり", "なきごえ", "つるのムチ"]);
-  });
-
-  it("候補が4件のとき、3件だけ日本語名で返す", () => {
+  it("候補の技名がすべて解決済みのとき、候補と同じ件数・順序の日本語名を返す", () => {
     const candidates = [
       { slug: "tackle", id: 1 },
       { slug: "growl", id: 2 },
       { slug: "vine-whip", id: 3 },
       { slug: "leech-seed", id: 4 },
     ];
-    const picked = pickHintMoveNames(candidates, moveNamesJA, fixedRandom(0));
-    expect(picked).toEqual(["たいあたり", "なきごえ", "つるのムチ"]);
+    expect(resolveHintMoveCandidateNames(candidates, moveNamesJA)).toEqual([
+      "たいあたり",
+      "なきごえ",
+      "つるのムチ",
+      "やどりぎのタネ",
+    ]);
   });
 
   it("候補が0件のとき、空配列を返す", () => {
-    expect(pickHintMoveNames([], moveNamesJA, fixedRandom(0))).toEqual([]);
+    expect(resolveHintMoveCandidateNames([], moveNamesJA)).toEqual([]);
   });
 
-  it("選んだ技の日本語名が解決済みマップに無いときエラーになる", () => {
+  it("候補の技の日本語名が解決できていないときエラーになる", () => {
     const candidates = [{ slug: "unknown-move", id: 999 }];
-    expect(() => pickHintMoveNames(candidates, moveNamesJA, fixedRandom(0))).toThrow(
+    expect(() => resolveHintMoveCandidateNames(candidates, moveNamesJA)).toThrow(
       /no resolved japanese name/,
     );
   });

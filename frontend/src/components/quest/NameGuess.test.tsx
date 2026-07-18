@@ -456,7 +456,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     expect(screen.getByText("くさ・どくタイプのポケモンだよ")).toBeInTheDocument();
   });
 
-  it("2回目のヒント取得後は、レベルアップで覚える技が表示される", () => {
+  it("2回目のヒント取得後は、開示された技の一覧が表示される", () => {
     const hint: HintResponse = {
       types: ["electric"],
       moves: ["たいあたり", "なきごえ", "でんきショック"],

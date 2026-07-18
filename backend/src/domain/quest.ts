@@ -1,6 +1,9 @@
 import type { PokemonType } from "../../../shared/api-types/pokemon.js";
 import type { BallType } from "../../../shared/api-types/quest.js";
 
+/** ヒントとして開示する技の最大数。 */
+export const HINT_MOVE_COUNT = 3;
+
 /** 進行中のクエストセッション。出題から捕獲までの状態を保持する。 */
 export interface QuestSession {
   pokemon_id: number;

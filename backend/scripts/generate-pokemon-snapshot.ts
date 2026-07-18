@@ -9,12 +9,11 @@ import {
 import {
   resolveLevelUpMoveCandidates,
   resolveMoveNameJA,
-  pickHintMoveNames,
-  HINT_MOVE_COUNT,
+  resolveHintMoveCandidateNames,
   type MoveCandidate,
   type PokeAPIMoveName,
 } from "./lib/moves.js";
-import { SystemRandomSource } from "../src/adapter/random/system.js";
+import { HINT_MOVE_COUNT } from "../src/domain/quest.js";
 import type { PokemonRecord } from "../src/domain/pokemon.js";
 
 /**
@@ -55,8 +54,6 @@ async function main(): Promise<void> {
     throw new Error(`invalid --max-id: ${values["max-id"]}`);
   }
 
-  const random = new SystemRandomSource();
-
   // 1st pass: 種・ポケモンの生データを読み、優先順の version_group からレベルアップ技候補を解決する。
   // 技は多くのポケモンで共有されるため、必要な技 ID を集約してから2nd passで1回ずつ読む。
   const speciesList: PokeAPISpeciesData[] = [];
@@ -90,8 +87,8 @@ async function main(): Promise<void> {
 
   const records: PokemonRecord[] = [];
   for (let i = 0; i < speciesList.length; i++) {
-    const hintMoves = pickHintMoveNames(candidatesList[i], moveNamesJA, random);
-    records.push(convertToPokemonRecord(speciesList[i], pokemonList[i], hintMoves));
+    const hintMoveCandidates = resolveHintMoveCandidateNames(candidatesList[i], moveNamesJA);
+    records.push(convertToPokemonRecord(speciesList[i], pokemonList[i], hintMoveCandidates));
   }
 
   await writeFile(outPath, JSON.stringify(records));

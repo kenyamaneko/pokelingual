@@ -4,6 +4,7 @@ import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
 import { findLocation, pickRandomLocations, LOCATION_CHOICE_COUNT } from "../domain/location.js";
+import { pickRandomSample } from "../domain/random.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -12,7 +13,7 @@ import type {
 } from "../domain/ports.js";
 import type { AppEnvironment } from "../domain/environment.js";
 import type { Pokemon } from "../domain/pokemon.js";
-import type { QuestSession, ScoreResult } from "../domain/quest.js";
+import { HINT_MOVE_COUNT, type QuestSession, type ScoreResult } from "../domain/quest.js";
 import type {
   QuestNewResponse,
   QuestLocation,
@@ -119,6 +120,11 @@ export class QuestService {
       descJA = pair.description_ja;
     }
 
+    // 技ヒントは出会うたびに開示内容が変わるよう、クエスト開始時に候補からランダムに選ぶ
+    const hintMoves = pokemon.hint_move_candidates
+      ? pickRandomSample(pokemon.hint_move_candidates, HINT_MOVE_COUNT, this.random)
+      : undefined;
+
     const session: QuestSession = {
       pokemon_id: pokemon.id,
       description_en: descEN,
@@ -132,7 +138,7 @@ export class QuestService {
       weight: pokemon.weight,
       is_legendary: pokemon.is_legendary,
       is_mythical: pokemon.is_mythical,
-      hint_moves: pokemon.hint_moves,
+      hint_moves: hintMoves,
       score: 0,
       ball_type: null,
       guess_attempts: 0,
@@ -326,7 +332,7 @@ export class QuestService {
       throw new Error("hint requested with insufficient guess attempts remaining");
     }
     const isSecondReveal = session.hint_reveal_count === 1;
-    if (isSecondReveal && !session.hint_moves) {
+    if (isSecondReveal && (!session.hint_moves || session.hint_moves.length === 0)) {
       // スナップショットに技ヒントが無いのはデータ不整合。挑戦回数を消費する前に失敗させる
       throw new Error(`pokemon ${session.pokemon_id} has no hint moves in the snapshot`);
     }

@@ -188,7 +188,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     expect(screen.getByRole("meter", { name: "残り挑戦回数" })).toHaveAttribute("aria-valuenow", "2");
   });
 
-  it("名前当てで2回ヒントを要求すると、レベルアップで覚える技も表示され残り回数がさらに減る", async () => {
+  it("名前当てで2回ヒントを要求すると、開示された技の一覧も表示され残り回数がさらに減る", async () => {
     const user = userEvent.setup();
     let hintCalls = 0;
     server.use(
@@ -208,7 +208,10 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
         hintCalls++;
         return hintCalls === 1
           ? HttpResponse.json({ types: ["electric"], attempts_remaining: 2 })
-          : HttpResponse.json({ moves: ["でんきショック"], attempts_remaining: 1 });
+          : HttpResponse.json({
+              moves: ["たいあたり", "なきごえ", "でんきショック"],
+              attempts_remaining: 1,
+            });
       }),
     );
 
@@ -229,7 +232,9 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
       await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
     );
 
-    expect(await screen.findByText("「でんきショック」を覚えるよ")).toBeInTheDocument();
+    expect(
+      await screen.findByText("「たいあたり」「なきごえ」「でんきショック」を覚えるよ"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("meter", { name: "残り挑戦回数" })).toHaveAttribute("aria-valuenow", "1");
   });
 
