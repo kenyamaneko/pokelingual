@@ -6,6 +6,7 @@ import request from "supertest";
 import { RedisQuestSessionStore } from "./redis.js";
 import { QuestService } from "../../service/quest-service.js";
 import { PokedexService } from "../../service/pokedex-service.js";
+import { SettingsService } from "../../service/settings-service.js";
 import { QuestHandler } from "../../handler/quest-handler.js";
 import { PokedexHandler } from "../../handler/pokedex-handler.js";
 import { SettingsHandler } from "../../handler/settings-handler.js";
@@ -141,6 +142,7 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
 
   const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
+  const settingsService = new SettingsService(settingsRepo, servablePokemonIDs);
 
   const app = express();
   app.use(express.json());
@@ -152,7 +154,7 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
       new QuestHandler(questService, userPokemonRepo),
       createTutorialQuestHandler(environment, tutorialSessionStore),
       new PokedexHandler(pokedexService),
-      new SettingsHandler(settingsRepo, servablePokemonIDs),
+      new SettingsHandler(settingsService),
       new UsageHandler(rateLimitRepo),
       new TutorialHandler(userRepo),
     ),
