@@ -13,6 +13,7 @@ concurrency:
 env:
   GOOGLE_CLOUD_REGION: asia-northeast1
   TEST_USER_EMAIL: test@pokelingual.dev
+  SIGNUP_TEST_EMAIL_DOMAIN: pokelingual.dev
 
 jobs:
   determine-version:
@@ -72,9 +73,9 @@ jobs:
             .
           docker push "${IMAGE_BASE}" --all-tags
 
-      # --max-instances 1: クエストセッションをインスタンスのメモリ内に保持するため、
-      # 複数インスタンスにスケールすると別インスタンスに振られたユーザーのセッションが
-      # 見つからず 404 になる。
+      # --max-instances 1: セッションストアを Redis に切り替えた直後の初回ロールアウトは、
+      # Upstash 配線をスモークで検証するためこの値を維持する。検証後に別デプロイで
+      # --max-instances 3 へ引き上げる。
       # --allow-unauthenticated: Cloud Run の IAM 認証を無効化する。
       # これはエンドユーザー向け API での Google 推奨パターン。
       # IAM 認証はサービス間通信向けであり、Firebase Auth トークンは IAM トークンではないため
@@ -87,8 +88,9 @@ jobs:
             --region ${{ env.GOOGLE_CLOUD_REGION }} \
             --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --service-account "pokelingual-api-prod@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
-            --remove-secrets "GEMINI_API_KEY" \
-            --update-env-vars "APP_MODE=real,APP_ENV=prod,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json" \
+            --remove-secrets "GEMINI_API_KEY,UPSTASH_REDIS_ENDPOINT,UPSTASH_REDIS_PASSWORD" \
+            --update-secrets "UPSTASH_REDIS_URL=pokelingual-upstash-redis-url:latest" \
+            --update-env-vars "APP_MODE=real,APP_ENV=prod,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600" \
             --max-instances 1 \
             --allow-unauthenticated
 
@@ -143,6 +145,15 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
         run: bash scripts/smoke-dev.sh
+
+      # 実 signUp〜メール確認〜ログインの配線は上の固定フィクスチャユーザでの検証では
+      # 通らないため、使い捨てユーザーで別途検証する。
+      - name: Run signup smoke test
+        env:
+          SERVICE_URL: ${{ steps.service-url.outputs.url }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          GOOGLE_CLOUD_PROJECT_ID: ${{ vars.GOOGLE_CLOUD_PROJECT_ID }}
+        run: bash scripts/smoke-prod-signup.sh
 
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting

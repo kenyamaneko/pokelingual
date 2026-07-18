@@ -106,12 +106,10 @@ describe("[クエスト] 名前当ての入力と結果表示", () => {
     expect(screen.getByText(/ラストチャンス/)).toBeInTheDocument();
   });
 
-  it("不正解で残り 0 のとき正解の名前 (英語と日本語) を表示し、入力欄を消す", () => {
+  it("不正解で残り 0 のとき、「残念...」を表示し入力欄を消す", () => {
     const guess: GuessResponse = {
       correct: false,
       attempts_remaining: 0,
-      reveal_name_en: "Pikachu",
-      reveal_name_ja: "ピカチュウ",
     };
     render(
       <NameGuess
@@ -126,8 +124,6 @@ describe("[クエスト] 名前当ての入力と結果表示", () => {
     );
 
     expect(screen.getByText(spec(NAME_GUESS_LABELS.wrongFinalTitle))).toBeInTheDocument();
-    expect(screen.getByText(/Pikachu/)).toBeInTheDocument();
-    expect(screen.getByText(/ピカチュウ/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 

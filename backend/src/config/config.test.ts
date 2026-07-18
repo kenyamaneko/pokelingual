@@ -17,6 +17,8 @@ function clearConfigEnv(): void {
     "PER_USER_DAILY_LIMIT",
     "GLOBAL_DAILY_LIMIT",
     "POKEMON_SNAPSHOT_URI",
+    "UPSTASH_REDIS_URL",
+    "QUEST_SESSION_TTL_SECONDS",
   ]) {
     delete process.env[key];
   }
@@ -44,6 +46,8 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(cfg.googleCloudProject).toBe("pokelingual-mock");
     expect(cfg.perUserDailyLimit).toBe(30);
     expect(cfg.globalDailyLimit).toBe(1500);
+    expect(cfg.questSessionRedisURL).toBe("redis://valkey:6379");
+    expect(cfg.questSessionTTLSeconds).toBe(3600);
   });
 
   it("整数 env の 1 は受理される", () => {
@@ -79,6 +83,8 @@ describe("[起動設定] 起動設定の読み込み", () => {
     process.env.PER_USER_DAILY_LIMIT = "10";
     process.env.GLOBAL_DAILY_LIMIT = "100";
     process.env.POKEMON_SNAPSHOT_URI = "gs://bucket/pokemon-snapshot.json";
+    process.env.UPSTASH_REDIS_URL = "rediss://default:token@redis-endpoint.upstash.io:6379";
+    process.env.QUEST_SESSION_TTL_SECONDS = "1800";
 
     const cfg = loadConfig();
     expect(cfg).toMatchObject({
@@ -91,6 +97,8 @@ describe("[起動設定] 起動設定の読み込み", () => {
       perUserDailyLimit: 10,
       globalDailyLimit: 100,
       pokemonSnapshotURI: "gs://bucket/pokemon-snapshot.json",
+      questSessionRedisURL: "rediss://default:token@redis-endpoint.upstash.io:6379",
+      questSessionTTLSeconds: 1800,
     });
   });
 });

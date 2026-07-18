@@ -30,8 +30,9 @@ test: test-backend test-frontend
 
 # backend テストは Firestore Emulator を必須化している。
 # firebase emulators:exec が Emulator 起動 → FIRESTORE_EMULATOR_HOST を自動注入 → 終了時に停止まで面倒を見る。
+# 結合テスト (test:integration) は Valkey コンテナを testcontainers で起動するため Docker が必要。
 test-backend:
-	cd backend && npm run lint && npx tsc --noEmit && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm test"
+	cd backend && npm run lint && npx tsc --noEmit && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm test" && npm run test:integration
 
 test-frontend:
 	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
@@ -41,7 +42,7 @@ coverage: coverage-backend coverage-frontend
 
 # backend テストと同じく Firestore Emulator を必須とするため emulators:exec で包む。
 coverage-backend:
-	cd backend && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage"
+	cd backend && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage" && npm run test:integration
 
 coverage-frontend:
 	cd frontend && npm run test:coverage

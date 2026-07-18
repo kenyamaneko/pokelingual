@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, configDefaults } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -8,5 +8,8 @@ export default defineConfig({
     fileParallelism: false,
     // CI 専用のフラグにせず設定へ置き、ローカルと CI のテスト実行経路を揃える。
     reporters: ["default", ["junit", { outputFile: "test-results/junit.xml" }]],
+    // Valkey コンテナを要する結合テストは Docker 前提のため、Docker 不要なこのスイートから除外する
+    // (vitest.integration.config.ts で個別に実行する)。
+    exclude: [...configDefaults.exclude, "**/*.integration.test.ts"],
   },
 });

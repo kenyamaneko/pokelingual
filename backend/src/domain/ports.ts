@@ -1,4 +1,5 @@
 import type { Pokemon } from "./pokemon.js";
+import type { QuestSession } from "./quest.js";
 import type { User, UserPokemon, UserSettings } from "./user.js";
 import type { PokemonType } from "../../../shared/api-types/pokemon.js";
 // DailyUsage は API レスポンスにそのまま乗る形なので、shared/api-types/usage.d.ts を SSOT として再 export する。
@@ -48,4 +49,11 @@ export interface UserRepository {
 export interface RateLimitRepository {
   checkAndIncrement(userId: string): Promise<DailyUsage>;
   getUserUsage(userId: string): Promise<DailyUsage>;
+}
+
+/** 進行中のクエストセッションを保存・取得・削除するポート。 */
+export interface QuestSessionStore {
+  get(userId: string): Promise<QuestSession | null>;
+  set(userId: string, session: QuestSession): Promise<void>;
+  delete(userId: string): Promise<void>;
 }

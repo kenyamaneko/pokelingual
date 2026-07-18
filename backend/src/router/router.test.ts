@@ -6,6 +6,7 @@ import { devAuth } from "../middleware/auth-mock.js";
 import { rateLimit } from "../middleware/rate-limit.js";
 import { QuestService } from "../service/quest-service.js";
 import { PokedexService } from "../service/pokedex-service.js";
+import { SettingsService } from "../service/settings-service.js";
 import { QuestHandler } from "../handler/quest-handler.js";
 import { PokedexHandler } from "../handler/pokedex-handler.js";
 import { SettingsHandler } from "../handler/settings-handler.js";
@@ -25,6 +26,7 @@ import type {
 import type { UserPokemon, UserSettings } from "../domain/user.js";
 import type { RateLimitKind } from "../domain/errors.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
+import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 
 interface AppOverrides {
   /** LLM が投げるエラー (指定時は generateText が失敗する)。 */
@@ -35,6 +37,8 @@ interface AppOverrides {
   settingsError?: Error;
   /** ポケモン種別クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
   pokemonError?: Error;
+  /** クエストセッションストアが投げるエラー (指定時は get/set/delete がこのエラーを投げる)。 */
+  sessionStoreError?: Error;
   /** 図鑑詳細エンドポイントの検証用に、事前に保存済みとして扱うユーザ実績。 */
   seededUserPokemon?: UserPokemon[];
 }
@@ -112,8 +116,11 @@ function makeApp(o: AppOverrides = {}) {
     getUserUsage: async () => ({ count: 3, limit: 30 }),
   };
 
-  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random);
+  const sessionStore = makeInMemoryQuestSessionStore({ error: o.sessionStoreError });
+  const tutorialSessionStore = makeInMemoryQuestSessionStore();
+  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
+  const settingsService = new SettingsService(settingsRepo, servablePokemonIDs);
 
   const app = express();
   app.use(express.json());
@@ -123,9 +130,9 @@ function makeApp(o: AppOverrides = {}) {
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
-      createTutorialQuestHandler(environment),
+      createTutorialQuestHandler(environment, tutorialSessionStore),
       new PokedexHandler(pokedexService),
-      new SettingsHandler(settingsRepo, servablePokemonIDs),
+      new SettingsHandler(settingsService),
       new UsageHandler(rateLimitRepo),
       new TutorialHandler(userRepo),
     ),
@@ -210,6 +217,13 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
     const res = await request(app).post("/api/quest/hint").send({});
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: "internal server error" });
+  });
+
+  it("セッションストアの書き込みに失敗した出題リクエストは 502 を返す", async () => {
+    const app = makeApp({ sessionStoreError: new Error("redis unavailable") });
+    const res = await request(app).get("/api/quest/new");
+    expect(res.status).toBe(502);
+    expect(res.body).toEqual({ error: "external service unavailable" });
   });
 });
 

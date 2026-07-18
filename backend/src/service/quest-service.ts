@@ -8,6 +8,7 @@ import { pickRandomSample } from "../domain/random.js";
 import type {
   LLMClient,
   PokemonClient,
+  QuestSessionStore,
   RandomSource,
   UserSettingsRepository,
 } from "../domain/ports.js";
@@ -66,17 +67,16 @@ const LEGENDARY_ENCOUNTER_RATE = 0.01;
 
 /**
  * クエストの出題・採点・名前推測・捕獲のドメインロジックを束ねるサービス。
- * セッションはユーザ ID ごとにメモリ保持する。
+ * セッションはユーザ ID ごとに QuestSessionStore へ保存する。
  */
 export class QuestService {
-  private sessions = new Map<string, QuestSession>();
-
   /**
    * @param pokemonClient ポケモン情報の取得クライアント。
    * @param llm 採点・講評に用いる LLM クライアント。
    * @param environment 実行環境。開発者除外 (prod 以外で適用) の判定に使う。
    * @param settingsRepo ユーザ設定リポジトリ。
    * @param random 乱数ソース。
+   * @param sessionStore 進行中のクエストセッションを保存するストア。
    */
   constructor(
     private pokemonClient: PokemonClient,
@@ -84,6 +84,7 @@ export class QuestService {
     private environment: AppEnvironment,
     private settingsRepo: UserSettingsRepository,
     private random: RandomSource,
+    private sessionStore: QuestSessionStore,
   ) {}
 
   /**
@@ -145,7 +146,7 @@ export class QuestService {
       name_guessed: false,
       hint_reveal_count: 0,
     };
-    this.sessions.set(userId, session);
+    await this.saveSession(userId, session);
 
     return {
       pokemon_id: pokemon.id,
@@ -211,7 +212,7 @@ export class QuestService {
    * @returns スコア・講評・マスク済み日本語説明。
    */
   async scoreTranslation(userId: string, translation: string): Promise<ScoreResponse> {
-    const session = this.getSession(userId);
+    const session = await this.loadSession(userId);
     // 原文のままだと講評でポケモン名がネタバレしうるため、マスク済みの英文を渡す。
     const maskedDescriptionEN = maskPokemonNameEN(session.description_en, session.name_en);
 
@@ -223,6 +224,7 @@ export class QuestService {
     }
 
     session.score = translateToFinalScore(result.score);
+    await this.saveSession(userId, session);
 
     return {
       score: session.score,
@@ -259,8 +261,8 @@ export class QuestService {
    * @param guess ユーザの推測名 (英語または日本語)。
    * @returns 正誤・確定ボール種別・残り試行回数を含む判定結果。
    */
-  guessName(userId: string, guess: string): GuessResponse {
-    const session = this.getSession(userId);
+  async guessName(userId: string, guess: string): Promise<GuessResponse> {
+    const session = await this.loadSession(userId);
 
     if (session.name_guessed) {
       return { correct: true, ball_type: session.ball_type ?? undefined, attempts_remaining: 0 };
@@ -275,43 +277,37 @@ export class QuestService {
     const masterEligible =
       (session.is_legendary || session.is_mythical) && session.score >= MASTER_BALL_MIN_SCORE;
 
+    // 分岐ごとに保存を書くと、分岐を追加・変更したときに保存の書き忘れに気づけない。
+    // 応答を変数に確定してから最後に一度だけ保存し、書き忘れが起きない形にする。
+    let response: GuessResponse;
     if (guessNorm === nameENNorm) {
       const ballType = masterEligible ? "master" : "ultra";
       session.ball_type = ballType;
       session.name_guessed = true;
-      return { correct: true, ball_type: ballType, language: "en", attempts_remaining: remaining };
-    }
-
-    if (guessJA === session.name_ja) {
+      response = { correct: true, ball_type: ballType, language: "en", attempts_remaining: remaining };
+    } else if (guessJA === session.name_ja) {
       const ballType = masterEligible ? "master" : "great";
       session.ball_type = ballType;
       session.name_guessed = true;
-      return { correct: true, ball_type: ballType, language: "ja", attempts_remaining: remaining };
-    }
-
-    if (nameENNorm.length >= FUZZY_MATCH_MIN_NAME_LENGTH) {
-      const dist = levenshtein(guessNorm, nameENNorm);
-      if (dist <= FUZZY_MATCH_MAX_DISTANCE) {
-        const ballType = masterEligible ? "master" : "ultra";
-        session.ball_type = ballType;
-        session.name_guessed = true;
-        return { correct: true, ball_type: ballType, language: "en", fuzzy: true, attempts_remaining: remaining };
-      }
-    }
-
-    if (remaining <= 0) {
+      response = { correct: true, ball_type: ballType, language: "ja", attempts_remaining: remaining };
+    } else if (
+      nameENNorm.length >= FUZZY_MATCH_MIN_NAME_LENGTH &&
+      levenshtein(guessNorm, nameENNorm) <= FUZZY_MATCH_MAX_DISTANCE
+    ) {
+      const ballType = masterEligible ? "master" : "ultra";
+      session.ball_type = ballType;
+      session.name_guessed = true;
+      response = { correct: true, ball_type: ballType, language: "en", fuzzy: true, attempts_remaining: remaining };
+    } else if (remaining <= 0) {
       session.ball_type = "poke";
       session.name_guessed = true;
-      return {
-        correct: false,
-        ball_type: "poke",
-        attempts_remaining: 0,
-        reveal_name_en: session.name_en,
-        reveal_name_ja: session.name_ja,
-      };
+      response = { correct: false, ball_type: "poke", attempts_remaining: 0 };
+    } else {
+      response = { correct: false, attempts_remaining: remaining };
     }
 
-    return { correct: false, attempts_remaining: remaining };
+    await this.saveSession(userId, session);
+    return response;
   }
 
   /**
@@ -321,8 +317,8 @@ export class QuestService {
    * @throws 名前当てが完了済み、ヒントを2回開示済み、または残り挑戦回数が不足している場合
    * (正しく実装されたフロントエンドからは到達しない不正な呼び出し)。
    */
-  requestHint(userId: string): HintResponse {
-    const session = this.getSession(userId);
+  async requestHint(userId: string): Promise<HintResponse> {
+    const session = await this.loadSession(userId);
 
     if (session.name_guessed || session.hint_reveal_count >= MAX_HINT_REVEALS) {
       throw new Error("hint requested on a session that cannot accept one (already guessed or hints exhausted)");
@@ -340,6 +336,7 @@ export class QuestService {
     session.guess_attempts++;
     session.hint_reveal_count++;
     const attemptsRemaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
+    await this.saveSession(userId, session);
 
     return isSecondReveal
       ? { moves: session.hint_moves!, attempts_remaining: attemptsRemaining }
@@ -352,8 +349,8 @@ export class QuestService {
    * @param userId ユーザ ID。
    * @returns 確定したボール種別。
    */
-  skipGuess(userId: string): SkipGuessResponse {
-    const session = this.getSession(userId);
+  async skipGuess(userId: string): Promise<SkipGuessResponse> {
+    const session = await this.loadSession(userId);
     if (session.name_guessed) {
       // 通常の動作では、名前確定後にフロントエンドからこの API が呼ばれることはない。
       // それでも呼ばれた場合に上書きしないのは、backend が先にデプロイされる構成で残る
@@ -362,6 +359,7 @@ export class QuestService {
     }
     session.ball_type = "poke";
     session.name_guessed = true;
+    await this.saveSession(userId, session);
     return { ball_type: "poke" };
   }
 
@@ -372,8 +370,8 @@ export class QuestService {
    * @param userId ユーザ ID。
    * @returns 捕獲成否と表示用ポケモン情報。
    */
-  attemptCapture(userId: string): CaptureResponse {
-    const session = this.getSession(userId);
+  async attemptCapture(userId: string): Promise<CaptureResponse> {
+    const session = await this.loadSession(userId);
     const ballType = session.ball_type;
 
     if (ballType === null) {
@@ -392,7 +390,7 @@ export class QuestService {
       captured = this.random.next() < probability;
     }
 
-    this.sessions.delete(userId);
+    await this.deleteSession(userId);
 
     return {
       captured,
@@ -415,15 +413,48 @@ export class QuestService {
   }
 
   /**
-   * userId のアクティブなセッションを返す。
+   * userId のアクティブなセッションを読み込む。
    * @param userId ユーザ ID。
    * @returns アクティブなクエストセッション。
+   * @throws ExternalServiceError ストアの読み込みが失敗した場合。
    * @throws NotFoundError セッションが存在しない場合。
    */
-  private getSession(userId: string): QuestSession {
-    const session = this.sessions.get(userId);
+  private async loadSession(userId: string): Promise<QuestSession> {
+    let session: QuestSession | null;
+    try {
+      session = await this.sessionStore.get(userId);
+    } catch (err) {
+      throw new ExternalServiceError("session store", err as Error);
+    }
     if (!session) throw new NotFoundError("no active quest session");
     return session;
+  }
+
+  /**
+   * userId のセッションを保存する。
+   * @param userId ユーザ ID。
+   * @param session 保存するクエストセッション。
+   * @throws ExternalServiceError ストアの書き込みが失敗した場合。
+   */
+  private async saveSession(userId: string, session: QuestSession): Promise<void> {
+    try {
+      await this.sessionStore.set(userId, session);
+    } catch (err) {
+      throw new ExternalServiceError("session store", err as Error);
+    }
+  }
+
+  /**
+   * userId のセッションを削除する。
+   * @param userId ユーザ ID。
+   * @throws ExternalServiceError ストアの削除が失敗した場合。
+   */
+  private async deleteSession(userId: string): Promise<void> {
+    try {
+      await this.sessionStore.delete(userId);
+    } catch (err) {
+      throw new ExternalServiceError("session store", err as Error);
+    }
   }
 }
 

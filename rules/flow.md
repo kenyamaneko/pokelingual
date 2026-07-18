@@ -13,7 +13,7 @@
 
 ## [flow] バージョニング
 
-タグ形式 (`vMAJOR.MINOR.PATCH`) とバージョン検出 (`git describe --tags --always`) の詳細は `docs/adr/019-semver-versioning.md` を参照。
+タグ形式は `vMAJOR.MINOR.PATCH`。CI/CD パイプライン内で `git describe --tags --always` を実行し、タグ付きコミットなら `v1.0.0`、タグから N コミット後なら `v1.0.0-3-gabc1234`、タグなしなら短縮 SHA を返す。`v*` タグの push で prod デプロイが実行される。採用理由は `docs/adr/019-semver-versioning.md` を参照。
 
 ## [flow] デプロイ後の検証と prod デプロイ
 

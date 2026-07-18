@@ -68,7 +68,7 @@ export class QuestHandler {
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
-  guessName = (req: Request, res: Response) => {
+  guessName = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
     const { guess } = req.body;
     if (!guess) {
@@ -76,7 +76,7 @@ export class QuestHandler {
       return;
     }
     try {
-      const resp = this.questService.guessName(userId, guess);
+      const resp = await this.questService.guessName(userId, guess);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -88,10 +88,10 @@ export class QuestHandler {
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
-  requestHint = (req: Request, res: Response) => {
+  requestHint = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
     try {
-      const resp = this.questService.requestHint(userId);
+      const resp = await this.questService.requestHint(userId);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -103,10 +103,10 @@ export class QuestHandler {
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
-  skipGuess = (req: Request, res: Response) => {
+  skipGuess = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
     try {
-      const resp = this.questService.skipGuess(userId);
+      const resp = await this.questService.skipGuess(userId);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
@@ -121,7 +121,7 @@ export class QuestHandler {
   attemptCapture = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
     try {
-      const resp = this.questService.attemptCapture(userId);
+      const resp = await this.questService.attemptCapture(userId);
       try {
         await this.repo.upsertEncounter(userId, resp.pokemon_id, resp.score, resp.captured);
       } catch (err) {

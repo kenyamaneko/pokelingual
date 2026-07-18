@@ -47,6 +47,7 @@ resource "google_project_service" "apis" {
     "monitoring.googleapis.com",
     "logging.googleapis.com",
     "billingbudgets.googleapis.com",
+    "secretmanager.googleapis.com",
   ])
 
   service            = each.value
@@ -200,6 +201,25 @@ resource "google_project_iam_member" "backend_vertex_ai" {
   member  = "serviceAccount:${google_service_account.backend.email}"
 }
 
+# クエストセッションストア (Upstash Redis) の接続情報。値を tfstate に平文で残さないため、terraform ではシークレットの箱だけを作り、値は手動アップロードする。
+resource "google_secret_manager_secret" "quest_session_redis_url" {
+  project   = var.project_id
+  secret_id = "pokelingual-upstash-redis-url"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_iam_member" "backend_quest_session_redis_url_accessor" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.quest_session_redis_url.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.backend.email}"
+}
+
 # ポケモン種別データのスナップショット置き場。ポケモン社の著作物を含むため公開せず、
 # public_access_prevention で外部公開を封じる。
 # スナップショットの生成・アップロードは手動運用で、CI では触らない。
@@ -290,6 +310,15 @@ resource "google_project_iam_member" "github_actions_firestore" {
 resource "google_project_iam_member" "github_actions_firebase_hosting" {
   project = var.project_id
   role    = "roles/firebasehosting.admin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+# サインアップスモーク (scripts/smoke-prod-signup.sh) が作成した使い捨てユーザーの
+# emailVerified 強制更新・削除に Admin 権限を要するため、実行対象環境にのみ付与する。
+resource "google_project_iam_member" "github_actions_firebase_auth_admin" {
+  count   = var.signup_smoke_enabled ? 1 : 0
+  project = var.project_id
+  role    = "roles/firebaseauth.admin"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 

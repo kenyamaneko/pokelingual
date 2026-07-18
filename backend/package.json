@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "mutation": "stryker run"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.0.2",
+    "ioredis": "^5.11.1",
     "js-levenshtein": "^1.1.6"
   },
   "devDependencies": {
@@ -38,6 +40,7 @@
     "firebase-tools": "^15.19.0",
     "globals": "^16.5.0",
     "supertest": "^7.2.2",
+    "testcontainers": "^12.0.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.46.4",

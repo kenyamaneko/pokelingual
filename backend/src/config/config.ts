@@ -20,6 +20,10 @@ export interface Config {
   globalDailyLimit: number;
   /** ポケモン種別データのスナップショットの読み込み元。`gs://` なら Cloud Storage、それ以外はローカルパス。 */
   pokemonSnapshotURI: string;
+  /** クエストセッションストアの接続 URL。mock はローカル Valkey、real は Upstash Redis へ。 */
+  questSessionRedisURL: string;
+  /** クエストセッションの有効期限 (秒)。ストアへの set のたびに再適用する。 */
+  questSessionTTLSeconds: number;
 }
 
 /** mock モード時に許容するデフォルト値。real モードでは必須 env が未設定なら起動エラーにする。 */
@@ -35,6 +39,9 @@ const MOCK_DEFAULTS = {
   geminiModel: "gemini-2.5-flash",
   perUserDailyLimit: 30,
   globalDailyLimit: 1500,
+  // docker-compose.dev.yml の valkey サービス名を指す
+  questSessionRedisURL: "redis://valkey:6379",
+  questSessionTTLSeconds: 3600,
 } as const;
 
 /**
@@ -105,7 +112,8 @@ function requireAppMode(): AppMode {
 /**
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
  * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
- * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI) が未設定なら起動エラー。
+ * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_URL,
+ * QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
@@ -124,5 +132,11 @@ export function loadConfig(): Config {
     globalDailyLimit: isMock ? (getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit) : requireIntEnv("GLOBAL_DAILY_LIMIT"),
     // mock モードでは MockPokemonClient を使うため参照されない (Config の形を揃えるためだけの値)
     pokemonSnapshotURI: isMock ? (getEnv("POKEMON_SNAPSHOT_URI") ?? "") : requireEnv("POKEMON_SNAPSHOT_URI"),
+    questSessionRedisURL: isMock
+      ? (getEnv("UPSTASH_REDIS_URL") ?? MOCK_DEFAULTS.questSessionRedisURL)
+      : requireEnv("UPSTASH_REDIS_URL"),
+    questSessionTTLSeconds: isMock
+      ? (getIntEnv("QUEST_SESSION_TTL_SECONDS") ?? MOCK_DEFAULTS.questSessionTTLSeconds)
+      : requireIntEnv("QUEST_SESSION_TTL_SECONDS"),
   };
 }

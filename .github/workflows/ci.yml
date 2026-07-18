@@ -145,6 +145,10 @@ jobs:
       - name: Run tests with coverage (Firestore emulator)
         run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage"
 
+      # Valkey コンテナ (testcontainers) を要するため、Firestore emulator の外側で別途実行する。
+      - name: Run integration tests (Valkey testcontainers)
+        run: npm run test:integration
+
       # 同一 run 内でテスト観点カタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML
         uses: actions/upload-artifact@v4

@@ -1,4 +1,5 @@
 import express from "express";
+import { Redis } from "ioredis";
 import { VertexAI } from "@google-cloud/vertexai";
 import { Firestore } from "@google-cloud/firestore";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
@@ -18,8 +19,10 @@ import { SnapshotPokemonClient, loadPokemonSnapshot } from "./adapter/pokemon/sn
 import { createSnapshotReader } from "./adapter/pokemon/snapshot-reader.js";
 import { SystemRandomSource } from "./adapter/random/system.js";
 import { MockRandomSource } from "./adapter/random/mock.js";
+import { RedisQuestSessionStore } from "./adapter/session/redis.js";
 import { QuestService } from "./service/quest-service.js";
 import { PokedexService } from "./service/pokedex-service.js";
+import { SettingsService } from "./service/settings-service.js";
 import { UserPokemonRepo } from "./adapter/repository/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./adapter/repository/user-settings-repo.js";
 import { UserRepo } from "./adapter/repository/user-repo.js";
@@ -41,6 +44,10 @@ import type {
   RateLimitRepository,
 } from "./domain/ports.js";
 import type { RequestHandler } from "express";
+
+/** クエストセッションストアのキー名前空間。本番クエストとチュートリアルの衝突を避ける。 */
+const QUEST_SESSION_KEY_PREFIX = "quest:session:";
+const TUTORIAL_SESSION_KEY_PREFIX = "tutorial:session:";
 
 /** アプリを起動する。real モードでは起動時にポケモンのスナップショットを読み込んでメモリへ載せる。 */
 async function main(): Promise<void> {
@@ -108,13 +115,22 @@ async function main(): Promise<void> {
   // 除外設定の妥当性は「供給できる図鑑番号」を SSoT に判定する (env の上限値と二重管理しない)。
   const servablePokemonIDs = new Set(pokemonClient.getServableIDs());
 
-  const questService = new QuestService(pokemonClient, llmClient, cfg.environment, userSettingsRepo, randomSource);
+  // Redis クライアントは 'error' イベントにリスナーが無いと未処理例外で process を落とすため捕捉する。
+  const redisClient = new Redis(cfg.questSessionRedisURL);
+  redisClient.on("error", (err) => {
+    logger.error("redis client error", { error: String(err) });
+  });
+  const questSessionStore = new RedisQuestSessionStore(redisClient, QUEST_SESSION_KEY_PREFIX, cfg.questSessionTTLSeconds);
+  const tutorialSessionStore = new RedisQuestSessionStore(redisClient, TUTORIAL_SESSION_KEY_PREFIX, cfg.questSessionTTLSeconds);
+
+  const questService = new QuestService(pokemonClient, llmClient, cfg.environment, userSettingsRepo, randomSource, questSessionStore);
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, cfg.environment);
+  const settingsService = new SettingsService(userSettingsRepo, servablePokemonIDs);
 
   const questHandler = new QuestHandler(questService, userPokemonRepo);
-  const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment);
+  const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment, tutorialSessionStore);
   const pokedexHandler = new PokedexHandler(pokedexService);
-  const settingsHandler = new SettingsHandler(userSettingsRepo, servablePokemonIDs);
+  const settingsHandler = new SettingsHandler(settingsService);
   const usageHandler = new UsageHandler(rateLimitRepo);
   const tutorialHandler = new TutorialHandler(userRepo);
 

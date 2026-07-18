@@ -47,8 +47,6 @@ export interface GuessResponse {
   language?: "en" | "ja";
   fuzzy?: boolean;
   attempts_remaining: number;
-  reveal_name_en?: string;
-  reveal_name_ja?: string;
 }
 
 /** POST /api/quest/skip-guess のレスポンス。名前当て未確定からのスキップは常にモンスターボール、確定済みならその値を維持する。 */

@@ -8,6 +8,8 @@ alerts_enabled = true
 # prod は一般公開方針のため新規登録を止めない。
 disable_new_user_signup = false
 
+signup_smoke_enabled = true
+
 firebase_web_app_display_name = "PokeLingual"
 github_repo                   = "kenyamaneko/pokelingual"
 alert_email                   = "kenya.m.amaoto@gmail.com"
