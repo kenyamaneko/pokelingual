@@ -494,7 +494,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     expect(screen.getByText("「でんきショック」を覚えるよ")).toBeInTheDocument();
   });
 
-  it("技が0件のときは、技の表示自体が出ない", () => {
+  it("技が0件のときは、覚える技が無い旨が表示される", () => {
     const hint: HintResponse = { types: ["electric"], moves: [], attempts_remaining: 1 };
     render(
       <NameGuess
@@ -508,7 +508,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.queryByText(/を覚えるよ/)).not.toBeInTheDocument();
+    expect(screen.getByText(NAME_GUESS_LABELS.movesUnavailable)).toBeInTheDocument();
   });
 
   it("2回目のヒント取得後も、1回目のタイプの表示は消えない", () => {

@@ -30,6 +30,7 @@ export const NAME_GUESS_LABELS = {
   heading: "このポケモンの名前は？",
   hintButton: "ヒントを見る（挑戦1回を消費）",
   hintUnavailable: "もうヒントは使えないよ",
+  movesUnavailable: "このポケモンはレベルアップで覚える技がないみたいだよ",
   skipButton: "わからないのでスキップ →",
   proceedButton: "次へ進む",
   correctTitle: "正解！",
@@ -152,8 +153,12 @@ export function NameGuess({
           {hintResult.types && hintResult.types.length > 0 && (
             <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
           )}
-          {hintResult.moves && hintResult.moves.length > 0 && (
-            <p className="text-blue-700 text-sm">{formatMovesHint(hintResult.moves)}</p>
+          {hintResult.moves && (
+            <p className="text-blue-700 text-sm">
+              {hintResult.moves.length > 0
+                ? formatMovesHint(hintResult.moves)
+                : NAME_GUESS_LABELS.movesUnavailable}
+            </p>
           )}
         </div>
       )}

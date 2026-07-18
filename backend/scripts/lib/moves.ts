@@ -18,12 +18,13 @@ export interface PokeAPIMoveName {
 }
 
 /**
- * レベルアップ技解決の対象とする version_group。新しい作品から優先して採用する
- * (flavor-text.ts の displayVersions と同型の優先順リスト)。ある種がその作品の
- * 図鑑に登場しないと、その version_group のレベルアップ技データを持たないため
- * 遡って次点を試す。
+ * レベルアップ技解決の対象とする作品 (version_group) の優先順リスト。新しい作品から
+ * 優先して採用する (flavor-text.ts の displayVersions と同型の優先順リスト)。ある種が
+ * その作品の図鑑に登場しないと、その作品のレベルアップ技データを持たないため遡って
+ * 次点を試す。最新作のソード・シールドはほとんどの種の図鑑に登場するため、実際には
+ * 大半の種でこの1件目が採用される。
  */
-const LEVEL_UP_VERSION_GROUP_PRIORITY: readonly string[] = [
+const LEVEL_UP_GAME_PRIORITY: readonly string[] = [
   "sword-shield",
   "the-isle-of-armor",
   "the-crown-tundra",
@@ -60,7 +61,7 @@ function extractIdFromUrl(url: string): number {
  * どの version_group にもレベルアップ技が無ければ空配列。
  */
 export function resolveLevelUpMoveCandidates(moves: PokeAPIMoveEntry[]): MoveCandidate[] {
-  for (const versionGroup of LEVEL_UP_VERSION_GROUP_PRIORITY) {
+  for (const versionGroup of LEVEL_UP_GAME_PRIORITY) {
     const found: { slug: string; id: number; level: number }[] = [];
     for (const entry of moves) {
       for (const detail of entry.version_group_details) {

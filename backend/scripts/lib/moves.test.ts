@@ -24,7 +24,7 @@ function moveEntry(
 }
 
 describe("[ポケモンデータ] レベルアップ技候補の決定", () => {
-  it("ソード・シールドにレベルアップ技があるとき、それらを候補にする", () => {
+  it("優先度が最も高い作品にレベルアップ技があるとき、それらを候補にする", () => {
     const moves = [
       moveEntry("vine-whip", 22, [{ versionGroup: "sword-shield", level: 7 }]),
       moveEntry("tackle", 33, [{ versionGroup: "sword-shield", level: 1 }]),
@@ -41,12 +41,12 @@ describe("[ポケモンデータ] レベルアップ技候補の決定", () => {
     );
   });
 
-  it("ソード・シールドのレベルアップ技候補が1件だけのとき、その1件を返す", () => {
+  it("優先度が最も高い作品のレベルアップ技候補が1件だけのとき、その1件を返す", () => {
     const moves = [moveEntry("sketch", 166, [{ versionGroup: "sword-shield", level: 1 }])];
     expect(resolveLevelUpMoveCandidates(moves)).toEqual([{ slug: "sketch", id: 166 }]);
   });
 
-  it("ソード・シールドにレベルアップ技のデータが無いとき、優先順で次に新しいX・Yのレベルアップ技を候補にする", () => {
+  it("優先度が最も高い作品にレベルアップ技のデータが無いとき、優先順で次の作品のレベルアップ技を候補にする", () => {
     const moves = [
       moveEntry("tackle", 33, [{ versionGroup: "x-y", level: 1 }]),
       moveEntry("growl", 45, [{ versionGroup: "x-y", level: 1 }]),
@@ -61,7 +61,7 @@ describe("[ポケモンデータ] レベルアップ技候補の決定", () => {
     );
   });
 
-  it("同じ技をソード・シールドの複数レベルで習得できるとき、重複を除いて1件にまとめる", () => {
+  it("優先度が最も高い作品で同じ技を複数レベルで習得できるとき、重複を除いて1件にまとめる", () => {
     const moves = [
       moveEntry("double-edge", 38, [
         { versionGroup: "sword-shield", level: 10 },
