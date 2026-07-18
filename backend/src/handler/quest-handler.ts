@@ -84,7 +84,7 @@ export class QuestHandler {
   };
 
   /**
-   * POST /quest/hint — ヒントを要求し、出題ポケモンのタイプと消費後の残り挑戦回数を返す。
+   * POST /quest/hint — ヒントを要求し、今回開示された情報 (タイプまたは技) と消費後の残り挑戦回数を返す。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */

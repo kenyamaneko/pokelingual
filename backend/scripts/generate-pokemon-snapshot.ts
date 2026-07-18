@@ -6,6 +6,15 @@ import {
   type PokeAPISpeciesData,
   type PokeAPIPokemonData,
 } from "./lib/convert.js";
+import {
+  resolveLevelUpMoveCandidates,
+  resolveMoveNameJA,
+  pickHintMoveNames,
+  HINT_MOVE_COUNT,
+  type MoveCandidate,
+  type PokeAPIMoveName,
+} from "./lib/moves.js";
+import { SystemRandomSource } from "../src/adapter/random/system.js";
 import type { PokemonRecord } from "../src/domain/pokemon.js";
 
 /**
@@ -46,11 +55,43 @@ async function main(): Promise<void> {
     throw new Error(`invalid --max-id: ${values["max-id"]}`);
   }
 
-  const records: PokemonRecord[] = [];
+  const random = new SystemRandomSource();
+
+  // 1st pass: 種・ポケモンの生データを読み、優先順の version_group からレベルアップ技候補を解決する。
+  // 技は多くのポケモンで共有されるため、必要な技 ID を集約してから2nd passで1回ずつ読む。
+  const speciesList: PokeAPISpeciesData[] = [];
+  const pokemonList: PokeAPIPokemonData[] = [];
+  const candidatesList: MoveCandidate[][] = [];
+  const neededMoveIds = new Set<number>();
+
   for (let id = 1; id <= maxID; id++) {
     const species = (await readApiData(apiDataDir, "pokemon-species", id)) as PokeAPISpeciesData;
     const pokemon = (await readApiData(apiDataDir, "pokemon", id)) as PokeAPIPokemonData;
-    records.push(convertToPokemonRecord(species, pokemon));
+
+    const candidates = resolveLevelUpMoveCandidates(pokemon.moves);
+    if (candidates.length === 0) {
+      throw new Error(`no level-up moves resolved for pokemon ${id} in any known version group`);
+    }
+    if (candidates.length < HINT_MOVE_COUNT) {
+      console.warn(`pokemon ${id} has only ${candidates.length} level-up move(s) available for hints`);
+    }
+    for (const c of candidates) neededMoveIds.add(c.id);
+
+    speciesList.push(species);
+    pokemonList.push(pokemon);
+    candidatesList.push(candidates);
+  }
+
+  const moveNamesJA = new Map<string, string>();
+  for (const moveId of neededMoveIds) {
+    const move = (await readApiData(apiDataDir, "move", moveId)) as { name: string; names: PokeAPIMoveName[] };
+    moveNamesJA.set(move.name, resolveMoveNameJA(move.names));
+  }
+
+  const records: PokemonRecord[] = [];
+  for (let i = 0; i < speciesList.length; i++) {
+    const hintMoves = pickHintMoveNames(candidatesList[i], moveNamesJA, random);
+    records.push(convertToPokemonRecord(speciesList[i], pokemonList[i], hintMoves));
   }
 
   await writeFile(outPath, JSON.stringify(records));

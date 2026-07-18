@@ -7,6 +7,9 @@ import { BALL_SPRITES, BALL_NAMES } from "./ballAssets";
 /** ヒントボタンを表示するために必要な最小残り挑戦回数。backend の判定と合わせている。 */
 const MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON = 2;
 
+/** ヒントの最大開示回数。backend の判定と合わせている。 */
+const MAX_HINT_REVEALS = 2;
+
 interface NameGuessProps {
   onSubmit: (guess: string) => Promise<void>;
   onSkip: () => void;
@@ -42,6 +45,15 @@ export const NAME_GUESS_LABELS = {
  */
 function formatTypeHint(types: PokemonType[]): string {
   return `${types.map(getTypeLabel).join("・")}タイプのポケモンだよ`;
+}
+
+/**
+ * ヒントで判明した、レベルアップで覚える技から案内文を組み立てる。
+ * @param moves レベルアップで覚える技の日本語名 (最大3件)。
+ * @returns 「〜を覚えるよ」形式の案内文。
+ */
+function formatMovesHint(moves: string[]): string {
+  return `「${moves.join("」「")}」を覚えるよ`;
 }
 
 interface GuessAttemptsBallsProps {
@@ -98,10 +110,12 @@ export function NameGuess({
 }: NameGuessProps) {
   const isFinished =
     guessResult?.correct || guessResult?.attempts_remaining === 0;
+  const hintRevealCount = (hintResult?.types ? 1 : 0) + (hintResult?.moves ? 1 : 0);
+  const hintExhausted = hintRevealCount >= MAX_HINT_REVEALS;
   const hintAvailable =
     attemptsRemaining === null || attemptsRemaining >= MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON;
-  const canRequestHint = !!onHint && !hintResult && !isFinished && hintAvailable;
-  const hintExpired = !!onHint && !hintResult && !isFinished && !hintAvailable;
+  const canRequestHint = !!onHint && !hintExhausted && !isFinished && hintAvailable;
+  const hintExpired = !!onHint && !hintExhausted && !isFinished && !hintAvailable;
 
   const handleSubmit = async (guess: string) => {
     await onSubmit(guess);
@@ -120,9 +134,10 @@ export function NameGuess({
         <GuessAttemptsBalls total={maxGuessAttempts} remaining={attemptsRemaining} />
       )}
 
-      {hintResult && (
+      {hintResult && (hintResult.types || hintResult.moves) && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
-          <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
+          {hintResult.types && <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>}
+          {hintResult.moves && <p className="text-blue-700 text-sm">{formatMovesHint(hintResult.moves)}</p>}
         </div>
       )}
 

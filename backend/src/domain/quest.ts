@@ -15,12 +15,15 @@ export interface QuestSession {
   weight: number;
   is_legendary: boolean;
   is_mythical: boolean;
+  /** ヒントに使う、レベルアップで覚える技の日本語名 (最大3件)。 */
+  hint_moves?: string[];
   score: number;
   /** 確定したボール種別。名前当て/スキップ前は null。 */
   ball_type: BallType | null;
   guess_attempts: number;
   name_guessed: boolean;
-  hint_used: boolean;
+  /** ヒントの開示回数 (0-2)。1回目でタイプ、2回目で技を開示する。 */
+  hint_reveal_count: number;
 }
 
 /** 翻訳採点結果。スコアと講評文 (LLM が直接返す内部表現)。 */

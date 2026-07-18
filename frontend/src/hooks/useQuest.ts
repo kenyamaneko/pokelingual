@@ -217,7 +217,9 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   const requestHint = async () => {
     try {
       const res = await api.requestHint();
-      setHintResult(res.data);
+      // 1回目 (types) と2回目 (moves) はレスポンスに片方ずつしか含まれないため、
+      // 既に開示済みの情報を上書きしないようマージする。
+      setHintResult((prev) => ({ ...prev, ...res.data }));
       setAttemptsRemaining(res.data.attempts_remaining);
     } catch (err) {
       handleActionError(err, "ヒントの取得に失敗しました");

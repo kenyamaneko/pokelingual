@@ -16,6 +16,8 @@ export interface Pokemon {
   is_legendary: boolean;
   is_mythical: boolean;
   flavor_texts?: FlavorTextPair[];
+  /** ヒントに使う、レベルアップで覚える技の日本語名 (最大3件、生成時に確定)。 */
+  hint_moves?: string[];
 }
 
 /** データソースが保持するポケモン種別情報。sprite_url は保持せず、図鑑番号から読み出し時に組み立てる。 */

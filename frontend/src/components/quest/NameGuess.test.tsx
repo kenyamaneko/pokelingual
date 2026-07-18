@@ -282,8 +282,43 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     expect(screen.getByText(NAME_GUESS_LABELS.hintUnavailable)).toBeInTheDocument();
   });
 
-  it("既にヒントを取得済みのとき、ヒントボタンは表示されず、ヒントが使えない旨の案内も出ない", () => {
+  it("1回目のヒント (タイプ) を取得済みで、残り試行回数が2回のとき、2回目のヒントボタンが表示される", () => {
+    const hint: HintResponse = { types: ["electric"], attempts_remaining: 2 };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={2}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton })).toBeInTheDocument();
+  });
+
+  it("1回目のヒント (タイプ) を取得済みで、残り試行回数が1回のとき、ヒントボタンは表示されず、ヒントが使えない旨を案内する", () => {
     const hint: HintResponse = { types: ["electric"], attempts_remaining: 1 };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={1}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.hintButton })).not.toBeInTheDocument();
+    expect(screen.getByText(NAME_GUESS_LABELS.hintUnavailable)).toBeInTheDocument();
+  });
+
+  it("2回とも (タイプ・技) ヒントを取得済みのとき、ヒントボタンは表示されず、ヒントが使えない旨の案内も出ない", () => {
+    const hint: HintResponse = { types: ["electric"], moves: ["でんきショック"], attempts_remaining: 1 };
     render(
       <NameGuess
         onSubmit={vi.fn()}
@@ -336,6 +371,26 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     expect(onHint).toHaveBeenCalledTimes(1);
   });
 
+  it("1回目のヒント (タイプ) 取得後にヒントボタンを押すと、2回目のヒント要求が呼ばれる", async () => {
+    const user = userEvent.setup();
+    const onHint = vi.fn().mockResolvedValue(undefined);
+    const hint: HintResponse = { types: ["electric"], attempts_remaining: 2 };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={2}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={onHint}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton }));
+    expect(onHint).toHaveBeenCalledTimes(1);
+  });
+
   it("ヒント取得後は、単一タイプなら「〜タイプのポケモンだよ」と表示される", () => {
     const hint: HintResponse = { types: ["electric"], attempts_remaining: 2 };
     render(
@@ -368,5 +423,43 @@ describe("[クエスト] 名前当てのヒント表示", () => {
       />,
     );
     expect(screen.getByText("くさ・どくタイプのポケモンだよ")).toBeInTheDocument();
+  });
+
+  it("2回目のヒント取得後は、レベルアップで覚える技が表示される", () => {
+    const hint: HintResponse = {
+      types: ["electric"],
+      moves: ["たいあたり", "なきごえ", "でんきショック"],
+      attempts_remaining: 1,
+    };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={1}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("「たいあたり」「なきごえ」「でんきショック」を覚えるよ")).toBeInTheDocument();
+  });
+
+  it("2回目のヒント取得後も、1回目で開示されたタイプの表示は消えない", () => {
+    const hint: HintResponse = { types: ["electric"], moves: ["でんきショック"], attempts_remaining: 1 };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={1}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
   });
 });
