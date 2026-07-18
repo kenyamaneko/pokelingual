@@ -271,7 +271,7 @@ describe("[クエスト] クエスト進行", () => {
     expect(result.current.attemptsRemaining).toBe(2);
   });
 
-  it("1回目のヒントでタイプ、2回目のヒントで技を取得すると、hintResultはタイプと技の両方を含む", async () => {
+  it("1回目のヒントでタイプ、2回目のヒントで技を取得すると、1回目に取得したタイプの情報は2回目の技の取得後も参照できる", async () => {
     mockNewQuest();
     server.use(
       http.post(apiUrl("/quest/hint"), () =>

@@ -149,8 +149,12 @@ export function NameGuess({
 
       {hintResult && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
-          {hintResult.types && <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>}
-          {hintResult.moves && <p className="text-blue-700 text-sm">{formatMovesHint(hintResult.moves)}</p>}
+          {hintResult.types && hintResult.types.length > 0 && (
+            <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
+          )}
+          {hintResult.moves && hintResult.moves.length > 0 && (
+            <p className="text-blue-700 text-sm">{formatMovesHint(hintResult.moves)}</p>
+          )}
         </div>
       )}
 

@@ -188,7 +188,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     expect(screen.getByRole("meter", { name: "残り挑戦回数" })).toHaveAttribute("aria-valuenow", "2");
   });
 
-  it("名前当てで2回ヒントを要求すると、開示された技の一覧も表示され残り回数がさらに減る", async () => {
+  it("名前当てで2回ヒントを要求すると、技の一覧も表示され残り回数がさらに減る", async () => {
     const user = userEvent.setup();
     let hintCalls = 0;
     server.use(

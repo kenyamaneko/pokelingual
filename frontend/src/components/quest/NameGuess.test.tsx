@@ -456,7 +456,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     expect(screen.getByText("くさ・どくタイプのポケモンだよ")).toBeInTheDocument();
   });
 
-  it("2回目のヒント取得後は、開示された技の一覧が表示される", () => {
+  it("2回目のヒント取得後は、技の一覧が表示される", () => {
     const hint: HintResponse = {
       types: ["electric"],
       moves: ["たいあたり", "なきごえ", "でんきショック"],
@@ -477,7 +477,41 @@ describe("[クエスト] 名前当てのヒント表示", () => {
     expect(screen.getByText("「たいあたり」「なきごえ」「でんきショック」を覚えるよ")).toBeInTheDocument();
   });
 
-  it("2回目のヒント取得後も、1回目で開示されたタイプの表示は消えない", () => {
+  it("技が1件だけのときも、その1件が表示される", () => {
+    const hint: HintResponse = { types: ["electric"], moves: ["でんきショック"], attempts_remaining: 1 };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={1}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("「でんきショック」を覚えるよ")).toBeInTheDocument();
+  });
+
+  it("技が0件のときは、技の表示自体が出ない", () => {
+    const hint: HintResponse = { types: ["electric"], moves: [], attempts_remaining: 1 };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={null}
+        attemptsRemaining={1}
+        maxGuessAttempts={3}
+        hintResult={hint}
+        onHint={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/を覚えるよ/)).not.toBeInTheDocument();
+  });
+
+  it("2回目のヒント取得後も、1回目のタイプの表示は消えない", () => {
     const hint: HintResponse = { types: ["electric"], moves: ["でんきショック"], attempts_remaining: 1 };
     render(
       <NameGuess
