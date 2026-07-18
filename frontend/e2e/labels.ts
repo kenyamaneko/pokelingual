@@ -29,6 +29,7 @@ export const BUTTON = {
   backToMenu: /メニューに戻る/,
   login: "メールでログイン",
   startTutorial: /はじめる/,
+  menu: "メニュー",
 } as const;
 
 /** getByText で参照する本文テキスト。 */

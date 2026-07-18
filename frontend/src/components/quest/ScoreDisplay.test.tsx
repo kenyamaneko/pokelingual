@@ -88,7 +88,7 @@ describe("[クエスト] 採点スコアの演出", () => {
     expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "green");
   });
 
-  it("スコア 85 のとき、メーターの減少の中間時点では表示値 49% に連動して HP バーの色が黄になる", () => {
+  it("スコア 85 のとき、メーターの減少の途中で表示値が 50% 以下になった時点では、その表示値に連動して HP バーの色が黄になる", () => {
     render(<ScoreDisplay score={withScore(85)} isActive={true} />);
     act(() => {
       vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS * 0.6);

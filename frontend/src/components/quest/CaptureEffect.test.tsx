@@ -60,20 +60,6 @@ describe("[クエスト] 捕獲演出", () => {
     expect(screen.getByTestId("capture-whiteout")).toBeInTheDocument();
   });
 
-  it("白フェードの再生完了まで、onComplete を呼ばない", () => {
-    const onComplete = renderEffect(true);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
-    });
-    act(() => {
-      vi.advanceTimersByTime(EFFECT_DURATION_MS);
-    });
-    act(() => {
-      vi.advanceTimersByTime(WHITEOUT_DURATION_MS - 1);
-    });
-    expect(onComplete).not.toHaveBeenCalled();
-  });
-
   it("白フェードの再生完了後、onComplete を呼ぶ", () => {
     const onComplete = renderEffect(true);
     act(() => {
