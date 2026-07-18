@@ -267,8 +267,8 @@ export class QuestService {
     const masterEligible =
       (session.is_legendary || session.is_mythical) && session.score >= MASTER_BALL_MIN_SCORE;
 
-    // 判定結果を変数に確定させてから末尾で一度だけ書き戻す。分岐ごとに書き戻すと
-    // guess_attempts のインクリメントを含むミューテーションの永続化漏れが起きうるため。
+    // 分岐ごとに保存を書くと、分岐を追加・変更したときに保存の書き忘れに気づけない。
+    // 応答を変数に確定してから最後に一度だけ保存し、書き忘れが起きない形にする。
     let response: GuessResponse;
     if (guessNorm === nameENNorm) {
       const ballType = masterEligible ? "master" : "ultra";

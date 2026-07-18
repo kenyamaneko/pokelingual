@@ -8,7 +8,7 @@ Accepted (Supersedes ADR-013)
 
 クエストセッションを `QuestService` 内のインメモリ `Map` から、`QuestSessionStore` ポートの裏に置いた Redis プロトコルストアへ移す。本番は Upstash Redis (サーバーレス Redis)、ローカル・CI は Valkey に同じ `ioredis` クライアントで接続する。姉妹リポ overload-party の matchmaking / newsfeed が確立した運用パターン (標準 Redis クライアント・ローカル Valkey・Secret Manager の endpoint + password 2 シークレット) を踏襲する。
 
-セッションは get → mutate → set の書き戻しに置き換わり、TTL (既定 3600 秒、`QUEST_SESSION_TTL_SECONDS`) を set のたびに再適用する。Cloud Run はこれによりインスタンス間でセッションを共有できるようになるため、`--max-instances 1` の制約を外す。初回ロールアウトはこの PR を `--max-instances 1` のまま dev へ出して Upstash 配線をスモークで検証し、検証後に別デプロイで `--max-instances 3` へ引き上げる。
+セッションは get → mutate → set の書き戻しに置き換わり、TTL (既定 3600 秒、`QUEST_SESSION_TTL_SECONDS`) を set のたびに再適用する。Cloud Run はこれによりインスタンス間でセッションを共有できるようになるため、`--max-instances 1` の制約を外す。初回ロールアウトは `--max-instances 1` のまま dev へデプロイして Upstash 配線をスモークで検証し、検証後に別デプロイで `--max-instances 3` へ引き上げる。
 
 ## 背景・課題
 

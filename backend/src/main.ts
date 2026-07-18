@@ -114,8 +114,7 @@ async function main(): Promise<void> {
   // 除外設定の妥当性は「供給できる図鑑番号」を SSoT に判定する (env の上限値と二重管理しない)。
   const servablePokemonIDs = new Set(pokemonClient.getServableIDs());
 
-  // mock はローカル Valkey、real は Upstash Redis へ接続する (URL の組み立ては config.ts が担う)。
-  // 呼び出し元に伝搬しない接続エラーで process を落とさないよう、ここでログに落とす。
+  // Redis クライアントは 'error' イベントにリスナーが無いと未処理例外で process を落とすため捕捉する。
   const redisClient = new Redis(cfg.questSessionRedisURL);
   redisClient.on("error", (err) => {
     logger.error("redis client error", { error: String(err) });

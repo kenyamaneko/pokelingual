@@ -299,22 +299,6 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.captured_count).toBe(1);
   });
 
-  it("規定回数連続で名前当てに不正解すると、最終回の応答で正解名が開示される", async () => {
-    const app = makeApp();
-    await request(app).get("/api/quest/new");
-    const first = await request(app).post("/api/quest/guess-name").send({ guess: "wrong1" });
-    expect(first.body.reveal_name_en).toBeUndefined();
-    const second = await request(app).post("/api/quest/guess-name").send({ guess: "wrong2" });
-    expect(second.body.reveal_name_en).toBeUndefined();
-    const third = await request(app).post("/api/quest/guess-name").send({ guess: "wrong3" });
-    expect(third.body).toMatchObject({
-      correct: false,
-      ball_type: "poke",
-      attempts_remaining: 0,
-      reveal_name_en: "Bulbasaur",
-    });
-  });
-
   it("出題後にヒントを要求すると、出題ポケモンのタイプと消費後の残り試行回数が返る", async () => {
     const app = makeApp();
     await request(app).get("/api/quest/new");

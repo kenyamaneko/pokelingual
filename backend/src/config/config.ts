@@ -39,6 +39,8 @@ const MOCK_DEFAULTS = {
   geminiModel: "gemini-2.5-flash",
   perUserDailyLimit: 30,
   globalDailyLimit: 1500,
+  // docker-compose.dev.yml の valkey サービス名を指す
+  questSessionRedisURL: "redis://valkey:6379",
   questSessionTTLSeconds: 3600,
 } as const;
 
@@ -121,8 +123,7 @@ function requireAppMode(): AppMode {
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは必須 env
  * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
  * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_ENDPOINT,
- * UPSTASH_REDIS_PASSWORD, QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。mock モードでも
- * UPSTASH_REDIS_URL (docker-compose の Valkey を指す) だけは既定値を持たず必須とする。
+ * UPSTASH_REDIS_PASSWORD, QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。
  * @returns アプリ全体の設定値。
  */
 export function loadConfig(): Config {
@@ -141,9 +142,8 @@ export function loadConfig(): Config {
     globalDailyLimit: isMock ? (getIntEnv("GLOBAL_DAILY_LIMIT") ?? MOCK_DEFAULTS.globalDailyLimit) : requireIntEnv("GLOBAL_DAILY_LIMIT"),
     // mock モードでは MockPokemonClient を使うため参照されない (Config の形を揃えるためだけの値)
     pokemonSnapshotURI: isMock ? (getEnv("POKEMON_SNAPSHOT_URI") ?? "") : requireEnv("POKEMON_SNAPSHOT_URI"),
-    // ローカル Valkey も Upstash Redis も本物の Redis 経路を通すため、mock でも既定値を持たせない
     questSessionRedisURL: isMock
-      ? requireEnv("UPSTASH_REDIS_URL")
+      ? (getEnv("UPSTASH_REDIS_URL") ?? MOCK_DEFAULTS.questSessionRedisURL)
       : buildUpstashRedisURL(requireEnv("UPSTASH_REDIS_ENDPOINT"), requireEnv("UPSTASH_REDIS_PASSWORD")),
     questSessionTTLSeconds: isMock
       ? (getIntEnv("QUEST_SESSION_TTL_SECONDS") ?? MOCK_DEFAULTS.questSessionTTLSeconds)

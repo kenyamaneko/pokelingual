@@ -51,7 +51,7 @@ export interface RateLimitRepository {
   getUserUsage(userId: string): Promise<DailyUsage>;
 }
 
-/** 進行中のクエストセッションを保存・取得・削除するポート。Redis 実装がある。 */
+/** 進行中のクエストセッションを保存・取得・削除するポート。 */
 export interface QuestSessionStore {
   get(userId: string): Promise<QuestSession | null>;
   set(userId: string, session: QuestSession): Promise<void>;

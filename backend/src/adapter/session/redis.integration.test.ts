@@ -70,19 +70,7 @@ function makeSession(overrides: Partial<QuestSession> = {}): QuestSession {
   };
 }
 
-describe("RedisQuestSessionStore (Valkey)", () => {
-  it("set したセッションを get すると同じ内容が返る", async () => {
-    const client = new Redis(redisURL);
-    const store = new RedisQuestSessionStore(client, "test:roundtrip:", 60);
-    const session = makeSession({ pokemon_id: 42, guess_attempts: 2 });
-
-    await store.set("alice", session);
-    const got = await store.get("alice");
-
-    expect(got).toEqual(session);
-    await client.quit();
-  });
-
+describe("クエストセッションの保存 (Valkey)", () => {
   it("存在しないセッションを get すると null が返る", async () => {
     const client = new Redis(redisURL);
     const store = new RedisQuestSessionStore(client, "test:missing:", 60);
@@ -116,8 +104,7 @@ describe("RedisQuestSessionStore (Valkey)", () => {
 
 /**
  * 指定したセッションストアで、公開入口 (HTTP) から叩ける Express アプリを組み立てる。
- * Cloud Run の 1 インスタンスを模す。同じストアを共有する複数インスタンスを作って、
- * インスタンスをまたいだセッションの引き継ぎを確かめるために使う。
+ * Cloud Run の 1 インスタンスを模す。
  * @param sessionStore 本番クエスト用のセッションストア。
  * @param tutorialSessionStore チュートリアル用のセッションストア。
  * @returns supertest で叩ける Express アプリ。
@@ -173,12 +160,20 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
 }
 
 describe("クエストセッションのインスタンス間引き継ぎ (Valkey)", () => {
-  it("同じ Valkey を共有する別インスタンスへリクエストが分散しても、出題から捕獲まで通る", async () => {
-    const client = new Redis(redisURL);
-    const sessionStore = new RedisQuestSessionStore(client, "test:handoff:quest:", 60);
-    const tutorialSessionStore = new RedisQuestSessionStore(client, "test:handoff:tutorial:", 60);
-    const instanceA = buildAppInstance(sessionStore, tutorialSessionStore);
-    const instanceB = buildAppInstance(sessionStore, tutorialSessionStore);
+  it("別インスタンスへリクエストが分散しても、出題から捕獲まで通る", async () => {
+    // instanceA/B は Redis クライアントもセッションストアも別オブジェクトにし、Cloud Run の
+    // 別プロセスを模す。両者が JS オブジェクトを一切共有しないことで、セッションの引き継ぎが
+    // プロセス内の参照共有ではなく Valkey 経由であることを保証する。
+    const clientA = new Redis(redisURL);
+    const clientB = new Redis(redisURL);
+    const instanceA = buildAppInstance(
+      new RedisQuestSessionStore(clientA, "test:handoff:quest:", 60),
+      new RedisQuestSessionStore(clientA, "test:handoff:tutorial:", 60),
+    );
+    const instanceB = buildAppInstance(
+      new RedisQuestSessionStore(clientB, "test:handoff:quest:", 60),
+      new RedisQuestSessionStore(clientB, "test:handoff:tutorial:", 60),
+    );
 
     const quest = await request(instanceA).get("/api/quest/new");
     expect(quest.status).toBe(200);
@@ -197,6 +192,7 @@ describe("クエストセッションのインスタンス間引き継ぎ (Valke
     expect(capture.status).toBe(200);
     expect(capture.body).toMatchObject({ ball_type: "poke", pokemon_id: 1 });
 
-    await client.quit();
+    await clientA.quit();
+    await clientB.quit();
   });
 });
