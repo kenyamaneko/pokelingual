@@ -5,8 +5,8 @@
  */
 import type { PokemonType } from "./pokemon.js";
 
-/** 捕獲に使うボール種別。 */
-export type BallType = "poke" | "great" | "ultra";
+/** 捕獲に使うボール種別。master は伝説・幻限定の確定捕獲。 */
+export type BallType = "poke" | "great" | "ultra" | "master";
 
 /** クエストの探索場所。選んだ場所のタイプのポケモンが出題される (幻・伝説は場所によらず低確率で出る)。 */
 export interface QuestLocation {

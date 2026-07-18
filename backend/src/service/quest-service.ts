@@ -45,8 +45,11 @@ const SCORE_TRANSLATION_FLOOR = 10;
 /** 最終評価点変換: 素点 (0-100) を最終評価点 (0-99) へ圧縮する係数。 */
 const SCORE_TRANSLATION_SCALE = 1.1;
 
-/** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。 */
-export const BALL_CAPTURE_BONUS: Record<BallType, number> = {
+/** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要な最終評価点の下限。 */
+const MASTER_BALL_MIN_SCORE = 70;
+
+/** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。master は確率計算をバイパスするため対象外。 */
+export const BALL_CAPTURE_BONUS: Record<Exclude<BallType, "master">, number> = {
   poke: 0,
   great: 1.5,
   ultra: 3.0,
@@ -259,25 +262,31 @@ export class QuestService {
     const guessJA = guess.trim();
 
     const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
+    // 伝説・幻を一定の最終評価点以上で正解すると、通常より上位のボールに確定する。
+    const masterEligible =
+      (session.is_legendary || session.is_mythical) && session.score >= MASTER_BALL_MIN_SCORE;
 
     if (guessNorm === nameENNorm) {
-      session.ball_type = "ultra";
+      const ballType = masterEligible ? "master" : "ultra";
+      session.ball_type = ballType;
       session.name_guessed = true;
-      return { correct: true, ball_type: "ultra", language: "en", attempts_remaining: remaining };
+      return { correct: true, ball_type: ballType, language: "en", attempts_remaining: remaining };
     }
 
     if (guessJA === session.name_ja) {
-      session.ball_type = "great";
+      const ballType = masterEligible ? "master" : "great";
+      session.ball_type = ballType;
       session.name_guessed = true;
-      return { correct: true, ball_type: "great", language: "ja", attempts_remaining: remaining };
+      return { correct: true, ball_type: ballType, language: "ja", attempts_remaining: remaining };
     }
 
     if (nameENNorm.length >= FUZZY_MATCH_MIN_NAME_LENGTH) {
       const dist = levenshtein(guessNorm, nameENNorm);
       if (dist <= FUZZY_MATCH_MAX_DISTANCE) {
-        session.ball_type = "ultra";
+        const ballType = masterEligible ? "master" : "ultra";
+        session.ball_type = ballType;
         session.name_guessed = true;
-        return { correct: true, ball_type: "ultra", language: "en", fuzzy: true, attempts_remaining: remaining };
+        return { correct: true, ball_type: ballType, language: "en", fuzzy: true, attempts_remaining: remaining };
       }
     }
 
@@ -340,20 +349,30 @@ export class QuestService {
   }
 
   /**
-   * スコア・種族値合計・ボール補正から捕獲確率を算出し、抽選結果を返す。セッションは消費する。
+   * スコア・種族値合計・ボール補正から捕獲確率を算出し、抽選結果を返す。マスターボールは
+   * 確率計算をバイパスして確定捕獲する。セッションは消費する。
    * @param userId ユーザ ID。
    * @returns 捕獲成否と表示用ポケモン情報。
    */
   attemptCapture(userId: string): CaptureResponse {
     const session = this.getSession(userId);
+    const ballType = session.ball_type;
 
-    if (session.ball_type === null) {
+    if (ballType === null) {
       // 名前当て/スキップを経ずに capture に到達するのは不正な状態 (フォールバックせず失敗させる)。
       throw new Error("capture attempted before a ball was selected (guess or skip required)");
     }
-    const ballBonus = BALL_CAPTURE_BONUS[session.ball_type];
-    const probability = calculateCaptureRate(session.score, session.base_stat_total, ballBonus);
-    const captured = this.random.next() < probability;
+
+    let probability: number;
+    let captured: boolean;
+    if (ballType === "master") {
+      probability = 1.0;
+      captured = true;
+    } else {
+      const ballBonus = BALL_CAPTURE_BONUS[ballType];
+      probability = calculateCaptureRate(session.score, session.base_stat_total, ballBonus);
+      captured = this.random.next() < probability;
+    }
 
     this.sessions.delete(userId);
 
@@ -368,7 +387,7 @@ export class QuestService {
       description_en: session.description_en,
       description_ja: session.description_ja,
       base_stat_total: session.base_stat_total,
-      ball_type: session.ball_type,
+      ball_type: ballType,
       types: session.types,
       height: session.height,
       weight: session.weight,

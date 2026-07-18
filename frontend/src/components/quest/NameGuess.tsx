@@ -2,7 +2,7 @@ import type { GuessResponse, HintResponse } from "../../../../shared/api-types/q
 import type { PokemonType } from "../../../../shared/api-types/pokemon";
 import { PokemonNameInput } from "./PokemonNameInput";
 import { getTypeLabel } from "../../utils/pokemonTypes";
-import { BALL_SPRITES } from "./ballAssets";
+import { BALL_SPRITES, BALL_NAMES } from "./ballAssets";
 
 /** ヒントボタンを表示するために必要な最小残り挑戦回数。backend の判定と合わせている。 */
 const MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON = 2;
@@ -126,16 +126,15 @@ export function NameGuess({
         </div>
       )}
 
-      {guessResult?.correct && (
+      {guessResult?.correct && guessResult.ball_type && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-3">
           <p className="text-green-700 font-bold">
             {NAME_GUESS_LABELS.correctTitle}
             {guessResult.fuzzy && "（少し違ったけどOK！）"}
           </p>
           <p className="text-green-600 text-sm">
-            {guessResult.language === "en"
-              ? "英語名で正解！　ハイパーボールを手に入れた！"
-              : "日本語名で正解！　スーパーボールを手に入れた！"}
+            {guessResult.language === "en" ? "英語名で正解！" : "日本語名で正解！"}
+            　{BALL_NAMES[guessResult.ball_type]}を手に入れた！
           </p>
         </div>
       )}

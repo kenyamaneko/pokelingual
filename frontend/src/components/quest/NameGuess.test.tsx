@@ -156,6 +156,28 @@ describe("[クエスト] 名前当ての入力と結果表示", () => {
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     ).toBeInTheDocument();
   });
+
+  it("マスターボールが確定して正解のとき、正解メッセージにマスターボールが表示される", () => {
+    const guess: GuessResponse = {
+      correct: true,
+      ball_type: "master",
+      language: "en",
+      attempts_remaining: 2,
+    };
+    render(
+      <NameGuess
+        onSubmit={vi.fn()}
+        onSkip={vi.fn()}
+        onProceed={vi.fn()}
+        guessResult={guess}
+        attemptsRemaining={2}
+        maxGuessAttempts={3}
+        hintResult={null}
+      />,
+    );
+
+    expect(screen.getByText(/マスターボール/)).toBeInTheDocument();
+  });
 });
 
 describe("[クエスト] 残り挑戦回数の表示", () => {
