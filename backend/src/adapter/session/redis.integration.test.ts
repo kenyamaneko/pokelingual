@@ -70,8 +70,8 @@ function makeSession(overrides: Partial<QuestSession> = {}): QuestSession {
   };
 }
 
-describe("クエストセッションの保存 (Valkey)", () => {
-  it("存在しないセッションを get すると null が返る", async () => {
+describe("クエストセッションの永続化 (Valkey)", () => {
+  it("セッションを保存していない状態で取得すると、null が返る", async () => {
     const client = new Redis(redisURL);
     const store = new RedisQuestSessionStore(client, "test:missing:", 60);
 
@@ -79,7 +79,7 @@ describe("クエストセッションの保存 (Valkey)", () => {
     await client.quit();
   });
 
-  it("set すると TTL が正の残り秒で張られる", async () => {
+  it("TTL を 60 秒に設定してセッションを保存すると、TTL が 60 秒以下の正の値になる", async () => {
     const client = new Redis(redisURL);
     const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
 
@@ -87,10 +87,11 @@ describe("クエストセッションの保存 (Valkey)", () => {
     const ttl = await client.ttl("test:ttl:alice");
 
     expect(ttl).toBeGreaterThan(0);
+    expect(ttl).toBeLessThanOrEqual(60);
     await client.quit();
   });
 
-  it("delete したセッションは get で見つからなくなる", async () => {
+  it("保存済みのセッションを削除すると、取得できなくなる", async () => {
     const client = new Redis(redisURL);
     const store = new RedisQuestSessionStore(client, "test:delete:", 60);
     await store.set("alice", makeSession());
@@ -160,7 +161,7 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
 }
 
 describe("クエストセッションのインスタンス間引き継ぎ (Valkey)", () => {
-  it("別インスタンスへリクエストが分散しても、出題から捕獲まで通る", async () => {
+  it("別インスタンスへリクエストが分散しても、出題から捕獲まで通り、スキップで確定したボール種別が捕獲結果に引き継がれる", async () => {
     // instanceA/B は Redis クライアントもセッションストアも別オブジェクトにし、Cloud Run の
     // 別プロセスを模す。両者が JS オブジェクトを一切共有しないことで、セッションの引き継ぎが
     // プロセス内の参照共有ではなく Valkey 経由であることを保証する。

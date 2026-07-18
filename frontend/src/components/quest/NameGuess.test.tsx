@@ -106,7 +106,7 @@ describe("[クエスト] 名前当ての入力と結果表示", () => {
     expect(screen.getByText(/ラストチャンス/)).toBeInTheDocument();
   });
 
-  it("不正解で残り 0 のとき、入力欄を消す", () => {
+  it("不正解で残り 0 のとき、「残念...」を表示し入力欄を消す", () => {
     const guess: GuessResponse = {
       correct: false,
       attempts_remaining: 0,

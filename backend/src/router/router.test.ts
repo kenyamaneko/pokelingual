@@ -217,7 +217,7 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
     expect(res.body).toEqual({ error: "internal server error" });
   });
 
-  it("セッションストアが障害を起こすと 502 を返す", async () => {
+  it("セッションストアの書き込みに失敗した出題リクエストは 502 を返す", async () => {
     const app = makeApp({ sessionStoreError: new Error("redis unavailable") });
     const res = await request(app).get("/api/quest/new");
     expect(res.status).toBe(502);

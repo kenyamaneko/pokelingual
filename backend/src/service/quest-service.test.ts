@@ -389,7 +389,7 @@ describe("翻訳の採点", () => {
 });
 
 describe("セッションストアの障害", () => {
-  it("セッションストアの読み込みが失敗すると、外部サービスのエラーになる", async () => {
+  it("セッションストアの読み込みが失敗するとき、採点すると外部サービスのエラーになる", async () => {
     const service = makeService({ sessionStoreError: new Error("boom") });
     await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
   });
