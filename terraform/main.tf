@@ -47,6 +47,7 @@ resource "google_project_service" "apis" {
     "monitoring.googleapis.com",
     "logging.googleapis.com",
     "billingbudgets.googleapis.com",
+    "secretmanager.googleapis.com",
   ])
 
   service            = each.value
@@ -198,6 +199,36 @@ resource "google_project_iam_member" "backend_vertex_ai" {
   project = var.project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
+# クエストセッションストア (Upstash Redis) の接続情報。値を tfstate に平文で残さないため、terraform ではシークレットの箱だけを作り、値は手動アップロードする。
+locals {
+  quest_session_redis_secrets = {
+    endpoint = "pokelingual-upstash-redis-endpoint"
+    password = "pokelingual-upstash-redis-password"
+  }
+}
+
+resource "google_secret_manager_secret" "quest_session_redis" {
+  for_each = local.quest_session_redis_secrets
+
+  project   = var.project_id
+  secret_id = each.value
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+resource "google_secret_manager_secret_iam_member" "backend_quest_session_redis_accessor" {
+  for_each = google_secret_manager_secret.quest_session_redis
+
+  project   = var.project_id
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.backend.email}"
 }
 
 # ポケモン種別データのスナップショット置き場。ポケモン社の著作物を含むため公開せず、
