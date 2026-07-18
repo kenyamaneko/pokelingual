@@ -36,7 +36,7 @@ git push origin vX.Y.Z
 注意が2点ある。
 
 - **契約の向き**：互換保証は「backend が frontend と同じか新しい」向きにしかない (ADR-026)。frontend を新しいまま backend だけ古くすると保証の逆向きになるため、切り戻し先のリリース以降に API 契約の変更が入っている場合は frontend も対になるバージョンへ戻す。
-- **トラフィックのピン留め**：`--to-revisions` はトラフィックを指定リビジョンへ固定する。以降のデプロイは新リビジョンを作るがトラフィックは移らない ([troubleshooting.md](troubleshooting.md) の「Cloud Run のトラフィックがデプロイ後も古いリビジョンに向いていた」)。deploy-prod.yml は最後に `--to-latest` を実行するため次のタグデプロイで固定は解除されるが、手動で最新へ戻すときは次を実行する。
+- **トラフィックのピン留め**：`--to-revisions` はトラフィックを指定リビジョンへ固定する。以降のデプロイは新リビジョンを作るがトラフィックは移らない。deploy-prod.yml は最後に `--to-latest` を実行するため次のタグデプロイで固定は解除されるが、手動で最新へ戻すときは次を実行する。
 
   ```bash
   gcloud run services update-traffic pokelingual-api-prod \
