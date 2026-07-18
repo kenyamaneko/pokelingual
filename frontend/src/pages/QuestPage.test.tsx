@@ -188,6 +188,56 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     expect(screen.getByRole("meter", { name: "残り挑戦回数" })).toHaveAttribute("aria-valuenow", "2");
   });
 
+  it("名前当てで2回ヒントを要求すると、技の一覧も表示され残り回数がさらに減る", async () => {
+    const user = userEvent.setup();
+    let hintCalls = 0;
+    server.use(
+      http.get(apiUrl("/quest/new"), () =>
+        HttpResponse.json({
+          pokemon_id: 9001,
+          description_en: "A wild creature.",
+          is_legendary: false,
+          is_mythical: false,
+          max_guess_attempts: 3,
+        }),
+      ),
+      http.post(apiUrl("/quest/score"), () =>
+        HttpResponse.json({ score: 50, review: "", description_ja: "せつめい" }),
+      ),
+      http.post(apiUrl("/quest/hint"), () => {
+        hintCalls++;
+        return hintCalls === 1
+          ? HttpResponse.json({ types: ["electric"], attempts_remaining: 2 })
+          : HttpResponse.json({
+              moves: ["たいあたり", "なきごえ", "でんきショック"],
+              attempts_remaining: 1,
+            });
+      }),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+    expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+
+    expect(
+      await screen.findByText("「たいあたり」「なきごえ」「でんきショック」を覚えるよ"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "残り挑戦回数" })).toHaveAttribute("aria-valuenow", "1");
+  });
+
   it.each([
     [
       "名前当てをスキップしたとき、捕獲画面と捕獲演出の両方でモンスターボールになる",

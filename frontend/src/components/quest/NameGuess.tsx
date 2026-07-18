@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { GuessResponse, HintResponse } from "../../../../shared/api-types/quest";
 import type { PokemonType } from "../../../../shared/api-types/pokemon";
 import { PokemonNameInput } from "./PokemonNameInput";
@@ -29,6 +30,7 @@ export const NAME_GUESS_LABELS = {
   heading: "このポケモンの名前は？",
   hintButton: "ヒントを見る（挑戦1回を消費）",
   hintUnavailable: "もうヒントは使えないよ",
+  movesUnavailable: "このポケモンはレベルアップで覚える技がないみたいだよ",
   skipButton: "わからないのでスキップ →",
   proceedButton: "次へ進む",
   correctTitle: "正解！",
@@ -42,6 +44,15 @@ export const NAME_GUESS_LABELS = {
  */
 function formatTypeHint(types: PokemonType[]): string {
   return `${types.map(getTypeLabel).join("・")}タイプのポケモンだよ`;
+}
+
+/**
+ * ヒントで判明した、レベルアップで覚える技から案内文を組み立てる。
+ * @param moves レベルアップで覚える技の日本語名 (最大3件)。
+ * @returns 「〜を覚えるよ」形式の案内文。
+ */
+function formatMovesHint(moves: string[]): string {
+  return `「${moves.join("」「")}」を覚えるよ`;
 }
 
 interface GuessAttemptsBallsProps {
@@ -96,16 +107,33 @@ export function NameGuess({
   onHint,
   hintResult,
 }: NameGuessProps) {
+  const [hintPending, setHintPending] = useState(false);
+  // setState は非同期に反映されるため、同一tick内の連打を防ぐ判定はrefで同期に行う
+  const hintPendingRef = useRef(false);
+
   const isFinished =
     guessResult?.correct || guessResult?.attempts_remaining === 0;
+  const hintExhausted = !!hintResult?.moves;
   const hintAvailable =
     attemptsRemaining === null || attemptsRemaining >= MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON;
-  const canRequestHint = !!onHint && !hintResult && !isFinished && hintAvailable;
-  const hintExpired = !!onHint && !hintResult && !isFinished && !hintAvailable;
+  const canRequestHint = !!onHint && !hintExhausted && !isFinished && hintAvailable;
+  const hintExpired = !!onHint && !hintExhausted && !isFinished && !hintAvailable;
 
   const handleSubmit = async (guess: string) => {
     await onSubmit(guess);
     return true;
+  };
+
+  const handleHint = async () => {
+    if (!onHint || hintPendingRef.current) return;
+    hintPendingRef.current = true;
+    setHintPending(true);
+    try {
+      await onHint();
+    } finally {
+      hintPendingRef.current = false;
+      setHintPending(false);
+    }
   };
 
   return (
@@ -122,7 +150,16 @@ export function NameGuess({
 
       {hintResult && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
-          <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
+          {hintResult.types && hintResult.types.length > 0 && (
+            <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
+          )}
+          {hintResult.moves && (
+            <p className="text-blue-700 text-sm">
+              {hintResult.moves.length > 0
+                ? formatMovesHint(hintResult.moves)
+                : NAME_GUESS_LABELS.movesUnavailable}
+            </p>
+          )}
         </div>
       )}
 
@@ -159,9 +196,11 @@ export function NameGuess({
 
       {canRequestHint && (
         <button
-          onClick={onHint}
+          onClick={handleHint}
+          disabled={hintPending}
           className="mt-2 w-full text-blue-500 hover:text-blue-700 py-2 text-sm
-                     border border-blue-200 rounded-xl transition-colors"
+                     border border-blue-200 rounded-xl transition-colors
+                     disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {NAME_GUESS_LABELS.hintButton}
         </button>

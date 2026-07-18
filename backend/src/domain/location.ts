@@ -1,5 +1,6 @@
 import type { QuestLocation } from "../../../shared/api-types/quest.js";
 import type { RandomSource } from "./ports.js";
+import { pickRandomSample } from "./random.js";
 
 /**
  * 探索場所の定義 (SSoT)。全10か所で全18タイプをそれぞれ2か所ずつカバーする。
@@ -37,12 +38,5 @@ export function findLocation(id: string): QuestLocation | undefined {
  * @returns ランダムに選ばれた場所の配列。
  */
 export function pickRandomLocations(random: RandomSource, count: number): QuestLocation[] {
-  const pool = [...QUEST_LOCATIONS];
-  const picked: QuestLocation[] = [];
-  const n = Math.min(count, pool.length);
-  for (let i = 0; i < n; i++) {
-    const index = Math.floor(random.next() * pool.length);
-    picked.push(pool.splice(index, 1)[0]);
-  }
-  return picked;
+  return pickRandomSample(QUEST_LOCATIONS, count, random);
 }

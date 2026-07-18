@@ -54,9 +54,13 @@ export interface SkipGuessResponse {
   ball_type: BallType;
 }
 
-/** POST /api/quest/hint のレスポンス。出題ポケモンのタイプと、消費後の残り試行回数を含む。 */
+/**
+ * POST /api/quest/hint のレスポンス。消費後の残り試行回数と、今回開示された情報を含む。
+ * 開示順序は決定的で、1回目の要求では types を、2回目の要求では moves を返す。
+ */
 export interface HintResponse {
-  types: PokemonType[];
+  types?: PokemonType[];
+  moves?: string[];
   attempts_remaining: number;
 }
 

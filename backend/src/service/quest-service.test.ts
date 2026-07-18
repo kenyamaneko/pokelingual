@@ -555,11 +555,47 @@ describe("[名前当て] マスターボール確定捕獲", () => {
 });
 
 describe("[名前当て] 名前当てのヒント", () => {
-  it("まだ一度も推測していないとき、ヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
+  it("まだ一度も推測していないとき、1回目のヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
     const service = makeService({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
     await service.newQuest("alice");
     const res = await service.requestHint("alice");
     expect(res).toEqual({ types: ["grass", "poison"], attempts_remaining: 2 });
+  });
+
+  it("1回目のヒントに続けて2回目を要求すると、レベルアップで覚える技が返り、残り試行回数がさらに1減る", async () => {
+    const service = makeService({
+      pokemons: [makePokemon({ hint_move_candidates: ["たいあたり", "なきごえ", "つるのムチ"] })],
+      randomValue: 0,
+    });
+    await service.newQuest("alice");
+    await service.requestHint("alice");
+    const res = await service.requestHint("alice");
+    expect(res).toEqual({ moves: ["たいあたり", "なきごえ", "つるのムチ"], attempts_remaining: 1 });
+  });
+
+  it("同じポケモンでも、クエストごとに開示される技が変わりうる", async () => {
+    const candidates = ["たいあたり", "なきごえ", "つるのムチ", "やどりぎのタネ"];
+    const pokemons = [makePokemon({ hint_move_candidates: candidates })];
+
+    const serviceA = makeService({ pokemons, randomValue: 0 });
+    await serviceA.newQuest("alice");
+    await serviceA.requestHint("alice");
+    const resA = await serviceA.requestHint("alice");
+
+    const serviceB = makeService({ pokemons, randomValue: 0.9 });
+    await serviceB.newQuest("alice");
+    await serviceB.requestHint("alice");
+    const resB = await serviceB.requestHint("alice");
+
+    expect(resA.moves).not.toEqual(resB.moves);
+  });
+
+  it("ヒントを2回要求済みのとき、3回目を要求するとエラーになる", async () => {
+    const service = makeService();
+    await service.newQuest("alice");
+    await service.requestHint("alice");
+    await service.requestHint("alice");
+    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or hints exhausted/);
   });
 
   it("1回不正解で残り2回のとき、ヒントを要求できる", async () => {
@@ -582,19 +618,35 @@ describe("[名前当て] 名前当てのヒント", () => {
     const service = makeService();
     await service.newQuest("alice");
     await service.guessName("alice", "bulbasaur");
-    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or already used/);
-  });
-
-  it("既にヒントを1回要求済みのとき、再度要求するとエラーになる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.requestHint("alice");
-    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or already used/);
+    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or hints exhausted/);
   });
 
   it("セッションが無いままヒントを要求すると、セッション不明のエラーになる", async () => {
     const service = makeService();
     await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
+  });
+
+  it("スナップショットに技候補が無いポケモンで2回目のヒントを要求するとエラーになる", async () => {
+    const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: undefined })] });
+    await service.newQuest("alice");
+    await service.requestHint("alice");
+    await expect(service.requestHint("alice")).rejects.toThrow(/no hint moves in the snapshot/);
+  });
+
+  it("スナップショットの技候補が空配列のポケモンで2回目のヒントを要求するとエラーになる", async () => {
+    const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: [] })] });
+    await service.newQuest("alice");
+    await service.requestHint("alice");
+    await expect(service.requestHint("alice")).rejects.toThrow(/no hint moves in the snapshot/);
+  });
+
+  it("技ヒントが無くエラーになっても、その後の名前当てで残り挑戦回数はエラーの前と変わらない", async () => {
+    const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: undefined })] });
+    await service.newQuest("alice");
+    await service.requestHint("alice");
+    await expect(service.requestHint("alice")).rejects.toThrow();
+    const res = await service.guessName("alice", "wrong");
+    expect(res.attempts_remaining).toBe(1);
   });
 
   it("残り2回でヒントを使い切った直後に不正解にすると、試行が尽きてモンスターボールが確定する", async () => {

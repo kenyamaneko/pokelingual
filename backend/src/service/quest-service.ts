@@ -4,6 +4,7 @@ import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
 import { findLocation, pickRandomLocations, LOCATION_CHOICE_COUNT } from "../domain/location.js";
+import { pickRandomSample } from "../domain/random.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -13,7 +14,7 @@ import type {
 } from "../domain/ports.js";
 import type { AppEnvironment } from "../domain/environment.js";
 import type { Pokemon } from "../domain/pokemon.js";
-import type { QuestSession, ScoreResult } from "../domain/quest.js";
+import { HINT_MOVE_COUNT, type QuestSession, type ScoreResult } from "../domain/quest.js";
 import type {
   QuestNewResponse,
   QuestLocation,
@@ -33,6 +34,9 @@ const FUZZY_MATCH_MIN_NAME_LENGTH = 4;
 
 /** ヒント要求に必要な最小残り挑戦回数。消費後も1回は名前当てへの挑戦が残るようにする。 */
 const MIN_REMAINING_ATTEMPTS_FOR_HINT = 2;
+
+/** ヒントの最大開示回数。1回目でタイプ、2回目で技を開示する。 */
+const MAX_HINT_REVEALS = 2;
 
 /** Levenshtein 距離がこの値以下なら正解扱い (タイプミス許容)。 */
 const FUZZY_MATCH_MAX_DISTANCE = 2;
@@ -117,6 +121,11 @@ export class QuestService {
       descJA = pair.description_ja;
     }
 
+    // 技ヒントは出会うたびに開示内容が変わるよう、クエスト開始時に候補からランダムに選ぶ
+    const hintMoves = pokemon.hint_move_candidates
+      ? pickRandomSample(pokemon.hint_move_candidates, HINT_MOVE_COUNT, this.random)
+      : undefined;
+
     const session: QuestSession = {
       pokemon_id: pokemon.id,
       description_en: descEN,
@@ -130,11 +139,12 @@ export class QuestService {
       weight: pokemon.weight,
       is_legendary: pokemon.is_legendary,
       is_mythical: pokemon.is_mythical,
+      hint_moves: hintMoves,
       score: 0,
       ball_type: null,
       guess_attempts: 0,
       name_guessed: false,
-      hint_used: false,
+      hint_reveal_count: 0,
     };
     await this.saveSession(userId, session);
 
@@ -301,28 +311,36 @@ export class QuestService {
   }
 
   /**
-   * ヒントを要求し、出題ポケモンのタイプを返す。名前推測の挑戦回数を1回消費する。
+   * ヒントを要求する。名前推測の挑戦回数を1回消費し、1回目はタイプ、2回目は技を返す。
    * @param userId ユーザ ID。
-   * @returns タイプと消費後の残り挑戦回数。
-   * @throws 名前当てが完了済み、ヒント要求済み、または残り挑戦回数が不足している場合
+   * @returns 今回開示された情報 (タイプまたは技) と消費後の残り挑戦回数。
+   * @throws 名前当てが完了済み、ヒントを2回開示済み、または残り挑戦回数が不足している場合
    * (正しく実装されたフロントエンドからは到達しない不正な呼び出し)。
    */
   async requestHint(userId: string): Promise<HintResponse> {
     const session = await this.loadSession(userId);
 
-    if (session.name_guessed || session.hint_used) {
-      throw new Error("hint requested on a session that cannot accept one (already guessed or already used)");
+    if (session.name_guessed || session.hint_reveal_count >= MAX_HINT_REVEALS) {
+      throw new Error("hint requested on a session that cannot accept one (already guessed or hints exhausted)");
     }
     const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
     if (remaining < MIN_REMAINING_ATTEMPTS_FOR_HINT) {
       throw new Error("hint requested with insufficient guess attempts remaining");
     }
+    const isSecondReveal = session.hint_reveal_count === 1;
+    if (isSecondReveal && (!session.hint_moves || session.hint_moves.length === 0)) {
+      // スナップショットに技ヒントが無いのはデータ不整合。挑戦回数を消費する前に失敗させる
+      throw new Error(`pokemon ${session.pokemon_id} has no hint moves in the snapshot`);
+    }
 
     session.guess_attempts++;
-    session.hint_used = true;
+    session.hint_reveal_count++;
+    const attemptsRemaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
     await this.saveSession(userId, session);
 
-    return { types: session.types, attempts_remaining: MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts };
+    return isSecondReveal
+      ? { moves: session.hint_moves!, attempts_remaining: attemptsRemaining }
+      : { types: session.types, attempts_remaining: attemptsRemaining };
   }
 
   /**

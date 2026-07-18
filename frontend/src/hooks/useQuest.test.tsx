@@ -271,6 +271,42 @@ describe("[クエスト] クエスト進行", () => {
     expect(result.current.attemptsRemaining).toBe(2);
   });
 
+  it("1回目のヒントでタイプ、2回目のヒントで技を取得すると、1回目に取得したタイプの情報は2回目の技の取得後も参照できる", async () => {
+    mockNewQuest();
+    server.use(
+      http.post(apiUrl("/quest/hint"), () =>
+        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+      ),
+    );
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await result.current.requestHint();
+    });
+
+    server.use(
+      http.post(apiUrl("/quest/hint"), () =>
+        HttpResponse.json({
+          moves: ["たいあたり", "なきごえ", "でんきショック"],
+          attempts_remaining: 1,
+        }),
+      ),
+    );
+
+    await act(async () => {
+      await result.current.requestHint();
+    });
+
+    expect(result.current.hintResult).toEqual({
+      types: ["electric"],
+      moves: ["たいあたり", "なきごえ", "でんきショック"],
+      attempts_remaining: 1,
+    });
+    expect(result.current.attemptsRemaining).toBe(1);
+  });
+
   it("名前当て確定後に捕獲の段階へ進んでも、スキップの通信は発生しない", async () => {
     mockNewQuest();
     const guess: GuessResponse = {

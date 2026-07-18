@@ -66,7 +66,7 @@ function makeSession(overrides: Partial<QuestSession> = {}): QuestSession {
     ball_type: null,
     guess_attempts: 0,
     name_guessed: false,
-    hint_used: false,
+    hint_reveal_count: 0,
     ...overrides,
   };
 }
