@@ -202,18 +202,9 @@ resource "google_project_iam_member" "backend_vertex_ai" {
 }
 
 # クエストセッションストア (Upstash Redis) の接続情報。値を tfstate に平文で残さないため、terraform ではシークレットの箱だけを作り、値は手動アップロードする。
-locals {
-  quest_session_redis_secrets = {
-    endpoint = "pokelingual-upstash-redis-endpoint"
-    password = "pokelingual-upstash-redis-password"
-  }
-}
-
-resource "google_secret_manager_secret" "quest_session_redis" {
-  for_each = local.quest_session_redis_secrets
-
+resource "google_secret_manager_secret" "quest_session_redis_url" {
   project   = var.project_id
-  secret_id = each.value
+  secret_id = "pokelingual-upstash-redis-url"
 
   replication {
     auto {}
@@ -222,11 +213,9 @@ resource "google_secret_manager_secret" "quest_session_redis" {
   depends_on = [google_project_service.apis]
 }
 
-resource "google_secret_manager_secret_iam_member" "backend_quest_session_redis_accessor" {
-  for_each = google_secret_manager_secret.quest_session_redis
-
+resource "google_secret_manager_secret_iam_member" "backend_quest_session_redis_url_accessor" {
   project   = var.project_id
-  secret_id = each.value.secret_id
+  secret_id = google_secret_manager_secret.quest_session_redis_url.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend.email}"
 }
