@@ -22,6 +22,7 @@ import { MockRandomSource } from "./adapter/random/mock.js";
 import { RedisQuestSessionStore } from "./adapter/session/redis.js";
 import { QuestService } from "./service/quest-service.js";
 import { PokedexService } from "./service/pokedex-service.js";
+import { SettingsService } from "./service/settings-service.js";
 import { UserPokemonRepo } from "./adapter/repository/user-pokemon-repo.js";
 import { UserSettingsRepo } from "./adapter/repository/user-settings-repo.js";
 import { UserRepo } from "./adapter/repository/user-repo.js";
@@ -124,11 +125,12 @@ async function main(): Promise<void> {
 
   const questService = new QuestService(pokemonClient, llmClient, cfg.environment, userSettingsRepo, randomSource, questSessionStore);
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, cfg.environment);
+  const settingsService = new SettingsService(userSettingsRepo, servablePokemonIDs);
 
   const questHandler = new QuestHandler(questService, userPokemonRepo);
   const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment, tutorialSessionStore);
   const pokedexHandler = new PokedexHandler(pokedexService);
-  const settingsHandler = new SettingsHandler(userSettingsRepo, servablePokemonIDs);
+  const settingsHandler = new SettingsHandler(settingsService);
   const usageHandler = new UsageHandler(rateLimitRepo);
   const tutorialHandler = new TutorialHandler(userRepo);
 
