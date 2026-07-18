@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { QuestCard } from "../components/quest/QuestCard";
 import { TranslationInput } from "../components/quest/TranslationInput";
-import { TranslationResult } from "../components/quest/TranslationResult";
+import { AnswerReveal } from "../components/quest/AnswerReveal";
 import { NameGuess } from "../components/quest/NameGuess";
 import { CaptureStandby } from "../components/quest/CaptureStandby";
 import { CaptureEffect } from "../components/quest/CaptureEffect";
@@ -118,7 +118,7 @@ export function QuestPage({ questOptions, slots, onNewQuest, enableHint = true }
                 ただならない　気配を感じる...
               </p>
             )}
-            <QuestCard description={quest.description_en} />
+            <QuestCard description={quest.description_en} variant="quest" />
             {slots?.translating}
             <TranslationInput onSubmit={submitTranslation} />
           </>
@@ -126,8 +126,11 @@ export function QuestPage({ questOptions, slots, onNewQuest, enableHint = true }
 
         {phase === "guessing" && quest && score && (
           <>
-            <QuestCard description={quest.description_en} />
-            <TranslationResult userTranslation={userTranslation} score={score} />
+            <AnswerReveal
+              description={quest.description_en}
+              userTranslation={userTranslation}
+              score={score}
+            />
             {slots?.guessing}
             <NameGuess
               onSubmit={submitGuess}

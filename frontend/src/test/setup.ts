@@ -1,10 +1,18 @@
 import "@testing-library/jest-dom/vitest";
 import { vi, beforeAll, afterEach, afterAll } from "vitest";
 import { server, requestLog, resetTutorialQuestState } from "./mswServer";
+import {
+  installIntersectionObserverMock,
+  resetIntersectionObserverMock,
+} from "./intersectionObserverMock";
 
 // jsdom は scrollIntoView を実装しないため、テストでチャット UI などを描画すると例外になる。
 // テスト全体で安全側に倒してスタブ化する。
 Element.prototype.scrollIntoView = vi.fn();
+
+// jsdom は IntersectionObserver を実装しないため、可視化ゲートを使う画面のテストでも
+// 描画できるようスタブ化する。既定では observe 時に即座に可視状態を通知する。
+installIntersectionObserverMock();
 
 // API モックは HTTP 境界 (MSW) で行う。未処理リクエストはハンドラ漏れとして即エラーにする。
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
@@ -12,5 +20,6 @@ afterEach(() => {
   server.resetHandlers();
   requestLog.length = 0;
   resetTutorialQuestState();
+  resetIntersectionObserverMock();
 });
 afterAll(() => server.close());
