@@ -32,6 +32,11 @@ variable "disable_new_user_signup" {
   type        = bool
 }
 
+variable "signup_smoke_enabled" {
+  description = "Whether to grant the deploy service account Firebase Auth Admin access for the signup smoke test (scripts/smoke-prod-signup.sh)"
+  type        = bool
+}
+
 variable "firebase_web_app_display_name" {
   description = "Display name for the Firebase web app"
   type        = string

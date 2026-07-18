@@ -13,6 +13,7 @@ concurrency:
 env:
   GOOGLE_CLOUD_REGION: asia-northeast1
   TEST_USER_EMAIL: test@pokelingual.dev
+  SIGNUP_TEST_EMAIL_DOMAIN: pokelingual.dev
 
 jobs:
   determine-version:
@@ -143,6 +144,15 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
         run: bash scripts/smoke-dev.sh
+
+      # 実 signUp〜メール確認〜ログインの配線は上の固定フィクスチャユーザでの検証では
+      # 通らないため、使い捨てユーザーで別途検証する。
+      - name: Run signup smoke test
+        env:
+          SERVICE_URL: ${{ steps.service-url.outputs.url }}
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          GOOGLE_CLOUD_PROJECT_ID: ${{ vars.GOOGLE_CLOUD_PROJECT_ID }}
+        run: bash scripts/smoke-prod-signup.sh
 
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting
