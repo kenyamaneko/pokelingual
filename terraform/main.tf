@@ -361,6 +361,9 @@ resource "google_project_iam_member" "terraform_plan_firebaserules_viewer" {
 }
 
 resource "google_monitoring_notification_channel" "email" {
+  # alerts_enabled だけで判定すると、Billing Budget のみ有効な環境で通知先が空になるため両方を見る。
+  count = var.alerts_enabled || var.billing_account_display_name != "" ? 1 : 0
+
   project      = var.project_id
   display_name = "PokeLingual Alert Email (${var.environment})"
   type         = "email"
@@ -374,13 +377,18 @@ resource "google_monitoring_notification_channel" "email" {
 
 locals {
   alert_notification_channels = concat(
-    [google_monitoring_notification_channel.email.id],
+    google_monitoring_notification_channel.email[*].id,
     var.slack_notification_channel_id != "" ? [var.slack_notification_channel_id] : [],
   )
 }
 
 # prod に既存適用済みのリソースへ count を追加するとアドレスが [0] 付きに変わるため、
 # moved block なしでは destroy + recreate になってしまう。
+moved {
+  from = google_monitoring_notification_channel.email
+  to   = google_monitoring_notification_channel.email[0]
+}
+
 moved {
   from = google_monitoring_alert_policy.cloud_run_error_rate
   to   = google_monitoring_alert_policy.cloud_run_error_rate[0]

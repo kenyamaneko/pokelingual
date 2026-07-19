@@ -16,8 +16,6 @@ alert_email                   = "kenya.m.amaoto@gmail.com"
 
 slack_notification_channel_id = "projects/pokelingual-prod/notificationChannels/6947893051547836001"
 
-# 請求アカウントの表示名。空文字なら Billing Budget を作成しない。
-# 実際に Budget を運用している場合は請求アカウントの表示名を設定すること
-# (空のまま apply すると既存の Budget が削除される)。
-billing_account_display_name = ""
+# prod は公開環境の予算超過検知として設定する。
+billing_account_display_name = "ken-yamaneko-billing"
 monthly_budget_jpy           = 5000
