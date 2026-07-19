@@ -44,7 +44,7 @@ resource "google_billing_budget" "monthly" {
   }
 
   all_updates_rule {
-    monitoring_notification_channels = [google_monitoring_notification_channel.email.id]
+    monitoring_notification_channels = google_monitoring_notification_channel.email[*].id
   }
 
   depends_on = [google_project_service.apis]

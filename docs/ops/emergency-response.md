@@ -60,7 +60,7 @@ gcloud run services update pokelingual-api-prod \
    npx firebase-tools hosting:disable --project pokelingual-prod
    ```
 
-2. backend への公開アクセスを止める。IAM の反映には数分かかる ([troubleshooting.md](troubleshooting.md) の「Cloud Run IAM ポリシーの伝播遅延」)。
+2. backend への公開アクセスを止める。IAM の反映には数分かかる。
 
    ```bash
    gcloud run services remove-iam-policy-binding pokelingual-api-prod \
