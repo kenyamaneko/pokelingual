@@ -18,3 +18,5 @@ slack_notification_channel_id = "projects/pokelingual-prod/notificationChannels/
 
 billing_account_display_name = "ken-yamaneko-billing"
 monthly_budget_jpy           = 5000
+
+max_instance_count = 3

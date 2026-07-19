@@ -69,3 +69,8 @@ variable "monthly_budget_jpy" {
   description = "Monthly budget cap in JPY. Alerts fire at 50/80/100% of this amount."
   type        = number
 }
+
+variable "max_instance_count" {
+  description = "Maximum number of Cloud Run instances for the backend service"
+  type        = number
+}

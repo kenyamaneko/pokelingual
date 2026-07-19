@@ -171,12 +171,6 @@ resource "google_artifact_registry_repository" "backend" {
   depends_on = [google_project_service.apis]
 }
 
-# Cloud Run サービス本体は Terraform では作らず、GitHub Actions の初回 `gcloud run deploy` が作成する。
-# 初回デプロイ後に公開アクセスを許可するには以下を実行する:
-#   gcloud run services add-iam-policy-binding pokelingual-api-${environment} \
-#     --region=asia-northeast1 --member="allUsers" --role="roles/run.invoker" \
-#     --project=${project_id}
-
 resource "google_service_account" "backend" {
   project      = var.project_id
   account_id   = "pokelingual-api-${var.environment}"
