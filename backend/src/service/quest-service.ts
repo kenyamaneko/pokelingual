@@ -515,7 +515,8 @@ export function calculateCaptureRate(score: number, baseStatTotal: number, ballB
   // 種族値合計が高いほど捕獲難、スコア高ほど易、相互作用項で「強いポケモンは高スコアでないと捕まらない」を表現する。
   // ボール補正はロジットへの加算のため、シグモイドの値域 (0.0〜1.0) を超えず、上限クランプが不要になる。
   // Stryker disable next-line all
-  const logitBase = 2.5 - 0.34 * x - 0.17 * x * x + 14.5 * s - 4.2 * x * s + 0.52 * x * x * s;
+  const logitBase =
+    -19.007 + 6.522 * x - 0.724 * x * x + 43.926 * s - 14.214 * x * s + 1.369 * x * x * s;
   const logit = logitBase + ballBonus;
   return 1.0 / (1.0 + Math.exp(-logit));
 }
