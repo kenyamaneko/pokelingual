@@ -4,7 +4,6 @@ import {
   useContext,
   useEffect,
   useRef,
-  useState,
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
@@ -12,8 +11,6 @@ import { tutorialApi } from "../api/tutorialApi";
 import { logger } from "../utils/logger";
 
 interface TutorialContextValue {
-  /** チュートリアル完了状態。true と確定するまで (未ログイン・応答待ち・取得失敗を含む) は null。 */
-  completed: boolean | null;
   /**
    * 確定したチュートリアル完了状態を返す。未確定なら取得を待ち、取得中なら合流する。
    * @returns 確定したチュートリアル完了状態。
@@ -26,13 +23,12 @@ interface TutorialContextValue {
 const TutorialContext = createContext<TutorialContextValue | undefined>(undefined);
 
 /**
- * チュートリアル完了状態を購読し、完了操作を提供するプロバイダ。
+ * チュートリアル完了状態の取得口と完了操作を提供するプロバイダ。
  * @param props children を含む React props。
  * @returns TutorialContext.Provider でラップした子要素。
  */
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [completed, setCompleted] = useState<boolean | null>(null);
   const resolvedRef = useRef<boolean | null>(null);
   const pendingRef = useRef<Promise<boolean> | null>(null);
 
@@ -40,7 +36,6 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     const res = await tutorialApi.getStatus();
     const value = res.data.tutorial_completed;
     resolvedRef.current = value;
-    setCompleted(value);
     return value;
   }, []);
 
@@ -57,25 +52,23 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const prefetch = useCallback(async () => {
     resolvedRef.current = null;
     pendingRef.current = null;
-    setCompleted(null);
     if (!user) return;
     try {
       await ensureStatus();
     } catch (err) {
-      // 起動時取得は最善努力のウォームアップなので失敗はログに留める。正しさは押下時のensureStatusが担保する
+      // 起動時の先読みは失敗しても構わないためログに留める。正しさは押下時のensureStatusが担保する
       logger.warn("failed to prefetch tutorial status", { error: err });
     }
   }, [user, ensureStatus]);
 
   useEffect(() => {
-    prefetch(); // eslint-disable-line react-hooks/set-state-in-effect -- initial data fetch on mount / user変更時の再取得
+    prefetch();
   }, [prefetch]);
 
   const markCompleted = useCallback(async () => {
     try {
       await tutorialApi.markCompleted();
       resolvedRef.current = true;
-      setCompleted(true);
     } catch (err) {
       // 記録に失敗しても結果画面の表示は妨げない (次回訪問時に再度チュートリアルが始まるだけ)。診断のためログは残す
       logger.warn("failed to mark tutorial completed", { error: err });
@@ -83,15 +76,15 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TutorialContext.Provider value={{ completed, ensureStatus, markCompleted }}>
+    <TutorialContext.Provider value={{ ensureStatus, markCompleted }}>
       {children}
     </TutorialContext.Provider>
   );
 }
 
 /**
- * チュートリアル完了状態と操作を取得するフック。Provider 外で呼ぶと例外。
- * @returns チュートリアル完了状態と操作。
+ * チュートリアル完了状態の取得口と完了操作を持つオブジェクトを返すフック。Provider 外で呼ぶと例外。
+ * @returns チュートリアル完了状態の取得口と完了操作。
  * @throws TutorialProvider の外で呼ばれた場合。
  */
 // eslint-disable-next-line react-refresh/only-export-components

@@ -191,7 +191,7 @@ describe("[チュートリアル] チュートリアル (捕獲演出〜完了)"
     ).toBeInTheDocument();
   });
 
-  it("捕獲後にメニューへ戻ると、ホームの「ポケモンを探しに行く」で本番クエスト画面に着地する", async () => {
+  it("チュートリアル完了後にメニューへ戻ってから「ポケモンを探しに行く」を押すと、本番クエスト画面に着地する", async () => {
     window.history.pushState({}, "", "/");
     const user = userEvent.setup();
     render(<App />);

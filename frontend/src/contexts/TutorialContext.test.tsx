@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { useTutorial } from "./TutorialContext";
@@ -18,10 +19,22 @@ function mockTutorialStatus(completed: boolean) {
 }
 
 function Probe() {
-  const { completed, markCompleted } = useTutorial();
+  const { ensureStatus, markCompleted } = useTutorial();
+  const [status, setStatus] = useState("未確認");
+
+  const check = async () => {
+    try {
+      const done = await ensureStatus();
+      setStatus(done ? "完了済み" : "未完了");
+    } catch {
+      setStatus("取得エラー");
+    }
+  };
+
   return (
     <div>
-      <div data-testid="completed">{completed === null ? "unknown" : String(completed)}</div>
+      <p>{status}</p>
+      <button onClick={check}>確認する</button>
       <button onClick={markCompleted}>完了にする</button>
     </div>
   );
@@ -38,43 +51,45 @@ describe("[チュートリアル] チュートリアル完了状態の管理", (
     vi.restoreAllMocks();
   });
 
-  it("ログイン後、保存されているチュートリアル完了状態を取得して表示できる", async () => {
+  it("チュートリアル完了済みのとき、確認すると完了済みになる", async () => {
     mockTutorialStatus(true);
-
+    const user = userEvent.setup();
     renderProbe();
 
-    await waitFor(() => {
-      expect(screen.getByTestId("completed")).toHaveTextContent("true");
-    });
+    await user.click(screen.getByRole("button", { name: "確認する" }));
+
+    expect(await screen.findByText("完了済み")).toBeInTheDocument();
   });
 
-  it("チュートリアル完了状態の取得に失敗しても、画面はクラッシュせず未取得表示のまま動作する", async () => {
-    // 導線の出し分けは補助的なUXなので取得失敗はUI上無視する仕様。診断ログは検証対象外なので沈黙させる
+  it("チュートリアル完了状態の取得に失敗したとき、確認すると取得エラーになる", async () => {
+    // 診断ログは検証対象外なので沈黙させる
     vi.spyOn(console, "warn").mockImplementation(() => {});
     server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
-
+    const user = userEvent.setup();
     renderProbe();
 
-    await waitFor(() => expect(countRequests("/tutorial-status")).toBe(1));
-    expect(screen.getByTestId("completed")).toHaveTextContent("unknown");
+    await user.click(screen.getByRole("button", { name: "確認する" }));
+
+    expect(await screen.findByText("取得エラー")).toBeInTheDocument();
   });
 
-  it("未ログイン時は、チュートリアル完了状態を取得しない", async () => {
+  it("未ログインのとき、チュートリアル完了状態を取得しない", async () => {
     renderProbe(null);
-    await waitFor(() => {
-      expect(screen.getByTestId("completed")).toHaveTextContent("unknown");
-    });
+
+    await waitFor(() => expect(screen.getByText("未確認")).toBeInTheDocument());
     expect(countRequests("/tutorial-status")).toBe(0);
   });
 
-  it("チュートリアルを完了させると、完了状態として表示が切り替わる", async () => {
+  it("チュートリアル未完了の状態から完了させると、以後の確認で完了済みになる", async () => {
     mockTutorialStatus(false);
     const user = userEvent.setup();
     renderProbe();
-    await waitFor(() => expect(screen.getByTestId("completed")).toHaveTextContent("false"));
+    await user.click(screen.getByRole("button", { name: "確認する" }));
+    await screen.findByText("未完了");
 
     await user.click(screen.getByRole("button", { name: "完了にする" }));
+    await user.click(screen.getByRole("button", { name: "確認する" }));
 
-    await waitFor(() => expect(screen.getByTestId("completed")).toHaveTextContent("true"));
+    expect(await screen.findByText("完了済み")).toBeInTheDocument();
   });
 });
