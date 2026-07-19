@@ -516,7 +516,7 @@ export function calculateCaptureRate(score: number, baseStatTotal: number, ballB
   // ボール補正はロジットへの加算のため、シグモイドの値域 (0.0〜1.0) を超えず、上限クランプが不要になる。
   // Stryker disable next-line all
   const logitBase =
-    -19.00663 + 6.52189 * x - 0.72448 * x * x + 43.92633 * s - 14.21374 * x * s + 1.36875 * x * x * s;
+    -19.007 + 6.522 * x - 0.724 * x * x + 43.926 * s - 14.214 * x * s + 1.369 * x * x * s;
   const logit = logitBase + ballBonus;
   return 1.0 / (1.0 + Math.exp(-logit));
 }
