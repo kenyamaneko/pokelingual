@@ -90,6 +90,9 @@ resource "google_cloud_run_v2_service" "backend" {
   depends_on = [google_project_service.apis]
 }
 
+# Firebase Auth トークンは IAM トークンではないため、IAM 認証を有効なままにすると
+# Cloud Run がリクエストを拒否してしまう。アプリレベルの認証は middleware/auth.ts の
+# Firebase Auth ミドルウェアが担保する。
 resource "google_cloud_run_v2_service_iam_member" "backend_public" {
   name     = google_cloud_run_v2_service.backend.name
   location = var.region
