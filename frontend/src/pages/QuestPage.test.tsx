@@ -526,7 +526,7 @@ describe("[クエスト] 進行中のエラー表示", () => {
     expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
   });
 
-  it("名前推測が失敗しても入力欄は維持され、再送信して正解するとエラーメッセージが消える", async () => {
+  it("名前当てが失敗しても入力欄は維持され、再送信して正解するとエラーメッセージが消える", async () => {
     const user = userEvent.setup();
     let guessCalls = 0;
     server.use(
@@ -560,7 +560,7 @@ describe("[クエスト] 進行中のエラー表示", () => {
     expect(screen.queryByText(/名前の判定に失敗しました/)).not.toBeInTheDocument();
   });
 
-  it("ヒント要求が2回連続で失敗すると、エラーメッセージは最新の失敗内容に更新される", async () => {
+  it("ヒント要求が1回目は5xx、2回目はネットワーク接続失敗で連続して失敗すると、エラーメッセージは接続エラーの案内に切り替わる", async () => {
     const user = userEvent.setup();
     let hintCalls = 0;
     server.use(
