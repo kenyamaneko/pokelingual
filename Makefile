@@ -1,4 +1,4 @@
-.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend
+.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
 
 # ローカル開発環境（Docker Compose）
 dev: dev-up
@@ -52,3 +52,21 @@ mutation: mutation-backend
 
 mutation-backend:
 	cd backend && npm run mutation
+
+# ポケモンスナップショットの生成・配置。手動運用のため CI では実行しない。
+# 対象バージョン (X〜ソード/シールド) の EN/JA 説明文が揃う第8世代の全国図鑑上限。
+POKEMON_SNAPSHOT_MAX_ID := 898
+POKEMON_API_DATA_DIR := api-data
+
+snapshot-clone-api-data:
+	test -d $(POKEMON_API_DATA_DIR) || git clone --depth 1 https://github.com/PokeAPI/api-data.git $(POKEMON_API_DATA_DIR)
+
+# 生成物 (backend/pokemon-snapshot.json) はポケモン社の著作物を含むため、公開リポジトリにコミットしない。
+snapshot-generate: snapshot-clone-api-data
+	cd backend && npm run generate-snapshot -- --api-data ../$(POKEMON_API_DATA_DIR) --out pokemon-snapshot.json --max-id $(POKEMON_SNAPSHOT_MAX_ID)
+
+snapshot-upload-dev:
+	gcloud storage cp backend/pokemon-snapshot.json gs://pokelingual-dev-pokemon-snapshot/pokemon-snapshot.json
+
+snapshot-upload-prod:
+	gcloud storage cp backend/pokemon-snapshot.json gs://pokelingual-prod-pokemon-snapshot/pokemon-snapshot.json
