@@ -16,6 +16,5 @@ alert_email                   = "kenya.m.amaoto@gmail.com"
 
 slack_notification_channel_id = "projects/pokelingual-prod/notificationChannels/6947893051547836001"
 
-# prod は公開環境の予算超過検知として設定する。
 billing_account_display_name = "ken-yamaneko-billing"
 monthly_budget_jpy           = 5000
