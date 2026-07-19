@@ -39,6 +39,7 @@ export function TutorialPage() {
         questOptions={{
           api: tutorialQuestApi,
           hasLocationChoice: false,
+          enableResume: false,
           validateBeforeScore: validateTutorialTranslation,
           validateBeforeGuess: validateTutorialName,
           onResult: markTutorialCompleted,

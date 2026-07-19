@@ -21,6 +21,10 @@ export interface QuestSession {
   /** ヒントに使う、レベルアップで覚える技の日本語名 (最大3件)。 */
   hint_moves?: string[];
   score: number;
+  /** ユーザが提出した翻訳文。採点前は未設定。 */
+  user_translation?: string;
+  /** 採点の講評文。採点前は未設定 (デプロイ前に作られた旧セッションにも無い)。 */
+  review?: string;
   /** 確定したボール種別。名前当て/スキップ前は null。 */
   ball_type: BallType | null;
   guess_attempts: number;

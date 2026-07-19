@@ -58,6 +58,9 @@ const defaultHandlers = [
       max_guess_attempts: 3,
     }),
   ),
+  // 既定はセッション無し (404)。/tutorial/quest/current は意図的にハンドラを置かない
+  // (onUnhandledRequest:"error" のため、誤って呼ばれたらテストが落ちる = enableResume:false の回帰ネット)。
+  http.get(apiUrl("/quest/current"), () => new HttpResponse(null, { status: 404 })),
   http.post(apiUrl("/quest/score"), () =>
     HttpResponse.json({ score: 0, review: "", description_ja: "" }),
   ),

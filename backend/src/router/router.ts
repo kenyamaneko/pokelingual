@@ -23,6 +23,7 @@ function mountQuestRoutes(
   const scoreMiddleware = rateLimitMiddleware ? [rateLimitMiddleware] : [];
   router.get(`${prefix}/locations`, handler.getLocations);
   router.get(`${prefix}/new`, handler.newQuest);
+  router.get(`${prefix}/current`, handler.getCurrentQuest);
   router.post(`${prefix}/score`, ...scoreMiddleware, handler.scoreTranslation);
   router.post(`${prefix}/guess-name`, handler.guessName);
   router.post(`${prefix}/hint`, handler.requestHint);

@@ -531,3 +531,114 @@ describe("[クエスト] クエスト進行", () => {
     expect(result.current.quest).toEqual(second);
   });
 });
+
+/**
+ * リロード再開の仕様:
+ * - 起動時 (startNewQuest) にまず現在のクエストを問い合わせる
+ * - セッションが無ければ (404) 従来通り場所選択から始まる
+ * - セッションがあれば、そのフェーズ (translating/guessing/capturing) に必要な状態を復元する
+ * - 取得自体が 404 以外で失敗した場合は、生きたセッションを潰さないようエラー画面にする (場所選択にフォールバックしない)
+ * - enableResume: false (チュートリアル) では現在のクエストを問い合わせない
+ */
+describe("[リロード再開] クエストの復元", () => {
+  it("セッションが無い (404) ときは、従来通り場所選択から始まる", async () => {
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.phase).toBe("selectLocation"));
+    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+  });
+
+  it("起動時に採点前のセッションがあれば、場所選択を経由せず訳文入力の段階として復元される", async () => {
+    server.use(
+      http.get(apiUrl("/quest/current"), () =>
+        HttpResponse.json({ phase: "translating", quest: questResp }),
+      ),
+    );
+
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+    expect(result.current.quest).toEqual(questResp);
+    expect(countRequests("/quest/locations")).toBe(0);
+  });
+
+  it("起動時に採点後・名前当て未確定のセッションがあれば、得点・訳文・残り試行・ヒントを保持した名前当ての段階として復元される", async () => {
+    server.use(
+      http.get(apiUrl("/quest/current"), () =>
+        HttpResponse.json({
+          phase: "guessing",
+          quest: questResp,
+          score: scoreResp,
+          user_translation: "テスト訳",
+          attempts_remaining: 2,
+          hint: { types: ["electric"], attempts_remaining: 2 },
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.phase).toBe("guessing"));
+    expect(result.current.score).toEqual(scoreResp);
+    expect(result.current.userTranslation).toBe("テスト訳");
+    expect(result.current.attemptsRemaining).toBe(2);
+    expect(result.current.hintResult).toEqual({ types: ["electric"], attempts_remaining: 2 });
+  });
+
+  it("起動時に採点後・名前当て未確定のセッションがあれば、名前当ての正誤バナーは復元されない", async () => {
+    server.use(
+      http.get(apiUrl("/quest/current"), () =>
+        HttpResponse.json({
+          phase: "guessing",
+          quest: questResp,
+          score: scoreResp,
+          user_translation: "テスト訳",
+          attempts_remaining: 2,
+          hint: null,
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.phase).toBe("guessing"));
+    expect(result.current.guessResult).toBeNull();
+  });
+
+  it("起動時に名前当てが確定済みのセッションがあれば、確定済みボール種別を保持した捕獲待機の段階として復元される", async () => {
+    server.use(
+      http.get(apiUrl("/quest/current"), () =>
+        HttpResponse.json({ phase: "capturing", quest: questResp, ball_type: "ultra" }),
+      ),
+    );
+
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.phase).toBe("capturing"));
+    expect(result.current.ballType).toBe("ultra");
+  });
+
+  it("現在のクエスト取得が5xxで失敗すると、エラー画面になり場所選択にはフォールバックしない", async () => {
+    server.use(http.get(apiUrl("/quest/current"), () => HttpResponse.json({}, { status: 502 })));
+
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.phase).toBe("error"));
+    expect(result.current.error).not.toBeNull();
+    expect(countRequests("/quest/locations")).toBe(0);
+  });
+
+  it("enableResume が false のときは、セッションがあっても現在のクエストを問い合わせず場所選択から始まる", async () => {
+    server.use(
+      http.get(apiUrl("/quest/current"), () =>
+        HttpResponse.json({ phase: "translating", quest: questResp }),
+      ),
+    );
+
+    const { result } = renderHook(() => useQuest({ enableResume: false }), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+    expect(result.current.phase).toBe("selectLocation");
+    expect(countRequests("/quest/current")).toBe(0);
+  });
+});

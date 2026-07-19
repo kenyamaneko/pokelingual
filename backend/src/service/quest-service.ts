@@ -23,6 +23,7 @@ import type {
   CaptureResponse,
   SkipGuessResponse,
   HintResponse,
+  QuestCurrentResponse,
   BallType,
 } from "../../../shared/api-types/quest.js";
 
@@ -226,6 +227,8 @@ export class QuestService {
     }
 
     session.score = translateToFinalScore(result.score);
+    session.user_translation = translation;
+    session.review = result.review;
     await this.saveSession(userId, session);
 
     return {
@@ -409,6 +412,54 @@ export class QuestService {
       is_legendary: session.is_legendary,
       is_mythical: session.is_mythical,
     };
+  }
+
+  /**
+   * 進行中のクエストセッションを、離脱したフェーズから再開するための状態として返す。
+   * @param userId ユーザ ID。
+   * @returns 現在のフェーズと、そのフェーズの表示に必要な状態。
+   * @throws NotFoundError セッションが存在しない場合。
+   */
+  async getCurrentQuest(userId: string): Promise<QuestCurrentResponse> {
+    const session = await this.loadSession(userId);
+    const quest: QuestNewResponse = {
+      pokemon_id: session.pokemon_id,
+      description_en: maskPokemonNameEN(session.description_en, session.name_en),
+      is_legendary: session.is_legendary,
+      is_mythical: session.is_mythical,
+      max_guess_attempts: MAX_NAME_GUESS_ATTEMPTS,
+    };
+
+    if (session.ball_type !== null) {
+      return { phase: "capturing", quest, ball_type: session.ball_type };
+    }
+
+    if (typeof session.review === "string") {
+      const attemptsRemaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
+      const hint: HintResponse | null =
+        session.hint_reveal_count >= 1
+          ? {
+              types: session.types,
+              moves: session.hint_reveal_count >= 2 ? (session.hint_moves ?? []) : undefined,
+              attempts_remaining: attemptsRemaining,
+            }
+          : null;
+      return {
+        phase: "guessing",
+        quest,
+        score: {
+          score: session.score,
+          review: session.review,
+          description_ja: maskPokemonNameJA(session.description_ja, session.name_ja),
+        },
+        // review と user_translation は scoreTranslation で必ず同時に書かれるため non-null
+        user_translation: session.user_translation!,
+        attempts_remaining: attemptsRemaining,
+        hint,
+      };
+    }
+
+    return { phase: "translating", quest };
   }
 
   /**

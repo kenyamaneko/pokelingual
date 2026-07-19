@@ -208,4 +208,28 @@ describe("クエストセッションのインスタンス間引き継ぎ (Valke
     await clientA.quit();
     await clientB.quit();
   });
+
+  it("採点済みのセッションを別インスタンスから GET /quest/current で取得すると、Redis を経由して guessing として復元される", async () => {
+    const clientA = new Redis(redisURL);
+    const clientB = new Redis(redisURL);
+    const instanceA = buildAppInstance(
+      new RedisQuestSessionStore(clientA, "test:resume:quest:", 60),
+      new RedisQuestSessionStore(clientA, "test:resume:tutorial:", 60),
+    );
+    const instanceB = buildAppInstance(
+      new RedisQuestSessionStore(clientB, "test:resume:quest:", 60),
+      new RedisQuestSessionStore(clientB, "test:resume:tutorial:", 60),
+    );
+
+    await request(instanceA).get("/api/quest/new");
+    await request(instanceA).post("/api/quest/score").send({ translation: "はやい" });
+
+    const current = await request(instanceB).get("/api/quest/current");
+
+    expect(current.status).toBe(200);
+    expect(current.body).toMatchObject({ phase: "guessing", user_translation: "はやい" });
+
+    await clientA.quit();
+    await clientB.quit();
+  });
 });
