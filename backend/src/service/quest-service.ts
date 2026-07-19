@@ -314,6 +314,7 @@ export class QuestService {
 
   /**
    * ヒントを要求する。名前推測の挑戦回数を1回消費し、1回目はタイプ、2回目は技を返す。
+   * レベルアップで覚える技が無いポケモンでは、2回目も技を0件として返す。
    * @param userId ユーザ ID。
    * @returns 今回開示された情報 (タイプまたは技) と消費後の残り挑戦回数。
    * @throws 名前当てが完了済み、ヒントを2回開示済み、または残り挑戦回数が不足している場合
@@ -330,10 +331,6 @@ export class QuestService {
       throw new Error("hint requested with insufficient guess attempts remaining");
     }
     const isSecondReveal = session.hint_reveal_count === 1;
-    if (isSecondReveal && (!session.hint_moves || session.hint_moves.length === 0)) {
-      // スナップショットに技ヒントが無いのはデータ不整合。挑戦回数を消費する前に失敗させる
-      throw new Error(`pokemon ${session.pokemon_id} has no hint moves in the snapshot`);
-    }
 
     session.guess_attempts++;
     session.hint_reveal_count++;
@@ -341,7 +338,7 @@ export class QuestService {
     await this.saveSession(userId, session);
 
     return isSecondReveal
-      ? { moves: session.hint_moves!, attempts_remaining: attemptsRemaining }
+      ? { moves: session.hint_moves ?? [], attempts_remaining: attemptsRemaining }
       : { types: session.types, attempts_remaining: attemptsRemaining };
   }
 
