@@ -1,6 +1,8 @@
 import type { QuestTuningConfig } from "../service/quest-service.js";
 
-/** 本番の既定値 (mock モードの env 未設定時の値) と同じチューニング値。 */
+// 値は本番の既定値と一致するが、.env.tuning からは読み込まず独立して定義する。
+// 運用チューニングの変更がテストの前提に波及しないようにするため。
+/** テスト用のチューニング値。 */
 export const DEFAULT_QUEST_TUNING: QuestTuningConfig = {
   fuzzyMatchMinNameLength: 4,
   fuzzyMatchMaxDistance: 2,
