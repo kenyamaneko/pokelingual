@@ -8,7 +8,6 @@
 
 /** getByRole("link", { name }) で参照するリンク名。 */
 export const LINK = {
-  startQuest: /ポケモンを探しに行く/,
   viewPokedex: /図鑑を見る/,
   logo: "PokeLingual",
   navQuest: "ぼうけん",
@@ -18,6 +17,7 @@ export const LINK = {
 
 /** getByRole("button", { name }) で参照するボタン名。 */
 export const BUTTON = {
+  startQuest: /ポケモンを探しに行く/,
   submitTranslation: /この翻訳に決めた/,
   decideName: /君に.決めた/,
   skip: /スキップ/,

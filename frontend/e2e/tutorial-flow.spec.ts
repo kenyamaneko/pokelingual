@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { BUTTON, LINK, PLACEHOLDER, TEXT } from "./labels";
+import { BUTTON, PLACEHOLDER, TEXT } from "./labels";
 
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
@@ -36,5 +36,6 @@ test("チュートリアル全フロー（遊び方説明 → 訳文入力 → �
 
   await page.getByRole("button", { name: BUTTON.backToMenu }).click();
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("link", { name: LINK.startQuest })).toHaveAttribute("href", "/quest");
+  await page.getByRole("button", { name: BUTTON.startQuest }).click();
+  await expect(page).toHaveURL("/quest");
 });

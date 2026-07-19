@@ -3,6 +3,7 @@ import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import type { User } from "firebase/auth";
 import App from "../../App";
+import { HOME_PAGE_LABELS } from "../../pages/HomePage";
 import { TutorialPage, TUTORIAL_PAGE_LABELS } from "../../pages/TutorialPage";
 import { TUTORIAL_INTRO_LABELS } from "./TutorialIntroModal";
 import { TUTORIAL_COMPLETION_LABELS } from "./TutorialCompletionCallout";
@@ -190,12 +191,12 @@ describe("[チュートリアル] チュートリアル (捕獲演出〜完了)"
     ).toBeInTheDocument();
   });
 
-  it("捕獲後にメニューへ戻ると、ホームの「ポケモンを探しに行く」が本番クエストへの導線に切り替わる", async () => {
+  it("チュートリアル完了後にメニューへ戻ってから「ポケモンを探しに行く」を押すと、本番クエスト画面に遷移する", async () => {
     window.history.pushState({}, "", "/");
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(await screen.findByRole("link", { name: "ポケモンを探しに行く" }));
+    await user.click(await screen.findByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
     await user.click(await screen.findByRole("button", { name: TUTORIAL_INTRO_LABELS.dismissButton }));
     await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
     await fillAndSubmitName(user, "pikachu");
@@ -206,7 +207,10 @@ describe("[チュートリアル] チュートリアル (捕獲演出〜完了)"
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.backToMenuButton }));
+    await user.click(await screen.findByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
 
-    expect(await screen.findByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/quest");
+    expect(
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+    ).toBeInTheDocument();
   });
 });
