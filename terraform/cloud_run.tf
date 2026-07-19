@@ -1,5 +1,5 @@
-# Cloud Run サービス本体。image のみ Terraform 管理外とし、CI の `gcloud run deploy --image` が
-# コミットのたびに更新する。
+# Cloud Run サービス本体。コンテナの image・env・secrets は Terraform 管理外とし、
+# CI の `gcloud run deploy` が引き続き更新する。
 resource "google_cloud_run_v2_service" "backend" {
   name     = "pokelingual-api-${var.environment}"
   location = var.region
@@ -23,58 +23,8 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      # import 後は ignore_changes 対象なので値は使われない
+      # env・secrets は CI の gcloud run deploy が管理する (ignore_changes 対象なので値は使われない)
       image = "asia-northeast1-docker.pkg.dev/${var.project_id}/pokelingual-backend/api:placeholder"
-
-      env {
-        name  = "APP_MODE"
-        value = "real"
-      }
-      env {
-        name  = "APP_ENV"
-        value = var.environment
-      }
-      env {
-        name  = "GEMINI_MODEL"
-        value = "gemini-2.5-flash"
-      }
-      env {
-        name  = "FRONTEND_URL"
-        value = "https://pokelingual-${var.environment}.web.app"
-      }
-      env {
-        name  = "GOOGLE_CLOUD_PROJECT"
-        value = var.project_id
-      }
-      env {
-        name  = "GOOGLE_CLOUD_LOCATION"
-        value = "us-central1"
-      }
-      env {
-        name  = "PER_USER_DAILY_LIMIT"
-        value = "30"
-      }
-      env {
-        name  = "GLOBAL_DAILY_LIMIT"
-        value = "1500"
-      }
-      env {
-        name  = "POKEMON_SNAPSHOT_URI"
-        value = "gs://${var.project_id}-pokemon-snapshot/pokemon-snapshot.json"
-      }
-      env {
-        name  = "QUEST_SESSION_TTL_SECONDS"
-        value = "3600"
-      }
-      env {
-        name = "UPSTASH_REDIS_URL"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.quest_session_redis_url.secret_id
-            version = "latest"
-          }
-        }
-      }
     }
   }
 
@@ -84,7 +34,10 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 
   lifecycle {
-    ignore_changes = [template[0].containers[0].image]
+    ignore_changes = [
+      template[0].containers[0].image,
+      template[0].containers[0].env,
+    ]
   }
 
   depends_on = [google_project_service.apis]
