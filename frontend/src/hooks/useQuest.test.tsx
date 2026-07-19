@@ -48,6 +48,25 @@ const scoreResp: ScoreResponse = {
   description_ja: "ja desc",
 };
 
+const captureResp: CaptureResponse = {
+  captured: true,
+  probability: 0.9,
+  pokemon_id: 25,
+  name_en: "Pikachu",
+  name_ja: "ピカチュウ",
+  sprite_url: "https://example.com/pikachu.png",
+  score: 75,
+  description_en: "desc en",
+  description_ja: "desc ja",
+  base_stat_total: 320,
+  ball_type: "ultra",
+  types: ["electric"],
+  height: 4,
+  weight: 60,
+  is_legendary: false,
+  is_mythical: false,
+};
+
 /**
  * GET /quest/new が指定の出題を返す状態をモックする。
  * @param resp 返す出題レスポンス。
@@ -205,6 +224,56 @@ describe("[クエスト] クエスト進行", () => {
 
     expect(result.current.error).not.toBeNull();
     expect(result.current.phase).toBe("translating");
+  });
+
+  it.each([
+    [
+      "採点",
+      "/quest/score",
+      () => HttpResponse.json(scoreResp),
+      (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
+    ],
+    [
+      "名前推測",
+      "/quest/guess-name",
+      () => HttpResponse.json({ correct: false, attempts_remaining: 2 }),
+      (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon"),
+    ],
+    [
+      "ヒント要求",
+      "/quest/hint",
+      () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+      (r: ReturnType<typeof useQuest>) => r.requestHint(),
+    ],
+    [
+      "捕獲",
+      "/quest/capture",
+      () => HttpResponse.json(captureResp),
+      (r: ReturnType<typeof useQuest>) => r.capture(),
+    ],
+  ] as const)("%sが 5xx で失敗した後、再試行して成功すると、エラーメッセージが消える", async (
+    _api,
+    path,
+    buildSuccess,
+    call,
+  ) => {
+    mockNewQuest();
+    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 502 })));
+
+    const { result } = await mountAndSelectLocation();
+    await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+    await act(async () => {
+      await call(result.current);
+    });
+    expect(result.current.error).not.toBeNull();
+
+    server.use(http.post(apiUrl(path), buildSuccess));
+
+    await act(async () => {
+      await call(result.current);
+    });
+    expect(result.current.error).toBeNull();
   });
 
   it.each([

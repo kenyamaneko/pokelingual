@@ -187,6 +187,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
 
   const submitTranslation = async (translation: string) => {
     if (validateBeforeScore && !validateBeforeScore(translation)) return false;
+    setError(null);
     try {
       setUserTranslation(translation);
       const res = await api.scoreTranslation(translation);
@@ -202,6 +203,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
 
   const submitGuess = async (guess: string) => {
     if (validateBeforeGuess && !validateBeforeGuess(guess)) return;
+    setError(null);
     try {
       const res = await api.guessName(guess);
       setGuessResult(res.data);
@@ -215,6 +217,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   };
 
   const requestHint = async () => {
+    setError(null);
     try {
       const res = await api.requestHint();
       // 1回目 (types) と2回目 (moves) はレスポンスに片方ずつしか含まれないため、
@@ -228,6 +231,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
 
   const skipGuess = async () => {
     // 名前推測スキップはサーバに明示し、poke ボールを確定してから捕獲フェーズへ進む。
+    setError(null);
     try {
       const res = await api.skipGuess();
       setBallType(res.data.ball_type);
@@ -240,10 +244,12 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   // ballType は guessName のレスポンスで既に確定している。ここで API を呼び直すと
   // 確定済みのボールを上書きしてしまう経路になるため、ローカルの状態遷移だけで進める。
   const proceedToCapture = () => {
+    setError(null);
     setPhase("capturing");
   };
 
   const capture = async () => {
+    setError(null);
     try {
       const res = await api.attemptCapture();
       setCaptureResult(res.data);
