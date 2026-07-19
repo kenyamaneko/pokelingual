@@ -72,7 +72,7 @@ describe("[クエスト] 採点スコアの演出", () => {
     act(() => {
       vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
     });
-    expect(screen.getByTestId("damage-value")).toHaveTextContent("30%");
+    expect(screen.getByText("30%")).toBeInTheDocument();
   });
 
   it("スコア 30 のとき、メーターの減少が終わった後にこうかラベルが表示される", () => {

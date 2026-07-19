@@ -45,10 +45,10 @@ async function submitSignup(
   password: string,
   passwordConfirm: string,
 ) {
-  await user.type(screen.getByTestId("signup-email"), "dummy@example.com");
-  await user.type(screen.getByTestId("signup-password"), password);
-  await user.type(screen.getByTestId("signup-password-confirm"), passwordConfirm);
-  await user.click(screen.getByTestId("signup-submit"));
+  await user.type(screen.getByPlaceholderText("メールアドレス"), "dummy@example.com");
+  await user.type(screen.getByPlaceholderText("パスワード"), password);
+  await user.type(screen.getByPlaceholderText("パスワード（確認）"), passwordConfirm);
+  await user.click(screen.getByRole("button", { name: "アカウントを作成する" }));
 }
 
 describe("[認証] 新規登録画面", () => {
@@ -83,7 +83,7 @@ describe("[認証] 新規登録画面", () => {
 
     await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
 
-    expect(await screen.findByTestId("signup-verify-message")).toBeInTheDocument();
+    expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
   });
 
   it("既に登録済みのメールでは、登録済みである旨を表示する", async () => {
