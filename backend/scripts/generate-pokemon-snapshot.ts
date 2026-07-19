@@ -9,7 +9,7 @@ import {
 import {
   resolveLevelUpMoveCandidates,
   resolveMoveNameJA,
-  resolveHintMoveCandidateNames,
+  resolveLevelUpMoveNames,
   type MoveCandidate,
   type PokeAPIMoveName,
 } from "./lib/moves.js";
@@ -87,8 +87,8 @@ async function main(): Promise<void> {
 
   const records: PokemonRecord[] = [];
   for (let i = 0; i < speciesList.length; i++) {
-    const hintMoveCandidates = resolveHintMoveCandidateNames(candidatesList[i], moveNamesJA);
-    records.push(convertToPokemonRecord(speciesList[i], pokemonList[i], hintMoveCandidates));
+    const levelUpMoves = resolveLevelUpMoveNames(candidatesList[i], moveNamesJA);
+    records.push(convertToPokemonRecord(speciesList[i], pokemonList[i], levelUpMoves));
   }
 
   await writeFile(outPath, JSON.stringify(records));
