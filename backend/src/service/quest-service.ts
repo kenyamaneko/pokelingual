@@ -44,9 +44,12 @@ const SCORE_TRANSLATION_FLOOR = 10;
 /** 最終評価点変換: 素点 (0-100) を最終評価点 (0-99) へ圧縮する係数。 */
 const SCORE_TRANSLATION_SCALE = 1.1;
 
+/** 最終評価点 (session.score) が実際に取りうる値の上限。 */
+export const MAX_FINAL_SCORE = Math.round((SCORE_MAX - SCORE_TRANSLATION_FLOOR) * SCORE_TRANSLATION_SCALE);
+
 // QuestNewResponse / ScoreResponse / GuessResponse / CaptureResponse の API 契約型は shared/api-types/quest.d.ts を参照
 
-/** QuestService の運用チューニング値。env 経由で Config から供給される。 */
+/** QuestService のチューニングパラメーター。env 経由で Config から供給される。 */
 export interface QuestTuningConfig {
   /** Levenshtein あいまい一致を有効化する英語名の最小文字数。短い名前は誤検出が増えるため除外。 */
   fuzzyMatchMinNameLength: number;
@@ -74,7 +77,7 @@ export class QuestService {
    * @param settingsRepo ユーザ設定リポジトリ。
    * @param random 乱数ソース。
    * @param sessionStore 進行中のクエストセッションを保存するストア。
-   * @param tuning 運用チューニング値。
+   * @param tuning チューニングパラメーター。
    */
   constructor(
     private pokemonClient: PokemonClient,

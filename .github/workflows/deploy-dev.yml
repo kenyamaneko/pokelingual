@@ -89,7 +89,6 @@ jobs:
       # アプリレベルの認証は middleware/auth.ts の Firebase Auth ミドルウェアが担保する。
       - name: Deploy to Cloud Run
         run: |
-          # 運用チューニング値は backend/.env.tuning を唯一の情報源とし、ここに値を書き足さない。
           TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image "${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \

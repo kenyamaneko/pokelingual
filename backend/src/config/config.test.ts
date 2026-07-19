@@ -46,7 +46,7 @@ function setDefaultTuningEnv(): void {
 }
 
 describe("[起動設定] 起動設定の読み込み", () => {
-  // 運用チューニング値はモード問わず必須のため、個別のテストの関心事でない限り既定値を敷いておく。
+  // チューニングパラメーターはモード問わず必須のため、個別のテストの関心事でない限り既定値を敷いておく。
   beforeEach(() => {
     clearConfigEnv();
     setDefaultTuningEnv();
@@ -64,7 +64,7 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(() => loadConfig()).toThrow(/invalid env: APP_MODE/);
   });
 
-  it("mock モードでは運用チューニング値以外の env が未設定でも既定値で起動できる", () => {
+  it("mock モードではチューニングパラメーター以外の env が未設定でも既定値で起動できる", () => {
     process.env.APP_MODE = "mock";
     const cfg = loadConfig();
     expect(cfg.appMode).toBe("mock");
@@ -75,7 +75,7 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(cfg.questSessionTTLSeconds).toBe(3600);
   });
 
-  it("mock モードでも運用チューニング値の env が無ければ起動エラー (既定値へのフォールバックはしない)", () => {
+  it("mock モードでもチューニングパラメーターの env が無ければ起動エラー", () => {
     process.env.APP_MODE = "mock";
     delete process.env.FUZZY_MATCH_MIN_NAME_LENGTH;
     expect(() => loadConfig()).toThrow(/required env not set: FUZZY_MATCH_MIN_NAME_LENGTH/);
@@ -117,13 +117,13 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(() => loadConfig()).toThrow(/must be an integer/);
   });
 
-  it("浮動小数点数の env は小数として解釈される (整数への丸めはしない)", () => {
+  it("浮動小数点数の env は小数として解釈される", () => {
     process.env.APP_MODE = "mock";
     process.env.BALL_CAPTURE_BONUS_GREAT = "2.25";
     expect(loadConfig().ballCaptureBonus.great).toBe(2.25);
   });
 
-  it("浮動小数点数 env の下限0は受理される (ボーナス無しのポケボールを表現できる)", () => {
+  it("浮動小数点数 env の下限0は受理される", () => {
     process.env.APP_MODE = "mock";
     process.env.BALL_CAPTURE_BONUS_POKE = "0";
     expect(loadConfig().ballCaptureBonus.poke).toBe(0);

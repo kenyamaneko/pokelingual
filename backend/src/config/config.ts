@@ -1,21 +1,16 @@
 import dotenv from "dotenv";
 import { parseAppEnvironment, type AppEnvironment } from "../domain/environment.js";
+import { MAX_FINAL_SCORE } from "../service/quest-service.js";
 import type { BallType } from "../../../shared/api-types/quest.js";
 
-// .env (開発者ローカルの秘密情報・上書き。gitignore 対象) を先に読み、既存の process.env を優先する。
-// .env.tuning (チェックイン対象、運用チューニング値の既定値) は dotenv が上書きしない値のみ補う。
-// real デプロイのコンテナ内では両ファイルとも存在せず、Cloud Run が注入した process.env をそのまま使う。
-dotenv.config();
-dotenv.config({ path: ".env.tuning" });
+// dotenv は既に process.env にある値を上書きしないため、配列の先頭ほど優先される。
+// .env (開発者ローカルの秘密情報。gitignore 対象) を .env.tuning (チェックイン済みの既定値) より優先する。
+dotenv.config({ path: [".env", ".env.tuning"] });
 
 /** アプリの動作モード。mock は外部 API をモックに差し替え、real は実サービスに接続する。 */
 export type AppMode = "mock" | "real";
 
 const APP_MODES: readonly AppMode[] = ["mock", "real"];
-
-// quest-service.ts の SCORE_TRANSLATION_FLOOR/SCALE (据え置きの固定値) から導かれる最終評価点の上限。
-// この上限を超える MASTER_BALL_MIN_SCORE は、閾値に達する得点が存在せず機能を無効化してしまうため拒否する。
-const MAX_FINAL_SCORE = 99;
 
 /** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
@@ -176,7 +171,7 @@ function requireAppMode(): AppMode {
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは追加の必須 env
  * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
  * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_URL,
- * QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。運用チューニング値
+ * QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。チューニングパラメーター
  * (FUZZY_MATCH_MIN_NAME_LENGTH 等、.env.tuning が供給する9値) はモード問わず必須。
  * @returns アプリ全体の設定値。
  */
@@ -202,7 +197,7 @@ export function loadConfig(): Config {
     questSessionTTLSeconds: isMock
       ? (getIntEnv("QUEST_SESSION_TTL_SECONDS") ?? MOCK_DEFAULTS.questSessionTTLSeconds)
       : requireIntEnv("QUEST_SESSION_TTL_SECONDS"),
-    // 運用チューニング値は .env.tuning が mock/real 共通で供給するため、モードで分岐しない。
+    // チューニングパラメーターは .env.tuning が mock/real 共通で供給するため、モードで分岐しない。
     fuzzyMatchMinNameLength: requireIntEnv("FUZZY_MATCH_MIN_NAME_LENGTH"),
     fuzzyMatchMaxDistance: requireIntEnv("FUZZY_MATCH_MAX_DISTANCE"),
     ballCaptureBonus: {

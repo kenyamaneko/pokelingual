@@ -230,7 +230,7 @@ real モードの backend は起動時に、非公開の Cloud Storage バケッ
 docker build -f backend/Dockerfile -t REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial .
 docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
 
-# 運用チューニング値は backend/.env.tuning を唯一の情報源とする
+# チューニングパラメーターは backend/.env.tuning を唯一の情報源とする
 TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
 gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
