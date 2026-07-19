@@ -569,7 +569,7 @@ describe("[名前当て] 名前当てのヒント", () => {
 
   it("1回目のヒントに続けて2回目を要求すると、レベルアップで覚える技が返り、残り試行回数がさらに1減る", async () => {
     const service = makeService({
-      pokemons: [makePokemon({ hint_move_candidates: ["たいあたり", "なきごえ", "つるのムチ"] })],
+      pokemons: [makePokemon({ level_up_moves: ["たいあたり", "なきごえ", "つるのムチ"] })],
       randomValue: 0,
     });
     await service.newQuest("alice");
@@ -580,7 +580,7 @@ describe("[名前当て] 名前当てのヒント", () => {
 
   it("同じポケモンでも、クエストごとに開示される技が変わりうる", async () => {
     const candidates = ["たいあたり", "なきごえ", "つるのムチ", "やどりぎのタネ"];
-    const pokemons = [makePokemon({ hint_move_candidates: candidates })];
+    const pokemons = [makePokemon({ level_up_moves: candidates })];
 
     const serviceA = makeService({ pokemons, randomValue: 0 });
     await serviceA.newQuest("alice");
@@ -631,16 +631,16 @@ describe("[名前当て] 名前当てのヒント", () => {
     await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
   });
 
-  it("レベルアップで覚える技の候補が無いポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
-    const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: undefined })] });
+  it("レベルアップで覚える技が無いポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
+    const service = makeService({ pokemons: [makePokemon({ level_up_moves: undefined })] });
     await service.newQuest("alice");
     await service.requestHint("alice");
     const res = await service.requestHint("alice");
     expect(res).toEqual({ moves: [], attempts_remaining: 1 });
   });
 
-  it("レベルアップで覚える技の候補が0件のポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
-    const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: [] })] });
+  it("レベルアップで覚える技が0件のポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
+    const service = makeService({ pokemons: [makePokemon({ level_up_moves: [] })] });
     await service.newQuest("alice");
     await service.requestHint("alice");
     const res = await service.requestHint("alice");

@@ -21,7 +21,7 @@ export function makePokemon(overrides: Partial<Pokemon> = {}): Pokemon {
     weight: 69,
     is_legendary: false,
     is_mythical: false,
-    hint_move_candidates: ["たいあたり", "なきごえ", "つるのムチ"],
+    level_up_moves: ["たいあたり", "なきごえ", "つるのムチ"],
     ...overrides,
   };
 }

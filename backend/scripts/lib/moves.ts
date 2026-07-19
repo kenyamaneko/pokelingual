@@ -110,7 +110,7 @@ export function resolveMoveNameJA(names: PokeAPIMoveName[]): string {
  * @returns candidates と対応する日本語名の一覧 (candidates の順序を保つ)。
  * @throws 候補の技が moveNamesJA に無い場合 (呼び出し元の事前解決漏れ)。
  */
-export function resolveHintMoveCandidateNames(
+export function resolveLevelUpMoveNames(
   candidates: MoveCandidate[],
   moveNamesJA: ReadonlyMap<string, string>,
 ): string[] {

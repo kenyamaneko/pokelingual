@@ -124,8 +124,8 @@ export class QuestService {
     }
 
     // 技ヒントは出会うたびに開示内容が変わるよう、クエスト開始時に候補からランダムに選ぶ
-    const hintMoves = pokemon.hint_move_candidates
-      ? pickRandomSample(pokemon.hint_move_candidates, HINT_MOVE_COUNT, this.random)
+    const hintMoves = pokemon.level_up_moves
+      ? pickRandomSample(pokemon.level_up_moves, HINT_MOVE_COUNT, this.random)
       : undefined;
 
     const session: QuestSession = {

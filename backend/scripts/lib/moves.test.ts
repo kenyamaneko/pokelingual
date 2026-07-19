@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveLevelUpMoveCandidates, resolveMoveNameJA, resolveHintMoveCandidateNames, type PokeAPIMoveEntry } from "./moves.js";
+import { resolveLevelUpMoveCandidates, resolveMoveNameJA, resolveLevelUpMoveNames, type PokeAPIMoveEntry } from "./moves.js";
 
 /**
  * 技1件分の pokemon.moves エントリを作る。
@@ -121,7 +121,7 @@ describe("[ポケモンデータ] 技候補の日本語名への変換", () => {
       { slug: "vine-whip", id: 3 },
       { slug: "leech-seed", id: 4 },
     ];
-    expect(resolveHintMoveCandidateNames(candidates, moveNamesJA)).toEqual([
+    expect(resolveLevelUpMoveNames(candidates, moveNamesJA)).toEqual([
       "たいあたり",
       "なきごえ",
       "つるのムチ",
@@ -130,12 +130,12 @@ describe("[ポケモンデータ] 技候補の日本語名への変換", () => {
   });
 
   it("候補が0件のとき、空配列を返す", () => {
-    expect(resolveHintMoveCandidateNames([], moveNamesJA)).toEqual([]);
+    expect(resolveLevelUpMoveNames([], moveNamesJA)).toEqual([]);
   });
 
   it("候補の技の日本語名が無いときエラーになる", () => {
     const candidates = [{ slug: "unknown-move", id: 999 }];
-    expect(() => resolveHintMoveCandidateNames(candidates, moveNamesJA)).toThrow(
+    expect(() => resolveLevelUpMoveNames(candidates, moveNamesJA)).toThrow(
       /no resolved japanese name/,
     );
   });
