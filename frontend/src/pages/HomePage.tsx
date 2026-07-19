@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTutorial } from "../contexts/TutorialContext";
 import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
+import { logger } from "../utils/logger";
 
 /**
  * HomePage の仕様文言。テストから import される SSOT。
@@ -29,7 +30,8 @@ export function HomePage() {
     try {
       const done = await ensureStatus();
       navigate(done ? "/quest" : "/tutorial");
-    } catch {
+    } catch (err) {
+      logger.warn("failed to resolve tutorial status on quest start", { error: err });
       setPhase("error");
     }
   };

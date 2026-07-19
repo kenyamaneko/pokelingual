@@ -62,7 +62,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     try {
       await ensureStatus();
     } catch (err) {
-      // 起動時取得は最善努力のウォームアップなので失敗はログに留める。正しさはCTA押下時のensureStatusが担保する
+      // 起動時取得は最善努力のウォームアップなので失敗はログに留める。正しさは押下時のensureStatusが担保する
       logger.warn("failed to prefetch tutorial status", { error: err });
     }
   }, [user, ensureStatus]);
