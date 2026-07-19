@@ -631,7 +631,7 @@ describe("[名前当て] 名前当てのヒント", () => {
     await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
   });
 
-  it("スナップショットに技候補が無いポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
+  it("レベルアップで覚える技の候補が無いポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
     const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: undefined })] });
     await service.newQuest("alice");
     await service.requestHint("alice");
@@ -639,7 +639,7 @@ describe("[名前当て] 名前当てのヒント", () => {
     expect(res).toEqual({ moves: [], attempts_remaining: 1 });
   });
 
-  it("スナップショットの技候補が空配列のポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
+  it("レベルアップで覚える技の候補が0件のポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
     const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: [] })] });
     await service.newQuest("alice");
     await service.requestHint("alice");
