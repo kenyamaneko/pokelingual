@@ -33,8 +33,12 @@ resource "google_cloud_run_v2_service" "backend" {
     percent = 100
   }
 
+  # client/client_version は最後に gcloud run deploy を実行したツールの署名で、deploy のたびに
+  # 書き換わるため差分から除外する
   lifecycle {
     ignore_changes = [
+      client,
+      client_version,
       template[0].containers[0].image,
       template[0].containers[0].env,
     ]
