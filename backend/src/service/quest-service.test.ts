@@ -631,27 +631,20 @@ describe("[名前当て] 名前当てのヒント", () => {
     await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
   });
 
-  it("スナップショットに技候補が無いポケモンで2回目のヒントを要求するとエラーになる", async () => {
+  it("レベルアップで覚える技の候補が無いポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
     const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: undefined })] });
     await service.newQuest("alice");
     await service.requestHint("alice");
-    await expect(service.requestHint("alice")).rejects.toThrow(/no hint moves in the snapshot/);
+    const res = await service.requestHint("alice");
+    expect(res).toEqual({ moves: [], attempts_remaining: 1 });
   });
 
-  it("スナップショットの技候補が空配列のポケモンで2回目のヒントを要求するとエラーになる", async () => {
+  it("レベルアップで覚える技の候補が0件のポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
     const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: [] })] });
     await service.newQuest("alice");
     await service.requestHint("alice");
-    await expect(service.requestHint("alice")).rejects.toThrow(/no hint moves in the snapshot/);
-  });
-
-  it("技ヒントが無くエラーになっても、その後の名前当てで残り挑戦回数はエラーの前と変わらない", async () => {
-    const service = makeService({ pokemons: [makePokemon({ hint_move_candidates: undefined })] });
-    await service.newQuest("alice");
-    await service.requestHint("alice");
-    await expect(service.requestHint("alice")).rejects.toThrow();
-    const res = await service.guessName("alice", "wrong");
-    expect(res.attempts_remaining).toBe(1);
+    const res = await service.requestHint("alice");
+    expect(res).toEqual({ moves: [], attempts_remaining: 1 });
   });
 
   it("残り2回でヒントを使い切った直後に不正解にすると、試行が尽きてモンスターボールが確定する", async () => {

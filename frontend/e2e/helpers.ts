@@ -31,7 +31,7 @@ export async function completeQuest(page: Page) {
   await page.goto("/quest");
   // 場所選択で「廃墟の発電所」(でんき) を選ぶと、mock では決定的にピカチュウが出る
   await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
-  await page.getByText(TEXT.questTitle).waitFor();
+  await page.getByTestId("quest-description").waitFor();
 
   // 翻訳入力 → 送信
   await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳");

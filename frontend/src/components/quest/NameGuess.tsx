@@ -3,7 +3,8 @@ import type { GuessResponse, HintResponse } from "../../../../shared/api-types/q
 import type { PokemonType } from "../../../../shared/api-types/pokemon";
 import { PokemonNameInput } from "./PokemonNameInput";
 import { getTypeLabel } from "../../utils/pokemonTypes";
-import { BALL_SPRITES, BALL_NAMES } from "./ballAssets";
+import { BALL_SPRITES } from "./ballAssets";
+import { TypewriterText } from "./TypewriterText";
 
 /** ヒントボタンを表示するために必要な最小残り挑戦回数。backend の判定と合わせている。 */
 const MIN_ATTEMPTS_REMAINING_FOR_HINT_BUTTON = 2;
@@ -28,7 +29,8 @@ interface NameGuessProps {
  */
 export const NAME_GUESS_LABELS = {
   heading: "このポケモンの名前は？",
-  hintButton: "ヒントを見る（挑戦1回を消費）",
+  hintButton: "ヒントを見る（チャンスを1回使う）",
+  hintButtonAgain: "別のヒントを見る（チャンスを1回使う）",
   hintUnavailable: "もうヒントは使えないよ",
   movesUnavailable: "このポケモンはレベルアップで覚える技がないみたいだよ",
   skipButton: "わからないのでスキップ →",
@@ -151,13 +153,20 @@ export function NameGuess({
       {hintResult && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
           {hintResult.types && hintResult.types.length > 0 && (
-            <p className="text-blue-700 text-sm">{formatTypeHint(hintResult.types)}</p>
+            <p className="text-blue-700 text-sm">
+              <TypewriterText text={formatTypeHint(hintResult.types)} isActive={true} />
+            </p>
           )}
           {hintResult.moves && (
             <p className="text-blue-700 text-sm">
-              {hintResult.moves.length > 0
-                ? formatMovesHint(hintResult.moves)
-                : NAME_GUESS_LABELS.movesUnavailable}
+              <TypewriterText
+                text={
+                  hintResult.moves.length > 0
+                    ? formatMovesHint(hintResult.moves)
+                    : NAME_GUESS_LABELS.movesUnavailable
+                }
+                isActive={true}
+              />
             </p>
           )}
         </div>
@@ -171,7 +180,6 @@ export function NameGuess({
           </p>
           <p className="text-green-600 text-sm">
             {guessResult.language === "en" ? "英語名で正解！" : "日本語名で正解！"}
-            　{BALL_NAMES[guessResult.ball_type]}を手に入れた！
           </p>
         </div>
       )}
@@ -202,7 +210,7 @@ export function NameGuess({
                      border border-blue-200 rounded-xl transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {NAME_GUESS_LABELS.hintButton}
+          {hintResult ? NAME_GUESS_LABELS.hintButtonAgain : NAME_GUESS_LABELS.hintButton}
         </button>
       )}
       {hintExpired && (

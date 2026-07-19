@@ -51,7 +51,6 @@ export function QuestCard({ description, variant, prevComplete = true, onComplet
         >
           <span className="text-white text-3xl font-bold">？</span>
         </div>
-        <h2 className="text-lg font-bold text-gray-700 mt-2">Who's That Pokemon?</h2>
       </div>
       <div className="bg-gray-50 rounded-xl p-4">
         <p

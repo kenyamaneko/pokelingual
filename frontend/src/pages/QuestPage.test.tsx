@@ -230,7 +230,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButtonAgain }),
     );
 
     expect(
@@ -590,5 +590,56 @@ describe("[クエスト] 進行中のエラー表示", () => {
 
     expect(await screen.findByText(/接続できません/)).toBeInTheDocument();
     expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+  });
+});
+
+describe("[クエスト] 伝説・幻の気配演出", () => {
+  it.each([
+    ["伝説", 150, true, false],
+    ["幻", 151, false, true],
+  ] as const)("出題ポケモンが%sのとき、「ただならない　気配を感じる...」と表示される", async (
+    _kind,
+    pokemonID,
+    isLegendary,
+    isMythical,
+  ) => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(apiUrl("/quest/new"), () =>
+        HttpResponse.json({
+          pokemon_id: pokemonID,
+          description_en: "A wild creature.",
+          is_legendary: isLegendary,
+          is_mythical: isMythical,
+          max_guess_attempts: 3,
+        }),
+      ),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+
+    expect(await screen.findByText(spec("ただならない　気配を感じる..."))).toBeInTheDocument();
+  });
+
+  it("出題ポケモンが伝説・幻のどちらでもないとき、「ただならない　気配を感じる...」は表示されない", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(apiUrl("/quest/new"), () =>
+        HttpResponse.json({
+          pokemon_id: 25,
+          description_en: "A wild creature.",
+          is_legendary: false,
+          is_mythical: false,
+          max_guess_attempts: 3,
+        }),
+      ),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await screen.findByTestId("quest-description");
+
+    expect(screen.queryByText(spec("ただならない　気配を感じる..."))).not.toBeInTheDocument();
   });
 });
