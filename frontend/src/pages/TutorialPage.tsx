@@ -28,7 +28,7 @@ export const TUTORIAL_PAGE_LABELS = {
  */
 export function TutorialPage() {
   const navigate = useNavigate();
-  const { markCompleted } = useTutorial();
+  const { markTutorialCompleted } = useTutorial();
   const [introDismissed, setIntroDismissed] = useState(false);
 
   return (
@@ -41,7 +41,7 @@ export function TutorialPage() {
           hasLocationChoice: false,
           validateBeforeScore: validateTutorialTranslation,
           validateBeforeGuess: validateTutorialName,
-          onResult: markCompleted,
+          onResult: markTutorialCompleted,
         }}
         slots={{
           translating: (

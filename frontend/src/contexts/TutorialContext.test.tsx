@@ -19,12 +19,12 @@ function mockTutorialStatus(completed: boolean) {
 }
 
 function Probe() {
-  const { ensureStatus, markCompleted } = useTutorial();
+  const { getTutorialCompleted, markTutorialCompleted } = useTutorial();
   const [status, setStatus] = useState("未確認");
 
   const check = async () => {
     try {
-      const done = await ensureStatus();
+      const done = await getTutorialCompleted();
       setStatus(done ? "完了済み" : "未完了");
     } catch {
       setStatus("取得エラー");
@@ -35,7 +35,7 @@ function Probe() {
     <div>
       <p>{status}</p>
       <button onClick={check}>確認する</button>
-      <button onClick={markCompleted}>完了にする</button>
+      <button onClick={markTutorialCompleted}>完了にする</button>
     </div>
   );
 }

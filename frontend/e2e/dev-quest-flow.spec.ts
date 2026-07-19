@@ -37,7 +37,7 @@ async function loginAndGetTutorialCompleted(page: Page): Promise<boolean> {
 // チュートリアルを完了させたのち後者も実行される (workers: 1 のファイル内順次実行が前提)。
 // 前者が途中で失敗した場合は後者が skip されるため、失敗は前者側で顕在化する。
 
-test("チュートリアル未完了のとき、チュートリアルを完了すると本番クエストへの導線に切り替わる", async ({
+test("チュートリアル未完了のとき、チュートリアルを完了してから「ポケモンを探しに行く」を押すと、本番クエスト画面に遷移する", async ({
   page,
 }) => {
   const tutorialCompleted = await loginAndGetTutorialCompleted(page);

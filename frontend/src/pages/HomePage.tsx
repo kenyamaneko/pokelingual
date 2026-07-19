@@ -8,9 +8,9 @@ import { logger } from "../utils/logger";
  * HomePage の仕様文言。テストから import される SSOT。
  */
 export const HOME_PAGE_LABELS = {
-  questCta: "ポケモンを探しに行く",
-  questCtaPending: "確認中...",
-  questCtaError: "状態の確認に失敗しました。もう一度お試しください",
+  startQuest: "ポケモンを探しに行く",
+  startQuestPending: "確認中...",
+  startQuestError: "状態の確認に失敗しました。もう一度お試しください",
   tutorialLink: "チュートリアルを見る",
 } as const;
 
@@ -21,14 +21,14 @@ export const HOME_PAGE_LABELS = {
  * @returns ホームページの要素。
  */
 export function HomePage() {
-  const { ensureStatus } = useTutorial();
+  const { getTutorialCompleted } = useTutorial();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<"idle" | "pending" | "error">("idle");
 
   const handleStart = async () => {
     setPhase("pending");
     try {
-      const done = await ensureStatus();
+      const done = await getTutorialCompleted();
       navigate(done ? "/quest" : "/tutorial");
     } catch (err) {
       logger.warn("failed to resolve tutorial status on quest start", { error: err });
@@ -66,10 +66,10 @@ export function HomePage() {
                          font-bold text-lg transition-colors shadow-lg hover:shadow-xl
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {phase === "pending" ? HOME_PAGE_LABELS.questCtaPending : HOME_PAGE_LABELS.questCta}
+              {phase === "pending" ? HOME_PAGE_LABELS.startQuestPending : HOME_PAGE_LABELS.startQuest}
             </button>
             {phase === "error" && (
-              <p className="text-red-500 text-sm mt-2">{HOME_PAGE_LABELS.questCtaError}</p>
+              <p className="text-red-500 text-sm mt-2">{HOME_PAGE_LABELS.startQuestError}</p>
             )}
             <Link
               to="/tutorial"
