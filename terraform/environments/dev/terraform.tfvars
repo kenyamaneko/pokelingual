@@ -24,3 +24,6 @@ slack_notification_channel_id = "projects/pokelingual-dev/notificationChannels/1
 # (空のまま apply すると既存の Budget が削除される)。
 billing_account_display_name = ""
 monthly_budget_jpy           = 5000
+
+# dev は alerts_enabled=false でコスト暴走を検知できないため、上限を 1 に絞る。
+max_instance_count = 1
