@@ -26,6 +26,9 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "15100:15100"
+    # .env.tuning はビルドイメージに含めない (Dockerfile が dist のみをコピーするため)。
+    env_file:
+      - backend/.env.tuning
     environment:
       APP_MODE: mock
       PORT: "15100"

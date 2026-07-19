@@ -200,12 +200,24 @@ gcloud auth configure-docker REGION-docker.pkg.dev
 # バックエンド（ビルドコンテキストはリポジトリルート。shared/api-types を含むため）
 docker build -f backend/Dockerfile -t REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial .
 docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
+
+# チューニングパラメーターは backend/.env.tuning を唯一の情報源とする
+TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
+
+# --update-env-vars 用に1行へ組み立てる
+ENV_VARS="APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash"
+ENV_VARS="${ENV_VARS},FRONTEND_URL=https://PROJECT_ID.web.app"
+ENV_VARS="${ENV_VARS},GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1"
+ENV_VARS="${ENV_VARS},PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500"
+ENV_VARS="${ENV_VARS},POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json"
+ENV_VARS="${ENV_VARS},QUEST_SESSION_TTL_SECONDS=3600,${TUNING_VARS}"
+
 gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
   --update-secrets "UPSTASH_REDIS_URL=pokelingual-upstash-redis-url:latest" \
-  --update-env-vars "APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://PROJECT_ID.web.app,GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600" \
+  --update-env-vars "${ENV_VARS}" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定

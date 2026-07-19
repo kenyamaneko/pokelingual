@@ -19,13 +19,38 @@ function clearConfigEnv(): void {
     "POKEMON_SNAPSHOT_URI",
     "UPSTASH_REDIS_URL",
     "QUEST_SESSION_TTL_SECONDS",
+    "FUZZY_MATCH_MIN_NAME_LENGTH",
+    "FUZZY_MATCH_MAX_DISTANCE",
+    "BALL_CAPTURE_BONUS_POKE",
+    "BALL_CAPTURE_BONUS_GREAT",
+    "BALL_CAPTURE_BONUS_ULTRA",
+    "LEGENDARY_ENCOUNTER_RATE",
+    "LOCATION_CHOICE_COUNT",
+    "MASTER_BALL_MIN_SCORE",
+    "MAX_EXCLUDED_POKEMON_COUNT",
   ]) {
     delete process.env[key];
   }
 }
 
+function setDefaultTuningEnv(): void {
+  process.env.FUZZY_MATCH_MIN_NAME_LENGTH = "4";
+  process.env.FUZZY_MATCH_MAX_DISTANCE = "2";
+  process.env.BALL_CAPTURE_BONUS_POKE = "0";
+  process.env.BALL_CAPTURE_BONUS_GREAT = "1.5";
+  process.env.BALL_CAPTURE_BONUS_ULTRA = "3.0";
+  process.env.LEGENDARY_ENCOUNTER_RATE = "0.01";
+  process.env.LOCATION_CHOICE_COUNT = "4";
+  process.env.MASTER_BALL_MIN_SCORE = "70";
+  process.env.MAX_EXCLUDED_POKEMON_COUNT = "30";
+}
+
 describe("[起動設定] 起動設定の読み込み", () => {
-  beforeEach(clearConfigEnv);
+  // チューニングパラメーターはモード問わず必須のため、個別のテストの関心事でない限り既定値を敷いておく。
+  beforeEach(() => {
+    clearConfigEnv();
+    setDefaultTuningEnv();
+  });
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
   });
@@ -39,7 +64,7 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(() => loadConfig()).toThrow(/invalid env: APP_MODE/);
   });
 
-  it("mock モードでは他の env が未設定でも既定値で起動できる", () => {
+  it("mock モードではチューニングパラメーター以外の env が未設定でも既定値で起動できる", () => {
     process.env.APP_MODE = "mock";
     const cfg = loadConfig();
     expect(cfg.appMode).toBe("mock");
@@ -50,16 +75,64 @@ describe("[起動設定] 起動設定の読み込み", () => {
     expect(cfg.questSessionTTLSeconds).toBe(3600);
   });
 
+  it("mock モードでもチューニングパラメーターの env が無ければ起動エラー", () => {
+    process.env.APP_MODE = "mock";
+    delete process.env.FUZZY_MATCH_MIN_NAME_LENGTH;
+    expect(() => loadConfig()).toThrow(/required env not set: FUZZY_MATCH_MIN_NAME_LENGTH/);
+  });
+
   it("整数 env の 1 は受理される", () => {
     process.env.APP_MODE = "mock";
     process.env.PER_USER_DAILY_LIMIT = "1";
     expect(loadConfig().perUserDailyLimit).toBe(1);
   });
 
-  it.each(["0", "-1", "abc"])("整数 env の不正値 %s は起動エラー", (v) => {
+  it.each(["0", "-1", "abc"])("既定の最小値が1の整数 env で不正値 %s は起動エラー", (v) => {
     process.env.APP_MODE = "mock";
     process.env.PER_USER_DAILY_LIMIT = v;
-    expect(() => loadConfig()).toThrow(/positive integer/);
+    expect(() => loadConfig()).toThrow(/must be an integer/);
+  });
+
+  it("最小値0・最大値99の整数 env で下限0は受理される", () => {
+    process.env.APP_MODE = "mock";
+    process.env.MASTER_BALL_MIN_SCORE = "0";
+    expect(loadConfig().masterBallMinScore).toBe(0);
+  });
+
+  it("最小値0・最大値99の整数 env で上限99は受理される", () => {
+    process.env.APP_MODE = "mock";
+    process.env.MASTER_BALL_MIN_SCORE = "99";
+    expect(loadConfig().masterBallMinScore).toBe(99);
+  });
+
+  it("最小値0・最大値99の整数 env で上限を超える100は起動エラー", () => {
+    process.env.APP_MODE = "mock";
+    process.env.MASTER_BALL_MIN_SCORE = "100";
+    expect(() => loadConfig()).toThrow(/must be an integer/);
+  });
+
+  it("整数 env の小数1.5は起動エラー", () => {
+    process.env.APP_MODE = "mock";
+    process.env.MASTER_BALL_MIN_SCORE = "1.5";
+    expect(() => loadConfig()).toThrow(/must be an integer/);
+  });
+
+  it("浮動小数点数の env は小数として解釈される", () => {
+    process.env.APP_MODE = "mock";
+    process.env.BALL_CAPTURE_BONUS_GREAT = "2.25";
+    expect(loadConfig().ballCaptureBonus.great).toBe(2.25);
+  });
+
+  it("浮動小数点数 env の下限0は受理される", () => {
+    process.env.APP_MODE = "mock";
+    process.env.BALL_CAPTURE_BONUS_POKE = "0";
+    expect(loadConfig().ballCaptureBonus.poke).toBe(0);
+  });
+
+  it.each(["-0.01", "1.01", "abc"])("範囲付き浮動小数点数 env で範囲外・非数値の %s は起動エラー", (v) => {
+    process.env.APP_MODE = "mock";
+    process.env.LEGENDARY_ENCOUNTER_RATE = v;
+    expect(() => loadConfig()).toThrow(/must be a number between 0 and 1/);
   });
 
   it("real モードで必須 env が無ければ起動エラー", () => {
@@ -70,6 +143,12 @@ describe("[起動設定] 起動設定の読み込み", () => {
   it("real モードで空文字の必須 env は未設定として起動エラー", () => {
     process.env.APP_MODE = "real";
     process.env.GOOGLE_CLOUD_PROJECT = "";
+    expect(() => loadConfig()).toThrow(/required env not set/);
+  });
+
+  it("real モードで空白のみの必須 env は未設定として起動エラー", () => {
+    process.env.APP_MODE = "real";
+    process.env.GOOGLE_CLOUD_PROJECT = "   ";
     expect(() => loadConfig()).toThrow(/required env not set/);
   });
 
@@ -85,6 +164,15 @@ describe("[起動設定] 起動設定の読み込み", () => {
     process.env.POKEMON_SNAPSHOT_URI = "gs://bucket/pokemon-snapshot.json";
     process.env.UPSTASH_REDIS_URL = "rediss://default:token@redis-endpoint.upstash.io:6379";
     process.env.QUEST_SESSION_TTL_SECONDS = "1800";
+    process.env.FUZZY_MATCH_MIN_NAME_LENGTH = "5";
+    process.env.FUZZY_MATCH_MAX_DISTANCE = "1";
+    process.env.BALL_CAPTURE_BONUS_POKE = "0";
+    process.env.BALL_CAPTURE_BONUS_GREAT = "2";
+    process.env.BALL_CAPTURE_BONUS_ULTRA = "4";
+    process.env.LEGENDARY_ENCOUNTER_RATE = "0.02";
+    process.env.LOCATION_CHOICE_COUNT = "3";
+    process.env.MASTER_BALL_MIN_SCORE = "80";
+    process.env.MAX_EXCLUDED_POKEMON_COUNT = "20";
 
     const cfg = loadConfig();
     expect(cfg).toMatchObject({
@@ -99,6 +187,13 @@ describe("[起動設定] 起動設定の読み込み", () => {
       pokemonSnapshotURI: "gs://bucket/pokemon-snapshot.json",
       questSessionRedisURL: "rediss://default:token@redis-endpoint.upstash.io:6379",
       questSessionTTLSeconds: 1800,
+      fuzzyMatchMinNameLength: 5,
+      fuzzyMatchMaxDistance: 1,
+      ballCaptureBonus: { poke: 0, great: 2, ultra: 4 },
+      legendaryEncounterRate: 0.02,
+      locationChoiceCount: 3,
+      masterBallMinScore: 80,
+      maxExcludedPokemonCount: 20,
     });
   });
 });
