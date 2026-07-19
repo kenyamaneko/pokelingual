@@ -17,7 +17,7 @@ const REVIEW_THRESHOLDS = {
  * Gemini を呼ばずに固定的なレスポンスを返す開発用 LLMClient 実装。
  *
  * モック仕様: プロンプトに含まれる識別子で用途を判定する。
- * - "translation evaluator" を含む → ScoreResult 形式の JSON を返す
+ * - "translation evaluator" を含む → 単位 1 件の判定値配列と講評を JSON で返す
  * サービス側のプロンプトを変更する際は、キーワードを必ず残すこと。
  */
 export class MockLLMClient implements LLMClient {
@@ -29,7 +29,7 @@ export class MockLLMClient implements LLMClient {
   async generateText(prompt: string): Promise<string> {
     if (prompt.includes("translation evaluator")) {
       const score = MOCK_SCORE_MIN + Math.floor(Math.random() * MOCK_SCORE_RANGE);
-      return JSON.stringify({ score, review: buildMockReview(score) });
+      return JSON.stringify({ units: [score / 100], review: buildMockReview(score) });
     }
     throw new Error("MockLLMClient: prompt does not match any known task marker");
   }

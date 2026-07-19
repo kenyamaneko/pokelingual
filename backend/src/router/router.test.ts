@@ -54,7 +54,7 @@ function makeApp(o: AppOverrides = {}) {
   const llm: LLMClient = {
     generateText: async () => {
       if (o.llmError) throw o.llmError;
-      return JSON.stringify({ score: 70, review: "よい 翻訳だ。" });
+      return JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
     },
   };
   const environment = "prod" as const;

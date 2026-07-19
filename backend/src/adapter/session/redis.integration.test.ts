@@ -116,7 +116,7 @@ describe("クエストセッションの永続化 (Valkey)", () => {
 function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore: QuestSessionStore) {
   const pokemonClient = makePokemonClient([makePokemon()]);
   const llm: LLMClient = {
-    generateText: async () => JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
+    generateText: async () => JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
   };
   const environment = "prod" as const;
   const servablePokemonIDs = new Set(Array.from({ length: 100 }, (_, i) => i + 1));
