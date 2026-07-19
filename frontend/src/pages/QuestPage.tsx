@@ -69,19 +69,14 @@ export function QuestPage({ questOptions, slots, onNewQuest, enableHint = true }
 
   return (
     <div className={bgClass}>
-      <div className="max-w-2xl mx-auto px-4">
-        {error && phase !== "error" && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+      {error && phase !== "error" && (
+        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="max-w-2xl w-full bg-red-50 border border-red-200 rounded-xl p-4 shadow-lg pointer-events-auto">
             <p className="text-red-700 text-sm">{error}</p>
-            <button
-              onClick={startNewQuest}
-              className="text-red-500 underline text-sm mt-1"
-            >
-              もう一度
-            </button>
           </div>
-        )}
-
+        </div>
+      )}
+      <div className="max-w-2xl mx-auto px-4">
         {phase === "selectLocation" && (
           <LocationSelect locations={locations} onSelect={selectLocation} />
         )}

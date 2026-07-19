@@ -439,3 +439,87 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     ).toBeInTheDocument();
   });
 });
+
+describe("[クエスト] 進行中のエラー表示", () => {
+  it("ヒント要求が失敗しても、名前当て画面のままエラーメッセージが表示される", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(apiUrl("/quest/hint"), () => HttpResponse.json({}, { status: 500 })),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+
+    expect(await screen.findByText(/ヒントの取得に失敗しました/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    ).toBeInTheDocument();
+  });
+
+  it("ヒント要求の失敗後に再度ヒントを要求すると、エラーメッセージは消える", async () => {
+    const user = userEvent.setup();
+    let hintCalls = 0;
+    server.use(
+      http.post(apiUrl("/quest/hint"), () => {
+        hintCalls++;
+        return hintCalls === 1
+          ? HttpResponse.json({}, { status: 500 })
+          : HttpResponse.json({ types: ["electric"], attempts_remaining: 2 });
+      }),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+    expect(await screen.findByText(/ヒントの取得に失敗しました/)).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+
+    expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
+    expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+  });
+
+  it("ヒント要求が失敗した後に名前当てをスキップして捕獲画面へ進むと、エラーメッセージは残らない", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(apiUrl("/quest/hint"), () => HttpResponse.json({}, { status: 500 })),
+      http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+    expect(await screen.findByText(/ヒントの取得に失敗しました/)).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
+    );
+
+    expect(await screen.findByRole("button", { name: /使う/ })).toBeInTheDocument();
+    expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+  });
+});
