@@ -20,6 +20,10 @@ backend/reports/
 __pycache__/
 .pytest_cache/
 
+# ポケモンスナップショット生成物・入力データ (ポケモン社の著作物を含むためコミットしない)
+/api-data/
+backend/pokemon-snapshot.json
+
 # Environment
 .env
 .env.local

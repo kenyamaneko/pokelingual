@@ -174,18 +174,17 @@ client_secret を tfstate に平文で残さないため、google.com IdP の有
 real モードの backend は起動時に、非公開の Cloud Storage バケットからポケモンの種別データのスナップショットを読み込む。スナップショットが未配置だと起動に失敗するため、backend をデプロイする前に次を済ませておく。`main` への push は dev へ自動デプロイされるので、この変更をマージする前に dev で 1〜3 を実行する。prod も次の `v*` タグ push の前に同じ手順を行う。
 
 1. `terraform apply`（前述「Terraform でインフラ構築」）でバケット `PROJECT_ID-pokemon-snapshot` を作成する。
-2. `PokeAPI/api-data` のローカルクローンからスナップショットを生成する。生成物はポケモン社の著作物を含むため、公開リポジトリにコミットしない。`--max-id` は取得する末尾の図鑑番号で、対象バージョン（X〜ソード/シールド）の EN/JA 説明文が揃う第 8 世代の全国図鑑上限 898 を指定する。
+2. スナップショットを生成する。生成物 (`backend/pokemon-snapshot.json`) はポケモン社の著作物を含むため、公開リポジトリにコミットしない。
    ```bash
-   git clone --depth 1 https://github.com/PokeAPI/api-data.git
-   cd backend
-   npm run generate-snapshot -- --api-data ../api-data --out pokemon-snapshot.json --max-id 898
+   make snapshot-generate
    ```
-3. バケットへアップロードする。
+3. バケットへアップロードする（dev/prod は専用ターゲットを使う）。
    ```bash
-   gcloud storage cp pokemon-snapshot.json gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json
+   make snapshot-upload-dev
+   make snapshot-upload-prod
    ```
 
-生成スクリプトを再実行するのは、取得範囲（`--max-id`、既定 898）を広げるときと、レコードに含める項目を増やすときに限る。
+各ターゲットの詳細（入力データ・取得範囲など）は `Makefile` を参照。生成スクリプトを再実行するのは、取得範囲（既定 898）を広げるときと、レコードに含める項目を増やすときに限る。
 
 ローカルの real モードで動かす場合は、`POKEMON_SNAPSHOT_URI` にローカルの JSON パス（例: `./pokemon-snapshot.json`）を指定すると Cloud Storage の代わりにそのファイルを読む。
 
