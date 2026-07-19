@@ -10,6 +10,7 @@ import { TRANSLATION_INPUT_LABELS } from "../components/quest/TranslationInput";
 import { NAME_GUESS_LABELS } from "../components/quest/NameGuess";
 import { POKEMON_NAME_INPUT_LABELS } from "../components/quest/PokemonNameInput";
 import { CAPTURE_RESULT_LABELS } from "../components/quest/CaptureResult";
+import { BALL_NAMES } from "../components/quest/ballAssets";
 import type { CaptureResponse } from "../../../shared/api-types/quest";
 
 /**
@@ -519,7 +520,75 @@ describe("[クエスト] 進行中のエラー表示", () => {
       await screen.findByRole("button", { name: NAME_GUESS_LABELS.skipButton }),
     );
 
-    expect(await screen.findByRole("button", { name: /使う/ })).toBeInTheDocument();
+    expect(
+      await screen.findByText(new RegExp(`${BALL_NAMES.poke}.*手に.*入れた`)),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+  });
+
+  it("名前推測が失敗しても入力欄は維持され、再送信して正解するとエラーメッセージが消える", async () => {
+    const user = userEvent.setup();
+    let guessCalls = 0;
+    server.use(
+      http.post(apiUrl("/quest/guess-name"), () => {
+        guessCalls++;
+        return guessCalls === 1
+          ? HttpResponse.json({}, { status: 500 })
+          : HttpResponse.json({ correct: true, ball_type: "ultra", language: "en", attempts_remaining: 2 });
+      }),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.type(await screen.findByRole("textbox"), "Testmon");
+    await user.click(
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
+    );
+    expect(await screen.findByText(/名前の判定に失敗しました/)).toBeInTheDocument();
+
+    await user.type(screen.getByRole("textbox"), "Testmon");
+    await user.click(
+      screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
+    );
+
+    expect(await screen.findByText(spec(NAME_GUESS_LABELS.correctTitle))).toBeInTheDocument();
+    expect(screen.queryByText(/名前の判定に失敗しました/)).not.toBeInTheDocument();
+  });
+
+  it("ヒント要求が2回連続で失敗すると、エラーメッセージは最新の失敗内容に更新される", async () => {
+    const user = userEvent.setup();
+    let hintCalls = 0;
+    server.use(
+      http.post(apiUrl("/quest/hint"), () => {
+        hintCalls++;
+        return hintCalls === 1
+          ? HttpResponse.json({}, { status: 500 })
+          : HttpResponse.error();
+      }),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+    await user.type(await screen.findByRole("textbox"), "やくぶん");
+    await user.click(
+      screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+    expect(await screen.findByText(/ヒントの取得に失敗しました/)).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+    );
+
+    expect(await screen.findByText(/接続できません/)).toBeInTheDocument();
     expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
   });
 });
