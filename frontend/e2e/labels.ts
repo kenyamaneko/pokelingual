@@ -34,7 +34,6 @@ export const BUTTON = {
 
 /** getByText で参照する本文テキスト。 */
 export const TEXT = {
-  questTitle: "Who's That Pokemon?",
   damage: "ダメージ",
   professorComment: /博士からのコメント/,
   correct: "正解！",

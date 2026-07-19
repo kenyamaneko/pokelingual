@@ -229,7 +229,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButton }),
+      await screen.findByRole("button", { name: NAME_GUESS_LABELS.hintButtonAgain }),
     );
 
     expect(
