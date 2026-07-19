@@ -5,22 +5,17 @@ import type { ExcludedIDsValidation } from "../domain/settings.js";
 import type { UserSettingsRepository } from "../domain/ports.js";
 import type { SettingsResponse } from "../../../shared/api-types/settings.js";
 
-/**
- * ユーザが除外指定できるポケモン数の上限。
- * Why: quest-service の出題抽選は除外比率が上がるとリトライ失敗の確率が上がる。
- * 図鑑が約 898 件ある前提で、除外がこの件数以下なら 10 回リトライで実質衝突しない (確率 < 1e-14)。
- */
-const MAX_EXCLUDED_POKEMON_COUNT = 30;
-
 /** ユーザ設定 (除外ポケモン・出題世代) のバリデーションと永続化を束ねるサービス。 */
 export class SettingsService {
   /**
    * @param settingsRepo ユーザ設定リポジトリ。
    * @param servablePokemonIDs 供給可能な図鑑番号の集合。除外設定の妥当性検証に使う。
+   * @param maxExcludedPokemonCount ユーザが除外指定できるポケモン数の上限。
    */
   constructor(
     private settingsRepo: UserSettingsRepository,
     private servablePokemonIDs: ReadonlySet<number>,
+    private maxExcludedPokemonCount: number,
   ) {}
 
   /**
@@ -45,7 +40,7 @@ export class SettingsService {
    * @returns 検証結果 (失敗時は永続化しない)。
    */
   async updateExcludedPokemon(userId: string, rawIDs: unknown): Promise<ExcludedIDsValidation> {
-    const result = validateExcludedPokemonIDs(rawIDs, this.servablePokemonIDs, MAX_EXCLUDED_POKEMON_COUNT);
+    const result = validateExcludedPokemonIDs(rawIDs, this.servablePokemonIDs, this.maxExcludedPokemonCount);
     if (!result.ok) return result;
     await this.settingsRepo.updateExcludedPokemon(userId, result.ids);
     return result;

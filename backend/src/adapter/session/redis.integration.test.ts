@@ -17,6 +17,8 @@ import { setupRoutes } from "../../router/router.js";
 import { devAuth } from "../../middleware/auth-mock.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import { makePokemon, makePokemonClient } from "../../testing/pokemon-fixtures.js";
+import { DEFAULT_QUEST_TUNING } from "../../testing/quest-tuning-fixture.js";
+import { DEFAULT_MAX_EXCLUDED_POKEMON_COUNT } from "../../testing/settings-fixture.js";
 import type {
   LLMClient,
   QuestSessionStore,
@@ -140,9 +142,17 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
     getUserUsage: async () => ({ count: 1, limit: 30 }),
   };
 
-  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
+  const questService = new QuestService(
+    pokemonClient,
+    llm,
+    environment,
+    settingsRepo,
+    random,
+    sessionStore,
+    DEFAULT_QUEST_TUNING,
+  );
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
-  const settingsService = new SettingsService(settingsRepo, servablePokemonIDs);
+  const settingsService = new SettingsService(settingsRepo, servablePokemonIDs, DEFAULT_MAX_EXCLUDED_POKEMON_COUNT);
 
   const app = express();
   app.use(express.json());
@@ -152,7 +162,7 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
-      createTutorialQuestHandler(environment, tutorialSessionStore),
+      createTutorialQuestHandler(environment, tutorialSessionStore, DEFAULT_QUEST_TUNING),
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsService),
       new UsageHandler(rateLimitRepo),

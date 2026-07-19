@@ -14,7 +14,8 @@ import { UsageHandler } from "../handler/usage-handler.js";
 import { TutorialHandler } from "../handler/tutorial-handler.js";
 import { createTutorialQuestHandler } from "../composition/tutorial-quest.js";
 import { RateLimitError } from "../domain/errors.js";
-import { LOCATION_CHOICE_COUNT } from "../domain/location.js";
+import { DEFAULT_QUEST_TUNING } from "../testing/quest-tuning-fixture.js";
+import { DEFAULT_MAX_EXCLUDED_POKEMON_COUNT } from "../testing/settings-fixture.js";
 import type {
   LLMClient,
   RandomSource,
@@ -118,9 +119,17 @@ function makeApp(o: AppOverrides = {}) {
 
   const sessionStore = makeInMemoryQuestSessionStore({ error: o.sessionStoreError });
   const tutorialSessionStore = makeInMemoryQuestSessionStore();
-  const questService = new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore);
+  const questService = new QuestService(
+    pokemonClient,
+    llm,
+    environment,
+    settingsRepo,
+    random,
+    sessionStore,
+    DEFAULT_QUEST_TUNING,
+  );
   const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
-  const settingsService = new SettingsService(settingsRepo, servablePokemonIDs);
+  const settingsService = new SettingsService(settingsRepo, servablePokemonIDs, DEFAULT_MAX_EXCLUDED_POKEMON_COUNT);
 
   const app = express();
   app.use(express.json());
@@ -130,7 +139,7 @@ function makeApp(o: AppOverrides = {}) {
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
-      createTutorialQuestHandler(environment, tutorialSessionStore),
+      createTutorialQuestHandler(environment, tutorialSessionStore, DEFAULT_QUEST_TUNING),
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsService),
       new UsageHandler(rateLimitRepo),
@@ -355,7 +364,7 @@ describe("正常系フロー (公開入口経由)", () => {
   it("場所選択の候補として、決められた数の場所が ID・名前・説明・タイプ付きで返る", async () => {
     const res = await request(makeApp()).get("/api/quest/locations");
     expect(res.status).toBe(200);
-    expect(res.body.locations).toHaveLength(LOCATION_CHOICE_COUNT);
+    expect(res.body.locations).toHaveLength(DEFAULT_QUEST_TUNING.locationChoiceCount);
     expect(res.body.locations[0]).toMatchObject({
       id: expect.any(String),
       name: expect.any(String),

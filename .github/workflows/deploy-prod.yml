@@ -83,6 +83,7 @@ jobs:
       # アプリレベルの認証は middleware/auth.ts の Firebase Auth ミドルウェアが担保する。
       - name: Deploy to Cloud Run
         run: |
+          TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image "${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
             --region ${{ env.GOOGLE_CLOUD_REGION }} \
@@ -90,7 +91,7 @@ jobs:
             --service-account "pokelingual-api-prod@${{ vars.GOOGLE_CLOUD_PROJECT_ID }}.iam.gserviceaccount.com" \
             --remove-secrets "GEMINI_API_KEY,UPSTASH_REDIS_ENDPOINT,UPSTASH_REDIS_PASSWORD" \
             --update-secrets "UPSTASH_REDIS_URL=pokelingual-upstash-redis-url:latest" \
-            --update-env-vars "APP_MODE=real,APP_ENV=prod,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600" \
+            --update-env-vars "APP_MODE=real,APP_ENV=prod,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600,${TUNING_VARS}" \
             --max-instances 1 \
             --allow-unauthenticated
 

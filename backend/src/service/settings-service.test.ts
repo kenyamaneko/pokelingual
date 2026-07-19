@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { SettingsService } from "./settings-service.js";
 import type { UserSettingsRepository } from "../domain/ports.js";
 import type { UserSettings } from "../domain/user.js";
+import { DEFAULT_MAX_EXCLUDED_POKEMON_COUNT } from "../testing/settings-fixture.js";
 
 const SERVABLE_IDS = new Set([1, 4, 7, 25, 150]);
 
@@ -16,7 +17,7 @@ function makeService(initialSettings: UserSettings): SettingsService {
       saved = { ...saved, enabled_generations: generations };
     },
   };
-  return new SettingsService(settingsRepo, SERVABLE_IDS);
+  return new SettingsService(settingsRepo, SERVABLE_IDS, DEFAULT_MAX_EXCLUDED_POKEMON_COUNT);
 }
 
 describe("[設定] 除外ポケモンの更新", () => {

@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   QUEST_LOCATIONS,
-  LOCATION_CHOICE_COUNT,
   findLocation,
   pickRandomLocations,
 } from "./location.js";
@@ -50,9 +49,10 @@ describe("[出題] 場所の取得 (ID 指定)", () => {
 
 describe("[出題] 場所の抽選", () => {
   it("指定した数だけ重複なく場所を返す", () => {
-    const picked = pickRandomLocations(fixedRandom(0), LOCATION_CHOICE_COUNT);
-    expect(picked).toHaveLength(LOCATION_CHOICE_COUNT);
-    expect(new Set(picked.map((l) => l.id)).size).toBe(LOCATION_CHOICE_COUNT);
+    const requestedCount = 4;
+    const picked = pickRandomLocations(fixedRandom(0), requestedCount);
+    expect(picked).toHaveLength(requestedCount);
+    expect(new Set(picked.map((l) => l.id)).size).toBe(requestedCount);
   });
 
   it("場所総数より多く要求しても総数までしか返さない", () => {
