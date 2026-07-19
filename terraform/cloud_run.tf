@@ -23,7 +23,7 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      # env・secrets は CI の gcloud run deploy が管理する (ignore_changes 対象なので値は使われない)
+      # ignore_changes 対象のため値は使われない
       image = "asia-northeast1-docker.pkg.dev/${var.project_id}/pokelingual-backend/api:placeholder"
     }
   }
