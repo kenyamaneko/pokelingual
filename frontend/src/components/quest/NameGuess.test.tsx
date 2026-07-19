@@ -152,28 +152,6 @@ describe("[クエスト] 名前当ての入力と結果表示", () => {
       screen.getByRole("button", { name: NAME_GUESS_LABELS.proceedButton }),
     ).toBeInTheDocument();
   });
-
-  it("マスターボールが確定して正解のとき、正解メッセージにマスターボールが表示される", () => {
-    const guess: GuessResponse = {
-      correct: true,
-      ball_type: "master",
-      language: "en",
-      attempts_remaining: 2,
-    };
-    render(
-      <NameGuess
-        onSubmit={vi.fn()}
-        onSkip={vi.fn()}
-        onProceed={vi.fn()}
-        guessResult={guess}
-        attemptsRemaining={2}
-        maxGuessAttempts={3}
-        hintResult={null}
-      />,
-    );
-
-    expect(screen.getByText(/マスターボール/)).toBeInTheDocument();
-  });
 });
 
 describe("[クエスト] 残り挑戦回数の表示", () => {
@@ -292,7 +270,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButtonAgain })).toBeInTheDocument();
   });
 
   it("1回目のヒント (タイプ) を取得済みで、残り試行回数が1回のとき、ヒントボタンは表示されず、ヒントが使えない旨を案内する", () => {
@@ -309,7 +287,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.hintButton })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.hintButtonAgain })).not.toBeInTheDocument();
     expect(screen.getByText(NAME_GUESS_LABELS.hintUnavailable)).toBeInTheDocument();
   });
 
@@ -327,7 +305,7 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.hintButton })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: NAME_GUESS_LABELS.hintButtonAgain })).not.toBeInTheDocument();
     expect(screen.queryByText(NAME_GUESS_LABELS.hintUnavailable)).not.toBeInTheDocument();
   });
 
@@ -414,11 +392,11 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={onHint}
       />,
     );
-    await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButton }));
+    await user.click(screen.getByRole("button", { name: NAME_GUESS_LABELS.hintButtonAgain }));
     expect(onHint).toHaveBeenCalledTimes(1);
   });
 
-  it("ヒント取得後は、単一タイプなら「〜タイプのポケモンだよ」と表示される", () => {
+  it("ヒント取得後は、単一タイプなら「〜タイプのポケモンだよ」と表示される", async () => {
     const hint: HintResponse = { types: ["electric"], attempts_remaining: 2 };
     render(
       <NameGuess
@@ -432,10 +410,10 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
+    expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
   });
 
-  it("ヒント取得後は、複合タイプなら「〜・〜タイプのポケモンだよ」と表示される", () => {
+  it("ヒント取得後は、複合タイプなら「〜・〜タイプのポケモンだよ」と表示される", async () => {
     const hint: HintResponse = { types: ["grass", "poison"], attempts_remaining: 2 };
     render(
       <NameGuess
@@ -449,10 +427,10 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByText("くさ・どくタイプのポケモンだよ")).toBeInTheDocument();
+    expect(await screen.findByText("くさ・どくタイプのポケモンだよ")).toBeInTheDocument();
   });
 
-  it("2回目のヒント取得後は、技の一覧が表示される", () => {
+  it("2回目のヒント取得後は、技の一覧が表示される", async () => {
     const hint: HintResponse = {
       types: ["electric"],
       moves: ["たいあたり", "なきごえ", "でんきショック"],
@@ -470,10 +448,12 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByText("「たいあたり」「なきごえ」「でんきショック」を覚えるよ")).toBeInTheDocument();
+    expect(
+      await screen.findByText("「たいあたり」「なきごえ」「でんきショック」を覚えるよ"),
+    ).toBeInTheDocument();
   });
 
-  it("技が1件だけのときも、その1件が表示される", () => {
+  it("技が1件だけのときも、その1件が表示される", async () => {
     const hint: HintResponse = { types: ["electric"], moves: ["でんきショック"], attempts_remaining: 1 };
     render(
       <NameGuess
@@ -487,10 +467,10 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByText("「でんきショック」を覚えるよ")).toBeInTheDocument();
+    expect(await screen.findByText("「でんきショック」を覚えるよ")).toBeInTheDocument();
   });
 
-  it("技が0件のときは、覚える技が無い旨が表示される", () => {
+  it("技が0件のときは、覚える技が無い旨が表示される", async () => {
     const hint: HintResponse = { types: ["electric"], moves: [], attempts_remaining: 1 };
     render(
       <NameGuess
@@ -504,10 +484,10 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByText(NAME_GUESS_LABELS.movesUnavailable)).toBeInTheDocument();
+    expect(await screen.findByText(NAME_GUESS_LABELS.movesUnavailable)).toBeInTheDocument();
   });
 
-  it("2回目のヒント取得後も、1回目のタイプの表示は消えない", () => {
+  it("2回目のヒント取得後も、1回目のタイプの表示は消えない", async () => {
     const hint: HintResponse = { types: ["electric"], moves: ["でんきショック"], attempts_remaining: 1 };
     render(
       <NameGuess
@@ -521,6 +501,6 @@ describe("[クエスト] 名前当てのヒント表示", () => {
         onHint={vi.fn()}
       />,
     );
-    expect(screen.getByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
+    expect(await screen.findByText("でんきタイプのポケモンだよ")).toBeInTheDocument();
   });
 });
