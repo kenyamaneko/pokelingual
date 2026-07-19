@@ -16,7 +16,9 @@ describe("ルーティングの 404", () => {
     render(<App />);
 
     // findBy で UsageProvider の非同期取得が落ち着くまで待ち、act 警告を避ける
-    expect(await screen.findByTestId("not-found")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "ページが見つかりません" }),
+    ).toBeInTheDocument();
   });
 
   it("定義済み URL (/) では『ページが見つかりません』画面を表示しない", async () => {
@@ -25,6 +27,8 @@ describe("ルーティングの 404", () => {
 
     // ヘッダー (ログイン後共通) の描画完了を待ってから NotFound の不在を確認する
     expect(await screen.findByText("PokeLingual")).toBeInTheDocument();
-    expect(screen.queryByTestId("not-found")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "ページが見つかりません" }),
+    ).not.toBeInTheDocument();
   });
 });

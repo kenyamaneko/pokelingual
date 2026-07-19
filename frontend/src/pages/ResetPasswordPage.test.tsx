@@ -37,8 +37,8 @@ describe("[認証] パスワードリセット画面", () => {
     const resetPassword = vi.fn().mockResolvedValue(undefined);
     renderPage(resetPassword);
 
-    await user.type(screen.getByTestId("reset-email"), "alice@example.com");
-    await user.click(screen.getByTestId("reset-submit"));
+    await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+    await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
 
     expect(resetPassword).toHaveBeenCalledWith("alice@example.com");
   });
@@ -47,10 +47,10 @@ describe("[認証] パスワードリセット画面", () => {
     const user = userEvent.setup();
     renderPage(vi.fn().mockResolvedValue(undefined));
 
-    await user.type(screen.getByTestId("reset-email"), "alice@example.com");
-    await user.click(screen.getByTestId("reset-submit"));
+    await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+    await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
 
-    expect(screen.getByTestId("reset-sent")).toBeInTheDocument();
+    expect(screen.getByText(/メールを送信しました/)).toBeInTheDocument();
     expect(screen.queryByTestId("reset-submit")).not.toBeInTheDocument();
   });
 
@@ -58,10 +58,10 @@ describe("[認証] パスワードリセット画面", () => {
     const user = userEvent.setup();
     renderPage(vi.fn().mockRejectedValue(new Error("network")));
 
-    await user.type(screen.getByTestId("reset-email"), "alice@example.com");
-    await user.click(screen.getByTestId("reset-submit"));
+    await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+    await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
 
-    expect(screen.getByTestId("reset-error")).toBeInTheDocument();
+    expect(screen.getByText(/メールの送信に失敗しました/)).toBeInTheDocument();
     expect(screen.getByTestId("reset-submit")).toBeInTheDocument();
   });
 });

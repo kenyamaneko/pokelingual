@@ -78,11 +78,8 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
 
     const translationBox = await screen.findByRole("textbox");
-    await waitFor(() =>
-      expect(screen.getByTestId("quest-description")).toHaveTextContent(
-        "The first wild creature.",
-      ),
-    );
+    // タイプライター演出で全文表示まで実時間がかかるため、既定の待機時間 (1000ms) を延長する。
+    await screen.findByText(/The first wild creature\./, {}, { timeout: 3000 });
 
     await user.type(translationBox, "さいしょのやくぶん");
     await user.click(
@@ -113,11 +110,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
       screen.getByRole("button", { name: CAPTURE_RESULT_LABELS.nextButton }),
     );
     await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
-    await waitFor(() =>
-      expect(screen.getByTestId("quest-description")).toHaveTextContent(
-        "A second wild creature.",
-      ),
-    );
+    await screen.findByText(/A second wild creature\./, {}, { timeout: 3000 });
   });
 
   it("翻訳後に名前当てをスキップすると、捕獲画面へ進む", async () => {

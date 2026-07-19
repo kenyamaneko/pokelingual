@@ -48,36 +48,36 @@ describe("[認証] 認証画面間の遷移", () => {
     const user = userEvent.setup();
     renderAuthRoutes("/login");
 
-    await user.click(screen.getByTestId("goto-signup"));
+    await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
 
-    expect(screen.getByTestId("signup-submit")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
   });
 
   it("ログイン画面からパスワードリセット画面へ行ける", async () => {
     const user = userEvent.setup();
     renderAuthRoutes("/login");
 
-    await user.click(screen.getByTestId("goto-reset-password"));
+    await user.click(screen.getByRole("link", { name: "再設定する" }));
 
-    expect(screen.getByTestId("reset-submit")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
   });
 
   it("サインアップ画面からログイン画面へ戻れる", async () => {
     const user = userEvent.setup();
     renderAuthRoutes("/signup");
 
-    await user.click(screen.getByTestId("goto-login"));
+    await user.click(screen.getByRole("link", { name: "ログイン" }));
 
-    expect(screen.getByTestId("goto-signup")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
   });
 
   it("パスワードリセット画面からログイン画面へ戻れる", async () => {
     const user = userEvent.setup();
     renderAuthRoutes("/reset-password");
 
-    await user.click(screen.getByTestId("goto-login"));
+    await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
 
-    expect(screen.getByTestId("goto-signup")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
   });
 });
 
