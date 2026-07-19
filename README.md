@@ -62,15 +62,6 @@
 └── Makefile
 ```
 
-## デプロイ
-
-| 環境 | Google Cloud プロジェクト | フロントエンド | バックエンド |
-|------|----------------|---------------|-------------|
-| dev | pokelingual-dev | Firebase Hosting | Cloud Run |
-| prod | pokelingual-prod | Firebase Hosting | Cloud Run |
-
-インフラは Terraform で管理（Cloud Run は GitHub Actions が作成・更新）。構築手順は[セットアップ](docs/setup.md)を参照。
-
 <!-- DRAFT: 最終稿は人間が編集する -->
 ## ライセンス & 法的事項
 
