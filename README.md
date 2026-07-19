@@ -12,7 +12,7 @@
 | バックエンド | Node.js, Express, TypeScript |
 | データベース | Cloud Firestore |
 | セッションストア | Upstash Redis（ローカルは Valkey） |
-| 認証 | Firebase Authentication（メール/パスワード） |
+| 認証 | Firebase Authentication |
 | AI スコアリング | Gemini（Vertex AI） |
 | ポケモンデータ | PokeAPI |
 | インフラ | Google Cloud（Cloud Run, Artifact Registry）, Terraform |
