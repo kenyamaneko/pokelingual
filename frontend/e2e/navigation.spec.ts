@@ -14,10 +14,7 @@ test("ホームの各リンクから対応する画面へ移動できる", async
   await page.goto("/");
 
   // ぼうけんに出かける → /quest
-  // (完了記録の反映は非同期のため、href の反映を待ってからクリックする)
-  const startQuestLink = page.getByRole("link", { name: LINK.startQuest });
-  await expect(startQuestLink).toHaveAttribute("href", "/quest");
-  await startQuestLink.click();
+  await page.getByRole("button", { name: BUTTON.startQuest }).click();
   await expect(page).toHaveURL("/quest");
 
   // ヘッダーロゴ → /

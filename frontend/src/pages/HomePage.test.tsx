@@ -1,10 +1,28 @@
-import { screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { User } from "firebase/auth";
 import { HomePage, HOME_PAGE_LABELS } from "./HomePage";
-import { renderWithProviders } from "../test/render";
+import { QuestPage } from "./QuestPage";
+import { TutorialPage } from "./TutorialPage";
+import { AuthContext } from "../contexts/AuthContext";
+import { UsageProvider } from "../contexts/UsageContext";
+import { TutorialProvider } from "../contexts/TutorialContext";
 import { server, apiUrl } from "../test/mswServer";
+
+const fakeUser = { uid: "trainer-test" } as unknown as User;
+
+const authValue = {
+  user: fakeUser,
+  loading: false,
+  login: async () => {},
+  signup: async () => {},
+  loginWithGoogle: async () => {},
+  resetPassword: async () => {},
+  logout: async () => {},
+};
 
 /**
  * GET /tutorial-status が指定の完了状態を返す状態をモックする。
@@ -16,58 +34,110 @@ function mockTutorialStatus(completed: boolean) {
   );
 }
 
-const fakeUser = { uid: "trainer-test" } as unknown as User;
+function renderHome() {
+  return render(
+    <AuthContext.Provider value={authValue}>
+      <UsageProvider>
+        <TutorialProvider>
+          <MemoryRouter initialEntries={["/"]}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/quest" element={<QuestPage />} />
+              <Route path="/tutorial" element={<TutorialPage />} />
+            </Routes>
+          </MemoryRouter>
+        </TutorialProvider>
+      </UsageProvider>
+    </AuthContext.Provider>,
+  );
+}
 
 describe("[チュートリアル] ホーム画面 (「ポケモンを探しに行く」の遷移先出し分け)", () => {
-  it("チュートリアル未完了のとき、遷移先はチュートリアルになる", async () => {
-    mockTutorialStatus(false);
-    renderWithProviders(<HomePage />, { user: fakeUser, withRouter: true });
-
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/tutorial");
-    });
-  });
-
-  it("チュートリアル完了済みのとき、遷移先は本番のクエストになる", async () => {
+  it("チュートリアル完了済みのとき、押すと本番クエスト画面に着地する", async () => {
     mockTutorialStatus(true);
-    renderWithProviders(<HomePage />, { user: fakeUser, withRouter: true });
+    const user = userEvent.setup();
+    renderHome();
 
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/quest");
-    });
+    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.questCta }));
+
+    expect(
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+    ).toBeInTheDocument();
   });
 
-  it("チュートリアル完了が確定していないとき、遷移先はチュートリアルになる", () => {
-    renderWithProviders(<HomePage />, { user: null, withRouter: true });
+  it("チュートリアル未完了のとき、押すとチュートリアル画面に着地する", async () => {
+    mockTutorialStatus(false);
+    const user = userEvent.setup();
+    renderHome();
 
-    expect(screen.getByRole("link", { name: "ポケモンを探しに行く" })).toHaveAttribute("href", "/tutorial");
+    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.questCta }));
+
+    expect(await screen.findByRole("heading", { name: "遊び方の説明をします" })).toBeInTheDocument();
+  });
+
+  it("取得応答が完了済みで確定する前に押しても、確定後に本番クエスト画面に着地する", async () => {
+    let resolvePending: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      resolvePending = resolve;
+    });
+    server.use(
+      http.get(apiUrl("/tutorial-status"), async () => {
+        await pending;
+        return HttpResponse.json({ tutorial_completed: true });
+      }),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.questCta }));
+    resolvePending();
+
+    expect(
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("[チュートリアル] ホーム画面 (状態取得に失敗したときの回復)", () => {
+  it("取得に失敗した状態で押すと、エラーが表示される", async () => {
+    server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.questCta }));
+
+    expect(await screen.findByText(HOME_PAGE_LABELS.questCtaError)).toBeInTheDocument();
+  });
+
+  it("失敗表示のあと再試行して成功すると、本番クエスト画面に着地しエラー表示が残らない", async () => {
+    let shouldSucceed = false;
+    server.use(
+      http.get(apiUrl("/tutorial-status"), () =>
+        shouldSucceed ? HttpResponse.json({ tutorial_completed: true }) : HttpResponse.error(),
+      ),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.questCta }));
+    await screen.findByText(HOME_PAGE_LABELS.questCtaError);
+
+    shouldSucceed = true;
+    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.questCta }));
+
+    expect(
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(HOME_PAGE_LABELS.questCtaError)).not.toBeInTheDocument();
   });
 });
 
 describe("[チュートリアル] ホーム画面 (チュートリアルへの再視聴導線)", () => {
-  it("チュートリアル完了済みのとき、チュートリアルへの再視聴導線が表示される", async () => {
-    mockTutorialStatus(true);
-    renderWithProviders(<HomePage />, { user: fakeUser, withRouter: true });
+  it("チュートリアルへの再視聴導線が表示される", async () => {
+    renderHome();
 
     expect(
       await screen.findByRole("link", { name: HOME_PAGE_LABELS.tutorialLink }),
-    ).toHaveAttribute("href", "/tutorial");
-  });
-
-  it("チュートリアル未完了のとき、チュートリアルへの再視聴導線が表示される", async () => {
-    mockTutorialStatus(false);
-    renderWithProviders(<HomePage />, { user: fakeUser, withRouter: true });
-
-    expect(
-      await screen.findByRole("link", { name: HOME_PAGE_LABELS.tutorialLink }),
-    ).toHaveAttribute("href", "/tutorial");
-  });
-
-  it("チュートリアル完了が確定していないとき、チュートリアルへの再視聴導線が表示される", () => {
-    renderWithProviders(<HomePage />, { user: null, withRouter: true });
-
-    expect(
-      screen.getByRole("link", { name: HOME_PAGE_LABELS.tutorialLink }),
     ).toHaveAttribute("href", "/tutorial");
   });
 });

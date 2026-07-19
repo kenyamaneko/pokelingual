@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useTutorial } from "../contexts/TutorialContext";
 import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
 
@@ -6,17 +7,32 @@ import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
  * HomePage の仕様文言。テストから import される SSOT。
  */
 export const HOME_PAGE_LABELS = {
+  questCta: "ポケモンを探しに行く",
+  questCtaPending: "確認中...",
+  questCtaError: "状態の確認に失敗しました。もう一度お試しください",
   tutorialLink: "チュートリアルを見る",
 } as const;
 
 /**
  * ホームページ。クエスト開始・図鑑・設定への導線を表示する。
- * チュートリアル完了が確定していなければ、「ポケモンを探しに行く」の遷移先をチュートリアルに差し替える。
+ * 「ポケモンを探しに行く」はチュートリアル完了状態の確定を待ってから、完了済みなら本番クエスト、
+ * 未完了ならチュートリアルへ遷移する。
  * @returns ホームページの要素。
  */
 export function HomePage() {
-  const { completed } = useTutorial();
-  const questLinkTo = completed === true ? "/quest" : "/tutorial";
+  const { ensureStatus } = useTutorial();
+  const navigate = useNavigate();
+  const [phase, setPhase] = useState<"idle" | "pending" | "error">("idle");
+
+  const handleStart = async () => {
+    setPhase("pending");
+    try {
+      const done = await ensureStatus();
+      navigate(done ? "/quest" : "/tutorial");
+    } catch {
+      setPhase("error");
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-var(--header-h))] bg-gray-50 flex items-center justify-center">
@@ -40,13 +56,19 @@ export function HomePage() {
 
         <div className="space-y-4">
           <div>
-            <Link
-              to={questLinkTo}
+            <button
+              type="button"
+              onClick={handleStart}
+              disabled={phase === "pending"}
               className="block w-full bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-2xl
-                         font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+                         font-bold text-lg transition-colors shadow-lg hover:shadow-xl
+                         disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ポケモンを探しに行く
-            </Link>
+              {phase === "pending" ? HOME_PAGE_LABELS.questCtaPending : HOME_PAGE_LABELS.questCta}
+            </button>
+            {phase === "error" && (
+              <p className="text-red-500 text-sm mt-2">{HOME_PAGE_LABELS.questCtaError}</p>
+            )}
             <Link
               to="/tutorial"
               className="block mt-2 text-sm text-gray-400 hover:text-gray-600 underline text-center"
