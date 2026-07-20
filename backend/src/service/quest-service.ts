@@ -5,6 +5,7 @@ import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
 import { findLocation, pickRandomLocations } from "../domain/location.js";
 import { pickRandomSample } from "../domain/random.js";
+import { logger } from "../util/logger.js";
 import type {
   LLMClient,
   PokemonClient,
@@ -42,6 +43,8 @@ const SCORE_MAX = 100;
 /** LLM が返す採点単位の判定値の許容範囲。プロンプト上 0.0-1.0 を指示しており、これを外れたら仕様違反。 */
 const UNIT_VALUE_MIN = 0;
 const UNIT_VALUE_MAX = 1;
+
+const MAX_LLM_SCORE_ATTEMPTS = 2;
 
 /** 最終評価点変換: この値以下の素点は最終評価点 0 (効果なし) に切り下げる。 */
 const SCORE_TRANSLATION_FLOOR = 10;
@@ -241,16 +244,19 @@ export class QuestService {
     };
   }
 
-  /**
-   * LLM に採点を依頼し、意味単位ごとの判定値から算出したスコアと講評を検証して返す。
-   * @param englishText 出題の英語原文。
-   * @param translation ユーザの日本語訳。
-   * @returns スコアと講評。
-   * @throws 判定単位が空、判定値が 0.0-1.0 の範囲外、または講評が欠落している場合。
-   */
   private async scoreWithLLM(englishText: string, translation: string): Promise<ScoreResult> {
     const prompt = buildScorePrompt(englishText, translation);
-    const text = await this.llm.generateText(prompt);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return this.parseScoreResponse(await this.llm.generateText(prompt));
+      } catch (err) {
+        if (attempt >= MAX_LLM_SCORE_ATTEMPTS) throw err;
+        logger.warn("LLM score response invalid, retrying", { attempt, error: String(err) });
+      }
+    }
+  }
+
+  private parseScoreResponse(text: string): ScoreResult {
     const parsed: RawScoreResult = JSON.parse(text);
 
     if (!Array.isArray(parsed.units) || parsed.units.length === 0) {
