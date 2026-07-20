@@ -12,7 +12,7 @@ interface AnswerRevealProps {
   score: ScoreResponse;
 }
 
-const STAGES = ["questText", "translation", "review", "description", "meter"] as const;
+const STAGES = ["questText", "translation", "description", "review", "meter"] as const;
 type RevealStage = (typeof STAGES)[number];
 
 /**
@@ -26,7 +26,7 @@ function hasReachedStage(stage: RevealStage, target: RevealStage): boolean {
 }
 
 /**
- * 採点結果画面を、出題英文 → 君の翻訳 → 博士のコメント → 解答例 → HP メーターの順に
+ * 採点結果画面を、出題英文 → 君の翻訳 → 解答例 → 博士のコメント → HP メーターの順に
  * 段階的に開示する。各段は前段階の完了と要素の初可視化の両方を満たしたときに始まる。
  * @param props description / userTranslation / score を含む props。
  * @returns 採点結果表示の要素。
@@ -35,9 +35,9 @@ export function AnswerReveal({ description, userTranslation, score }: AnswerReve
   const [stage, setStage] = useState<RevealStage>("questText");
 
   const handleQuestTextComplete = useCallback(() => setStage("translation"), []);
-  const handleTranslationComplete = useCallback(() => setStage("review"), []);
-  const handleReviewComplete = useCallback(() => setStage("description"), []);
-  const handleDescriptionComplete = useCallback(() => setStage("meter"), []);
+  const handleTranslationComplete = useCallback(() => setStage("description"), []);
+  const handleDescriptionComplete = useCallback(() => setStage("review"), []);
+  const handleReviewComplete = useCallback(() => setStage("meter"), []);
 
   const translationRef = useRef<HTMLParagraphElement>(null);
   const translationAppeared = useHasAppeared(translationRef);
@@ -59,6 +59,7 @@ export function AnswerReveal({ description, userTranslation, score }: AnswerReve
     <>
       <div className="mt-4 bg-white rounded-2xl shadow-lg border border-gray-200 divide-y divide-gray-100">
         <div className="p-5">
+          <p className="text-xs font-semibold text-gray-400 mb-1">英語版の図鑑の説明</p>
           <QuestCard
             description={description}
             variant="answer"
