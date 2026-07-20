@@ -62,27 +62,15 @@ function mockUpdateFailure() {
 }
 
 /**
- * GET /pokedex が指定のエントリを返す状態をモックする (名前検索・名前併記の元データ)。
- * @param entries pokemon_id と name_en / name_ja を持つエントリ。
+ * GET /pokedex/search-candidates が指定の候補を返す状態をモックする (名前検索・名前併記の元データ)。
+ * @param candidates pokemon_id と name_ja を持つ検索候補。
  */
-function mockPokedexEntries(
-  entries: { pokemon_id: number; name_en: string; name_ja: string }[],
+function mockSearchCandidates(
+  candidates: { pokemon_id: number; name_ja: string }[],
 ) {
   server.use(
-    http.get(apiUrl("/pokedex"), () =>
-      HttpResponse.json({
-        pokemon: entries.map((e) => ({
-          pokemon_id: e.pokemon_id,
-          name_en: e.name_en,
-          name_ja: e.name_ja,
-          sprite_url: "",
-          status: "unknown",
-          total_captures: 0,
-          best_score: 0,
-        })),
-        captured_count: 0,
-        unavailable_count: 0,
-      }),
+    http.get(apiUrl("/pokedex/search-candidates"), () =>
+      HttpResponse.json({ pokemon: candidates }),
     ),
   );
 }
@@ -143,11 +131,12 @@ describe("[設定] 設定画面の遷移", () => {
  * SettingsPage の苦手ポケモン管理仕様 (名前検索):
  * - 設定の読み込みに失敗したらエラーメッセージを表示する
  * - 名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される
+ * - ひらがなで検索しても、カタカナ名の候補がヒットする
  * - 検索語に一致するポケモンがなければ候補が出ない
  * - すでに除外済みのポケモンは候補に出ない
  * - さくじょを押すと一覧から取り除かれ、空状態の文言に戻る
  * - 保存に失敗したらエラーメッセージを表示し、一覧は変わらない
- * - 図鑑一覧の取得に失敗したら名前で探せない旨を表示する
+ * - 検索候補の取得に失敗したら名前で探せない旨を表示する
  *
  * ID の範囲・件数上限・重複のバリデーションは backend の責務のため、ここでは検証しない。
  */
@@ -170,7 +159,7 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
 
   it("名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される", async () => {
     mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
+    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
     mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
@@ -187,9 +176,19 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
     await waitFor(() => expect(lastSavedIDs).toEqual([42]));
   });
 
+  it("ひらがなで検索しても、カタカナ名の候補がヒットする", async () => {
+    mockGetSettings([]);
+    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ごる");
+    expect(await screen.findByRole("button", { name: /ゴルバット/ })).toBeInTheDocument();
+  });
+
   it("検索語に一致するポケモンがなければ候補が出ない", async () => {
     mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
+    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
     const user = userEvent.setup();
     renderSettings();
 
@@ -199,9 +198,9 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
 
   it("複数のポケモンが名前にヒットすると、その全てが候補に出る", async () => {
     mockGetSettings([]);
-    mockPokedexEntries([
-      { pokemon_id: 30, name_en: "Nidorina", name_ja: "ニドリーナ" },
-      { pokemon_id: 31, name_en: "Nidoqueen", name_ja: "ニドクイン" },
+    mockSearchCandidates([
+      { pokemon_id: 30, name_ja: "ニドリーナ" },
+      { pokemon_id: 31, name_ja: "ニドクイン" },
     ]);
     const user = userEvent.setup();
     renderSettings();
@@ -215,7 +214,7 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
 
   it("すでに除外済みのポケモンは検索候補に出ない", async () => {
     mockGetSettings([42]);
-    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
+    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
     const user = userEvent.setup();
     renderSettings();
 
@@ -228,7 +227,7 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
 
   it("削除を押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
     mockGetSettings([42]);
-    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
+    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
     mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
@@ -250,7 +249,7 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
     // エラー経路の診断ログは検証対象外のため沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
+    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
     mockUpdateFailure();
     const user = userEvent.setup();
     renderSettings();
@@ -269,11 +268,11 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
     vi.restoreAllMocks();
   });
 
-  it("図鑑一覧の取得に失敗すると、再読み込みを促すメッセージを表示する", async () => {
+  it("検索候補の取得に失敗すると、再読み込みを促すメッセージを表示する", async () => {
     // エラー経路の診断ログは検証対象外のため沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSettings([]);
-    server.use(http.get(apiUrl("/pokedex"), () => HttpResponse.error()));
+    server.use(http.get(apiUrl("/pokedex/search-candidates"), () => HttpResponse.error()));
     renderSettings();
 
     expect(

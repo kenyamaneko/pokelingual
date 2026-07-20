@@ -57,6 +57,7 @@ export const PLACEHOLDER = {
   nameGuess: /ポケモンの名前を入力してね/,
   email: "メールアドレス",
   password: "パスワード",
+  pokemonSearch: "ポケモンの名前で探す",
 } as const;
 
 /** getByRole("heading", { name }) で参照する見出し。 */

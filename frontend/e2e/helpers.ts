@@ -26,6 +26,17 @@ export async function completeTutorialViaApi(page: Page) {
   await page.request.put(`${LOCAL_BACKEND_URL}/api/tutorial-status/complete`);
 }
 
+/**
+ * 苦手ポケモン設定を空にリセットする。local (mock) 専用。
+ * dev-user の状態が実行間で残るため、テストの再実行を独立させるために使う。
+ * @param page APIRequestContext を共有する Playwright の Page。
+ */
+export async function resetExcludedPokemon(page: Page) {
+  await page.request.put(`${LOCAL_BACKEND_URL}/api/settings/excluded-pokemon`, {
+    data: { pokemon_ids: [] },
+  });
+}
+
 // クエストを1回完走させる（翻訳→採点→名前スキップ→捕獲→結果カード表示まで）。
 export async function completeQuest(page: Page) {
   await page.goto("/quest");

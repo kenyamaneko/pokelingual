@@ -61,6 +61,8 @@ export function setupRoutes(
   mountQuestRoutes(router, "/tutorial/quest", tutorialQuestHandler);
 
   router.get("/pokedex", pokedexHandler.getPokedex);
+  // /pokedex/:id より前に登録しないと "search-candidates" が :id として奪われる
+  router.get("/pokedex/search-candidates", pokedexHandler.getSearchCandidates);
   router.get("/pokedex/:id", pokedexHandler.getPokemonDetail);
 
   router.get("/settings", settingsHandler.getSettings);
