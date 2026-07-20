@@ -18,14 +18,14 @@ export function TermsModal({ onDismiss }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="terms-modal-title"
-        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden font-sans"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="terms-modal-title" className="text-lg font-bold text-gray-800 mb-4">
+        <h2 id="terms-modal-title" className="text-lg font-bold text-gray-800 px-6 pt-6 pb-4 flex-shrink-0">
           利用規約
         </h2>
 
-        <div className="space-y-6 text-gray-700 text-sm leading-relaxed">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6 text-gray-700 text-sm leading-relaxed">
           <section>
             <h3 className="font-bold text-gray-800 mb-2">このサイトについて</h3>
             <p>
@@ -65,13 +65,15 @@ export function TermsModal({ onDismiss }: Props) {
           </section>
         </div>
 
-        <button
-          onClick={onDismiss}
-          className="mt-6 w-full bg-red-500 text-white py-3 rounded-2xl font-bold
-                     hover:bg-red-600 transition-colors shadow"
-        >
-          閉じる
-        </button>
+        <div className="flex-shrink-0 p-6 pt-4">
+          <button
+            onClick={onDismiss}
+            className="w-full bg-red-500 text-white py-3 rounded-2xl font-bold
+                       hover:bg-red-600 transition-colors shadow"
+          >
+            閉じる
+          </button>
+        </div>
       </div>
     </div>
   );
