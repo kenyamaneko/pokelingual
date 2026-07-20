@@ -29,7 +29,7 @@ export interface QuestSession {
   hint_reveal_count: number;
 }
 
-/** 翻訳採点結果。スコアと講評文 (LLM が直接返す内部表現)。 */
+/** 翻訳採点結果。算出したスコアと講評文。 */
 export interface ScoreResult {
   score: number;
   review: string;

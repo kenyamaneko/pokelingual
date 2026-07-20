@@ -35,9 +35,12 @@ const MIN_REMAINING_ATTEMPTS_FOR_HINT = 2;
 /** ヒントの最大開示回数。1回目でタイプ、2回目で技を開示する。 */
 const MAX_HINT_REVEALS = 2;
 
-/** LLM が返す翻訳スコアの許容範囲。プロンプト上 0-100 を指示しており、これを外れたら仕様違反。 */
-const SCORE_MIN = 0;
+/** 最終評価点変換の入力レンジ (素点 0-100)。 */
 const SCORE_MAX = 100;
+
+/** LLM が返す採点単位の判定値の許容範囲。プロンプト上 0.0-1.0 を指示しており、これを外れたら仕様違反。 */
+const UNIT_VALUE_MIN = 0;
+const UNIT_VALUE_MAX = 1;
 
 /** 最終評価点変換: この値以下の素点は最終評価点 0 (効果なし) に切り下げる。 */
 const SCORE_TRANSLATION_FLOOR = 10;
@@ -236,25 +239,30 @@ export class QuestService {
   }
 
   /**
-   * LLM に採点を依頼し、スコアと講評を検証して返す。
+   * LLM に採点を依頼し、意味単位ごとの判定値から算出したスコアと講評を検証して返す。
    * @param englishText 出題の英語原文。
    * @param translation ユーザの日本語訳。
    * @returns スコアと講評。
-   * @throws スコアが 0-100 の範囲外、または講評が欠落している場合。
+   * @throws 判定単位が空、判定値が 0.0-1.0 の範囲外、または講評が欠落している場合。
    */
   private async scoreWithLLM(englishText: string, translation: string): Promise<ScoreResult> {
     const prompt = buildScorePrompt(englishText, translation);
     const text = await this.llm.generateText(prompt);
-    const parsed: ScoreResult = JSON.parse(text);
+    const parsed: RawScoreResult = JSON.parse(text);
 
-    if (!Number.isFinite(parsed.score) || parsed.score < SCORE_MIN || parsed.score > SCORE_MAX) {
-      throw new Error(`LLM returned out-of-range score: ${parsed.score}`);
+    if (!Array.isArray(parsed.units) || parsed.units.length === 0) {
+      throw new Error("LLM returned no scoring units");
+    }
+    for (const value of parsed.units) {
+      if (!Number.isFinite(value) || value < UNIT_VALUE_MIN || value > UNIT_VALUE_MAX) {
+        throw new Error(`LLM returned out-of-range unit value: ${value}`);
+      }
     }
     // 講評の欠落を undefined のまま通すと画面に空の講評が出る。フォールバックせずエラーにする
     if (typeof parsed.review !== "string" || parsed.review === "") {
       throw new Error("LLM returned empty review");
     }
-    return parsed;
+    return { score: computeScoreFromUnits(parsed.units), review: parsed.review };
   }
 
   /**
@@ -457,6 +465,12 @@ export class QuestService {
   }
 }
 
+/** LLM が採点結果として直接返す JSON の形。意味単位ごとの判定値の配列と講評。 */
+interface RawScoreResult {
+  units: number[];
+  review: string;
+}
+
 /**
  * 翻訳採点用のプロンプトを組み立てる。
  * @param englishText 出題の英語原文。
@@ -474,16 +488,21 @@ User's Japanese translation:
 
 Evaluate the translation and respond in EXACTLY this JSON format:
 {
-  "score": <integer 0-100>,
+  "units": [<number between 0.0 and 1.0>, ...],
   "review": "<review in Japanese, 2-3 sentences>"
 }
 
 Scoring guidelines:
-- 90-100: Accurate meaning, natural Japanese, minor issues at most
-- 70-89: Core meaning preserved, some awkward phrasing or minor errors
-- 50-69: Partially correct, missing important nuances or grammatical issues
-- 30-49: Significant errors but some understanding shown
-- 0-29: Major misunderstanding or mostly incorrect
+- Decompose the original English text into semantic units (clauses, key vocabulary, syntactic structures) — as small as needed to independently judge translation accuracy, regardless of the text's overall length
+- For each unit, judge how well the user's translation conveys it and assign exactly one of these values:
+  - 1.0: Correctly translated
+  - 0.8: Mostly correct, with a minor slip
+  - 0.6: Core meaning is conveyed, but the translation is unnatural
+  - 0.4: Understanding is questionable, though some words are partially correct
+  - 0.2: Only some individual words are correctly understood; the sentence has broken down
+  - 0.0: Completely mistranslated or omitted
+- If a unit scores 0.8 or below but the translation is especially skillful for that unit, add 0.1 to its value (e.g. 0.6 → 0.7)
+- List every unit's judged value in the "units" array, in the order the units appear in the original text. Do not compute a final score yourself
 - Punctuation usage (commas, periods, 読点・句点 etc.) is NOT a scoring criterion — never deduct points for it or mention it in the review
 
 Review guidelines:
@@ -496,6 +515,17 @@ Review guidelines:
 - Keep the total review under 150 characters
 
 Respond with ONLY the JSON, no other text.`;
+}
+
+/**
+ * LLM が判定した意味単位ごとの値 (0.0-1.0) から、素点 (0-100) を算出する。原文に対する
+ * 到達率 (判定値の平均) を採用し、単位の個数の多寡では変わらないようにする。
+ * @param unitValues 意味単位ごとの判定値。
+ * @returns 素点 (0-100)。
+ */
+export function computeScoreFromUnits(unitValues: number[]): number {
+  const sum = unitValues.reduce((total, value) => total + value, 0);
+  return Math.round((sum / unitValues.length) * 100);
 }
 
 /**
@@ -522,12 +552,12 @@ export function calculateCaptureRate(score: number, baseStatTotal: number, ballB
 }
 
 /**
- * LLM が返した素点 (0-100) を最終評価点 (0-99) に変換する。ポケモン世界の「瀕死にすると
+ * 素点 (0-100) を最終評価点 (0-99) に変換する。ポケモン世界の「瀕死にすると
  * 捕まえられない」という世界観に合わせ、最終評価が満点に達しないようにする。
- * @param rawScore LLM が返した素点 (0-100)。
+ * @param rawScore 素点 (0-100)。
  * @returns 最終評価点 (0-99)。
  */
-function translateToFinalScore(rawScore: number): number {
+export function translateToFinalScore(rawScore: number): number {
   return Math.max(0, Math.round((rawScore - SCORE_TRANSLATION_FLOOR) * SCORE_TRANSLATION_SCALE));
 }
 
