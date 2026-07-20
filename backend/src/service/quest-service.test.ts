@@ -178,7 +178,8 @@ interface ServiceOverrides {
   pokemons?: Pokemon[];
   /** LLM が返すテキスト。 */
   llmText?: string;
-  /** LLM が返すテキストをプロンプト内容から動的に組み立てたい場合に使う (指定時は llmText より優先)。 */
+  llmTexts?: string[];
+  /** LLM が返すテキストをプロンプト内容から動的に組み立てたい場合に使う (llmTexts 未指定時のみ使われ、指定時は llmText より優先)。 */
   llmRespond?: (prompt: string) => string;
   /** per-user 除外 ID (null = 未設定)。 */
   excludedIDs?: number[] | null;
@@ -198,9 +199,12 @@ interface ServiceOverrides {
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
   const pokemonClient = makePokemonClient(pool);
+  let llmCallIndex = 0;
   const llm: LLMClient = {
-    generateText: async (prompt) =>
-      o.llmRespond?.(prompt) ?? o.llmText ?? JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
+    generateText: async (prompt) => {
+      if (o.llmTexts) return o.llmTexts[Math.min(llmCallIndex++, o.llmTexts.length - 1)];
+      return o.llmRespond?.(prompt) ?? o.llmText ?? JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
+    },
   };
   // 出題ロジックは環境非依存に確かめたいので prod (開発者除外なし) 固定。
   const environment = "prod" as const;
@@ -404,6 +408,16 @@ describe("翻訳の採点", () => {
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
     expect(sentPrompt).not.toContain("Pikachu");
+  });
+
+  it("最初の応答が不正な形式でも、2回目の応答が正しい形式なら、採点応答の最終評価点と講評が算出される", async () => {
+    const service = makeService({
+      llmTexts: ["ごめん、わからない", JSON.stringify({ units: [0.7], review: "よい" })],
+    });
+    await service.newQuest("alice");
+    const res = await service.scoreTranslation("alice", "訳");
+    expect(res.score).toBe(66);
+    expect(res.review).toBe("よい");
   });
 
   it.each([
@@ -799,7 +813,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
   it("採点後 (名前当て未確定) は、得点・講評・ユーザーの訳文・伏せ字済みの日本語説明を保持した状態に復元される", async () => {
     const service = makeService({
       pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
-      llmText: JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
+      llmText: JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "はやい");
