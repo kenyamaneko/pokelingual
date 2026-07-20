@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 interface Props {
   onDismiss: () => void;
 }
@@ -8,6 +10,17 @@ interface Props {
  * @returns 利用規約モーダルの要素。
  */
 export function TermsModal({ onDismiss }: Props) {
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
   return (
     <div
       data-testid="terms-modal-backdrop"
