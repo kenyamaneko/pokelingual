@@ -3,7 +3,7 @@ import type { UserPokemonRepository } from "../domain/ports.js";
 import type { QuestService } from "../service/quest-service.js";
 import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import type { QuestLocationsResponse } from "../../../shared/api-types/quest.js";
-import { ExternalServiceError } from "../domain/errors.js";
+import { ExternalServiceError, NotFoundError } from "../domain/errors.js";
 import { handleError } from "./error.js";
 
 /** クエスト関連エンドポイント (出題・採点・名前推測・捕獲) を束ねるハンドラ。 */
@@ -41,6 +41,27 @@ export class QuestHandler {
   getLocations = (_req: Request, res: Response) => {
     const body: QuestLocationsResponse = { locations: this.questService.getLocations() };
     res.json(body);
+  };
+
+  /**
+   * GET /quest/current — 進行中のクエストセッションを、離脱したフェーズから再開するための状態として返す。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
+  getCurrentQuest = async (req: Request, res: Response) => {
+    const userId = res.locals.userId as string;
+    try {
+      const resp = await this.questService.getCurrentQuest(userId);
+      res.json(resp);
+    } catch (err) {
+      // このエンドポイントでのセッション無しは、新規クエスト開始のたびに起きる通常経路であり、
+      // 他エンドポイントの 404 (進行中セッションの切断) と違って warn ログの対象にしない。
+      if (err instanceof NotFoundError) {
+        res.status(404).json({ error: "resource not found" } satisfies ErrorResponse);
+        return;
+      }
+      handleError(res, err, req.path);
+    }
   };
 
   /**

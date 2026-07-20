@@ -64,6 +64,22 @@ export interface HintResponse {
   attempts_remaining: number;
 }
 
+/**
+ * GET /api/quest/current のレスポンス。進行中のクエストセッションを、離脱したフェーズから再開するための状態を返す。
+ * セッションが無ければ 404。
+ */
+export type QuestCurrentResponse =
+  | { phase: "translating"; quest: QuestNewResponse }
+  | {
+      phase: "guessing";
+      quest: QuestNewResponse;
+      score: ScoreResponse;
+      user_translation: string;
+      attempts_remaining: number;
+      hint: HintResponse | null;
+    }
+  | { phase: "capturing"; quest: QuestNewResponse; ball_type: BallType };
+
 /** POST /api/quest/capture のレスポンス。捕獲成否と表示用のポケモン情報を含む。 */
 export interface CaptureResponse {
   captured: boolean;

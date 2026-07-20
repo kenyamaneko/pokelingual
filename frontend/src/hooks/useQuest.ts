@@ -55,6 +55,8 @@ export interface UseQuestOptions {
   api?: QuestApi;
   /** 場所選択の候補があるか。無ければ、場所を指定せず出題を直接取得する。 */
   hasLocationChoice?: boolean;
+  /** リロード再開を試みるか。チュートリアルはリロードで最初から再開する仕様のため false を渡す。 */
+  enableResume?: boolean;
   /** 採点送信前の入力検証。false を返すと採点へ進めない。 */
   validateBeforeScore?: (translation: string) => boolean;
   /** 名前推測送信前の入力検証。false を返すと判定へ進めない。 */
@@ -120,7 +122,14 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * @returns フェーズ・各種データ・操作関数を含むクエスト状態。
  */
 export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
-  const { api = questApi, hasLocationChoice = true, validateBeforeScore, validateBeforeGuess, onResult } = options;
+  const {
+    api = questApi,
+    hasLocationChoice = true,
+    enableResume = true,
+    validateBeforeScore,
+    validateBeforeGuess,
+    onResult,
+  } = options;
   const [phase, setPhase] = useState<QuestPhase>(hasLocationChoice ? "selectLocation" : "loading");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);
   const [locations, setLocations] = useState<QuestLocation[]>([]);
@@ -135,6 +144,53 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   const { refresh: refreshUsage } = useUsage();
 
   const startNewQuest = useCallback(async () => {
+    setError(null);
+
+    if (enableResume) {
+      setPhase("loading"); // 復元判定中は読込み中の表示にする (場所選択の空表示を挟まない)
+      try {
+        const res = await api.getCurrentQuest();
+        const current = res.data;
+        setGuessResult(null);
+        setCaptureResult(null);
+        setQuest(current.quest);
+        if (current.phase === "translating") {
+          setPhase("translating");
+          setScore(null);
+          setUserTranslation("");
+          setBallType(null);
+          setAttemptsRemaining(current.quest.max_guess_attempts);
+          setHintResult(null);
+        } else if (current.phase === "guessing") {
+          setPhase("guessing");
+          setScore(current.score);
+          setUserTranslation(current.user_translation);
+          setBallType(null);
+          setAttemptsRemaining(current.attempts_remaining);
+          setHintResult(current.hint);
+        } else {
+          setPhase("capturing");
+          setScore(null);
+          setUserTranslation("");
+          setBallType(current.ball_type);
+          setAttemptsRemaining(null);
+          setHintResult(null);
+        }
+        return;
+      } catch (err) {
+        if (isSessionLostError(err)) {
+          // 404: 生きたセッションが無い。通常の新規開始へフォールスルーする。
+        } else {
+          // 404 以外はエラー画面へ。新規抽選にフォールバックすると生きたセッションを潰す。
+          setError(
+            getErrorMessage(err, "クエストの再開に失敗しました。もう一度試してください。続く場合はお問い合わせください"),
+          );
+          setPhase("error");
+          return;
+        }
+      }
+    }
+
     setPhase("selectLocation");
     setQuest(null);
     setScore(null);
@@ -144,7 +200,6 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     setBallType(null);
     setAttemptsRemaining(null);
     setHintResult(null);
-    setError(null);
     setLocations([]);
 
     try {
@@ -154,7 +209,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
       setError(getErrorMessage(err, "場所の読み込みに失敗しました。もう一度試してください。続く場合はお問い合わせください"));
       setPhase("error");
     }
-  }, [api]);
+  }, [api, enableResume]);
 
   const selectLocation = useCallback(async (locationId: string) => {
     setPhase("loading");

@@ -156,6 +156,12 @@ describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
     expect(res.body).toEqual({ error: "resource not found" });
   });
 
+  it("セッションが無い現在のクエスト取得は 404 を返す", async () => {
+    const res = await request(makeApp()).get("/api/quest/current");
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: "resource not found" });
+  });
+
   it("AI 呼び出しが失敗した採点は 502 を返す", async () => {
     const app = makeApp({ llmError: new Error("llm down") });
     await request(app).get("/api/quest/new");
@@ -308,6 +314,16 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.pokemon).toHaveLength(1);
     expect(pokedex.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
     expect(pokedex.body.captured_count).toBe(1);
+  });
+
+  it("採点後に現在のクエストを取得すると、名前当ての段階として得点・訳文を含む状態が返る", async () => {
+    const app = makeApp();
+    await request(app).get("/api/quest/new");
+    await request(app).post("/api/quest/score").send({ translation: "はやい" });
+
+    const res = await request(app).get("/api/quest/current");
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ phase: "guessing", user_translation: "はやい" });
   });
 
   it("出題後にヒントを要求すると、出題ポケモンのタイプと消費後の残り試行回数が返る", async () => {

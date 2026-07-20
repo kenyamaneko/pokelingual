@@ -2,6 +2,7 @@ import api from "./client";
 import type {
   QuestNewResponse,
   QuestLocationsResponse,
+  QuestCurrentResponse,
   ScoreResponse,
   GuessResponse,
   SkipGuessResponse,
@@ -12,6 +13,7 @@ import type {
 /** useQuest が依存する quest API の形。 */
 export interface QuestApi {
   getLocations: () => Promise<{ data: QuestLocationsResponse }>;
+  getCurrentQuest: () => Promise<{ data: QuestCurrentResponse }>;
   newQuest: (locationId: string) => Promise<{ data: QuestNewResponse }>;
   scoreTranslation: (translation: string) => Promise<{ data: ScoreResponse }>;
   guessName: (guess: string) => Promise<{ data: GuessResponse }>;
@@ -28,6 +30,7 @@ export interface QuestApi {
 export function createQuestApi(basePath: string): QuestApi {
   return {
     getLocations: () => api.get<QuestLocationsResponse>(`${basePath}/locations`),
+    getCurrentQuest: () => api.get<QuestCurrentResponse>(`${basePath}/current`),
     newQuest: (locationId: string) =>
       api.get<QuestNewResponse>(`${basePath}/new`, { params: { location: locationId } }),
     scoreTranslation: (translation: string) =>
