@@ -813,7 +813,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
   it("採点後 (名前当て未確定) は、得点・講評・ユーザーの訳文・伏せ字済みの日本語説明を保持した状態に復元される", async () => {
     const service = makeService({
       pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
-      llmText: JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
+      llmText: JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
     });
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "はやい");
