@@ -93,7 +93,7 @@ export function SettingsPage() {
 
   const handleSelectCandidate = (id: number) => {
     setSearchQuery("");
-    saveExcluded([...excludedIDs, id].sort((a, b) => a - b));
+    saveExcluded([...new Set([...excludedIDs, id])].sort((a, b) => a - b));
   };
 
   const handleRemove = (id: number) => {
@@ -117,10 +117,7 @@ export function SettingsPage() {
 
   const nameById = new Map(searchCatalog.map((p) => [p.pokemon_id, p.name_ja]));
   const query = searchQuery.trim();
-  const candidates = searchPokemonByName(
-    searchCatalog.filter((p) => !excludedIDs.includes(p.pokemon_id)),
-    query,
-  ).slice(0, MAX_SEARCH_CANDIDATES);
+  const candidates = searchPokemonByName(searchCatalog, query).slice(0, MAX_SEARCH_CANDIDATES);
 
   if (loading) {
     return (

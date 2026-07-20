@@ -102,10 +102,6 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
   );
 }
 
-/**
- * SettingsPage の遷移仕様:
- * - ログアウトボタン押下で logout を実行し、/login へ遷移する
- */
 describe("[設定] 設定画面の遷移", () => {
   beforeEach(() => {
     mockGetSettings([]);
@@ -127,19 +123,7 @@ describe("[設定] 設定画面の遷移", () => {
   });
 });
 
-/**
- * SettingsPage の苦手ポケモン管理仕様 (名前検索):
- * - 設定の読み込みに失敗したらエラーメッセージを表示する
- * - 名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される
- * - ひらがなで検索しても、カタカナ名の候補がヒットする
- * - 検索語に一致するポケモンがなければ候補が出ない
- * - すでに除外済みのポケモンは候補に出ない
- * - さくじょを押すと一覧から取り除かれ、空状態の文言に戻る
- * - 保存に失敗したらエラーメッセージを表示し、一覧は変わらない
- * - 検索候補の取得に失敗したら名前で探せない旨を表示する
- *
- * ID の範囲・件数上限・重複のバリデーションは backend の責務のため、ここでは検証しない。
- */
+/** ID の範囲・件数上限のバリデーションは backend の責務のため、ここでは検証しない。 */
 describe("[設定] 設定画面の苦手ポケモン管理", () => {
   beforeEach(() => {
     lastSavedIDs = null;
@@ -212,17 +196,19 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
     expect(screen.getByRole("button", { name: /ニドクイン/ })).toBeInTheDocument();
   });
 
-  it("すでに除外済みのポケモンは検索候補に出ない", async () => {
+  it("すでに除外済みのポケモンを検索して選んでも、一覧は重複せず変わらない", async () => {
     mockGetSettings([42]);
     mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+    mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
-    // 読み込み完了 (登録済みが一覧に出る) を待つ
     await screen.findByText("#042");
     await user.type(screen.getByPlaceholderText("ポケモンの名前で探す"), "ゴル");
-    // 候補ボタン (名前を含む button) は出ない
-    expect(screen.queryByRole("button", { name: /ゴルバット/ })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+
+    expect(screen.getAllByText("#042")).toHaveLength(1);
+    await waitFor(() => expect(lastSavedIDs).toEqual([42]));
   });
 
   it("削除を押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
@@ -283,14 +269,7 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
   });
 });
 
-/**
- * SettingsPage の出題世代の設定仕様:
- * - GET の enabled_generations でチェック状態が復元される
- * - チェックを付け外しすると、その世代を加減した一覧が保存される
- * - 最低1世代必須のため、選択が1つだけのときはその世代を外せない
- *
- * 世代番号・未知値のバリデーションは backend の責務のため、ここでは検証しない。
- */
+/** 世代番号・未知値のバリデーションは backend の責務のため、ここでは検証しない。 */
 describe("[設定] 設定画面の出題世代", () => {
   beforeEach(() => {
     lastSavedGenerations = null;
