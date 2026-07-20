@@ -10,6 +10,7 @@ import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import type {
   PokedexEntry,
   PokemonDetailResponse,
+  PokemonSearchCandidate,
 } from "../../../shared/api-types/pokedex.js";
 
 // PokedexEntry / PokemonDetailResponse / FlavorTextPair の API 契約型は shared/api-types/pokedex.d.ts を参照
@@ -81,6 +82,18 @@ export class PokedexService {
     }
 
     return { entries, unavailable_count: unavailableCount };
+  }
+
+  /**
+   * 苦手ポケモン名前検索の候補母集団を返す。ユーザ実績・出題世代設定によらず、
+   * 開発者除外を除く取得できる全種族データを対象にする。
+   * @returns 検索候補 (図鑑番号・日本語名) の配列。
+   */
+  async getSearchCandidates(): Promise<PokemonSearchCandidate[]> {
+    const excluded = buildExcludedPokemonIDs(this.environment, null);
+    const targetIDs = this.pokemonClient.getServableIDs().filter((id) => !excluded.has(id));
+    const pokemons = await Promise.all(targetIDs.map((id) => this.pokemonClient.getPokemonByID(id)));
+    return pokemons.map((p) => ({ pokemon_id: p.id, name_ja: p.name_ja }));
   }
 
   /**

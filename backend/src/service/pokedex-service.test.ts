@@ -6,6 +6,7 @@ import type {
   UserSettingsRepository,
 } from "../domain/ports.js";
 import type { UserPokemon } from "../domain/user.js";
+import type { AppEnvironment } from "../domain/environment.js";
 import { makePokemon } from "../testing/pokemon-fixtures.js";
 
 // 依存 (Firestore リポジトリ / ポケモン種別データのクライアント) は外部境界なのでポート経由のスタブで注入する。
@@ -14,6 +15,7 @@ const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
   1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
   2: { name_en: "Ivysaur", name_ja: "フシギソウ" },
   3: { name_en: "Venusaur", name_ja: "フシギバナ" },
+  152: { name_en: "Chikorita", name_ja: "チコリータ" },
 };
 
 /**
@@ -41,6 +43,12 @@ interface ServiceOverrides {
   failingIDs?: number[];
   /** ユーザーが設定で除外した図鑑 ID。 */
   excludedIDs?: number[];
+  /** ユーザーが設定で選択した出題世代。 */
+  enabledGenerations?: number[];
+  /** データソースが取得できる図鑑番号。 */
+  servableIDs?: number[];
+  /** 実行環境 (開発者除外の適用判定に使う)。既定は開発者除外の無い prod。 */
+  environment?: AppEnvironment;
 }
 
 /**
@@ -69,18 +77,19 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
         sprite_url: `https://example.com/${id}.png`,
       });
     },
-    // PokedexService は出題抽選を使わないため、提供 ID は空でよい (getPokemonByID のみ利用)。
-    getServableIDs: () => [],
+    getServableIDs: () => o.servableIDs ?? [],
     getIDsByType: async () => [],
   };
   const settingsRepo: UserSettingsRepository = {
-    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null, enabled_generations: null }),
+    getSettings: async () => ({
+      excluded_pokemon_ids: o.excludedIDs ?? null,
+      enabled_generations: o.enabledGenerations ?? null,
+    }),
     updateExcludedPokemon: async () => {},
     updateEnabledGenerations: async () => {},
   };
-  // 図鑑表示は環境非依存に確かめたいので prod (開発者除外なし) 固定。
-  const environment = "prod" as const;
-  return new PokedexService(repo, pokemonClient, settingsRepo, environment);
+  // 図鑑表示は環境非依存に確かめたいので既定は prod (開発者除外なし)。
+  return new PokedexService(repo, pokemonClient, settingsRepo, o.environment ?? "prod");
 }
 
 describe("[図鑑] 図鑑一覧の取得", () => {
@@ -176,6 +185,41 @@ describe("[図鑑] 図鑑一覧の取得", () => {
     const res = await service.getPokedex("alice");
     expect(res.entries.map((e) => e.pokemon_id)).toEqual([1, 3]);
     expect(res.unavailable_count).toBe(0);
+  });
+});
+
+describe("[苦手ポケモン検索] 検索候補母集団の取得", () => {
+  it("取得できる全ポケモンを図鑑番号と日本語名だけで返す", async () => {
+    const service = makeService({ servableIDs: [1, 2] });
+    const res = await service.getSearchCandidates();
+    expect(res).toEqual([
+      { pokemon_id: 1, name_ja: "フシギダネ" },
+      { pokemon_id: 2, name_ja: "フシギソウ" },
+    ]);
+  });
+
+  it("設定で除外指定済みのポケモンも含む", async () => {
+    const service = makeService({ servableIDs: [1, 2], excludedIDs: [1] });
+    const res = await service.getSearchCandidates();
+    expect(res.map((p) => p.pokemon_id)).toEqual([1, 2]);
+  });
+
+  it("設定で選択していない世代のポケモンも含む", async () => {
+    const service = makeService({ servableIDs: [1, 152], enabledGenerations: [1] });
+    const res = await service.getSearchCandidates();
+    expect(res.map((p) => p.pokemon_id)).toEqual([1, 152]);
+  });
+
+  it("prod 環境では、開発者除外のポケモンも候補に含む", async () => {
+    const service = makeService({ servableIDs: [1, 167], environment: "prod" });
+    const res = await service.getSearchCandidates();
+    expect(res.map((p) => p.pokemon_id)).toEqual([1, 167]);
+  });
+
+  it("dev 環境では、開発者除外のポケモンを候補から除く", async () => {
+    const service = makeService({ servableIDs: [1, 167], environment: "dev" });
+    const res = await service.getSearchCandidates();
+    expect(res.map((p) => p.pokemon_id)).toEqual([1]);
   });
 });
 

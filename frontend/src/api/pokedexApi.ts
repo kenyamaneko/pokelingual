@@ -1,6 +1,7 @@
 import api from "./client";
 import type {
   PokedexResponse,
+  PokedexSearchCandidatesResponse,
   PokemonDetailResponse,
 } from "../../../shared/api-types/pokedex";
 
@@ -18,4 +19,10 @@ export const pokedexApi = {
    */
   getPokemonDetail: (id: number) =>
     api.get<PokemonDetailResponse>(`/pokedex/${id}`),
+  /**
+   * GET /pokedex/search-candidates — 苦手ポケモン名前検索の候補母集団を取得する。
+   * @returns 検索候補一覧レスポンス。
+   */
+  getSearchCandidates: () =>
+    api.get<PokedexSearchCandidatesResponse>("/pokedex/search-candidates"),
 };

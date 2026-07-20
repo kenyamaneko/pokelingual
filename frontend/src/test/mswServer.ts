@@ -41,6 +41,8 @@ const defaultHandlers = [
   http.get(apiUrl("/pokedex"), () =>
     HttpResponse.json({ pokemon: [], captured_count: 0, unavailable_count: 0 }),
   ),
+  // /pokedex/:id より前に置かないと "search-candidates" が :id として奪われる
+  http.get(apiUrl("/pokedex/search-candidates"), () => HttpResponse.json({ pokemon: [] })),
   http.get(apiUrl("/pokedex/:id"), () => HttpResponse.json({})),
   http.get(apiUrl("/quest/locations"), () =>
     HttpResponse.json({

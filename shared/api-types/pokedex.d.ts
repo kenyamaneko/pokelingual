@@ -28,6 +28,17 @@ export interface PokedexResponse {
   unavailable_count: number;
 }
 
+/** 名前検索候補の 1 件。ユーザ実績を持たない種族データのみ。 */
+export interface PokemonSearchCandidate {
+  pokemon_id: number;
+  name_ja: string;
+}
+
+/** GET /api/pokedex/search-candidates のレスポンス。 */
+export interface PokedexSearchCandidatesResponse {
+  pokemon: PokemonSearchCandidate[];
+}
+
 /**
  * GET /api/pokedex/:id のレスポンス。
  * タイムスタンプは ISO 8601 文字列で表現する (HTTP の wire 形式に合わせる)。

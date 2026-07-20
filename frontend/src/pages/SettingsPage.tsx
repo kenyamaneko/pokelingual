@@ -7,7 +7,7 @@ import { formatPokemonId } from "../utils/pokemonFormat";
 import { searchPokemonByName } from "../utils/pokemonSearch";
 import { logger } from "../utils/logger";
 import { TermsModal } from "../components/terms/TermsModal";
-import type { PokedexEntry } from "../../../shared/api-types/pokedex";
+import type { PokemonSearchCandidate } from "../../../shared/api-types/pokedex";
 import { CONTACT_FORM_URL, GITHUB_REPO_URL } from "../constants/links";
 
 /** 選択可能な世代 (第1〜8世代) と代表作。数字だけだと分かりにくいのでバージョン名を併記する。backend の GENERATION_RANGES と対応。 */
@@ -34,9 +34,9 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [excludedIDs, setExcludedIDs] = useState<number[]>([]);
   const [enabledGenerations, setEnabledGenerations] = useState<number[]>([]);
-  const [pokedex, setPokedex] = useState<PokedexEntry[]>([]);
+  const [searchCatalog, setSearchCatalog] = useState<PokemonSearchCandidate[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [pokedexUnavailable, setPokedexUnavailable] = useState(false);
+  const [searchCatalogUnavailable, setSearchCatalogUnavailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +54,13 @@ export function SettingsPage() {
       })
       .finally(() => setLoading(false));
 
-    // 名前検索と一覧の名前併記のために図鑑一覧 (ID↔名前) を取得する。除外の保持は ID のまま。
+    // 名前検索と一覧の名前併記のために検索候補 (ID↔名前) を取得する。除外の保持は ID のまま。
     pokedexApi
-      .getPokedex()
-      .then((res) => setPokedex(res.data.pokemon))
+      .getSearchCandidates()
+      .then((res) => setSearchCatalog(res.data.pokemon))
       .catch((err) => {
-        logger.error("failed to load pokedex for name search", { error: err });
-        setPokedexUnavailable(true);
+        logger.error("failed to load pokemon catalog for name search", { error: err });
+        setSearchCatalogUnavailable(true);
       });
   }, []);
 
@@ -93,7 +93,7 @@ export function SettingsPage() {
 
   const handleSelectCandidate = (id: number) => {
     setSearchQuery("");
-    saveExcluded([...excludedIDs, id].sort((a, b) => a - b));
+    saveExcluded([...new Set([...excludedIDs, id])].sort((a, b) => a - b));
   };
 
   const handleRemove = (id: number) => {
@@ -115,12 +115,9 @@ export function SettingsPage() {
     navigate("/login");
   };
 
-  const nameById = new Map(pokedex.map((p) => [p.pokemon_id, p.name_ja]));
+  const nameById = new Map(searchCatalog.map((p) => [p.pokemon_id, p.name_ja]));
   const query = searchQuery.trim();
-  const candidates = searchPokemonByName(
-    pokedex.filter((p) => !excludedIDs.includes(p.pokemon_id)),
-    query,
-  ).slice(0, MAX_SEARCH_CANDIDATES);
+  const candidates = searchPokemonByName(searchCatalog, query).slice(0, MAX_SEARCH_CANDIDATES);
 
   if (loading) {
     return (
@@ -208,7 +205,7 @@ export function SettingsPage() {
             出てきてほしくないポケモンを名前で探して設定できます
           </p>
 
-          {pokedexUnavailable ? (
+          {searchCatalogUnavailable ? (
             <p className="text-gray-400 text-sm mb-4">
               ポケモン一覧を読み込めませんでした。ページを再読み込みしてください
             </p>
