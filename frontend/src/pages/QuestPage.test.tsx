@@ -30,18 +30,19 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     const captured: CaptureResponse = {
       captured: true,
       probability: 0.9,
-      pokemon_id: 9001,
-      name_en: "Testmon",
-      name_ja: "テストモン",
-      sprite_url: "https://example.com/9001.png",
+      pokemon_id: 25,
+      name_en: "Pikachu",
+      name_ja: "ピカチュウ",
+      sprite_url: "https://example.com/25.png",
       score: 80,
-      description_en: "Testmon is fast.",
-      description_ja: "テストモンは はやい。",
-      base_stat_total: 300,
+      description_en:
+        "It raises its tail to check its surroundings. The tail is sometimes struck by lightning in this pose.",
+      description_ja: "尻尾を　立てて　まわりの　様子を 探っていると　ときどき 雷が　尻尾に　落ちてくる。",
+      base_stat_total: 320,
       ball_type: "ultra",
-      types: ["normal"],
-      height: 1,
-      weight: 1,
+      types: ["electric"],
+      height: 4,
+      weight: 60,
       is_legendary: false,
       is_mythical: false,
     };
@@ -49,7 +50,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
       http.get(apiUrl("/quest/new"), () => {
         newQuestCall += 1;
         return HttpResponse.json({
-          pokemon_id: newQuestCall === 1 ? 9001 : 9002,
+          pokemon_id: newQuestCall === 1 ? 25 : 4,
           description_en:
             newQuestCall === 1 ? "The first wild creature." : "A second wild creature.",
           is_legendary: false,
@@ -65,7 +66,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
         // 入力名の伝達を裏づけ、モック呼び出し自体は検証せずに済む。
         const { guess } = (await request.json()) as { guess: string };
         return HttpResponse.json(
-          guess === "テストモン"
+          guess === "ピカチュウ"
             ? { correct: true, ball_type: "ultra", language: "ja", attempts_remaining: 2 }
             : { correct: false, attempts_remaining: 2 },
         );
@@ -87,7 +88,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     );
     expect(await screen.findByText("さいしょのやくぶん")).toBeInTheDocument();
 
-    await user.type(screen.getByRole("textbox"), "テストモン");
+    await user.type(screen.getByRole("textbox"), "ピカチュウ");
     await user.click(
       screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     );
@@ -100,7 +101,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     // 捕獲演出の再生に実時間で2.6秒以上かかり、既定の待機時間 (1000ms) を超えるため延長する。
     expect(
       await screen.findByText(
-        spec(CAPTURE_RESULT_LABELS.capturedTitle("テストモン")),
+        spec(CAPTURE_RESULT_LABELS.capturedTitle("ピカチュウ")),
         {},
         { timeout: 4000 },
       ),
@@ -118,7 +119,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     server.use(
       http.get(apiUrl("/quest/new"), () =>
         HttpResponse.json({
-          pokemon_id: 9001,
+          pokemon_id: 25,
           description_en: "A wild creature.",
           is_legendary: false,
           is_mythical: false,
@@ -151,7 +152,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     server.use(
       http.get(apiUrl("/quest/new"), () =>
         HttpResponse.json({
-          pokemon_id: 9001,
+          pokemon_id: 25,
           description_en: "A wild creature.",
           is_legendary: false,
           is_mythical: false,
@@ -188,7 +189,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     server.use(
       http.get(apiUrl("/quest/new"), () =>
         HttpResponse.json({
-          pokemon_id: 9001,
+          pokemon_id: 25,
           description_en: "A wild creature.",
           is_legendary: false,
           is_mythical: false,
@@ -263,7 +264,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
           ),
         ),
       async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.type(await screen.findByRole("textbox"), "テストモン");
+        await user.type(await screen.findByRole("textbox"), "フシギダネ");
         await user.click(
           screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
         );
@@ -288,7 +289,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
           ),
         ),
       async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.type(await screen.findByRole("textbox"), "Testmon");
+        await user.type(await screen.findByRole("textbox"), "Bulbasaur");
         await user.click(
           screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
         );
@@ -313,7 +314,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
           ),
         ),
       async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.type(await screen.findByRole("textbox"), "Testmon");
+        await user.type(await screen.findByRole("textbox"), "Bulbasaur");
         await user.click(
           screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
         );
@@ -332,18 +333,18 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
           HttpResponse.json({
             captured: true,
             probability: 0.9,
-            pokemon_id: 9001,
-            name_en: "Testmon",
-            name_ja: "テストモン",
-            sprite_url: "https://example.com/9001.png",
+            pokemon_id: 1,
+            name_en: "Bulbasaur",
+            name_ja: "フシギダネ",
+            sprite_url: "https://example.com/1.png",
             score: 80,
             description_en: "x",
             description_ja: "y",
-            base_stat_total: 300,
+            base_stat_total: 318,
             ball_type: ballType,
-            types: ["normal"],
-            height: 1,
-            weight: 1,
+            types: ["grass", "poison"],
+            height: 7,
+            weight: 69,
             is_legendary: false,
             is_mythical: false,
           }),
@@ -386,7 +387,7 @@ describe("[クエスト] クエストの正常系フロー (公開入口経由)"
     await user.click(
       screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
     );
-    await user.type(await screen.findByRole("textbox"), "Testmon");
+    await user.type(await screen.findByRole("textbox"), "Bulbasaur");
     await user.click(
       screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     );
@@ -538,13 +539,13 @@ describe("[クエスト] 進行中のエラー表示", () => {
       screen.getByRole("button", { name: TRANSLATION_INPUT_LABELS.submitButton }),
     );
 
-    await user.type(await screen.findByRole("textbox"), "Testmon");
+    await user.type(await screen.findByRole("textbox"), "Bulbasaur");
     await user.click(
       screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     );
     expect(await screen.findByText(/名前の判定に失敗しました/)).toBeInTheDocument();
 
-    await user.type(screen.getByRole("textbox"), "Testmon");
+    await user.type(screen.getByRole("textbox"), "Bulbasaur");
     await user.click(
       screen.getByRole("button", { name: POKEMON_NAME_INPUT_LABELS.submitButton }),
     );

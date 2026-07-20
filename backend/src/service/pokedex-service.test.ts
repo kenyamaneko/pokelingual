@@ -10,6 +10,12 @@ import { makePokemon } from "../testing/pokemon-fixtures.js";
 
 // 依存 (Firestore リポジトリ / ポケモン種別データのクライアント) は外部境界なのでポート経由のスタブで注入する。
 
+const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
+  1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
+  2: { name_en: "Ivysaur", name_ja: "フシギソウ" },
+  3: { name_en: "Venusaur", name_ja: "フシギバナ" },
+};
+
 /**
  * テスト用のダミー図鑑レコードを作る。
  * @param overrides 上書きするフィールド。
@@ -59,8 +65,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
       // メタ情報を id ごとに区別可能にし、どの図鑑レコードにどのポケモンの情報が乗ったかを検証できるようにする。
       return makePokemon({
         id,
-        name_en: `Testmon-${id}`,
-        name_ja: `テストモン${id}`,
+        ...REAL_NAMES[id],
         sprite_url: `https://example.com/${id}.png`,
       });
     },
@@ -87,15 +92,15 @@ describe("[図鑑] 図鑑一覧の取得", () => {
 
   it("1 件の図鑑レコードにポケモンのメタ情報を付与して返す", async () => {
     const service = makeService({
-      records: [makeUserPokemon({ pokemon_id: 7, best_score: 90 })],
+      records: [makeUserPokemon({ pokemon_id: 1, best_score: 90 })],
     });
     const res = await service.getPokedex("alice");
     expect(res.entries).toEqual([
       {
-        pokemon_id: 7,
-        name_en: "Testmon-7",
-        name_ja: "テストモン7",
-        sprite_url: "https://example.com/7.png",
+        pokemon_id: 1,
+        name_en: "Bulbasaur",
+        name_ja: "フシギダネ",
+        sprite_url: "https://example.com/1.png",
         status: "captured",
         total_captures: 2,
         best_score: 90,
@@ -107,26 +112,26 @@ describe("[図鑑] 図鑑一覧の取得", () => {
   it("複数件の図鑑レコードそれぞれにメタ情報を付与し、順序を保って返す", async () => {
     const service = makeService({
       records: [
-        makeUserPokemon({ pokemon_id: 7, status: "captured", total_captures: 5, best_score: 90 }),
-        makeUserPokemon({ pokemon_id: 8, status: "seen", total_captures: 0, best_score: 40 }),
+        makeUserPokemon({ pokemon_id: 1, status: "captured", total_captures: 5, best_score: 90 }),
+        makeUserPokemon({ pokemon_id: 2, status: "seen", total_captures: 0, best_score: 40 }),
       ],
     });
     const res = await service.getPokedex("alice");
     expect(res.entries).toEqual([
       {
-        pokemon_id: 7,
-        name_en: "Testmon-7",
-        name_ja: "テストモン7",
-        sprite_url: "https://example.com/7.png",
+        pokemon_id: 1,
+        name_en: "Bulbasaur",
+        name_ja: "フシギダネ",
+        sprite_url: "https://example.com/1.png",
         status: "captured",
         total_captures: 5,
         best_score: 90,
       },
       {
-        pokemon_id: 8,
-        name_en: "Testmon-8",
-        name_ja: "テストモン8",
-        sprite_url: "https://example.com/8.png",
+        pokemon_id: 2,
+        name_en: "Ivysaur",
+        name_ja: "フシギソウ",
+        sprite_url: "https://example.com/2.png",
         status: "seen",
         total_captures: 0,
         best_score: 40,
@@ -179,32 +184,32 @@ describe("[図鑑] 図鑑詳細の取得", () => {
     const service = makeService({
       records: [
         makeUserPokemon({
-          pokemon_id: 7,
+          pokemon_id: 1,
           last_captured_at: new Date("2026-03-04T05:06:07Z"),
           last_encountered_at: new Date("2026-03-05T06:07:08Z"),
         }),
       ],
     });
-    const res = await service.getPokemonDetail("alice", 7);
+    const res = await service.getPokemonDetail("alice", 1);
     expect(res).toMatchObject({
-      pokemon_id: 7,
+      pokemon_id: 1,
       status: "captured",
       total_captures: 2,
       total_encounters: 3,
       last_captured_at: "2026-03-04T05:06:07.000Z",
       last_encountered_at: "2026-03-05T06:07:08.000Z",
       best_score: 80,
-      name_en: "Testmon-7",
-      name_ja: "テストモン7",
+      name_en: "Bulbasaur",
+      name_ja: "フシギダネ",
       types: ["grass", "poison"],
     });
   });
 
   it("未捕獲のポケモンの詳細では、最終捕獲日時が空のまま返る", async () => {
     const service = makeService({
-      records: [makeUserPokemon({ pokemon_id: 7, last_captured_at: null })],
+      records: [makeUserPokemon({ pokemon_id: 1, last_captured_at: null })],
     });
-    const res = await service.getPokemonDetail("alice", 7);
+    const res = await service.getPokemonDetail("alice", 1);
     expect(res.last_captured_at).toBeNull();
   });
 });

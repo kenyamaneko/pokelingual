@@ -3,17 +3,23 @@ import { SnapshotPokemonClient, loadPokemonSnapshot } from "./snapshot.js";
 import type { PokemonRecord } from "../../domain/pokemon.js";
 import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
 
+const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
+  1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
+  4: { name_en: "Charmander", name_ja: "ヒトカゲ" },
+  25: { name_en: "Pikachu", name_ja: "ピカチュウ" },
+};
+
 /**
  * テスト用のポケモンレコードを組み立てる。
- * @param id 図鑑番号。
+ * @param id 図鑑番号 (REAL_NAMES に登録済みの番号のみ指定可)。
  * @param types タイプ。
  * @returns ポケモンレコード。
  */
 function record(id: number, types: PokemonType[]): PokemonRecord {
   return {
     id,
-    name_en: `Mon${id}`,
-    name_ja: `モン${id}`,
+    name_en: REAL_NAMES[id].name_en,
+    name_ja: REAL_NAMES[id].name_ja,
     description_en: "en",
     description_ja: "ja",
     base_stat_total: 300,
@@ -28,7 +34,7 @@ function record(id: number, types: PokemonType[]): PokemonRecord {
 describe("[ポケモンデータ] スナップショットからのポケモン取得", () => {
   it("図鑑番号を指定すると、その番号のポケモンが返る", async () => {
     const client = new SnapshotPokemonClient([record(25, ["electric"])]);
-    expect((await client.getPokemonByID(25)).name_ja).toBe("モン25");
+    expect((await client.getPokemonByID(25)).name_ja).toBe("ピカチュウ");
   });
 
   it("取得したポケモンの画像 URL は、保存値ではなく図鑑番号から組み立てられる", async () => {

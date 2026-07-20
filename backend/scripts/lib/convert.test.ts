@@ -144,7 +144,7 @@ describe("[ポケモンデータ] ポケモンレコードへの変換", () => {
   });
 
   it("未知のタイプ名はエラーになる", () => {
-    const species = speciesOf(1, "Testmon", "テスト", [{ version: "x", en: "en", ja: "ja" }]);
+    const species = speciesOf(1, "Bulbasaur", "フシギダネ", [{ version: "x", en: "en", ja: "ja" }]);
     expect(() => convertToPokemonRecord(species, pokemonOf([1], ["shadow"], 1, 1), ["たいあたり"])).toThrow(
       /unknown pokemon type/,
     );
@@ -152,7 +152,7 @@ describe("[ポケモンデータ] ポケモンレコードへの変換", () => {
 
   it("EN/JA の説明ペアが揃わないとエラーになる", () => {
     const species: PokeAPISpeciesData = {
-      ...speciesOf(1, "Testmon", "テスト", [{ version: "x", en: "en", ja: "ja" }]),
+      ...speciesOf(1, "Bulbasaur", "フシギダネ", [{ version: "x", en: "en", ja: "ja" }]),
       flavor_text_entries: [{ flavor_text: "en only", language: { name: "en" }, version: { name: "x" } }],
     };
     expect(() => convertToPokemonRecord(species, pokemonOf([1], ["fire"], 1, 1), ["たいあたり"])).toThrow(
