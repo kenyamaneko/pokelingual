@@ -31,6 +31,14 @@
 | [テストカバレッジ（backend）](https://kenyamaneko.github.io/pokelingual/coverage/backend/) | backend のテストカバレッジレポート（main の CI が更新） |
 | [テストカバレッジ（frontend）](https://kenyamaneko.github.io/pokelingual/coverage/frontend/) | frontend のテストカバレッジレポート（main の CI が更新） |
 
+## アーキテクチャ
+
+![アーキテクチャ図](docs/images/architecture.png)
+
+## CI/CD
+
+![CI/CD 設計図](docs/images/cicd.png)
+
 ## ディレクトリ構成
 
 ```
