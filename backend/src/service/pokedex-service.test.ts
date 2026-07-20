@@ -15,6 +15,7 @@ const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
   1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
   2: { name_en: "Ivysaur", name_ja: "フシギソウ" },
   3: { name_en: "Venusaur", name_ja: "フシギバナ" },
+  152: { name_en: "Chikorita", name_ja: "チコリータ" },
 };
 
 /**
@@ -42,6 +43,8 @@ interface ServiceOverrides {
   failingIDs?: number[];
   /** ユーザーが設定で除外した図鑑 ID。 */
   excludedIDs?: number[];
+  /** ユーザーが設定で選択した出題世代。 */
+  enabledGenerations?: number[];
   /** データソースが取得できる図鑑番号。 */
   servableIDs?: number[];
   /** 実行環境 (開発者除外の適用判定に使う)。既定は開発者除外の無い prod。 */
@@ -78,7 +81,10 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     getIDsByType: async () => [],
   };
   const settingsRepo: UserSettingsRepository = {
-    getSettings: async () => ({ excluded_pokemon_ids: o.excludedIDs ?? null, enabled_generations: null }),
+    getSettings: async () => ({
+      excluded_pokemon_ids: o.excludedIDs ?? null,
+      enabled_generations: o.enabledGenerations ?? null,
+    }),
     updateExcludedPokemon: async () => {},
     updateEnabledGenerations: async () => {},
   };
@@ -183,7 +189,7 @@ describe("[図鑑] 図鑑一覧の取得", () => {
 });
 
 describe("[苦手ポケモン検索] 検索候補母集団の取得", () => {
-  it("ユーザ実績の有無によらず、取得できる全ポケモンを図鑑番号と日本語名だけで返す", async () => {
+  it("取得できる全ポケモンを図鑑番号と日本語名だけで返す", async () => {
     const service = makeService({ servableIDs: [1, 2] });
     const res = await service.getSearchCandidates();
     expect(res).toEqual([
@@ -192,10 +198,16 @@ describe("[苦手ポケモン検索] 検索候補母集団の取得", () => {
     ]);
   });
 
-  it("設定で除外指定済みのポケモンも、母集団からは除外しない", async () => {
+  it("設定で除外指定済みのポケモンも含む", async () => {
     const service = makeService({ servableIDs: [1, 2], excludedIDs: [1] });
     const res = await service.getSearchCandidates();
     expect(res.map((p) => p.pokemon_id)).toEqual([1, 2]);
+  });
+
+  it("設定で選択していない世代のポケモンも含む", async () => {
+    const service = makeService({ servableIDs: [1, 152], enabledGenerations: [1] });
+    const res = await service.getSearchCandidates();
+    expect(res.map((p) => p.pokemon_id)).toEqual([1, 152]);
   });
 
   it("prod 環境では、開発者除外のポケモンも候補に含む", async () => {

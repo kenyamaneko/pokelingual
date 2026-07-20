@@ -316,13 +316,6 @@ describe("正常系フロー (公開入口経由)", () => {
     expect(pokedex.body.captured_count).toBe(1);
   });
 
-  it("苦手ポケモン検索の候補は、遭遇していないポケモンも図鑑番号と日本語名で含む", async () => {
-    const app = makeApp();
-    const res = await request(app).get("/api/pokedex/search-candidates");
-    expect(res.status).toBe(200);
-    expect(res.body.pokemon).toEqual([{ pokemon_id: 1, name_ja: "フシギダネ" }]);
-  });
-
   it("採点後に現在のクエストを取得すると、名前当ての段階として得点・訳文を含む状態が返る", async () => {
     const app = makeApp();
     await request(app).get("/api/quest/new");

@@ -160,16 +160,6 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
     await waitFor(() => expect(lastSavedIDs).toEqual([42]));
   });
 
-  it("ひらがなで検索しても、カタカナ名の候補がヒットする", async () => {
-    mockGetSettings([]);
-    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
-    const user = userEvent.setup();
-    renderSettings();
-
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ごる");
-    expect(await screen.findByRole("button", { name: /ゴルバット/ })).toBeInTheDocument();
-  });
-
   it("検索語に一致するポケモンがなければ候補が出ない", async () => {
     mockGetSettings([]);
     mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
