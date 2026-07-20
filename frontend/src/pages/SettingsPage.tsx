@@ -302,7 +302,7 @@ export function SettingsPage() {
             <p className="text-gray-500 text-xs">
               回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます
             </p>
-            <p className="text-gray-400 text-xs">開発者: Ken Yamaneko</p>
+            <p className="text-gray-400 text-xs">Ken Yamaneko (Key and Notes)</p>
           </div>
         </div>
       </div>
