@@ -53,7 +53,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-400 to-blue-500 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#ffd9d3] to-[#ffc2b8] flex items-center justify-center">
       <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
         <div className="text-6xl mb-4">
           <img
@@ -111,8 +111,8 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading || googleLoading}
-            className="w-full bg-blue-500 text-white py-2 px-6 rounded-xl text-sm
-                       font-semibold hover:bg-blue-600 transition-colors
+            className="w-full bg-red-500 text-white py-2 px-6 rounded-xl text-sm
+                       font-semibold hover:bg-red-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "ログイン中..." : "メールでログイン"}
