@@ -49,7 +49,7 @@ export function SignupPage() {
 
   if (registered) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-sky-400 to-blue-500 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#ffd9d3] to-[#ffc2b8] flex items-center justify-center">
         <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
           <div className="text-6xl mb-4">📧</div>
           <h1 className="text-2xl font-bold text-gray-800 mb-3">確認メールを送りました</h1>
@@ -61,8 +61,8 @@ export function SignupPage() {
           </p>
           <Link
             to="/login"
-            className="inline-block w-full bg-blue-500 text-white py-2 px-6 rounded-xl text-sm
-                       font-semibold hover:bg-blue-600 transition-colors"
+            className="inline-block w-full bg-red-500 text-white py-2 px-6 rounded-xl text-sm
+                       font-semibold hover:bg-red-600 transition-colors"
             data-testid="goto-login-after-signup"
           >
             ログインへ
@@ -73,7 +73,7 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-400 to-blue-500 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#ffd9d3] to-[#ffc2b8] flex items-center justify-center">
       <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center">
         <div className="text-6xl mb-4">
           <img
@@ -126,8 +126,8 @@ export function SignupPage() {
             type="submit"
             disabled={loading}
             data-testid="signup-submit"
-            className="w-full bg-blue-500 text-white py-2 px-6 rounded-xl text-sm
-                       font-semibold hover:bg-blue-600 transition-colors
+            className="w-full bg-red-500 text-white py-2 px-6 rounded-xl text-sm
+                       font-semibold hover:bg-red-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "登録中..." : "アカウントを作成する"}
