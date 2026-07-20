@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useState, type FormEvent } from "react";
 import { GoogleLogo } from "../components/auth/GoogleLogo";
+import { TermsModal } from "../components/terms/TermsModal";
 import { CONTACT_FORM_URL } from "../constants/links";
 import { mapAuthErrorMessage } from "../utils/authErrors";
 import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
@@ -18,6 +19,7 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -143,11 +145,13 @@ export function LoginPage() {
           >
             問い合わせ
           </a>
-          <Link to="/terms" className="hover:underline">
+          <button type="button" onClick={() => setShowTerms(true)} className="hover:underline">
             利用規約
-          </Link>
+          </button>
         </div>
       </div>
+
+      {showTerms && <TermsModal onDismiss={() => setShowTerms(false)} />}
     </div>
   );
 }

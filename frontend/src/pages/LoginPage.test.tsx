@@ -107,7 +107,7 @@ describe("[認証] ログイン画面", () => {
 /**
  * ログイン前でも問い合わせ・利用規約に到達できる導線の仕様。
  */
-describe("[サイト情報] ログイン画面のサイト情報リンク", () => {
+describe("[サイト情報] ログイン画面のサイト情報導線", () => {
   it("問い合わせリンクが問い合わせフォームを新しいタブで開く", () => {
     renderLogin(vi.fn());
     const contact = screen.getByRole("link", { name: "問い合わせ" });
@@ -115,8 +115,33 @@ describe("[サイト情報] ログイン画面のサイト情報リンク", () =
     expect(contact).toHaveAttribute("target", "_blank");
   });
 
-  it("利用規約リンクが利用規約ページを指す", () => {
+  it("利用規約ボタンを押すと、利用規約モーダルが表示される", async () => {
+    const user = userEvent.setup();
     renderLogin(vi.fn());
-    expect(screen.getByRole("link", { name: "利用規約" })).toHaveAttribute("href", "/terms");
+
+    await user.click(screen.getByRole("button", { name: "利用規約" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("利用規約モーダルの「閉じる」を押すと、モーダルが閉じてログイン画面に戻る", async () => {
+    const user = userEvent.setup();
+    renderLogin(vi.fn());
+    await user.click(screen.getByRole("button", { name: "利用規約" }));
+
+    await user.click(screen.getByRole("button", { name: "閉じる" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "メールでログイン" })).toBeInTheDocument();
+  });
+
+  it("利用規約モーダルの外側をクリックすると、モーダルが閉じる", async () => {
+    const user = userEvent.setup();
+    renderLogin(vi.fn());
+    await user.click(screen.getByRole("button", { name: "利用規約" }));
+
+    await user.click(screen.getByTestId("terms-modal-backdrop"));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

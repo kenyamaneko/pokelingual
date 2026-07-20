@@ -353,12 +353,7 @@ describe("[設定] 設定画面の出題世代", () => {
   });
 });
 
-/**
- * SettingsPage のサイト情報リンクの仕様:
- * - 問い合わせリンクは問い合わせフォームを新しいタブで開く
- * - 利用規約リンクは利用規約ページ (/terms) を指す
- */
-describe("[サイト情報] 設定画面のサイト情報リンク", () => {
+describe("[サイト情報] 設定画面のサイト情報導線", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -370,10 +365,24 @@ describe("[サイト情報] 設定画面のサイト情報リンク", () => {
     expect(link).toHaveAttribute("target", "_blank");
   });
 
-  it("利用規約リンクが利用規約ページを指す", async () => {
+  it("利用規約ボタンを押すと、利用規約モーダルが表示される", async () => {
+    const user = userEvent.setup();
     renderSettings();
-    const link = await screen.findByRole("link", { name: "利用規約" });
-    expect(link).toHaveAttribute("href", "/terms");
+
+    await user.click(await screen.findByRole("button", { name: "利用規約" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("利用規約モーダルの「閉じる」を押すと、モーダルが閉じて設定画面に戻る", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+    await user.click(await screen.findByRole("button", { name: "利用規約" }));
+
+    await user.click(screen.getByRole("button", { name: "閉じる" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument();
   });
 
   it("GitHub リポジトリリンクがリポジトリページを新しいタブで開く", async () => {
