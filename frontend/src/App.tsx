@@ -3,7 +3,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { DevAuthProvider } from "./contexts/DevAuthContext";
 import { UsageProvider } from "./contexts/UsageContext";
 import { TutorialProvider } from "./contexts/TutorialContext";
-import { isDevMode } from "./firebase";
+import { isDevMode } from "./lib/firebase";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { Header } from "./components/layout/Header";
 import { HomePage } from "./pages/HomePage";
