@@ -124,22 +124,6 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
               ))}
             </div>
           )}
-
-          {result.description_en && (
-            <div className="mt-4 bg-gray-50 rounded-xl p-4 text-left">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                各地の図鑑の説明
-              </h3>
-              <p className="text-gray-700 text-sm leading-relaxed italic">
-                "{result.description_en}"
-              </p>
-              {result.description_ja && (
-                <p className="text-gray-500 text-sm leading-relaxed mt-2">
-                  「{result.description_ja}」
-                </p>
-              )}
-            </div>
-          )}
         </div>
 
         <button
