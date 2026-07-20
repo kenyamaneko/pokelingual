@@ -13,7 +13,8 @@ export function TutorialCompletionCallout() {
   return (
     <div
       role="note"
-      className="relative bg-white rounded-2xl shadow-lg p-4 mb-4 border border-gray-200 text-center"
+      className="relative bg-white rounded-2xl shadow-lg p-4 mb-4 border border-gray-200 text-center
+                 animate-[callout-pop_0.3s_ease-out]"
     >
       <p className="text-sm font-bold text-gray-800 leading-relaxed">
         {TUTORIAL_COMPLETION_LABELS.message}

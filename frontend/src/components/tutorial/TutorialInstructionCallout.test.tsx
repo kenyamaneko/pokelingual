@@ -1,6 +1,10 @@
 import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { TutorialInstructionCallout, INSTRUCTION_APPEAR_DELAY_MS } from "./TutorialInstructionCallout";
+import {
+  TutorialInstructionCallout,
+  INSTRUCTION_APPEAR_DELAY_MS,
+  INVALID_ANSWER_SHAKE_DURATION_MS,
+} from "./TutorialInstructionCallout";
 
 describe("[チュートリアル] チュートリアルの案内表示", () => {
   beforeEach(() => {
@@ -27,5 +31,67 @@ describe("[チュートリアル] チュートリアルの案内表示", () => {
     });
     expect(screen.getByText("この英文を訳してみよう")).toBeVisible();
     expect(screen.getByText("テスト用の案内文")).toBeVisible();
+  });
+});
+
+describe("[チュートリアル] チュートリアル案内の誤答シェイク", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // getByRole は visibility:hidden の要素を対象外にするため (RTL の既定挙動)、先に表示状態へ進めておく。
+  function renderVisibleCallout(invalidAnswerSignal: number) {
+    const result = render(
+      <TutorialInstructionCallout
+        title="この英文を訳してみよう"
+        instruction="テスト用の案内文"
+        invalidAnswerSignal={invalidAnswerSignal}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(INSTRUCTION_APPEAR_DELAY_MS);
+    });
+    return result;
+  }
+
+  it("マウント時に invalidAnswerSignal が 0 以外の値で始まっても、警告状態にならない", () => {
+    renderVisibleCallout(3);
+
+    expect(screen.getByRole("note")).toHaveAttribute("data-state", "idle");
+  });
+
+  it("invalidAnswerSignal が前回の値から変化すると、警告状態になる", () => {
+    const { rerender } = renderVisibleCallout(0);
+
+    rerender(
+      <TutorialInstructionCallout
+        title="この英文を訳してみよう"
+        instruction="テスト用の案内文"
+        invalidAnswerSignal={1}
+      />,
+    );
+
+    expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid");
+  });
+
+  it("警告状態は、シェイクの再生時間が経過すると解除される", () => {
+    const { rerender } = renderVisibleCallout(0);
+    rerender(
+      <TutorialInstructionCallout
+        title="この英文を訳してみよう"
+        instruction="テスト用の案内文"
+        invalidAnswerSignal={1}
+      />,
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(INVALID_ANSWER_SHAKE_DURATION_MS);
+    });
+
+    expect(screen.getByRole("note")).toHaveAttribute("data-state", "idle");
   });
 });
