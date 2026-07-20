@@ -219,8 +219,11 @@ export function NameGuess({
 
       <button
         onClick={isFinished ? onProceed : onSkip}
-        className="mt-3 w-full text-gray-500 hover:text-gray-700 py-2 text-sm
-                   transition-colors"
+        className={
+          isFinished
+            ? "mt-3 w-full bg-blue-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-600 transition-colors"
+            : "mt-3 w-full text-gray-500 hover:text-gray-700 py-2 text-sm transition-colors"
+        }
       >
         {isFinished ? NAME_GUESS_LABELS.proceedButton : NAME_GUESS_LABELS.skipButton}
       </button>
