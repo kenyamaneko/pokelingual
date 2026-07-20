@@ -178,15 +178,16 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
         }
         return;
       } catch (err) {
-        if (!isSessionLostError(err)) {
-          // 404 (セッション無し) 以外はエラー画面へ。新規抽選にフォールバックすると生きたセッションを潰す。
+        if (isSessionLostError(err)) {
+          // 404: 生きたセッションが無い。通常の新規開始へフォールスルーする。
+        } else {
+          // 404 以外はエラー画面へ。新規抽選にフォールバックすると生きたセッションを潰す。
           setError(
             getErrorMessage(err, "クエストの再開に失敗しました。もう一度試してください。続く場合はお問い合わせください"),
           );
           setPhase("error");
           return;
         }
-        // 404: 生きたセッションが無い。通常の新規開始へフォールスルーする。
       }
     }
 

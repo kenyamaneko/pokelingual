@@ -628,7 +628,23 @@ describe("[リロード再開] クエストの復元", () => {
     expect(countRequests("/quest/locations")).toBe(0);
   });
 
-  it("enableResume が false のときは、セッションがあっても現在のクエストを問い合わせず場所選択から始まる", async () => {
+  it("現在のクエスト取得が5xxで失敗した後、再試行してセッションが無ければ、場所選択から始められる", async () => {
+    server.use(http.get(apiUrl("/quest/current"), () => HttpResponse.json({}, { status: 502 })));
+
+    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.phase).toBe("error"));
+
+    server.use(http.get(apiUrl("/quest/current"), () => new HttpResponse(null, { status: 404 })));
+    await act(async () => {
+      await result.current.startNewQuest();
+    });
+
+    expect(result.current.phase).toBe("selectLocation");
+    expect(result.current.error).toBeNull();
+    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+  });
+
+  it("リロード再開を無効にしている場合は、セッションがあっても現在のクエストを問い合わせず場所選択から始まる", async () => {
     server.use(
       http.get(apiUrl("/quest/current"), () =>
         HttpResponse.json({ phase: "translating", quest: questResp }),

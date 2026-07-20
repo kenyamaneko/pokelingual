@@ -737,7 +737,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
     await expect(service.getCurrentQuest("nobody")).rejects.toBeInstanceOf(NotFoundError);
   });
 
-  it("採点前 (未採点) は translating として復元され、説明文のポケモン名は伏せられている", async () => {
+  it("採点前 (未採点) は訳文入力の段階として復元され、説明文のポケモン名は伏せられている", async () => {
     const service = makeService({
       pokemons: [makePokemon({ description_en: "Bulbasaur is fast.", is_legendary: true })],
     });
@@ -755,7 +755,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
     });
   });
 
-  it("採点後 (名前当て未確定) は guessing として復元され、得点・講評・ユーザーの訳文・伏せ字済みの日本語説明を保持する", async () => {
+  it("採点後 (名前当て未確定) は、得点・講評・ユーザーの訳文・伏せ字済みの日本語説明を保持した状態に復元される", async () => {
     const service = makeService({
       pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
       llmText: JSON.stringify({ score: 70, review: "よい 翻訳だ。" }),
@@ -776,7 +776,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
     [0, null],
     [1, { types: ["grass", "poison"], attempts_remaining: 2 }],
     [2, { types: ["grass", "poison"], moves: ["たいあたり"], attempts_remaining: 1 }],
-  ])("ヒントを%i回開示済みのとき、guessing の復元結果に開示済みの情報が反映される", async (revealCount, expectedHint) => {
+  ])("ヒントを%i回開示済みのとき、名前当ての段階への復元結果に開示済みの情報が反映される", async (revealCount, expectedHint) => {
     const service = makeService({
       pokemons: [makePokemon({ level_up_moves: ["たいあたり"] })],
       randomValue: 0,
@@ -788,7 +788,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
     expect(res).toMatchObject({ phase: "guessing", hint: expectedHint });
   });
 
-  it("名前当て正解でボールが確定すると、capturing として復元され確定済みボール種別を返す", async () => {
+  it("名前当て正解でボールが確定すると、確定済みのボール種別を保持した捕獲待機の段階として復元される", async () => {
     const service = makeService();
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
@@ -797,7 +797,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
     expect(res).toMatchObject({ phase: "capturing", ball_type: "ultra" });
   });
 
-  it("名前当てをスキップしてボールが確定した場合も、capturing として復元される", async () => {
+  it("名前当てをスキップしてボールが確定した場合も、確定済みのボール種別を保持した捕獲待機の段階として復元される", async () => {
     const service = makeService();
     await service.newQuest("alice");
     await service.scoreTranslation("alice", "訳");
@@ -806,7 +806,7 @@ describe("[リロード再開] 現在のクエスト取得", () => {
     expect(res).toMatchObject({ phase: "capturing", ball_type: "poke" });
   });
 
-  it("採点前に名前当てが完了した異常系でも、capturing として復元される (ボール確定を採点済みかより優先して判定する)", async () => {
+  it("採点前に名前当てが完了した異常系でも、確定済みのボール種別を保持した捕獲待機の段階として復元される (ボールの確定を採点済みかより優先して判定する)", async () => {
     const service = makeService();
     await service.newQuest("alice");
     await service.guessName("alice", "bulbasaur");
