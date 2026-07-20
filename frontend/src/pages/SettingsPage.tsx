@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { pokedexApi } from "../api/pokedexApi";
 import { formatPokemonId } from "../utils/pokemonFormat";
 import { searchPokemonByName } from "../utils/pokemonSearch";
 import { logger } from "../utils/logger";
+import { TermsModal } from "../components/terms/TermsModal";
 import type { PokedexEntry } from "../../../shared/api-types/pokedex";
 import { CONTACT_FORM_URL, GITHUB_REPO_URL } from "../constants/links";
 
@@ -39,6 +40,7 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
 
   useEffect(() => {
     settingsApi
@@ -288,9 +290,13 @@ export function SettingsPage() {
             >
               問い合わせ
             </a>
-            <Link to="/terms" className="text-blue-500 hover:underline">
+            <button
+              type="button"
+              onClick={() => setShowTerms(true)}
+              className="text-blue-500 hover:underline text-left"
+            >
               利用規約
-            </Link>
+            </button>
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
@@ -306,6 +312,8 @@ export function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {showTerms && <TermsModal onDismiss={() => setShowTerms(false)} />}
     </div>
   );
 }
