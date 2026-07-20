@@ -209,7 +209,7 @@ describe("クエストセッションのインスタンス間引き継ぎ (Valke
     await clientB.quit();
   });
 
-  it("採点済みのセッションを別インスタンスから GET /quest/current で取得すると、Redis を経由して guessing として復元される", async () => {
+  it("採点済みのセッションは別インスタンスに分散しても、現在のクエストを取得すると名前当ての段階として復元される", async () => {
     const clientA = new Redis(redisURL);
     const clientB = new Redis(redisURL);
     const instanceA = buildAppInstance(
