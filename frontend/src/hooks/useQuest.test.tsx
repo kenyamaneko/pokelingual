@@ -176,7 +176,7 @@ describe("[クエスト] クエスト進行", () => {
   // 5xx はローカル error 文言として保持」する仕様。3 API 分まとめて検証する。
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
     ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 429 が返っても、エラー文言を出さずフェーズも変えない (上限は利用上限モーダルに委譲)", async (
@@ -204,7 +204,7 @@ describe("[クエスト] クエスト進行", () => {
 
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
     ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 5xx が返っても、エラーメッセージを保持しフェーズは変えない", async (
@@ -237,7 +237,7 @@ describe("[クエスト] クエスト進行", () => {
       "名前推測",
       "/quest/guess-name",
       () => HttpResponse.json({ correct: false, attempts_remaining: 2 }),
-      (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon"),
+      (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
     ],
     [
       "ヒント要求",
@@ -278,7 +278,7 @@ describe("[クエスト] クエスト進行", () => {
 
   it.each([
     ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Testmon")],
+    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
     ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
     ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
   ] as const)("%sで 404 (セッション切断) になると、エラー画面へ切り替わり切断を案内する", async (
@@ -314,7 +314,7 @@ describe("[クエスト] クエスト進行", () => {
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
-      await result.current.submitGuess("Testmon");
+      await result.current.submitGuess("Pikachu");
     });
 
     expect(result.current.guessResult).toEqual(guess);
@@ -390,7 +390,7 @@ describe("[クエスト] クエスト進行", () => {
     await waitFor(() => expect(result.current.phase).toBe("translating"));
 
     await act(async () => {
-      await result.current.submitGuess("Testmon");
+      await result.current.submitGuess("Pikachu");
     });
 
     act(() => {
@@ -425,9 +425,9 @@ describe("[クエスト] クエスト進行", () => {
     const captured: CaptureResponse = {
       captured: true,
       probability: 0.9,
-      pokemon_id: 9001,
-      name_en: "Testmon",
-      name_ja: "テストモン",
+      pokemon_id: 25,
+      name_en: "Pikachu",
+      name_ja: "ピカチュウ",
       sprite_url: "https://example.com/p.png",
       score: 90,
       description_en: "x",
@@ -458,16 +458,16 @@ describe("[クエスト] クエスト進行", () => {
     const captured: CaptureResponse = {
       captured: false,
       probability: 0.2,
-      pokemon_id: 9001,
-      name_en: "Testmon",
-      name_ja: "テストモン",
+      pokemon_id: 25,
+      name_en: "Pikachu",
+      name_ja: "ピカチュウ",
       sprite_url: "https://example.com/p.png",
       score: 40,
       description_en: "x",
       description_ja: "y",
-      base_stat_total: 250,
+      base_stat_total: 320,
       ball_type: "poke",
-      types: ["normal"],
+      types: ["electric"],
       height: 4,
       weight: 60,
       is_legendary: false,

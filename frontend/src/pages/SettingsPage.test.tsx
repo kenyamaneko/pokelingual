@@ -63,17 +63,17 @@ function mockUpdateFailure() {
 
 /**
  * GET /pokedex が指定のエントリを返す状態をモックする (名前検索・名前併記の元データ)。
- * @param entries pokemon_id と name_ja を持つダミーエントリ。
+ * @param entries pokemon_id と name_en / name_ja を持つエントリ。
  */
 function mockPokedexEntries(
-  entries: { pokemon_id: number; name_ja: string; name_en?: string }[],
+  entries: { pokemon_id: number; name_en: string; name_ja: string }[],
 ) {
   server.use(
     http.get(apiUrl("/pokedex"), () =>
       HttpResponse.json({
         pokemon: entries.map((e) => ({
           pokemon_id: e.pokemon_id,
-          name_en: e.name_en ?? `Dummymon${e.pokemon_id}`,
+          name_en: e.name_en,
           name_ja: e.name_ja,
           sprite_url: "",
           status: "unknown",
@@ -170,17 +170,17 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
 
   it("名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される", async () => {
     mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
     mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
-    await user.click(await screen.findByRole("button", { name: /ダミラス/ }));
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ゴル");
+    await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
 
     // 一覧に #042 と名前が現れ、空状態の文言が消え、保存 API に [42] が渡る
     expect(await screen.findByText("#042")).toBeInTheDocument();
-    expect(screen.getByText("ダミラス")).toBeInTheDocument();
+    expect(screen.getByText("ゴルバット")).toBeInTheDocument();
     expect(
       screen.queryByText(spec("除外ポケモンはいません")),
     ).not.toBeInTheDocument();
@@ -189,53 +189,53 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
 
   it("検索語に一致するポケモンがなければ候補が出ない", async () => {
     mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
     const user = userEvent.setup();
     renderSettings();
 
     await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "いない");
-    expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /ゴルバット/ })).not.toBeInTheDocument();
   });
 
   it("複数のポケモンが名前にヒットすると、その全てが候補に出る", async () => {
     mockGetSettings([]);
     mockPokedexEntries([
-      { pokemon_id: 10, name_ja: "ダミラス" },
-      { pokemon_id: 20, name_ja: "ダミリン" },
+      { pokemon_id: 30, name_en: "Nidorina", name_ja: "ニドリーナ" },
+      { pokemon_id: 31, name_en: "Nidoqueen", name_ja: "ニドクイン" },
     ]);
     const user = userEvent.setup();
     renderSettings();
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ニド");
 
-    // 「ダミ」に一致する2匹が候補ボタンとして出る
-    expect(await screen.findByRole("button", { name: /ダミラス/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ダミリン/ })).toBeInTheDocument();
+    // 「ニド」に一致する2匹が候補ボタンとして出る
+    expect(await screen.findByRole("button", { name: /ニドリーナ/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ニドクイン/ })).toBeInTheDocument();
   });
 
   it("すでに除外済みのポケモンは検索候補に出ない", async () => {
     mockGetSettings([42]);
-    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
     const user = userEvent.setup();
     renderSettings();
 
     // 読み込み完了 (登録済みが一覧に出る) を待つ
     await screen.findByText("#042");
-    await user.type(screen.getByPlaceholderText("ポケモンの名前で探す"), "ダミ");
+    await user.type(screen.getByPlaceholderText("ポケモンの名前で探す"), "ゴル");
     // 候補ボタン (名前を含む button) は出ない
-    expect(screen.queryByRole("button", { name: /ダミラス/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /ゴルバット/ })).not.toBeInTheDocument();
   });
 
   it("削除を押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
     mockGetSettings([42]);
-    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
     mockUpdateSuccess();
     const user = userEvent.setup();
     renderSettings();
 
     // 一覧には #042 と名前が併記される
     expect(await screen.findByText("#042")).toBeInTheDocument();
-    expect(screen.getByText("ダミラス")).toBeInTheDocument();
+    expect(screen.getByText("ゴルバット")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "削除" }));
 
     expect(
@@ -250,13 +250,13 @@ describe("[設定] 設定画面の苦手ポケモン管理", () => {
     // エラー経路の診断ログは検証対象外のため沈黙させる
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSettings([]);
-    mockPokedexEntries([{ pokemon_id: 42, name_ja: "ダミラス" }]);
+    mockPokedexEntries([{ pokemon_id: 42, name_en: "Golbat", name_ja: "ゴルバット" }]);
     mockUpdateFailure();
     const user = userEvent.setup();
     renderSettings();
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ダミ");
-    await user.click(await screen.findByRole("button", { name: /ダミラス/ }));
+    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ゴル");
+    await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
 
     expect(
       await screen.findByText(spec("設定の保存に失敗しました")),

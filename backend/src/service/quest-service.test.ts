@@ -224,11 +224,11 @@ function makeService(o: ServiceOverrides = {}): QuestService {
 describe("[出題] クエストの出題", () => {
   it("出題される英語説明文は、ポケモン名が伏せ字になっている", async () => {
     const service = makeService({
-      pokemons: [makePokemon({ description_en: "Bulbasaur is fast." })],
+      pokemons: [makePokemon({ description_en: "Bulbasaur is green." })],
     });
     const res = await service.newQuest("alice");
     expect(res.pokemon_id).toBe(1);
-    expect(res.description_en).toBe("This Pokémon is fast.");
+    expect(res.description_en).toBe("This Pokémon is green.");
     expect(res.is_legendary).toBe(false);
   });
 
@@ -368,14 +368,14 @@ describe("翻訳の採点", () => {
 
   it("最終評価点・講評・マスク済み日本語説明を返す", async () => {
     const service = makeService({
-      pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
+      pokemons: [makePokemon({ description_ja: "フシギダネは 緑色だ。" })],
       llmText: JSON.stringify({ units: [0.7], review: "よい" }),
     });
     await service.newQuest("alice");
-    const res = await service.scoreTranslation("alice", "はやい");
+    const res = await service.scoreTranslation("alice", "みどり");
     expect(res.score).toBe(66);
     expect(res.review).toBe("よい");
-    expect(res.description_ja).toBe("この ポケモンは 速い。");
+    expect(res.description_ja).toBe("この ポケモンは 緑色だ。");
   });
 
   it("複数の判定単位が返されたとき、その平均から最終評価点が算出される", async () => {
@@ -485,15 +485,15 @@ describe("[名前当て] 名前当ての判定", () => {
   });
 
   it("名前が 3 文字のポケモンは、1 文字のずれでも不正解になる (あいまい一致の対象外)", async () => {
-    const service = makeService({ pokemons: [makePokemon({ name_en: "Abc" })] });
+    const service = makeService({ pokemons: [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })] });
     await service.newQuest("alice");
-    expect((await service.guessName("alice", "abd")).correct).toBe(false);
+    expect((await service.guessName("alice", "mex")).correct).toBe(false);
   });
 
   it("名前が 4 文字のポケモンは、1 文字のずれなら正解になる (あいまい一致が有効)", async () => {
-    const service = makeService({ pokemons: [makePokemon({ name_en: "Abcd" })] });
+    const service = makeService({ pokemons: [makePokemon({ name_en: "Abra", name_ja: "ケーシィ" })] });
     await service.newQuest("alice");
-    expect(await service.guessName("alice", "abce")).toMatchObject({ correct: true, fuzzy: true });
+    expect(await service.guessName("alice", "abrx")).toMatchObject({ correct: true, fuzzy: true });
   });
 
   it("不正解なら残り試行回数が減って返る", async () => {
@@ -794,15 +794,28 @@ describe("[リロード再開] 現在のクエスト取得", () => {
 
   it("採点前 (未採点) は訳文入力の段階として復元され、説明文のポケモン名は伏せられている", async () => {
     const service = makeService({
-      pokemons: [makePokemon({ description_en: "Bulbasaur is fast.", is_legendary: true })],
+      pokemons: [
+        makePokemon({
+          id: 150,
+          name_en: "Mewtwo",
+          name_ja: "ミュウツー",
+          description_en: "Mewtwo is powerful.",
+          base_stat_total: 680,
+          types: ["psychic"],
+          height: 20,
+          weight: 1220,
+          level_up_moves: ["かなしばり", "ねんりき", "スピードスター"],
+          is_legendary: true,
+        }),
+      ],
     });
     await service.newQuest("alice");
     const res = await service.getCurrentQuest("alice");
     expect(res).toEqual({
       phase: "translating",
       quest: {
-        pokemon_id: 1,
-        description_en: "This Pokémon is fast.",
+        pokemon_id: 150,
+        description_en: "This Pokémon is powerful.",
         is_legendary: true,
         is_mythical: false,
         max_guess_attempts: 3,
@@ -812,16 +825,16 @@ describe("[リロード再開] 現在のクエスト取得", () => {
 
   it("採点後 (名前当て未確定) は、得点・講評・ユーザーの訳文・伏せ字済みの日本語説明を保持した状態に復元される", async () => {
     const service = makeService({
-      pokemons: [makePokemon({ description_ja: "フシギダネは 速い。" })],
+      pokemons: [makePokemon({ description_ja: "フシギダネは 緑色だ。" })],
       llmText: JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
     });
     await service.newQuest("alice");
-    await service.scoreTranslation("alice", "はやい");
+    await service.scoreTranslation("alice", "みどり");
     const res = await service.getCurrentQuest("alice");
     expect(res).toMatchObject({
       phase: "guessing",
-      score: { score: 66, review: "よい 翻訳だ。", description_ja: "この ポケモンは 速い。" },
-      user_translation: "はやい",
+      score: { score: 66, review: "よい 翻訳だ。", description_ja: "この ポケモンは 緑色だ。" },
+      user_translation: "みどり",
       attempts_remaining: 3,
       hint: null,
     });
