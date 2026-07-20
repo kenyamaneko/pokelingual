@@ -86,7 +86,7 @@ export class PokedexService {
 
   /**
    * 苦手ポケモン名前検索の候補母集団を返す。ユーザ実績・出題世代設定によらず、
-   * 開発者除外を除く供給可能な全種族データを対象にする。
+   * 開発者除外を除く取得できる全種族データを対象にする。
    * @returns 検索候補 (図鑑番号・日本語名) の配列。
    */
   async getSearchCandidates(): Promise<PokemonSearchCandidate[]> {
