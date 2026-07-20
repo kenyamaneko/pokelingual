@@ -30,6 +30,7 @@ export function TutorialPage() {
   const navigate = useNavigate();
   const { markTutorialCompleted } = useTutorial();
   const [introDismissed, setIntroDismissed] = useState(false);
+  const [invalidAnswerSignal, setInvalidAnswerSignal] = useState(0);
 
   return (
     <>
@@ -42,6 +43,7 @@ export function TutorialPage() {
           enableResume: false,
           validateBeforeScore: validateTutorialTranslation,
           validateBeforeGuess: validateTutorialName,
+          onValidationFailed: () => setInvalidAnswerSignal((signal) => signal + 1),
           onResult: markTutorialCompleted,
         }}
         slots={{
@@ -49,12 +51,14 @@ export function TutorialPage() {
             <TutorialInstructionCallout
               title={TUTORIAL_PAGE_LABELS.translation.title}
               instruction={TUTORIAL_PAGE_LABELS.translation.instruction}
+              invalidAnswerSignal={invalidAnswerSignal}
             />
           ),
           guessing: (
             <TutorialInstructionCallout
               title={TUTORIAL_PAGE_LABELS.name.title}
               instruction={TUTORIAL_PAGE_LABELS.name.instruction}
+              invalidAnswerSignal={invalidAnswerSignal}
             />
           ),
           result: <TutorialCompletionCallout />,

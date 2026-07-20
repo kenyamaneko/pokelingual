@@ -61,6 +61,8 @@ export interface UseQuestOptions {
   validateBeforeScore?: (translation: string) => boolean;
   /** 名前推測送信前の入力検証。false を返すと判定へ進めない。 */
   validateBeforeGuess?: (guess: string) => boolean;
+  /** validateBeforeScore / validateBeforeGuess が false を返し、送信を短絡した際に呼ぶ副作用。 */
+  onValidationFailed?: () => void;
   /** result フェーズ到達時に一度呼ぶ副作用。 */
   onResult?: () => void;
 }
@@ -128,6 +130,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     enableResume = true,
     validateBeforeScore,
     validateBeforeGuess,
+    onValidationFailed,
     onResult,
   } = options;
   const [phase, setPhase] = useState<QuestPhase>(hasLocationChoice ? "selectLocation" : "loading");
@@ -241,7 +244,10 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   };
 
   const submitTranslation = async (translation: string) => {
-    if (validateBeforeScore && !validateBeforeScore(translation)) return false;
+    if (validateBeforeScore && !validateBeforeScore(translation)) {
+      onValidationFailed?.();
+      return false;
+    }
     setError(null);
     try {
       setUserTranslation(translation);
@@ -257,7 +263,10 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   };
 
   const submitGuess = async (guess: string) => {
-    if (validateBeforeGuess && !validateBeforeGuess(guess)) return;
+    if (validateBeforeGuess && !validateBeforeGuess(guess)) {
+      onValidationFailed?.();
+      return;
+    }
     setError(null);
     try {
       const res = await api.guessName(guess);
