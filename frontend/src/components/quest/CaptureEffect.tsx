@@ -30,8 +30,8 @@ const BURST_MIN_DISTANCE_PX = 32;
 const BURST_MAX_DISTANCE_PX = 96;
 const BURST_COLORS = ["#facc15", "#fb923c"];
 
-const SMOKE_CIRCLE_COUNT = 6;
-const SMOKE_SPREAD_PX = 28;
+const SMOKE_CIRCLE_COUNT = 30;
+const SMOKE_SPREAD_PX = 35;
 
 type Stage = "shaking" | "effect" | "whiteout";
 
@@ -140,7 +140,7 @@ export function CaptureEffect({ ballSprite, ballName, captured, onComplete }: Ca
                   <span
                     key={circle.id}
                     style={circle.style}
-                    className="absolute left-1/2 top-1/2 w-3 h-3 rounded-full bg-gray-400 animate-[smoke-circle_0.7s_ease-out]"
+                    className="absolute left-1/2 top-1/2 w-8 h-8 rounded-full bg-gray-400 animate-[smoke-circle_0.7s_ease-out]"
                   />
                 ))}
           </div>
