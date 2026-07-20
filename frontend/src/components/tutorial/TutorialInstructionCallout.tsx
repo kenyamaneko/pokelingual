@@ -30,6 +30,7 @@ export function TutorialInstructionCallout({ title, instruction, invalidAnswerSi
     return () => clearTimeout(timer);
   }, []);
 
+  // useEffect 内の setState は react-hooks/set-state-in-effect に抵触するため、レンダー中に検知する。
   if (invalidAnswerSignal !== lastHandledSignal) {
     setLastHandledSignal(invalidAnswerSignal);
     setIsShaking(true);
