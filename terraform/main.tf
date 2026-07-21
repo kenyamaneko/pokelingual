@@ -47,6 +47,7 @@ resource "google_project_service" "apis" {
     "monitoring.googleapis.com",
     "logging.googleapis.com",
     "billingbudgets.googleapis.com",
+    "cloudbilling.googleapis.com",
     "secretmanager.googleapis.com",
   ])
 
