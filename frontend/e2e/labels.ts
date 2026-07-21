@@ -9,7 +9,7 @@
 /** getByRole("link", { name }) で参照するリンク名。 */
 export const LINK = {
   viewPokedex: /図鑑を見る/,
-  logo: "PokeLingual",
+  logo: "Pokelingual",
   navQuest: "ぼうけん",
   navPokedex: "ずかん",
   settings: "せってい",

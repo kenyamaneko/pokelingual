@@ -19,7 +19,7 @@ resource "google_billing_budget" "monthly" {
   count = var.billing_account_display_name != "" ? 1 : 0
 
   billing_account = data.google_billing_account.account[0].id
-  display_name    = "PokeLingual ${var.environment} 月次予算"
+  display_name    = "Pokelingual ${var.environment} 月次予算"
 
   # budget_filter.projects は projects/PROJECT_NUMBER 形式（PROJECT_ID ではない）
   budget_filter {

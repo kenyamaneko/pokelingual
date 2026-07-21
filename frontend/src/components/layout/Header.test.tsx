@@ -100,7 +100,7 @@ describe("ヘッダー", () => {
 
       // /usage の取得が試みられたことを確かめてから、残量バッジの不在を確認する
       await waitFor(() => expect(countRequests("/usage")).toBe(1));
-      expect(screen.getByText("PokeLingual")).toBeInTheDocument();
+      expect(screen.getByText("Pokelingual")).toBeInTheDocument();
       expect(screen.queryByText(/残り/)).not.toBeInTheDocument();
     });
   });

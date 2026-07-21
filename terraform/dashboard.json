@@ -1,5 +1,5 @@
 {
-  "displayName": "PokeLingual Backend (${environment})",
+  "displayName": "Pokelingual Backend (${environment})",
   "gridLayout": {
     "columns": "2",
     "widgets": [

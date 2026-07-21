@@ -26,7 +26,7 @@ describe("ルーティングの 404", () => {
     render(<App />);
 
     // ヘッダー (ログイン後共通) の描画完了を待ってから NotFound の不在を確認する
-    expect(await screen.findByText("PokeLingual")).toBeInTheDocument();
+    expect(await screen.findByText("Pokelingual")).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "ページが見つかりません" }),
     ).not.toBeInTheDocument();

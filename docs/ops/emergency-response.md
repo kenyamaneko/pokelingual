@@ -23,7 +23,7 @@ Slack 通知は、手動作成した通知チャネルを terraform 変数 `slac
    gh run list --workflow deploy-prod.yml --limit 5
    ```
 
-2. Cloud Monitoring のダッシュボード「PokeLingual Backend (prod)」(`terraform/dashboard.json` で管理) でリクエスト数・エラー・レイテンシの推移を見る。
+2. Cloud Monitoring のダッシュボード「Pokelingual Backend (prod)」(`terraform/dashboard.json` で管理) でリクエスト数・エラー・レイテンシの推移を見る。
 
 3. エラーログを読む。
 
