@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-import { parseAppEnvironment, type AppEnvironment } from "../domain/environment.js";
 import { MAX_FINAL_SCORE } from "../service/quest-service.js";
 import type { BallType } from "../../../shared/api-types/quest.js";
 
@@ -15,8 +14,6 @@ const APP_MODES: readonly AppMode[] = ["mock", "real"];
 /** アプリ全体の設定値。loadConfig で環境変数から構築する。 */
 export interface Config {
   appMode: AppMode;
-  /** 実行環境。開発者除外の適用判定に使う。 */
-  environment: AppEnvironment;
   port: string;
   googleCloudProject: string;
   googleCloudLocation: string;
@@ -169,7 +166,7 @@ function requireAppMode(): AppMode {
 
 /**
  * 環境変数から Config を構築する。APP_MODE は常に必須。real モードでは追加の必須 env
- * (APP_ENV, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
+ * (GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, FRONTEND_URL, GEMINI_MODEL,
  * PER_USER_DAILY_LIMIT, GLOBAL_DAILY_LIMIT, POKEMON_SNAPSHOT_URI, UPSTASH_REDIS_URL,
  * QUEST_SESSION_TTL_SECONDS) が未設定なら起動エラー。チューニングパラメーター
  * (FUZZY_MATCH_MIN_NAME_LENGTH 等、.env.tuning が供給する9値) はモード問わず必須。
@@ -181,7 +178,6 @@ export function loadConfig(): Config {
 
   return {
     appMode,
-    environment: parseAppEnvironment(isMock ? (getEnv("APP_ENV") ?? "local") : requireEnv("APP_ENV")),
     port: getEnv("PORT") ?? MOCK_DEFAULTS.port,
     googleCloudProject: isMock ? (getEnv("GOOGLE_CLOUD_PROJECT") ?? MOCK_DEFAULTS.googleCloudProject) : requireEnv("GOOGLE_CLOUD_PROJECT"),
     googleCloudLocation: isMock ? (getEnv("GOOGLE_CLOUD_LOCATION") ?? MOCK_DEFAULTS.googleCloudLocation) : requireEnv("GOOGLE_CLOUD_LOCATION"),

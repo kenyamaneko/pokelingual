@@ -206,8 +206,6 @@ function makeService(o: ServiceOverrides = {}): QuestService {
       return o.llmRespond?.(prompt) ?? o.llmText ?? JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
     },
   };
-  // 出題ロジックは環境非依存に確かめたいので prod (開発者除外なし) 固定。
-  const environment = "prod" as const;
   const settingsRepo: UserSettingsRepository = {
     getSettings: async () => ({
       excluded_pokemon_ids: o.excludedIDs ?? null,
@@ -218,7 +216,7 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   };
   const random: RandomSource = { next: () => o.randomValue ?? 0 };
   const sessionStore = makeInMemoryQuestSessionStore({ error: o.sessionStoreError });
-  return new QuestService(pokemonClient, llm, environment, settingsRepo, random, sessionStore, DEFAULT_QUEST_TUNING);
+  return new QuestService(pokemonClient, llm, settingsRepo, random, sessionStore, DEFAULT_QUEST_TUNING);
 }
 
 describe("[出題] クエストの出題", () => {

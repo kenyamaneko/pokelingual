@@ -6,7 +6,6 @@ import type {
   UserSettingsRepository,
 } from "../domain/ports.js";
 import type { UserPokemon } from "../domain/user.js";
-import type { AppEnvironment } from "../domain/environment.js";
 import { makePokemon } from "../testing/pokemon-fixtures.js";
 
 // 依存 (Firestore リポジトリ / ポケモン種別データのクライアント) は外部境界なのでポート経由のスタブで注入する。
@@ -47,8 +46,6 @@ interface ServiceOverrides {
   enabledGenerations?: number[];
   /** データソースが取得できる図鑑番号。 */
   servableIDs?: number[];
-  /** 実行環境 (開発者除外の適用判定に使う)。既定は開発者除外の無い prod。 */
-  environment?: AppEnvironment;
 }
 
 /**
@@ -88,8 +85,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
     updateExcludedPokemon: async () => {},
     updateEnabledGenerations: async () => {},
   };
-  // 図鑑表示は環境非依存に確かめたいので既定は prod (開発者除外なし)。
-  return new PokedexService(repo, pokemonClient, settingsRepo, o.environment ?? "prod");
+  return new PokedexService(repo, pokemonClient, settingsRepo);
 }
 
 describe("[図鑑] 図鑑一覧の取得", () => {
@@ -208,18 +204,6 @@ describe("[苦手ポケモン検索] 検索候補母集団の取得", () => {
     const service = makeService({ servableIDs: [1, 152], enabledGenerations: [1] });
     const res = await service.getSearchCandidates();
     expect(res.map((p) => p.pokemon_id)).toEqual([1, 152]);
-  });
-
-  it("prod 環境では、開発者除外のポケモンも候補に含む", async () => {
-    const service = makeService({ servableIDs: [1, 167], environment: "prod" });
-    const res = await service.getSearchCandidates();
-    expect(res.map((p) => p.pokemon_id)).toEqual([1, 167]);
-  });
-
-  it("dev 環境では、開発者除外のポケモンを候補から除く", async () => {
-    const service = makeService({ servableIDs: [1, 167], environment: "dev" });
-    const res = await service.getSearchCandidates();
-    expect(res.map((p) => p.pokemon_id)).toEqual([1]);
   });
 });
 

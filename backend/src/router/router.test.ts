@@ -57,7 +57,6 @@ function makeApp(o: AppOverrides = {}) {
       return JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
     },
   };
-  const environment = "prod" as const;
   // 除外設定の検証用の供給可能な図鑑番号 (ダミー)。1..100 を供給リストとして扱う。
   const servablePokemonIDs = new Set(Array.from({ length: 100 }, (_, i) => i + 1));
   const random: RandomSource = { next: () => 0 };
@@ -122,13 +121,12 @@ function makeApp(o: AppOverrides = {}) {
   const questService = new QuestService(
     pokemonClient,
     llm,
-    environment,
     settingsRepo,
     random,
     sessionStore,
     DEFAULT_QUEST_TUNING,
   );
-  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo, environment);
+  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, settingsRepo);
   const settingsService = new SettingsService(settingsRepo, servablePokemonIDs, DEFAULT_MAX_EXCLUDED_POKEMON_COUNT);
 
   const app = express();
@@ -139,7 +137,7 @@ function makeApp(o: AppOverrides = {}) {
       devAuth(),
       rateLimit(rateLimitRepo),
       new QuestHandler(questService, userPokemonRepo),
-      createTutorialQuestHandler(environment, tutorialSessionStore, DEFAULT_QUEST_TUNING),
+      createTutorialQuestHandler(tutorialSessionStore, DEFAULT_QUEST_TUNING),
       new PokedexHandler(pokedexService),
       new SettingsHandler(settingsService),
       new UsageHandler(rateLimitRepo),

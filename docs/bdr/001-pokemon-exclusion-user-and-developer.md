@@ -21,3 +21,7 @@ Accepted
 
 - 除外の合成は `buildExcludedPokemonIDs(environment, userConfiguredIDs)` に集約する。
 - `APP_ENV` は `local` / `dev` / `prod` の定義外の値を起動エラーにする（タイポ等で prod に開発者除外が乗るサイレントな不具合を防止するため）。
+
+## Amendment: 2026-07-21 開発者除外の廃止
+
+開発者除外（prod 以外で固定 6 匹を透過的に除外する機構）を廃止し、除外はユーザー設定による一系統のみとする。開発者が非 prod で特定ポケモンを隠したい場合も、自分の dev アカウントの `excluded_pokemon_ids` に追加する運用に一本化する。`APP_ENV` による環境分岐と起動時バリデーションもあわせて廃止する。

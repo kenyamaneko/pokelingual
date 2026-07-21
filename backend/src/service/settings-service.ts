@@ -25,7 +25,6 @@ export class SettingsService {
    */
   async getSettings(userId: string): Promise<SettingsResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
-    // 設定画面はユーザー自身の除外だけを表示する (開発者除外はシステム側で透過的に適用)。
     // 世代は未設定なら全世代を返し、UI で全チェック状態にする。
     return {
       excluded_pokemon_ids: settings.excluded_pokemon_ids ?? [],
