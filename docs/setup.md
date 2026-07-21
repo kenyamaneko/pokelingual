@@ -204,7 +204,7 @@ docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
 TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
 
 # --update-env-vars 用に1行へ組み立てる
-ENV_VARS="APP_MODE=real,APP_ENV=dev,GEMINI_MODEL=gemini-2.5-flash"
+ENV_VARS="APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash"
 ENV_VARS="${ENV_VARS},FRONTEND_URL=https://PROJECT_ID.web.app"
 ENV_VARS="${ENV_VARS},GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1"
 ENV_VARS="${ENV_VARS},PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500"

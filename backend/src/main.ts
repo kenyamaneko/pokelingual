@@ -134,17 +134,16 @@ async function main(): Promise<void> {
   const questService = new QuestService(
     pokemonClient,
     llmClient,
-    cfg.environment,
     userSettingsRepo,
     randomSource,
     questSessionStore,
     questTuning,
   );
-  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo, cfg.environment);
+  const pokedexService = new PokedexService(userPokemonRepo, pokemonClient, userSettingsRepo);
   const settingsService = new SettingsService(userSettingsRepo, servablePokemonIDs, cfg.maxExcludedPokemonCount);
 
   const questHandler = new QuestHandler(questService, userPokemonRepo);
-  const tutorialQuestHandler = createTutorialQuestHandler(cfg.environment, tutorialSessionStore, questTuning);
+  const tutorialQuestHandler = createTutorialQuestHandler(tutorialSessionStore, questTuning);
   const pokedexHandler = new PokedexHandler(pokedexService);
   const settingsHandler = new SettingsHandler(settingsService);
   const usageHandler = new UsageHandler(rateLimitRepo);

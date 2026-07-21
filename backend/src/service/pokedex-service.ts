@@ -5,7 +5,6 @@ import type {
   UserPokemonRepository,
   UserSettingsRepository,
 } from "../domain/ports.js";
-import type { AppEnvironment } from "../domain/environment.js";
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import type {
   PokedexEntry,
@@ -26,24 +25,16 @@ export class PokedexService {
   private repo: UserPokemonRepository;
   private pokemonClient: PokemonClient;
   private settingsRepo: UserSettingsRepository;
-  private environment: AppEnvironment;
 
   /**
    * @param repo ユーザの図鑑進捗リポジトリ。
    * @param pokemonClient ポケモンのメタ情報取得クライアント。
    * @param settingsRepo ユーザ設定リポジトリ (除外の反映に使う)。
-   * @param environment 実行環境。開発者除外 (prod 以外で適用) の判定に使う。
    */
-  constructor(
-    repo: UserPokemonRepository,
-    pokemonClient: PokemonClient,
-    settingsRepo: UserSettingsRepository,
-    environment: AppEnvironment,
-  ) {
+  constructor(repo: UserPokemonRepository, pokemonClient: PokemonClient, settingsRepo: UserSettingsRepository) {
     this.repo = repo;
     this.pokemonClient = pokemonClient;
     this.settingsRepo = settingsRepo;
-    this.environment = environment;
   }
 
   /**
@@ -56,7 +47,7 @@ export class PokedexService {
       this.repo.getPokedex(userId),
       this.settingsRepo.getSettings(userId),
     ]);
-    const excluded = buildExcludedPokemonIDs(this.environment, settings.excluded_pokemon_ids);
+    const excluded = buildExcludedPokemonIDs(settings.excluded_pokemon_ids);
     const entries: PokedexEntry[] = [];
     let unavailableCount = 0;
 
@@ -85,13 +76,12 @@ export class PokedexService {
   }
 
   /**
-   * 苦手ポケモン名前検索の候補母集団を返す。ユーザ実績・出題世代設定によらず、
-   * 開発者除外を除く取得できる全種族データを対象にする。
+   * 苦手ポケモン名前検索の候補母集団を返す。
+   * ユーザ実績・出題世代・苦手ポケモン設定によらず、取得できる全種族データを対象にする。
    * @returns 検索候補 (図鑑番号・日本語名) の配列。
    */
   async getSearchCandidates(): Promise<PokemonSearchCandidate[]> {
-    const excluded = buildExcludedPokemonIDs(this.environment, null);
-    const targetIDs = this.pokemonClient.getServableIDs().filter((id) => !excluded.has(id));
+    const targetIDs = this.pokemonClient.getServableIDs();
     const pokemons = await Promise.all(targetIDs.map((id) => this.pokemonClient.getPokemonByID(id)));
     return pokemons.map((p) => ({ pokemon_id: p.id, name_ja: p.name_ja }));
   }

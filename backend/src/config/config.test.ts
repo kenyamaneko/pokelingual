@@ -9,7 +9,6 @@ function clearConfigEnv(): void {
   for (const key of [
     "APP_MODE",
     "PORT",
-    "APP_ENV",
     "GOOGLE_CLOUD_PROJECT",
     "GOOGLE_CLOUD_LOCATION",
     "FRONTEND_URL",
@@ -154,7 +153,6 @@ describe("[起動設定] 起動設定の読み込み", () => {
 
   it("real モードで必須 env が揃えば値が反映される", () => {
     process.env.APP_MODE = "real";
-    process.env.APP_ENV = "dev";
     process.env.GOOGLE_CLOUD_PROJECT = "proj";
     process.env.GOOGLE_CLOUD_LOCATION = "loc";
     process.env.FRONTEND_URL = "https://example.com";
@@ -177,7 +175,6 @@ describe("[起動設定] 起動設定の読み込み", () => {
     const cfg = loadConfig();
     expect(cfg).toMatchObject({
       appMode: "real",
-      environment: "dev",
       googleCloudProject: "proj",
       googleCloudLocation: "loc",
       frontendURL: "https://example.com",

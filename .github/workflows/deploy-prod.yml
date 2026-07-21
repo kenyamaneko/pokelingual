@@ -82,7 +82,7 @@ jobs:
             --project ${{ vars.GOOGLE_CLOUD_PROJECT_ID }} \
             --remove-secrets "GEMINI_API_KEY,UPSTASH_REDIS_ENDPOINT,UPSTASH_REDIS_PASSWORD" \
             --update-secrets "UPSTASH_REDIS_URL=pokelingual-upstash-redis-url:latest" \
-            --update-env-vars "APP_MODE=real,APP_ENV=prod,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600,${TUNING_VARS}"
+            --update-env-vars "APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash,FRONTEND_URL=https://pokelingual-prod.web.app,GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=us-central1,PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500,POKEMON_SNAPSHOT_URI=gs://${{ vars.GOOGLE_CLOUD_PROJECT_ID }}-pokemon-snapshot/pokemon-snapshot.json,QUEST_SESSION_TTL_SECONDS=3600,${TUNING_VARS}"
 
   # prod のレート制限枠は実ユーザーと共有するため、Gemini 経路までは広げず health + 認証付き
   # read のみに留める。
