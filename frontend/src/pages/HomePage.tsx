@@ -45,13 +45,13 @@ export function HomePage() {
           className="w-24 h-24 mx-auto mb-6"
         />
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          かがくのちからって　すげー！
-          <span className="block text-lg font-normal text-gray-500 mt-1">
+          <span className="block text-lg font-normal text-gray-500 mb-1">
             Technology is incredible!
           </span>
+          かがくのちからって　すげー！
         </h1>
         <p className="text-gray-500 mb-8">
-          いまは　AIで　えいごを　ほんやくして
+          いまは　AIで　ほんやくを　さいてんして
           <br />
           ポケモンを　つかまえられるんだと
         </p>
