@@ -10,7 +10,7 @@ disable_new_user_signup = false
 
 signup_smoke_enabled = true
 
-firebase_web_app_display_name = "PokeLingual"
+firebase_web_app_display_name = "Pokelingual"
 github_repo                   = "kenyamaneko/pokelingual"
 alert_email                   = "kenya.m.amaoto@gmail.com"
 

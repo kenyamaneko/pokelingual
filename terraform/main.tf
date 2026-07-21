@@ -174,7 +174,7 @@ resource "google_artifact_registry_repository" "backend" {
 resource "google_service_account" "backend" {
   project      = var.project_id
   account_id   = "pokelingual-api-${var.environment}"
-  display_name = "PokeLingual API (${var.environment})"
+  display_name = "Pokelingual API (${var.environment})"
 }
 
 resource "google_project_iam_member" "backend_firestore" {
@@ -359,7 +359,7 @@ resource "google_monitoring_notification_channel" "email" {
   count = var.alerts_enabled || var.billing_account_display_name != "" ? 1 : 0
 
   project      = var.project_id
-  display_name = "PokeLingual Alert Email (${var.environment})"
+  display_name = "Pokelingual Alert Email (${var.environment})"
   type         = "email"
 
   labels = {

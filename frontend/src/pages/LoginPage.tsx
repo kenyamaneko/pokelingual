@@ -62,7 +62,7 @@ export function LoginPage() {
             className="w-20 h-20 mx-auto"
           />
         </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">PokeLingual</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Pokelingual</h1>
         <p className="text-gray-500 text-lg mb-1">ポケリンガル</p>
         <p className="text-gray-400 text-sm mb-8">
           ポケモンで英語を学ぼう！

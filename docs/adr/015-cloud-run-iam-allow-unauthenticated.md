@@ -10,6 +10,6 @@ Firebase Auth を使うフロントエンドから直接アクセスできるよ
 
 ## 背景・課題
 
-Cloud Run はデフォルトで IAM ベースの認証を要求し、リクエストに Google Cloud IAM トークン（サービスアカウントキーや Workload Identity トークン）がないと 401 を返す。PokeLingual のフロントエンドは Firebase Auth を使いリクエストに Firebase ID トークンを付与するが、Firebase ID トークンは Google Cloud IAM トークンではないため、Cloud Run の IAM レイヤーで拒否される。
+Cloud Run はデフォルトで IAM ベースの認証を要求し、リクエストに Google Cloud IAM トークン（サービスアカウントキーや Workload Identity トークン）がないと 401 を返す。Pokelingual のフロントエンドは Firebase Auth を使いリクエストに Firebase ID トークンを付与するが、Firebase ID トークンは Google Cloud IAM トークンではないため、Cloud Run の IAM レイヤーで拒否される。
 
 Google が推奨するエンドユーザー向け API のパターンに従う。IAM 認証はサービス間通信向け（バックエンド同士）、Firebase Auth はエンドユーザー向け（ブラウザ/アプリ）という使い分けである。

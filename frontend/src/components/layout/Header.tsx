@@ -51,7 +51,7 @@ export function Header() {
       <div className="max-w-4xl mx-auto flex justify-between items-center px-4 py-3">
         <div className="flex items-center gap-2">
           <Link to="/" className="text-xl font-bold tracking-wide" onClick={closeMenu}>
-            PokeLingual
+            Pokelingual
           </Link>
           {envLabel && (
             <span className="text-xs font-semibold bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full">

@@ -14,7 +14,7 @@ Accepted
 
 ## 背景・課題
 
-PokeLingual の核心は英語の図鑑説明文を日本語に翻訳することで、EN/JA の説明文ペアが必要になる。PokeAPI の `flavor_text_entries` には制約がある。
+Pokelingual の核心は英語の図鑑説明文を日本語に翻訳することで、EN/JA の説明文ペアが必要になる。PokeAPI の `flavor_text_entries` には制約がある。
 
 - Gen 1-5 のゲーム（赤緑〜BW2）には**英語のみ**存在する
 - 日本語（`ja` / `ja-Hrkt`）が存在するのは **Gen 6（XY）以降**のゲームのみ

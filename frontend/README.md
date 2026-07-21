@@ -1,6 +1,6 @@
-# PokeLingual フロントエンド
+# Pokelingual フロントエンド
 
-PokeLingual の Web クライアント。React + TypeScript + Vite で、英語の図鑑説明文を訳して名前を当て、ポケモンを捕獲するゲーム画面を提供する。
+Pokelingual の Web クライアント。React + TypeScript + Vite で、英語の図鑑説明文を訳して名前を当て、ポケモンを捕獲するゲーム画面を提供する。
 
 セットアップと全体構成はルートの [README](../README.md) を参照。ここではフロントエンド単体の動かし方だけをまとめる。
 
