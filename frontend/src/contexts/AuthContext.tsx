@@ -16,7 +16,7 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { requireAuth } from "../firebase";
+import { requireAuth } from "../lib/firebase";
 import { EmailNotVerifiedError } from "../utils/authErrors";
 
 interface AuthContextType {

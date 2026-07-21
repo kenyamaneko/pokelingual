@@ -1,5 +1,5 @@
 import axios from "axios";
-import { requireAuth, isDevMode } from "../firebase";
+import { requireAuth, isDevMode } from "../lib/firebase";
 import {
   RATE_LIMIT_EVENT,
   rateLimitEvents,

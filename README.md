@@ -60,7 +60,7 @@
 │   │   ├── contexts/        # AuthContext, DevAuthContext
 │   │   ├── hooks/           # カスタムフック
 │   │   ├── api/             # バックエンド API クライアント
-│   │   └── firebase.ts      # Firebase 設定
+│   │   └── lib/             # Firebase 設定
 │   └── Dockerfile.dev
 ├── shared/api-types/        # backend↔frontend API 契約型 (SSoT)
 ├── terraform/               # Google Cloud インフラ（dev/prod）

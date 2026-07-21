@@ -14,7 +14,7 @@ const h = vi.hoisted(() => ({
   signInResult: null as { emailVerified: boolean } | null,
 }));
 
-vi.mock("../firebase", () => ({ requireAuth: () => h.auth }));
+vi.mock("../lib/firebase", () => ({ requireAuth: () => h.auth }));
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: class {},
   onAuthStateChanged: (_auth: unknown, cb: (user: unknown) => void) => {
