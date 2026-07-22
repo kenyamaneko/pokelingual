@@ -159,6 +159,8 @@ client_secret を tfstate に平文で残さないため、google.com IdP の有
 | `FIREBASE_MESSAGING_SENDER_ID` | FCM Sender ID | `terraform output firebase_messaging_sender_id` |
 | `FIREBASE_APP_ID` | Firebase App ID | `terraform output firebase_app_id` |
 | `API_BASE_URL` | バックエンド URL | Cloud Run デプロイ後に取得 |
+| `FRONTEND_URL` | フロントエンドの URL（backend の CORS 許可オリジン） | `https://PROJECT_ID.web.app` |
+| `POKEMON_SNAPSHOT_URI` | ポケモン種別データのスナップショット読み込み元 | `gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json` |
 
 以下は機密なので **Secret** に設定する（dev 環境のみ）:
 
@@ -200,23 +202,25 @@ gcloud auth configure-docker REGION-docker.pkg.dev
 docker build -f backend/Dockerfile -t REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial .
 docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
 
+# 環境非依存の共通設定は backend/.env.infra、環境ごとの運用値は backend/.env.dev（prod は backend/.env.prod）、
 # チューニングパラメーターは backend/.env.tuning を唯一の情報源とする
+INFRA_VARS=$(grep -vE '^(#|$)' backend/.env.infra | paste -sd, -)
+ENV_VARS=$(grep -vE '^(#|$)' backend/.env.dev | paste -sd, -)
 TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
-
-# --update-env-vars 用に1行へ組み立てる
-ENV_VARS="APP_MODE=real,GEMINI_MODEL=gemini-2.5-flash"
-ENV_VARS="${ENV_VARS},FRONTEND_URL=https://PROJECT_ID.web.app"
-ENV_VARS="${ENV_VARS},GOOGLE_CLOUD_PROJECT=PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1"
-ENV_VARS="${ENV_VARS},PER_USER_DAILY_LIMIT=30,GLOBAL_DAILY_LIMIT=1500"
-ENV_VARS="${ENV_VARS},POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json"
-ENV_VARS="${ENV_VARS},QUEST_SESSION_TTL_SECONDS=3600,${TUNING_VARS}"
+ENV_KV=(
+  "APP_MODE=real"
+  "FRONTEND_URL=https://PROJECT_ID.web.app"
+  "GOOGLE_CLOUD_PROJECT=PROJECT_ID"
+  "POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json"
+)
+UPDATE_ENV_VARS=$(IFS=,; echo "${ENV_KV[*]},${INFRA_VARS},${ENV_VARS},${TUNING_VARS}")
 
 gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \
   --region asia-northeast1 --project PROJECT_ID \
   --service-account pokelingual-api-dev@PROJECT_ID.iam.gserviceaccount.com \
   --update-secrets "UPSTASH_REDIS_URL=pokelingual-upstash-redis-url:latest" \
-  --update-env-vars "${ENV_VARS}" \
+  --update-env-vars "${UPDATE_ENV_VARS}" \
   --allow-unauthenticated
 
 # API_BASE_URL を取得して GitHub Variables に設定
@@ -230,10 +234,6 @@ gcloud run services describe pokelingual-api-dev --region asia-northeast1 --form
 `.github/workflows/deploy-dev.yml`（dev）と `.github/workflows/deploy-prod.yml`（prod）内の以下の値を自分の環境に合わせて変更:
 
 ```yaml
-# FRONTEND_URL（各ファイルにハードコード）
-#   deploy-dev.yml:  https://YOUR-DEV.web.app
-#   deploy-prod.yml: https://YOUR-PROD.web.app
-
 # サービス名（各ファイルの env.SERVICE_NAME）
 #   deploy-dev.yml:  pokelingual-api-dev
 #   deploy-prod.yml: pokelingual-api-prod

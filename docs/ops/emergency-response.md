@@ -48,7 +48,7 @@ gcloud run services update pokelingual-api-prod \
   --update-env-vars "GLOBAL_DAILY_LIMIT=100"
 ```
 
-この変更は次の `v*` タグデプロイで deploy-prod.yml に書かれた値に戻る。恒久的に変えるときは deploy-prod.yml の値を修正して新しいタグでリリースする。
+この変更は次の `v*` タグデプロイで `backend/.env.prod` に書かれた値に戻る。恒久的に変えるときは `backend/.env.prod` の値を修正して新しいタグでリリースする。
 
 ## サービスを緊急停止する
 
