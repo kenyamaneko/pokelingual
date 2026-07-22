@@ -207,11 +207,13 @@ docker push REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial
 INFRA_VARS=$(grep -vE '^(#|$)' backend/.env.infra | paste -sd, -)
 ENV_VARS=$(grep -vE '^(#|$)' backend/.env.dev | paste -sd, -)
 TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
-UPDATE_ENV_VARS="APP_MODE=real"
-UPDATE_ENV_VARS="${UPDATE_ENV_VARS},FRONTEND_URL=https://PROJECT_ID.web.app"
-UPDATE_ENV_VARS="${UPDATE_ENV_VARS},GOOGLE_CLOUD_PROJECT=PROJECT_ID"
-UPDATE_ENV_VARS="${UPDATE_ENV_VARS},POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json"
-UPDATE_ENV_VARS="${UPDATE_ENV_VARS},${INFRA_VARS},${ENV_VARS},${TUNING_VARS}"
+ENV_KV=(
+  "APP_MODE=real"
+  "FRONTEND_URL=https://PROJECT_ID.web.app"
+  "GOOGLE_CLOUD_PROJECT=PROJECT_ID"
+  "POKEMON_SNAPSHOT_URI=gs://PROJECT_ID-pokemon-snapshot/pokemon-snapshot.json"
+)
+UPDATE_ENV_VARS=$(IFS=,; echo "${ENV_KV[*]},${INFRA_VARS},${ENV_VARS},${TUNING_VARS}")
 
 gcloud run deploy pokelingual-api-dev \
   --image REGION-docker.pkg.dev/PROJECT_ID/pokelingual-backend/api:initial \

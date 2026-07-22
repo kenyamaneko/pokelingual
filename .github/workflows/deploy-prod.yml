@@ -78,11 +78,13 @@ jobs:
           INFRA_VARS=$(grep -vE '^(#|$)' backend/.env.infra | paste -sd, -)
           ENV_VARS=$(grep -vE '^(#|$)' backend/.env.prod | paste -sd, -)
           TUNING_VARS=$(grep -vE '^(#|$)' backend/.env.tuning | paste -sd, -)
-          UPDATE_ENV_VARS="APP_MODE=real"
-          UPDATE_ENV_VARS="${UPDATE_ENV_VARS},FRONTEND_URL=${{ vars.FRONTEND_URL }}"
-          UPDATE_ENV_VARS="${UPDATE_ENV_VARS},GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
-          UPDATE_ENV_VARS="${UPDATE_ENV_VARS},POKEMON_SNAPSHOT_URI=${{ vars.POKEMON_SNAPSHOT_URI }}"
-          UPDATE_ENV_VARS="${UPDATE_ENV_VARS},${INFRA_VARS},${ENV_VARS},${TUNING_VARS}"
+          ENV_KV=(
+            "APP_MODE=real"
+            "FRONTEND_URL=${{ vars.FRONTEND_URL }}"
+            "GOOGLE_CLOUD_PROJECT=${{ vars.GOOGLE_CLOUD_PROJECT_ID }}"
+            "POKEMON_SNAPSHOT_URI=${{ vars.POKEMON_SNAPSHOT_URI }}"
+          )
+          UPDATE_ENV_VARS=$(IFS=,; echo "${ENV_KV[*]},${INFRA_VARS},${ENV_VARS},${TUNING_VARS}")
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image "${{ env.GOOGLE_CLOUD_REGION }}-docker.pkg.dev/${{ vars.GOOGLE_CLOUD_PROJECT_ID }}/pokelingual-backend/api:${{ github.sha }}" \
             --region ${{ env.GOOGLE_CLOUD_REGION }} \
