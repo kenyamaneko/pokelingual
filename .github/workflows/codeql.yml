@@ -1,0 +1,58 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.py"
+      - "**/package-lock.json"
+      - ".github/workflows/**"
+  # Security タブのアラート状態は default ブランチの解析結果で確定するため、main への push でも実行する。
+  push:
+    branches: [main]
+    paths:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.py"
+      - "**/package-lock.json"
+      - ".github/workflows/**"
+  # クエリ側の更新を取り込むため、コードが変わらなくても定期実行する。
+  schedule:
+    - cron: "0 21 * * 0"
+
+permissions:
+  contents: read
+  security-events: write
+
+# 同一 ref での連続実行は最新のみ残す (コスト削減)
+concurrency:
+  group: codeql-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 20
+    strategy:
+      # 一つの言語が失敗しても他の言語の結果は得たいので中断しない。
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python, actions]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
