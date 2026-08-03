@@ -60,10 +60,10 @@ gcloud storage buckets update gs://my-pokelingual-prod-tfstate --versioning
 | `github_repo` | GitHub リポジトリ（`owner/repo`） | `your-username/your-repo` |
 | `alert_email` | Cloud Monitoring 通知先メールアドレス | 自分のメールアドレス |
 | `slack_notification_channel_id` | 手動作成した Slack 通知チャネルのリソース名 | 使わないなら `""` |
-| `billing_account_display_name` | 請求アカウントの表示名 | 使わないなら `""` |
-| `monthly_budget_jpy` | 月次予算の上限（円）。50/80/100% でアラート | `5000` |
+| `billing_account_id` | 請求アカウント ID | 使わないなら `""` |
+| `monthly_budget_jpy` | 月次予算の上限（円）。5/50/100% でアラート | `5000` |
 
-`slack_notification_channel_id` は OAuth 認可が必要で Terraform から作成できないため、使う場合は Slack 側で先にチャネルを作成しておく。`""` のままなら Slack 通知なしで進められる。`billing_account_display_name` も `""` なら Billing Budget アラートは作成されない（その場合、コスト超過の検知はアプリ層のレートリミットだけに頼ることになる）。
+`slack_notification_channel_id` は OAuth 認可が必要で Terraform から作成できないため、使う場合は Slack 側で先にチャネルを作成しておく。`""` のままなら Slack 通知なしで進められる。`billing_account_id` も `""` なら Billing Budget アラートは作成されない（その場合、コスト超過の検知はアプリ層のレートリミットだけに頼ることになる）。
 
 `backend.gcs.tfbackend` の `bucket` も、上で作成した state 用バケット名に合わせる。
 
@@ -86,7 +86,7 @@ Terraform が作成するリソース:
 - Artifact Registry（Docker イメージ保管）
 - Workload Identity Federation（GitHub Actions のデプロイ用と、PR の Terraform Plan 用の 2 系統）
 - Cloud Monitoring ダッシュボード、および `alerts_enabled = true` の環境ではアラートポリシー
-- `billing_account_display_name` を設定した環境では Billing Budget アラート
+- `billing_account_id` を設定した環境では Billing Budget アラート
 - サービスアカウント + IAM（Vertex AI 呼び出し用の `roles/aiplatform.user` を含む）
 - Secret Manager のシークレットの箱（Upstash Redis 接続情報用。値は空で作成され、後述の手順で手動投入する）
 - ポケモン種別データのスナップショット置き場（非公開 Cloud Storage バケット）

@@ -359,7 +359,7 @@ resource "google_project_iam_member" "terraform_plan_firebaserules_viewer" {
 
 resource "google_monitoring_notification_channel" "email" {
   # alerts_enabled だけで判定すると、Billing Budget のみ有効な環境で通知先が空になるため両方を見る。
-  count = var.alerts_enabled || var.billing_account_display_name != "" ? 1 : 0
+  count = var.alerts_enabled || var.billing_account_id != "" ? 1 : 0
 
   project      = var.project_id
   display_name = "Pokelingual Alert Email (${var.environment})"

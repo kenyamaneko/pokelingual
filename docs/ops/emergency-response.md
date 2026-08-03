@@ -11,7 +11,7 @@ Cloud Monitoring / Billing Budget のアラートが発報したときの初動�
 | Cloud Run 5xx Error Rate (prod) | 5xx 応答が 5 req/s を5分間超過 | email + Slack |
 | Cloud Run High Latency (prod) | p95 レイテンシが 5 秒を5分間超過 | email + Slack |
 | Application Error Logs (prod) | severity=ERROR のログが5分間に1件以上 | email + Slack |
-| 月次予算 (dev / prod) | 月予算の 50% / 80% / 100% 到達 | email |
+| 月次予算 (dev / prod) | 月予算の 5% / 50% / 100% 到達 | email |
 
 Slack 通知は、手動作成した通知チャネルを terraform 変数 `slack_notification_channel_id` で渡した場合のみ付く。予算アラートの通知は数時間から半日遅れる。
 
