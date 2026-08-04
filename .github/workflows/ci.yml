@@ -127,7 +127,7 @@ jobs:
 
       # Firestore Emulator は Java ランタイムを必要とする。firebase-tools が emulator jar を担うため gcloud は不要。
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.6.0
         with:
           distribution: temurin
           java-version: 21
