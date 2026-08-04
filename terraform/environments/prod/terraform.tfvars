@@ -16,7 +16,7 @@ alert_email                   = "kenya.m.amaoto@gmail.com"
 
 slack_notification_channel_id = "projects/pokelingual-prod/notificationChannels/6947893051547836001"
 
-billing_account_display_name = "ken-yamaneko-billing"
-monthly_budget_jpy           = 5000
+billing_account_id = "019A0B-9A103A-B4C602"
+monthly_budget_jpy = 5000
 
 max_instance_count = 3

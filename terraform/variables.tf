@@ -58,15 +58,16 @@ variable "slack_notification_channel_id" {
   type        = string
 }
 
-# 請求アカウントの表示名。空文字なら Billing Budget は作成しない。
-# 作成には Terraform 実行者が billing.budgets.create 権限を請求アカウントレベルで持つ必要あり
-variable "billing_account_display_name" {
-  description = "Google Cloud billing account display name. Leave empty to skip Billing Budget creation."
+# 請求アカウント ID。空文字なら Billing Budget は作成しない。
+# 表示名検索を避け、Terraform 実行者に請求アカウントの閲覧権限を不要にするため ID を直接指定する。
+# 作成には billing.budgets.create 権限を請求アカウントレベルで持つ必要あり
+variable "billing_account_id" {
+  description = "Google Cloud billing account ID (e.g. 012345-567890-ABCDEF). Leave empty to skip Billing Budget creation."
   type        = string
 }
 
 variable "monthly_budget_jpy" {
-  description = "Monthly budget cap in JPY. Alerts fire at 50/80/100% of this amount."
+  description = "Monthly budget cap in JPY. Alerts fire at 5/50/100% of this amount."
   type        = number
 }
 

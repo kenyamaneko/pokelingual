@@ -20,10 +20,7 @@ alert_email                   = "kenya.m.amaoto@gmail.com"
 # alerts_enabled = false のためどのアラートにも紐付かず未使用
 slack_notification_channel_id = ""
 
-# 請求アカウントの表示名。空文字なら Billing Budget を作成しない。
-# 実際に Budget を運用している場合は請求アカウントの表示名を設定すること
-# (空のまま apply すると既存の Budget が削除される)。
-billing_account_display_name = ""
-monthly_budget_jpy           = 5000
+billing_account_id = "019A0B-9A103A-B4C602"
+monthly_budget_jpy = 5000
 
 max_instance_count = 1
