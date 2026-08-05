@@ -26,6 +26,11 @@
     "ioredis": "^5.11.1",
     "js-levenshtein": "^1.1.6"
   },
+  "overrides": {
+    "firebase-admin": {
+      "brace-expansion": "^2.1.4"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@stryker-mutator/core": "^9.6.1",

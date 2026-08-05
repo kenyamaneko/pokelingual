@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { useTutorial } from "../contexts/TutorialContext";
 import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";

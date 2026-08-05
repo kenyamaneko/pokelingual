@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";
 
 /**

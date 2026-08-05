@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { useState, type FormEvent } from "react";
 import { POKE_BALL_SPRITE_URL } from "../utils/pokemonSprites";

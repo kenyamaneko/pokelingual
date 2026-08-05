@@ -1,6 +1,6 @@
 import { render, type RenderOptions, type RenderResult } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router";
 import type { User } from "firebase/auth";
 import { AuthContext } from "../contexts/AuthContext";
 import { UsageProvider } from "../contexts/UsageContext";
