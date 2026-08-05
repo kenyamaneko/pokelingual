@@ -13,7 +13,7 @@ data "google_project" "current" {
 resource "google_billing_budget" "monthly" {
   count = var.billing_account_id != "" ? 1 : 0
 
-  billing_account = "billingAccounts/${var.billing_account_id}"
+  billing_account = var.billing_account_id
   display_name    = "pokelingual-${var.environment}-budget"
 
   # budget_filter.projects は projects/PROJECT_NUMBER 形式（PROJECT_ID ではない）
