@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router";
 import type { User } from "firebase/auth";
 import { AuthContext } from "../../contexts/AuthContext";
 import { ProtectedRoute } from "./ProtectedRoute";

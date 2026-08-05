@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsApi } from "../api/settingsApi";
 import { pokedexApi } from "../api/pokedexApi";

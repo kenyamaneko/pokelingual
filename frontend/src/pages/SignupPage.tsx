@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { mapAuthErrorMessage } from "../utils/authErrors";

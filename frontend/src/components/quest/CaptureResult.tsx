@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import type { CaptureResponse } from "../../../../shared/api-types/quest";
 import { getTypeColor, getTypeLabel } from "../../utils/pokemonTypes";
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { QuestPage } from "./QuestPage";
 import { TutorialInstructionCallout } from "../components/tutorial/TutorialInstructionCallout";
 import { TutorialIntroModal } from "../components/tutorial/TutorialIntroModal";
