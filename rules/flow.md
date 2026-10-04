@@ -9,11 +9,11 @@
 
 ## [flow] 環境への反映
 
-`main` push → dev、`main` 上のタグ (`v*`) push → prod へ自動デプロイ。トリガーの実装は `.github/workflows/deploy-dev.yml` / `.github/workflows/deploy-prod.yml` を参照。
+`main` push → dev、「Deploy to Prod」の手動実行 → prod へ自動デプロイ。トリガーの実装は `.github/workflows/deploy-dev.yml` / `.github/workflows/deploy-prod.yml` を参照。
 
 ## [flow] バージョニング
 
-タグ形式は `vMAJOR.MINOR.PATCH`。CI/CD パイプライン内で `git describe --tags --always` を実行し、タグ付きコミットなら `v1.0.0`、タグから N コミット後なら `v1.0.0-3-gabc1234`、タグなしなら短縮 SHA を返す。`v*` タグの push で prod デプロイが実行される。採用理由は `docs/adr/019-semver-versioning.md` を参照。
+タグ形式は `vMAJOR.MINOR.PATCH`。CI/CD パイプライン内で `git describe --tags --always` を実行し、タグ付きコミットなら `v1.0.0`、タグから N コミット後なら `v1.0.0-3-gabc1234`、タグなしなら短縮 SHA を返す。タグは「Deploy to Prod」の実行時に選んだバージョンの種類 (patch / minor / major) から CI が打つ。採用理由は `docs/adr/019-semver-versioning.md` を参照。
 
 ## [flow] デプロイ後の検証と prod デプロイ
 

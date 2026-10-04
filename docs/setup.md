@@ -173,7 +173,7 @@ client_secret を tfstate に平文で残さないため、google.com IdP の有
 
 #### ポケモンスナップショットの生成と配置
 
-real モードの backend は起動時に、非公開の Cloud Storage バケットからポケモンの種別データのスナップショットを読み込む。スナップショットが未配置だと起動に失敗するため、backend をデプロイする前に次を済ませておく。`main` への push は dev へ自動デプロイされるので、この変更をマージする前に dev で 1〜3 を実行する。prod も次の `v*` タグ push の前に同じ手順を行う。
+real モードの backend は起動時に、非公開の Cloud Storage バケットからポケモンの種別データのスナップショットを読み込む。スナップショットが未配置だと起動に失敗するため、backend をデプロイする前に次を済ませておく。`main` への push は dev へ自動デプロイされるので、この変更をマージする前に dev で 1〜3 を実行する。prod も次の「Deploy to Prod」の実行前に同じ手順を行う。
 
 1. `terraform apply`（前述「Terraform でインフラ構築」）でバケット `PROJECT_ID-pokemon-snapshot` を作成する。
 2. スナップショットを生成する。生成物 (`backend/pokemon-snapshot.json`) はポケモン社の著作物を含むため、公開リポジトリにコミットしない。
@@ -227,7 +227,7 @@ gcloud run deploy pokelingual-api-dev \
 gcloud run services describe pokelingual-api-dev --region asia-northeast1 --format 'value(status.url)'
 ```
 
-以降は `main` への push で dev、`v*` タグ push で prod に自動デプロイされる。後続のデプロイは `.github/workflows/deploy-dev.yml` / `deploy-prod.yml` の定義に従うため、`--max-instances` 等ここにないフラグが追加で付くことがある。
+以降は `main` への push で dev、GitHub Actions の「Deploy to Prod」の実行で prod に自動デプロイされる。タグ (`v*`) はワークフローが打つ。後続のデプロイは `.github/workflows/deploy-dev.yml` / `deploy-prod.yml` の定義に従うため、`--max-instances` 等ここにないフラグが追加で付くことがある。
 
 ### デプロイワークフローの環境固有値を更新
 

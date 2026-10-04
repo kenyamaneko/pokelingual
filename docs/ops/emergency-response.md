@@ -48,7 +48,7 @@ gcloud run services update pokelingual-api-prod \
   --update-env-vars "GLOBAL_DAILY_LIMIT=100"
 ```
 
-この変更は次の `v*` タグデプロイで `backend/.env.prod` に書かれた値に戻る。恒久的に変えるときは `backend/.env.prod` の値を修正して新しいタグでリリースする。
+この変更は次の「Deploy to Prod」の実行で `backend/.env.prod` に書かれた値に戻る。恒久的に変えるときは `backend/.env.prod` の値を修正して新しいバージョンでリリースする。
 
 ## サービスを緊急停止する
 
@@ -68,7 +68,7 @@ gcloud run services update pokelingual-api-prod \
      --member=allUsers --role=roles/run.invoker
    ```
 
-3. 停止中は `v*` タグを打たない。deploy-prod.yml は毎回 `--allow-unauthenticated` を適用し hosting も再デプロイするため、タグデプロイが停止を解除してしまう。
+3. 停止中は「Deploy to Prod」を実行しない。deploy-prod.yml は毎回 `--allow-unauthenticated` を適用し hosting も再デプロイするため、実行すると停止が解除されてしまう。
 
 ## 停止の解除
 
