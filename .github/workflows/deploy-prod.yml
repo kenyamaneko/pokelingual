@@ -1,6 +1,5 @@
 name: Deploy to Prod
 
-# バージョンの桁は後方互換や変化の大きさの判断であり変更内容から導けないため、人が選んで実行する。
 on:
   workflow_dispatch:
     inputs:
@@ -27,7 +26,6 @@ env:
 jobs:
   tag-version:
     name: Tag Version
-    # main 以外のコミットにタグを打って prod に出さないため、main から実行したときだけ進める。
     if: github.ref == 'refs/heads/main'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
