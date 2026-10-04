@@ -4,28 +4,31 @@ import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-em
 
 const db = requireFirestoreEmulator();
 
-describe("チュートリアル完了フラグの永続化", () => {
+describe("[チュートリアル] 完了状態の記録", () => {
   beforeEach(clearFirestoreEmulator);
 
-  it("一度も保存していないユーザーの完了フラグを取得すると、未完了が返る", async () => {
-    const repo = new UserRepo(db);
-    const user = await repo.getUser("newcomer");
-    expect(user.tutorial_completed).toBe(false);
-  });
+  describe("チュートリアル完了状態を取得する", () => {
+    describe("正常系", () => {
+      it.each([
+        ["どのユーザーも完了を一度も記録していない", []],
+        ["別のユーザーだけが完了を記録している", ["bob"]],
+      ])("%sとき、未完了になる", async (_label, usersWithCompletion) => {
+        const repo = new UserRepo(db);
+        for (const userId of usersWithCompletion) {
+          await repo.markTutorialCompleted(userId);
+        }
 
-  it("完了を保存した後に取得すると、完了済みが返る", async () => {
-    const repo = new UserRepo(db);
-    await repo.markTutorialCompleted("alice");
+        const user = await repo.getUser("alice");
+        expect(user.tutorial_completed).toBe(false);
+      });
 
-    const user = await repo.getUser("alice");
-    expect(user.tutorial_completed).toBe(true);
-  });
+      it("チュートリアルの完了を記録したとき、完了済みになる", async () => {
+        const repo = new UserRepo(db);
+        await repo.markTutorialCompleted("alice");
 
-  it("あるユーザーの完了は別ユーザーの状態に影響しない", async () => {
-    const repo = new UserRepo(db);
-    await repo.markTutorialCompleted("alice");
-
-    const bob = await repo.getUser("bob");
-    expect(bob.tutorial_completed).toBe(false);
+        const user = await repo.getUser("alice");
+        expect(user.tutorial_completed).toBe(true);
+      });
+    });
   });
 });

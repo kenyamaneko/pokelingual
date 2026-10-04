@@ -8,14 +8,6 @@ import { LoginPage } from "./LoginPage";
 import { SignupPage } from "./SignupPage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 
-/**
- * 認証画面間の遷移仕様:
- * - ログイン画面からサインアップ画面・パスワードリセット画面へ行ける
- * - サインアップ画面・パスワードリセット画面からログイン画面へ戻れる
- *
- * 未ログイン状態 (user=null) を前提とする。ログイン済みだと各画面はホームへ
- * リダイレクトするため、遷移リンク自体を検証できないため。
- */
 const unauthenticated = {
   user: null as User | null,
   loading: false,
@@ -26,6 +18,7 @@ const unauthenticated = {
   logout: async () => {},
 };
 
+// ログイン済みだと各画面がホームへ遷移してリンクの遷移を確かめられないため、既定は未ログインにする
 function renderAuthRoutes(initialPath: string, user: User | null = null) {
   return render(
     <AuthContext.Provider value={{ ...unauthenticated, user }}>
@@ -43,59 +36,60 @@ function renderAuthRoutes(initialPath: string, user: User | null = null) {
 
 const authenticatedUser = { uid: "alice" } as unknown as User;
 
-describe("[認証] 認証画面間の遷移", () => {
-  it("ログイン画面からサインアップ画面へ行ける", async () => {
-    const user = userEvent.setup();
-    renderAuthRoutes("/login");
+describe("[認証] 認証画面の遷移", () => {
+  describe("正常系", () => {
+    describe("ログインしていないとき", () => {
+      it("ログイン画面の「アカウントを作る」リンクを押すと、新規登録画面が表示される", async () => {
+        const user = userEvent.setup();
+        renderAuthRoutes("/login");
 
-    await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
+        await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
 
-    expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
+      });
+
+      it("ログイン画面の「再設定する」リンクを押すと、パスワード再設定画面が表示される", async () => {
+        const user = userEvent.setup();
+        renderAuthRoutes("/login");
+
+        await user.click(screen.getByRole("link", { name: "再設定する" }));
+
+        expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
+      });
+
+      it("新規登録画面の「ログイン」リンクを押すと、ログイン画面が表示される", async () => {
+        const user = userEvent.setup();
+        renderAuthRoutes("/signup");
+
+        await user.click(screen.getByRole("link", { name: "ログイン" }));
+
+        expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+      });
+
+      it("パスワード再設定画面の「ログインに戻る」リンクを押すと、ログイン画面が表示される", async () => {
+        const user = userEvent.setup();
+        renderAuthRoutes("/reset-password");
+
+        await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
+
+        expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+      });
+    });
   });
 
-  it("ログイン画面からパスワードリセット画面へ行ける", async () => {
-    const user = userEvent.setup();
-    renderAuthRoutes("/login");
+  describe("異常系", () => {
+    describe("ログイン済みのとき", () => {
+      it("ログイン画面を開くと、ホーム画面に遷移する", async () => {
+        renderAuthRoutes("/login", authenticatedUser);
 
-    await user.click(screen.getByRole("link", { name: "再設定する" }));
+        expect(await screen.findByTestId("home-page")).toBeInTheDocument();
+      });
 
-    expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
-  });
+      it("新規登録画面を開くと、ホーム画面に遷移する", async () => {
+        renderAuthRoutes("/signup", authenticatedUser);
 
-  it("サインアップ画面からログイン画面へ戻れる", async () => {
-    const user = userEvent.setup();
-    renderAuthRoutes("/signup");
-
-    await user.click(screen.getByRole("link", { name: "ログイン" }));
-
-    expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
-  });
-
-  it("パスワードリセット画面からログイン画面へ戻れる", async () => {
-    const user = userEvent.setup();
-    renderAuthRoutes("/reset-password");
-
-    await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
-
-    expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
-  });
-});
-
-/**
- * ログイン済みユーザーが認証画面を開いたときの遷移仕様:
- * - ログイン/サインアップ成功で user が確定すると、各画面はホーム (/) へリダイレクトする
- *   (ログイン・登録成功後にホームへ着地する導線そのもの)
- */
-describe("[認証] ログイン済みユーザーが認証画面を開いたときの遷移", () => {
-  it("認証済みでログイン画面を開くと、ホーム画面へ遷移する", async () => {
-    renderAuthRoutes("/login", authenticatedUser);
-
-    expect(await screen.findByTestId("home-page")).toBeInTheDocument();
-  });
-
-  it("認証済みでサインアップ画面を開くと、ホーム画面へ遷移する", async () => {
-    renderAuthRoutes("/signup", authenticatedUser);
-
-    expect(await screen.findByTestId("home-page")).toBeInTheDocument();
+        expect(await screen.findByTestId("home-page")).toBeInTheDocument();
+      });
+    });
   });
 });

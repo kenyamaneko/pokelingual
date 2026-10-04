@@ -14,174 +14,15 @@ import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 import { DEFAULT_QUEST_TUNING } from "../testing/quest-tuning-fixture.js";
 
-/**
- * 捕獲確率の仕様。式そのものは書き写さず、外から観測できる性質で確かめる。
- * ボール補正は QuestService の設定値から独立した純関数の引数のため、テスト固有のダミー値で確かめる。
- */
-describe("捕獲確率の計算", () => {
-  const POKE_BONUS = 0;
-  const GREAT_BONUS = 1.5;
-  const ULTRA_BONUS = 3.0;
-
-  it("種族値合計が高く最終評価点0 + ボール補正なしなら捕獲は困難 (確率は低い)", () => {
-    expect(calculateCaptureRate(0, 680, POKE_BONUS)).toBeLessThan(0.05);
-  });
-
-  it("最終評価点・種族値合計・ボール補正が最も捕獲しやすい組み合わせでも、捕獲確率は1.0を超えない", () => {
-    expect(calculateCaptureRate(99, 200, ULTRA_BONUS)).toBeLessThanOrEqual(1);
-  });
-
-  it("同じ種族値合計・同じボール補正なら、最終評価点が高いほど捕獲確率が上がる", () => {
-    expect(calculateCaptureRate(90, 300, POKE_BONUS)).toBeGreaterThan(
-      calculateCaptureRate(30, 300, POKE_BONUS),
-    );
-  });
-
-  it("同じ最終評価点・同じボール補正なら、種族値合計が高いほど捕獲確率が下がる", () => {
-    expect(calculateCaptureRate(50, 300, POKE_BONUS)).toBeGreaterThan(
-      calculateCaptureRate(50, 680, POKE_BONUS),
-    );
-  });
-
-  it("ボール補正が大きいほど捕獲確率が上がる", () => {
-    expect(calculateCaptureRate(0, 680, ULTRA_BONUS)).toBeGreaterThan(
-      calculateCaptureRate(0, 680, POKE_BONUS),
-    );
-  });
-
-  it("最終評価点とポケモンの種族値が同一なら、ボール補正が大きいほど段階的に捕獲確率が上がる", () => {
-    const pokeRate = calculateCaptureRate(20, 500, POKE_BONUS);
-    const greatRate = calculateCaptureRate(20, 500, GREAT_BONUS);
-    const ultraRate = calculateCaptureRate(20, 500, ULTRA_BONUS);
-    expect(greatRate).toBeGreaterThan(pokeRate);
-    expect(ultraRate).toBeGreaterThan(greatRate);
-  });
-
-  it("最終評価点が上限 (99) + 大きいボール補正なら、種族値合計が高い (680) でもほぼ確実に捕獲できる", () => {
-    expect(calculateCaptureRate(99, 680, ULTRA_BONUS)).toBeGreaterThan(0.99);
-  });
-});
-
-/**
- * 英語名の伏せ字仕様。純関数なので具体値で直接確かめる。
- */
-describe("[ポケモン名マスク] 英語説明文のポケモン名マスク", () => {
-  it("ポケモン名が空文字なら原文のまま", () => {
-    expect(maskPokemonNameEN("A wild creature.", "")).toBe("A wild creature.");
-  });
-
-  it("ポケモン名が本文に無ければ原文のまま", () => {
-    expect(maskPokemonNameEN("Hello world", "Pikachu")).toBe("Hello world");
-  });
-
-  it("文中の出現は小文字始まりの this Pokémon に置換", () => {
-    expect(maskPokemonNameEN("A wild Pikachu appeared.", "Pikachu")).toBe(
-      "A wild this Pokémon appeared.",
-    );
-  });
-
-  it("文頭の出現は大文字始まりの This Pokémon に置換", () => {
-    expect(maskPokemonNameEN("Pikachu is yellow.", "Pikachu")).toBe("This Pokémon is yellow.");
-  });
-
-  it("文末記号 (.!?) の直後も文頭扱いで大文字化", () => {
-    expect(maskPokemonNameEN("Hello. Pikachu runs.", "Pikachu")).toBe("Hello. This Pokémon runs.");
-  });
-
-  it("複数形ヒント (several 等) の直後は of these Pokémon に置換", () => {
-    expect(maskPokemonNameEN("Several Pikachu gather.", "Pikachu")).toBe(
-      "Several of these Pokémon gather.",
-    );
-  });
-
-  it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
-    expect(maskPokemonNameEN("Pikachu and Pikachu", "Pikachu")).toBe(
-      "This Pokémon and this Pokémon",
-    );
-  });
-
-  it("大文字小文字を無視して一致する", () => {
-    expect(maskPokemonNameEN("A pikachu here", "Pikachu")).toBe("A this Pokémon here");
-  });
-});
-
-/**
- * 日本語名の伏せ字仕様。
- */
-describe("[ポケモン名マスク] 日本語説明文のポケモン名マスク", () => {
-  it("本文中のポケモン名を「この ポケモン」に置換する", () => {
-    expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
-  });
-
-  it("ポケモン名が本文に複数回現れるとき、すべて置換される", () => {
-    expect(maskPokemonNameJA("ピカチュウとピカチュウ", "ピカチュウ")).toBe(
-      "この ポケモンとこの ポケモン",
-    );
-  });
-
-  it("ポケモン名が空文字なら原文のまま", () => {
-    expect(maskPokemonNameJA("あいうえお", "")).toBe("あいうえお");
-  });
-
-  it("ポケモン名が本文に無ければ原文のまま", () => {
-    expect(maskPokemonNameJA("あいうえお", "ピカチュウ")).toBe("あいうえお");
-  });
-});
-
-/**
- * 採点単位の判定値配列からスコアを算出する仕様。純関数なので具体値で直接確かめる。
- */
-describe("採点単位からのスコア算出", () => {
-  it("単位が1件で判定値が0.6のとき、スコアは60になる", () => {
-    expect(computeScoreFromUnits([0.6])).toBe(60);
-  });
-
-  it("判定値が1.0, 0.2, 0.0の3件のとき、平均の40がスコアになる", () => {
-    expect(computeScoreFromUnits([1.0, 0.2, 0.0])).toBe(40);
-  });
-
-  it("判定値の平均が0.8のとき、単位が1件ならスコアは80になる", () => {
-    expect(computeScoreFromUnits([0.8])).toBe(80);
-  });
-
-  it("判定値の平均が0.8のとき、単位が3件でもスコアは80になる", () => {
-    expect(computeScoreFromUnits([0.8, 0.8, 0.8])).toBe(80);
-  });
-
-  it("判定値の平均に端数が出るとき、四捨五入した整数がスコアになる", () => {
-    expect(computeScoreFromUnits([1.0, 1.0, 0.0])).toBe(67);
-  });
-});
-
-/**
- * 素点から最終評価点への変換仕様。純関数なので具体値で直接確かめる。
- */
-describe("最終評価点変換", () => {
-  it.each([
-    [0, 0],
-    [100, 99],
-    [10, 0],
-    [11, 1],
-    [15, 6],
-  ])("素点が %i のとき、最終評価点は %i になる", (rawScore, finalScore) => {
-    expect(translateToFinalScore(rawScore)).toBe(finalScore);
-  });
-});
-
-// ============================================================
-// セッションを持つメソッド群 (newQuest / scoreTranslation / guessName / skipGuess / attemptCapture)。
-// 依存はポート経由のスタブで注入する (モックにするのは外部境界のみ)。ダミー値を使用。
-// ============================================================
-
 interface ServiceOverrides {
-  /** getRandomPokemon の抽選元プール (allowedIds に含まれるものから乱数で選ぶ)。 */
+  /** 出題の抽選元になるポケモンの一覧。 */
   pokemons?: Pokemon[];
   /** LLM が返すテキスト。 */
   llmText?: string;
   llmTexts?: string[];
   /** LLM が返すテキストをプロンプト内容から動的に組み立てたい場合に使う (llmTexts 未指定時のみ使われ、指定時は llmText より優先)。 */
   llmRespond?: (prompt: string) => string;
-  /** per-user 除外 ID (null = 未設定)。 */
+  /** ユーザーごとの除外する図鑑番号 (null は未設定)。 */
   excludedIDs?: number[] | null;
   /** 出題対象の世代 (null = 未設定 = 全世代)。 */
   enabledGenerations?: number[] | null;
@@ -193,8 +34,6 @@ interface ServiceOverrides {
 
 /**
  * スタブを注入した QuestService を組み立てる。
- * @param o スタブの挙動の上書き。
- * @returns テスト対象のサービス。
  */
 function makeService(o: ServiceOverrides = {}): QuestService {
   const pool = o.pokemons ?? [makePokemon()];
@@ -219,664 +58,1190 @@ function makeService(o: ServiceOverrides = {}): QuestService {
   return new QuestService(pokemonClient, llm, settingsRepo, random, sessionStore, DEFAULT_QUEST_TUNING);
 }
 
-describe("[出題] クエストの出題", () => {
-  it("出題される英語説明文は、ポケモン名が伏せ字になっている", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ description_en: "Bulbasaur is green." })],
-    });
-    const res = await service.newQuest("alice");
-    expect(res.pokemon_id).toBe(1);
-    expect(res.description_en).toBe("This Pokémon is green.");
-    expect(res.is_legendary).toBe(false);
-  });
+const USER_ID = "alice";
+const AI_RESPONSE_FINAL_SCORE_70 = JSON.stringify({ units: [0.74], review: "よい" });
+const AI_RESPONSE_FINAL_SCORE_69 = JSON.stringify({ units: [0.73], review: "よい" });
 
-  it("ユーザーごとの除外に含まれる ID は出題プールから除かれ、除外外の候補が出題される", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ id: 5 }), makePokemon({ id: 6 })],
-      excludedIDs: [5],
-    });
-    const res = await service.newQuest("alice");
-    expect(res.pokemon_id).toBe(6);
-  });
+async function startQuest(o: ServiceOverrides = {}): Promise<QuestService> {
+  const service = makeService(o);
+  await service.newQuest(USER_ID);
+  return service;
+}
 
-  it("選択世代のポケモンだけが出題され、他世代は出題されない", async () => {
-    // 100=第1世代, 300=第3世代 の範囲に入るダミー ID
-    const service = makeService({
-      pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
-      enabledGenerations: [1],
-    });
-    const res = await service.newQuest("alice");
-    expect(res.pokemon_id).toBe(100);
-  });
+async function startScoredQuest(o: ServiceOverrides = {}): Promise<QuestService> {
+  const service = await startQuest(o);
+  await service.scoreTranslation(USER_ID, "訳");
+  return service;
+}
 
-  it("選択世代に含まれる世代のポケモンは出題対象になる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ id: 300 })],
-      enabledGenerations: [1, 3],
-    });
-    const res = await service.newQuest("alice");
-    expect(res.pokemon_id).toBe(300);
-  });
-
-  // 未設定 (null) は「こだわりなし = 全世代」。画面は GET で全チェック表示になる (空配列 [] とは別で、
-  // 空は設定画面の最低1世代バリデーションが防ぐ)。
-  it("世代未設定なら全世代が出題対象になる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ id: 500 })],
-      enabledGenerations: null,
-    });
-    const res = await service.newQuest("alice");
-    expect(res.pokemon_id).toBe(500);
-  });
-
-  // 画面は最低1世代・除外上限で空プールを防ぐため通常は到達しない防御的経路。到達時は
-  // EmptyQuestPoolError → 409 → 画面で「今の設定では出会えるポケモンがいません。設定を見直して」と案内される。
-  it("全ポケモンを除外していて出題プールが空のとき、出題できないエラーになる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ id: 1 })],
-      excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    });
-    await expect(service.newQuest("alice")).rejects.toBeInstanceOf(EmptyQuestPoolError);
-  });
-
-  it("出題レスポンスには、名前当ての最大挑戦回数が含まれる", async () => {
-    const service = makeService();
-    const res = await service.newQuest("alice");
-    expect(res.max_guess_attempts).toBe(3);
-  });
-
-  it("説明文が複数あるポケモンでは、そのうちの 1 つが選ばれて出題される", async () => {
-    const service = makeService({
-      pokemons: [
-        makePokemon({
-          flavor_texts: [
-            { version_names: ["X"], description_en: "Alpha Bulbasaur runs.", description_ja: "フシギダネは 走る。" },
-            { version_names: ["Y"], description_en: "Beta text.", description_ja: "ベータ。" },
-          ],
-        }),
-      ],
-    });
-    const res = await service.newQuest("alice");
-    expect(res.description_en).toBe("Alpha this Pokémon runs.");
-  });
-
-  it("説明文の候補が無ければ、基本の説明文で出題する", async () => {
-    const service = makeService({ pokemons: [makePokemon({ flavor_texts: undefined })] });
-    const res = await service.newQuest("alice");
-    expect(res.description_en).toBe(
-      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
-    );
-  });
-
-  it("説明文の候補が空配列でも、基本の説明文で出題する", async () => {
-    const service = makeService({ pokemons: [makePokemon({ flavor_texts: [] })] });
-    const res = await service.newQuest("alice");
-    expect(res.description_en).toBe(
-      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
-    );
-  });
-
-  it("選んだ場所のタイプを持つポケモンだけが出題される", async () => {
-    const service = makeService({
-      pokemons: [
-        makePokemon({ id: 110, types: ["grass"] }),
-        makePokemon({ id: 100, types: ["electric"] }),
-      ],
-    });
-    const res = await service.newQuest("alice", "ruined-powerplant");
-    expect(res.pokemon_id).toBe(100);
-  });
-
-  it("選んだ場所のタイプでも、選択していない世代のポケモンは出題されない", async () => {
-    const service = makeService({
-      pokemons: [
-        makePokemon({ id: 700, types: ["electric"] }),
-        makePokemon({ id: 100, types: ["electric"] }),
-      ],
-      enabledGenerations: [1],
-    });
-    const res = await service.newQuest("alice", "ruined-powerplant");
-    expect(res.pokemon_id).toBe(100);
-  });
-
-  it("幻・伝説の抽選に当たると場所を無視して伝説プールから出題される", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
-      randomValue: 0.995,
-    });
-    const res = await service.newQuest("alice", "ruined-powerplant");
-    expect(res.pokemon_id).toBe(150);
-  });
-
-  it("伝説抽選に当たっても、選択世代に伝説がいなければ場所抽選にフォールバックする", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ id: 100, types: ["electric"] })],
-      randomValue: 0.995,
-    });
-    const res = await service.newQuest("alice", "ruined-powerplant");
-    expect(res.pokemon_id).toBe(100);
-  });
-});
-
-describe("翻訳の採点", () => {
-  it("セッションが無いまま採点すると、セッション不明のエラーになる", async () => {
-    const service = makeService();
-    await expect(service.scoreTranslation("nobody", "訳")).rejects.toBeInstanceOf(NotFoundError);
-  });
-
-  it("最終評価点・講評・マスク済み日本語説明を返す", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ description_ja: "フシギダネは 緑色だ。" })],
-      llmText: JSON.stringify({ units: [0.7], review: "よい" }),
-    });
-    await service.newQuest("alice");
-    const res = await service.scoreTranslation("alice", "みどり");
-    expect(res.score).toBe(66);
-    expect(res.review).toBe("よい");
-    expect(res.description_ja).toBe("この ポケモンは 緑色だ。");
-  });
-
-  it("複数の判定単位が返されたとき、その平均から最終評価点が算出される", async () => {
-    const service = makeService({
-      llmText: JSON.stringify({ units: [1.0, 0.6, 0.2], review: "r" }), // 平均60→最終評価点55
-    });
-    await service.newQuest("alice");
-    const res = await service.scoreTranslation("alice", "訳");
-    expect(res.score).toBe(55);
-  });
-
-  it.each([-0.1, 1.1])(
-    "範囲外の判定値 %s を含む応答は外部サービスのエラーとして拒否される",
-    async (value) => {
-      const service = makeService({ llmText: JSON.stringify({ units: [value], review: "r" }) });
-      await service.newQuest("alice");
-      await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
-    },
+async function getRejection(promise: Promise<unknown>): Promise<unknown> {
+  return promise.then(
+    () => undefined,
+    (error: unknown) => error,
   );
+}
 
-  it("説明文にポケモン名が含まれるとき、AI に渡す英文はポケモン名を伏せたものになる (講評でのネタバレ防止)", async () => {
-    let sentPrompt = "";
-    const service = makeService({
-      pokemons: [makePokemon({ name_en: "Pikachu", description_en: "Pikachu is yellow." })],
-      llmRespond: (prompt) => {
-        sentPrompt = prompt;
-        return JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
-      },
+async function missThreeTimes(service: QuestService) {
+  await service.guessName(USER_ID, "wrong1");
+  await service.guessName(USER_ID, "wrong2");
+  return service.guessName(USER_ID, "wrong3");
+}
+
+describe("[捕獲] 捕獲確率の計算", () => {
+  // ボール補正は設定値に依存しない純関数の引数のため、本番の設定値とは独立したテスト固有の値を使う
+  const POKE_BONUS = 0;
+  const GREAT_BONUS = 1.5;
+  const ULTRA_BONUS = 3.0;
+
+  describe("正常系", () => {
+    describe("ボール補正がないとき", () => {
+      it("最終評価点が0で種族値合計が680のとき、捕獲確率は0.05未満になる", () => {
+        expect(calculateCaptureRate(0, 680, POKE_BONUS)).toBeLessThan(0.05);
+      });
+
+      it("種族値合計が300のとき、最終評価点が90の捕獲確率は、最終評価点が30の捕獲確率より高くなる", () => {
+        expect(calculateCaptureRate(90, 300, POKE_BONUS)).toBeGreaterThan(
+          calculateCaptureRate(30, 300, POKE_BONUS),
+        );
+      });
+
+      it("最終評価点が50のとき、種族値合計が300の捕獲確率は、種族値合計が680の捕獲確率より高くなる", () => {
+        expect(calculateCaptureRate(50, 300, POKE_BONUS)).toBeGreaterThan(
+          calculateCaptureRate(50, 680, POKE_BONUS),
+        );
+      });
     });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    expect(sentPrompt).not.toContain("Pikachu");
-  });
 
-  it("最初の応答が不正な形式でも、2回目の応答が正しい形式なら、採点応答の最終評価点と講評が算出される", async () => {
-    const service = makeService({
-      llmTexts: ["ごめん、わからない", JSON.stringify({ units: [0.7], review: "よい" })],
+    describe("ボール補正が大きいとき", () => {
+      it("最終評価点が99で種族値合計が200のとき、捕獲確率は1.0以下になる", () => {
+        expect(calculateCaptureRate(99, 200, ULTRA_BONUS)).toBeLessThanOrEqual(1);
+      });
+
+      it("最終評価点が99で種族値合計が680のとき、捕獲確率は0.99を超える", () => {
+        expect(calculateCaptureRate(99, 680, ULTRA_BONUS)).toBeGreaterThan(0.99);
+      });
     });
-    await service.newQuest("alice");
-    const res = await service.scoreTranslation("alice", "訳");
-    expect(res.score).toBe(66);
-    expect(res.review).toBe("よい");
-  });
 
-  it.each([
-    ["AI 応答が JSON でないとき、外部サービスのエラーになる", "ごめん、わからない"],
-    ["AI 応答の JSON が途中で切れているとき、外部サービスのエラーになる", '{"units": [0.7], "rev'],
-    ["AI 応答に判定単位が含まれないとき、外部サービスのエラーになる", JSON.stringify({ review: "r" })],
-    [
-      "AI 応答の判定単位が配列でないとき、外部サービスのエラーになる",
-      JSON.stringify({ units: 0.7, review: "r" }),
-    ],
-    [
-      "AI 応答の判定単位が空配列のとき、外部サービスのエラーになる",
-      JSON.stringify({ units: [], review: "r" }),
-    ],
-    [
-      "AI 応答の判定単位に数値でない要素が含まれるとき、外部サービスのエラーになる",
-      JSON.stringify({ units: ["a"], review: "r" }),
-    ],
-    ["AI 応答に講評が含まれないとき、外部サービスのエラーになる", JSON.stringify({ units: [0.7] })],
-    [
-      "AI 応答の講評が空文字のとき、外部サービスのエラーになる",
-      JSON.stringify({ units: [0.7], review: "" }),
-    ],
-  ])("%s", async (_name, llmText) => {
-    const service = makeService({ llmText });
-    await service.newQuest("alice");
-    await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
+    it("最終評価点が0で種族値合計が680のとき、ボール補正が大きい場合の捕獲確率は、ボール補正がない場合より高くなる", () => {
+      expect(calculateCaptureRate(0, 680, ULTRA_BONUS)).toBeGreaterThan(
+        calculateCaptureRate(0, 680, POKE_BONUS),
+      );
+    });
+
+    it("最終評価点が20で種族値合計が500のとき、捕獲確率はボール補正がない場合、小さい場合、大きい場合の順に高くなる", () => {
+      const pokeRate = calculateCaptureRate(20, 500, POKE_BONUS);
+      const greatRate = calculateCaptureRate(20, 500, GREAT_BONUS);
+      const ultraRate = calculateCaptureRate(20, 500, ULTRA_BONUS);
+      expect(greatRate).toBeGreaterThan(pokeRate);
+      expect(ultraRate).toBeGreaterThan(greatRate);
+    });
   });
 });
 
-describe("セッションストアの障害", () => {
-  it("セッションストアの読み込みが失敗するとき、採点すると外部サービスのエラーになる", async () => {
-    const service = makeService({ sessionStoreError: new Error("boom") });
-    await expect(service.scoreTranslation("alice", "訳")).rejects.toBeInstanceOf(ExternalServiceError);
+describe("[説明文] 英語説明文のポケモン名の伏せ字", () => {
+  describe("正常系", () => {
+    describe("ポケモン名が Pikachu のとき", () => {
+      it("説明文「Hello world」にポケモン名が含まれないとき、伏せ字にした説明文は原文のままになる", () => {
+        expect(maskPokemonNameEN("Hello world", "Pikachu")).toBe("Hello world");
+      });
+
+      it("ポケモン名が文中に出現するとき、「A wild Pikachu appeared.」は「A wild this Pokémon appeared.」になる", () => {
+        expect(maskPokemonNameEN("A wild Pikachu appeared.", "Pikachu")).toBe(
+          "A wild this Pokémon appeared.",
+        );
+      });
+
+      it("ポケモン名が文頭に出現するとき、「Pikachu is yellow.」は「This Pokémon is yellow.」になる", () => {
+        expect(maskPokemonNameEN("Pikachu is yellow.", "Pikachu")).toBe("This Pokémon is yellow.");
+      });
+
+      it("ポケモン名がピリオドの直後に出現するとき、「Hello. Pikachu runs.」は「Hello. This Pokémon runs.」になる", () => {
+        expect(maskPokemonNameEN("Hello. Pikachu runs.", "Pikachu")).toBe("Hello. This Pokémon runs.");
+      });
+
+      it("ポケモン名の直前に「Several」があるとき、「Several Pikachu gather.」は「Several of these Pokémon gather.」になる", () => {
+        expect(maskPokemonNameEN("Several Pikachu gather.", "Pikachu")).toBe(
+          "Several of these Pokémon gather.",
+        );
+      });
+
+      it("ポケモン名が複数回出現するとき、「Pikachu and Pikachu」は「This Pokémon and this Pokémon」になる", () => {
+        expect(maskPokemonNameEN("Pikachu and Pikachu", "Pikachu")).toBe(
+          "This Pokémon and this Pokémon",
+        );
+      });
+
+      it("ポケモン名と大文字小文字が異なる表記が出現するとき、「A pikachu here」は「A this Pokémon here」になる", () => {
+        expect(maskPokemonNameEN("A pikachu here", "Pikachu")).toBe("A this Pokémon here");
+      });
+    });
+  });
+
+  describe("異常系", () => {
+    it("ポケモン名が空文字のとき、「A wild creature.」の伏せ字にした説明文は原文のままになる", () => {
+      expect(maskPokemonNameEN("A wild creature.", "")).toBe("A wild creature.");
+    });
+  });
+});
+
+describe("[説明文] 日本語説明文のポケモン名の伏せ字", () => {
+  describe("正常系", () => {
+    describe("ポケモン名が「ピカチュウ」のとき", () => {
+      it("ポケモン名が説明文に出現するとき、「ピカチュウは黄色い」は「この ポケモンは黄色い」になる", () => {
+        expect(maskPokemonNameJA("ピカチュウは黄色い", "ピカチュウ")).toBe("この ポケモンは黄色い");
+      });
+
+      it("ポケモン名が複数回出現するとき、「ピカチュウとピカチュウ」は「この ポケモンとこの ポケモン」になる", () => {
+        expect(maskPokemonNameJA("ピカチュウとピカチュウ", "ピカチュウ")).toBe(
+          "この ポケモンとこの ポケモン",
+        );
+      });
+
+      it("説明文「あいうえお」にポケモン名が含まれないとき、伏せ字にした説明文は原文のままになる", () => {
+        expect(maskPokemonNameJA("あいうえお", "ピカチュウ")).toBe("あいうえお");
+      });
+    });
+  });
+
+  describe("異常系", () => {
+    it("ポケモン名が空文字のとき、「あいうえお」の伏せ字にした説明文は原文のままになる", () => {
+      expect(maskPokemonNameJA("あいうえお", "")).toBe("あいうえお");
+    });
+  });
+});
+
+describe("[採点] 意味単位の判定値からの素点算出", () => {
+  describe("正常系", () => {
+    it("意味単位が1件で判定値が0.6のとき、素点は60になる", () => {
+      expect(computeScoreFromUnits([0.6])).toBe(60);
+    });
+
+    it("判定値が1.0、0.2、0.0の3件のとき、素点は40になる", () => {
+      expect(computeScoreFromUnits([1.0, 0.2, 0.0])).toBe(40);
+    });
+
+    describe("判定値の平均が0.8のとき", () => {
+      it.each([
+        [1, [0.8]],
+        [3, [0.8, 0.8, 0.8]],
+      ])("意味単位が%i件のとき、素点は80になる", (_count, units) => {
+        expect(computeScoreFromUnits(units)).toBe(80);
+      });
+    });
+
+    it("判定値が1.0、1.0、0.0の3件のとき、素点は四捨五入して67になる", () => {
+      expect(computeScoreFromUnits([1.0, 1.0, 0.0])).toBe(67);
+    });
+  });
+});
+
+describe("[採点] 素点から最終評価点への変換", () => {
+  describe("正常系", () => {
+    it.each([
+      [0, 0],
+      [100, 99],
+      [10, 0],
+      [11, 1],
+      [15, 6],
+    ])("素点が%iのとき、最終評価点は%iになる", (rawScore, finalScore) => {
+      expect(translateToFinalScore(rawScore)).toBe(finalScore);
+    });
+  });
+});
+
+describe("[出題] クエストの出題", () => {
+  describe("正常系", () => {
+    it("英語説明文が「Bulbasaur is green.」のポケモンを出題すると、出題結果の英語説明文は「This Pokémon is green.」になる", async () => {
+      const service = makeService({
+        pokemons: [makePokemon({ description_en: "Bulbasaur is green." })],
+      });
+      const res = await service.newQuest(USER_ID);
+      expect(res.description_en).toBe("This Pokémon is green.");
+    });
+
+    it("図鑑番号1のポケモンだけがいるとき、出題結果は図鑑番号1のポケモンになる", async () => {
+      const service = makeService();
+      const res = await service.newQuest(USER_ID);
+      expect(res.pokemon_id).toBe(1);
+    });
+
+    it("伝説ポケモンでないポケモンを出題すると、出題結果は伝説ポケモンではないと示される", async () => {
+      const service = makeService();
+      const res = await service.newQuest(USER_ID);
+      expect(res.is_legendary).toBe(false);
+    });
+
+    it("図鑑番号5と6のポケモンがいて、図鑑番号5を除外しているとき、出題結果は図鑑番号6のポケモンになる", async () => {
+      const service = makeService({
+        pokemons: [makePokemon({ id: 5 }), makePokemon({ id: 6 })],
+        excludedIDs: [5],
+      });
+      const res = await service.newQuest(USER_ID);
+      expect(res.pokemon_id).toBe(6);
+    });
+
+    it("第1世代だけを選択していて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき、出題結果は図鑑番号100のポケモンになる", async () => {
+      const service = makeService({
+        pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
+        enabledGenerations: [1],
+      });
+      const res = await service.newQuest(USER_ID);
+      expect(res.pokemon_id).toBe(100);
+    });
+
+    it("第1世代と第3世代を選択していて、第3世代の図鑑番号300のポケモンがいるとき、出題結果は図鑑番号300のポケモンになる", async () => {
+      const service = makeService({
+        pokemons: [makePokemon({ id: 300 })],
+        enabledGenerations: [1, 3],
+      });
+      const res = await service.newQuest(USER_ID);
+      expect(res.pokemon_id).toBe(300);
+    });
+
+    it("出題世代を設定していないとき、第5世代の図鑑番号500のポケモンがいれば、出題結果は図鑑番号500のポケモンになる", async () => {
+      const service = makeService({
+        pokemons: [makePokemon({ id: 500 })],
+        enabledGenerations: null,
+      });
+      const res = await service.newQuest(USER_ID);
+      expect(res.pokemon_id).toBe(500);
+    });
+
+    it("出題すると、出題結果で名前当ての最大挑戦回数は3回と示される", async () => {
+      const service = makeService();
+      const res = await service.newQuest(USER_ID);
+      expect(res.max_guess_attempts).toBe(3);
+    });
+
+    it("ポケモンの説明文が複数あるとき、出題結果の英語説明文は、いずれか1件の説明文のポケモン名を伏せ字にしたものになる", async () => {
+      const service = makeService({
+        pokemons: [
+          makePokemon({
+            flavor_texts: [
+              { version_names: ["X"], description_en: "Alpha Bulbasaur runs.", description_ja: "フシギダネは 走る。" },
+              { version_names: ["Y"], description_en: "Beta text.", description_ja: "ベータ。" },
+            ],
+          }),
+        ],
+      });
+      const res = await service.newQuest(USER_ID);
+      expect(res.description_en).toBe("Alpha this Pokémon runs.");
+    });
+
+    it.each<[string, Pokemon["flavor_texts"]]>([
+      ["未設定", undefined],
+      ["0件", []],
+    ])(
+      "ポケモンの説明文の一覧が%sのとき、出題結果の英語説明文は、基本の説明文のポケモン名を伏せ字にしたものになる",
+      async (_state, flavorTexts) => {
+        const service = makeService({ pokemons: [makePokemon({ flavor_texts: flavorTexts })] });
+        const res = await service.newQuest(USER_ID);
+        expect(res.description_en).toBe(
+          "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+        );
+      },
+    );
+
+    describe("場所「廃墟の発電所」(でんき・はがね・どくタイプ) を選んで出題するとき", () => {
+      const LOCATION_ID = "ruined-powerplant";
+
+      it("でんきタイプの図鑑番号100とくさタイプの図鑑番号110のポケモンがいるとき、出題結果は図鑑番号100のポケモンになる", async () => {
+        const service = makeService({
+          pokemons: [
+            makePokemon({ id: 110, types: ["grass"] }),
+            makePokemon({ id: 100, types: ["electric"] }),
+          ],
+        });
+        const res = await service.newQuest(USER_ID, LOCATION_ID);
+        expect(res.pokemon_id).toBe(100);
+      });
+
+      it("第1世代だけを選択していて、第6世代の図鑑番号700と第1世代の図鑑番号100の、どちらもでんきタイプのポケモンがいるとき、出題結果は図鑑番号100のポケモンになる", async () => {
+        const service = makeService({
+          pokemons: [
+            makePokemon({ id: 700, types: ["electric"] }),
+            makePokemon({ id: 100, types: ["electric"] }),
+          ],
+          enabledGenerations: [1],
+        });
+        const res = await service.newQuest(USER_ID, LOCATION_ID);
+        expect(res.pokemon_id).toBe(100);
+      });
+
+      it("幻・伝説の抽選に当たったとき、場所のタイプに合う図鑑番号100 (でんきタイプ) のポケモンがいても、出題結果は図鑑番号150 (エスパータイプ) の伝説ポケモンになる", async () => {
+        const service = makeService({
+          pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
+          randomValue: 0.995,
+        });
+        const res = await service.newQuest(USER_ID, LOCATION_ID);
+        expect(res.pokemon_id).toBe(150);
+      });
+
+      it("幻・伝説の抽選に当たっても、幻・伝説のポケモンがいないとき、出題結果は場所のタイプに合う図鑑番号100 (でんきタイプ) のポケモンになる", async () => {
+        const service = makeService({
+          pokemons: [makePokemon({ id: 100, types: ["electric"] })],
+          randomValue: 0.995,
+        });
+        const res = await service.newQuest(USER_ID, LOCATION_ID);
+        expect(res.pokemon_id).toBe(100);
+      });
+    });
+  });
+
+  describe("異常系", () => {
+    it("出題できるポケモンがすべて除外されているとき、出題すると、出題できるポケモンがいないエラーになる", async () => {
+      const service = makeService({
+        pokemons: [makePokemon({ id: 1 })],
+        excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      });
+      await expect(service.newQuest(USER_ID)).rejects.toBeInstanceOf(EmptyQuestPoolError);
+    });
+  });
+});
+
+describe("[採点] 翻訳の採点", () => {
+  describe("正常系", () => {
+    it("AI が意味単位1件の判定値0.7を返したとき、採点結果の最終評価点は66になる", async () => {
+      const service = await startQuest({ llmText: JSON.stringify({ units: [0.7], review: "よい" }) });
+      const res = await service.scoreTranslation(USER_ID, "みどり");
+      expect(res.score).toBe(66);
+    });
+
+    it("AI が判定値1.0、0.6、0.2の3件を返したとき、採点結果の最終評価点は55になる", async () => {
+      const service = await startQuest({
+        llmText: JSON.stringify({ units: [1.0, 0.6, 0.2], review: "r" }),
+      });
+      const res = await service.scoreTranslation(USER_ID, "訳");
+      expect(res.score).toBe(55);
+    });
+
+    it("AI が講評「よい」を返したとき、採点結果の講評は「よい」になる", async () => {
+      const service = await startQuest({ llmText: JSON.stringify({ units: [0.7], review: "よい" }) });
+      const res = await service.scoreTranslation(USER_ID, "みどり");
+      expect(res.review).toBe("よい");
+    });
+
+    it("日本語説明文が「フシギダネは 緑色だ。」でポケモン名がフシギダネのとき、採点結果の日本語説明文は「この ポケモンは 緑色だ。」になる", async () => {
+      const service = await startQuest({
+        pokemons: [makePokemon({ description_ja: "フシギダネは 緑色だ。" })],
+      });
+      const res = await service.scoreTranslation(USER_ID, "みどり");
+      expect(res.description_ja).toBe("この ポケモンは 緑色だ。");
+    });
+
+    it("英語説明文が「Pikachu is yellow.」でポケモン名が Pikachu のとき、AI に渡す英文に伏せ字にした説明文「This Pokémon is yellow.」が含まれる", async () => {
+      let sentPrompt = "";
+      const service = await startQuest({
+        pokemons: [makePokemon({ name_en: "Pikachu", description_en: "Pikachu is yellow." })],
+        llmRespond: (prompt) => {
+          sentPrompt = prompt;
+          return JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
+        },
+      });
+      await service.scoreTranslation(USER_ID, "訳");
+      expect(sentPrompt).toContain("This Pokémon is yellow.");
+    });
+  });
+
+  describe("異常系", () => {
+    it.each<[string, (service: QuestService) => Promise<void>]>([
+      ["どのユーザーにも進行中のクエストセッションがない", async () => {}],
+      [
+        "採点するユーザーには進行中のクエストセッションがなく、別のユーザーにだけある",
+        async (service) => {
+          await service.newQuest(USER_ID);
+        },
+      ],
+    ])(
+      "%sとき、採点すると、クエストセッションが見つからないエラーになる",
+      async (_situation, prepare) => {
+        const service = makeService();
+        await prepare(service);
+        await expect(service.scoreTranslation("bob", "訳")).rejects.toBeInstanceOf(NotFoundError);
+      },
+    );
+
+    it("クエストセッションの読み込みに失敗するとき、採点すると、外部サービスのエラーになる", async () => {
+      const service = makeService({ sessionStoreError: new Error("boom") });
+      const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+      expect(error).toBeInstanceOf(ExternalServiceError);
+      expect((error as ExternalServiceError).cause).toEqual(expect.objectContaining({ message: "boom" }));
+    });
+
+    describe("AI が2回続けて不正な応答を返すとき", () => {
+      const NO_SCORING_UNITS = expect.objectContaining({ message: "LLM returned no scoring units" });
+      const EMPTY_REVIEW = expect.objectContaining({ message: "LLM returned empty review" });
+
+      it.each<[string, string, unknown]>([
+        ["応答が JSON ではない", "ごめん、わからない", expect.any(SyntaxError)],
+        ["応答の JSON が途中で切れている", '{"units": [0.7], "rev', expect.any(SyntaxError)],
+        ["応答に判定値の項目がない", JSON.stringify({ review: "r" }), NO_SCORING_UNITS],
+        ["応答の判定値が一覧ではなく1つの数値になっている", JSON.stringify({ units: 0.7, review: "r" }), NO_SCORING_UNITS],
+        ["応答の判定値が0件である", JSON.stringify({ units: [], review: "r" }), NO_SCORING_UNITS],
+        ["応答の判定値に数値でない値を含む", JSON.stringify({ units: ["a"], review: "r" }), expect.objectContaining({ message: "LLM returned out-of-range unit value: a" })],
+        ["応答に講評の項目がない", JSON.stringify({ units: [0.7] }), EMPTY_REVIEW],
+        ["応答の講評が空文字である", JSON.stringify({ units: [0.7], review: "" }), EMPTY_REVIEW],
+        ["応答に0.0から1.0の範囲外の判定値 -0.1 を含む", JSON.stringify({ units: [-0.1], review: "r" }), expect.objectContaining({ message: "LLM returned out-of-range unit value: -0.1" })],
+        ["応答に0.0から1.0の範囲外の判定値 1.1 を含む", JSON.stringify({ units: [1.1], review: "r" }), expect.objectContaining({ message: "LLM returned out-of-range unit value: 1.1" })],
+      ])("%sとき、採点すると、外部サービスのエラーになる", async (_content, llmText, cause) => {
+        const service = await startQuest({ llmText });
+        const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+        expect(error).toBeInstanceOf(ExternalServiceError);
+        expect((error as ExternalServiceError).cause).toEqual(cause);
+      });
+    });
+
+    describe("AI の最初の応答が JSON でなく、2回目の応答が正しい形式のとき", () => {
+      const llmTexts = ["ごめん、わからない", JSON.stringify({ units: [0.7], review: "よい" })];
+
+      it("採点結果の最終評価点は66になる", async () => {
+        const service = await startQuest({ llmTexts });
+        const res = await service.scoreTranslation(USER_ID, "訳");
+        expect(res.score).toBe(66);
+      });
+
+      it("採点結果の講評は「よい」になる", async () => {
+        const service = await startQuest({ llmTexts });
+        const res = await service.scoreTranslation(USER_ID, "訳");
+        expect(res.review).toBe("よい");
+      });
+    });
   });
 });
 
 describe("[名前当て] 名前当ての判定", () => {
-  it("英語名の完全一致はハイパーボール (大文字小文字・前後空白を無視)", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    const res = await service.guessName("alice", "  bulbasaur ");
-    expect(res).toMatchObject({ correct: true, ball_type: "ultra", language: "en" });
+  describe("正常系", () => {
+    describe("英語名「Bulbasaur」のポケモンに、小文字で前後に空白のある「 bulbasaur 」と答えたとき", () => {
+      it("判定結果は正解になる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "  bulbasaur ");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果のボールはハイパーボールになる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "  bulbasaur ");
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
+
+      it("判定結果で、正解した名前の言語は英語になる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "  bulbasaur ");
+        expect(res).toMatchObject({ language: "en" });
+      });
+    });
+
+    describe("日本語名「フシギダネ」と答えたとき", () => {
+      it("判定結果は正解になる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "フシギダネ");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果のボールはスーパーボールになる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "フシギダネ");
+        expect(res).toMatchObject({ ball_type: "great" });
+      });
+
+      it("判定結果で、正解した名前の言語は日本語になる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "フシギダネ");
+        expect(res).toMatchObject({ language: "ja" });
+      });
+    });
+
+    describe("英語名が4文字以上のポケモン「Bulbasaur」に、綴りが2文字ずれた「bulbasaxx」と答えたとき", () => {
+      it("判定結果は正解になる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "bulbasaxx");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果のボールはハイパーボールになる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "bulbasaxx");
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
+
+      it("判定結果は、あいまい一致による正解になる", async () => {
+        const service = await startQuest();
+        const res = await service.guessName(USER_ID, "bulbasaxx");
+        expect(res).toMatchObject({ fuzzy: true });
+      });
+    });
+
+    describe("英語名が4文字のポケモン「Abra」に、綴りが1文字ずれた「abrx」と答えたとき", () => {
+      const pokemons = [makePokemon({ name_en: "Abra", name_ja: "ケーシィ" })];
+
+      it("判定結果は正解になる", async () => {
+        const service = await startQuest({ pokemons });
+        const res = await service.guessName(USER_ID, "abrx");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果は、あいまい一致による正解になる", async () => {
+        const service = await startQuest({ pokemons });
+        const res = await service.guessName(USER_ID, "abrx");
+        expect(res).toMatchObject({ fuzzy: true });
+      });
+    });
+
+    it.each<[string, Pokemon[], string]>([
+      ["英語名が4文字以上のポケモン「Bulbasaur」に、綴りが3文字ずれた「bulbasxxx」と答えたとき", [makePokemon()], "bulbasxxx"],
+      ["英語名が3文字のポケモン「Mew」に、綴りが1文字ずれた「mex」と答えたとき", [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })], "mex"],
+      ["綴りが大きく異なる「wrong」と答えたとき", [makePokemon()], "wrong"],
+    ])("%s、判定結果は不正解になる", async (_situation, pokemons, guess) => {
+      const service = await startQuest({ pokemons });
+      const res = await service.guessName(USER_ID, guess);
+      expect(res).toMatchObject({ correct: false });
+    });
+
+    it("1回目に「wrong」と答えて外したとき、判定結果の残り挑戦回数は2回になる", async () => {
+      const service = await startQuest();
+      const res = await service.guessName(USER_ID, "wrong");
+      expect(res).toMatchObject({ attempts_remaining: 2 });
+    });
+
+    describe("3回続けて外したとき", () => {
+      it("判定結果は不正解になる", async () => {
+        const service = await startQuest();
+        const res = await missThreeTimes(service);
+        expect(res).toMatchObject({ correct: false });
+      });
+
+      it("判定結果のボールはモンスターボールになる", async () => {
+        const service = await startQuest();
+        const res = await missThreeTimes(service);
+        expect(res).toMatchObject({ ball_type: "poke" });
+      });
+
+      it("判定結果の残り挑戦回数は0回になる", async () => {
+        const service = await startQuest();
+        const res = await missThreeTimes(service);
+        expect(res).toMatchObject({ attempts_remaining: 0 });
+      });
+
+      it("その後に捕獲すると、捕獲結果のボールはモンスターボールになる", async () => {
+        const service = await startQuest();
+        await missThreeTimes(service);
+        const res = await service.attemptCapture(USER_ID);
+        expect(res.ball_type).toBe("poke");
+      });
+    });
   });
 
-  it("日本語名の一致はスーパーボール", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    const res = await service.guessName("alice", "フシギダネ");
-    expect(res).toMatchObject({ correct: true, ball_type: "great", language: "ja" });
-  });
+  describe("異常系", () => {
+    describe("英語名で正解済みのときに、別の名前「whatever」で答えたとき", () => {
+      async function answerAgainAfterCorrect() {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "bulbasaur");
+        return service.guessName(USER_ID, "whatever");
+      }
 
-  it("名前が 4 文字以上のとき、綴りが 2 文字までずれていても正解になる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    const res = await service.guessName("alice", "bulbasaxx");
-    expect(res).toMatchObject({ correct: true, ball_type: "ultra", fuzzy: true });
-  });
+      it("判定結果は正解になる", async () => {
+        const res = await answerAgainAfterCorrect();
+        expect(res).toMatchObject({ correct: true });
+      });
 
-  it("名前が 4 文字以上のとき、綴りが 3 文字ずれていると不正解になる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    const res = await service.guessName("alice", "bulbasxxx");
-    expect(res.correct).toBe(false);
-  });
+      it("判定結果のボールは確定済みのハイパーボールのままになる", async () => {
+        const res = await answerAgainAfterCorrect();
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
 
-  it("名前が 3 文字のポケモンは、1 文字のずれでも不正解になる (あいまい一致の対象外)", async () => {
-    const service = makeService({ pokemons: [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })] });
-    await service.newQuest("alice");
-    expect((await service.guessName("alice", "mex")).correct).toBe(false);
-  });
-
-  it("名前が 4 文字のポケモンは、1 文字のずれなら正解になる (あいまい一致が有効)", async () => {
-    const service = makeService({ pokemons: [makePokemon({ name_en: "Abra", name_ja: "ケーシィ" })] });
-    await service.newQuest("alice");
-    expect(await service.guessName("alice", "abrx")).toMatchObject({ correct: true, fuzzy: true });
-  });
-
-  it("不正解なら残り試行回数が減って返る", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    const res = await service.guessName("alice", "wrong");
-    expect(res).toMatchObject({ correct: false, attempts_remaining: 2 });
-  });
-
-  it("3回目の不正解でモンスターボールが確定する", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "wrong1");
-    await service.guessName("alice", "wrong2");
-    const res = await service.guessName("alice", "wrong3");
-    expect(res).toMatchObject({ correct: false, ball_type: "poke", attempts_remaining: 0 });
-    expect((await service.attemptCapture("alice")).ball_type).toBe("poke");
-  });
-
-  it("正解済みで再送信すると確定済みボールを返す", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "bulbasaur");
-    const res = await service.guessName("alice", "whatever");
-    expect(res).toMatchObject({ correct: true, ball_type: "ultra", attempts_remaining: 0 });
+      it("判定結果の残り挑戦回数は0回になる", async () => {
+        const res = await answerAgainAfterCorrect();
+        expect(res).toMatchObject({ attempts_remaining: 0 });
+      });
+    });
   });
 });
 
 describe("[名前当て] マスターボール確定捕獲", () => {
-  it("伝説ポケモンで最終評価点が70のとき、英語名の正解でマスターボールになる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_legendary: true })],
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    const res = await service.guessName("alice", "bulbasaur");
-    expect(res).toMatchObject({ correct: true, ball_type: "master", language: "en" });
-  });
+  describe("正常系", () => {
+    describe("伝説ポケモンで最終評価点が70のとき", () => {
+      const options: ServiceOverrides = {
+        pokemons: [makePokemon({ is_legendary: true })],
+        llmText: AI_RESPONSE_FINAL_SCORE_70,
+      };
 
-  it("伝説ポケモンで最終評価点が70のとき、英語名のあいまい一致でもマスターボールになる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_legendary: true })],
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    const res = await service.guessName("alice", "bulbasaxx");
-    expect(res).toMatchObject({ correct: true, ball_type: "master", fuzzy: true });
-  });
+      describe("英語名で正解したとき", () => {
+        it("判定結果は正解になる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await service.guessName(USER_ID, "bulbasaur");
+          expect(res).toMatchObject({ correct: true });
+        });
 
-  it("伝説ポケモンで最終評価点が69のとき、英語名の正解でもハイパーボールのまま", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_legendary: true })],
-      llmText: JSON.stringify({ units: [0.73], review: "よい" }), // 最終評価点69
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    const res = await service.guessName("alice", "bulbasaur");
-    expect(res).toMatchObject({ correct: true, ball_type: "ultra" });
-  });
+        it("判定結果のボールはマスターボールになる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await service.guessName(USER_ID, "bulbasaur");
+          expect(res).toMatchObject({ ball_type: "master" });
+        });
 
-  it("幻ポケモンで最終評価点が70のとき、日本語名の正解でマスターボールになる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_mythical: true })],
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    const res = await service.guessName("alice", "フシギダネ");
-    expect(res).toMatchObject({ correct: true, ball_type: "master", language: "ja" });
-  });
+        it("判定結果で、正解した名前の言語は英語になる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await service.guessName(USER_ID, "bulbasaur");
+          expect(res).toMatchObject({ language: "en" });
+        });
+      });
 
-  it("伝説でも幻でもないポケモンは、最終評価点が70でも名前当て正解でハイパーボールのまま", async () => {
-    const service = makeService({
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    const res = await service.guessName("alice", "bulbasaur");
-    expect(res).toMatchObject({ correct: true, ball_type: "ultra" });
-  });
+      describe("英語名とあいまい一致する「bulbasaxx」で答えたとき", () => {
+        it("判定結果は正解になる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await service.guessName(USER_ID, "bulbasaxx");
+          expect(res).toMatchObject({ correct: true });
+        });
 
-  it("伝説ポケモンで最終評価点が70でも、名前当てを外し続けるとモンスターボールが確定する", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_legendary: true })],
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    await service.guessName("alice", "wrong1");
-    await service.guessName("alice", "wrong2");
-    const res = await service.guessName("alice", "wrong3");
-    expect(res).toMatchObject({ correct: false, ball_type: "poke" });
-  });
+        it("判定結果のボールはマスターボールになる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await service.guessName(USER_ID, "bulbasaxx");
+          expect(res).toMatchObject({ ball_type: "master" });
+        });
 
-  it("伝説ポケモンで最終評価点が70でも、名前当てをスキップするとモンスターボールが確定する", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_legendary: true })],
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    expect(await service.skipGuess("alice")).toEqual({ ball_type: "poke" });
-  });
+        it("判定結果は、あいまい一致による正解になる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await service.guessName(USER_ID, "bulbasaxx");
+          expect(res).toMatchObject({ fuzzy: true });
+        });
+      });
 
-  it("マスターボールでの捕獲は乱数によらず必ず成功し、捕獲確率は1.0になる", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ is_legendary: true, base_stat_total: 680 })],
-      llmText: JSON.stringify({ units: [0.74], review: "よい" }), // 最終評価点70
-      randomValue: 0.9999,
+      describe("3回続けて外したとき", () => {
+        it("判定結果は不正解になる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await missThreeTimes(service);
+          expect(res).toMatchObject({ correct: false });
+        });
+
+        it("判定結果のボールはモンスターボールになる", async () => {
+          const service = await startScoredQuest(options);
+          const res = await missThreeTimes(service);
+          expect(res).toMatchObject({ ball_type: "poke" });
+        });
+      });
+
+      it("名前当てをスキップすると、スキップ結果のボールはモンスターボールになる", async () => {
+        const service = await startScoredQuest(options);
+        expect(await service.skipGuess(USER_ID)).toEqual({ ball_type: "poke" });
+      });
+
+      describe("英語名で正解してマスターボールが確定済みで、乱数が最大に近い値のとき、捕獲すると", () => {
+        const captureOptions: ServiceOverrides = {
+          pokemons: [makePokemon({ is_legendary: true, base_stat_total: 680 })],
+          llmText: AI_RESPONSE_FINAL_SCORE_70,
+          randomValue: 0.9999,
+        };
+
+        async function captureAfterCorrectGuess() {
+          const service = await startScoredQuest(captureOptions);
+          await service.guessName(USER_ID, "bulbasaur");
+          return service.attemptCapture(USER_ID);
+        }
+
+        it("捕獲結果は成功になる", async () => {
+          const res = await captureAfterCorrectGuess();
+          expect(res).toMatchObject({ captured: true });
+        });
+
+        it("捕獲結果の捕獲確率は1.0になる", async () => {
+          const res = await captureAfterCorrectGuess();
+          expect(res).toMatchObject({ probability: 1.0 });
+        });
+
+        it("捕獲結果のボールはマスターボールになる", async () => {
+          const res = await captureAfterCorrectGuess();
+          expect(res).toMatchObject({ ball_type: "master" });
+        });
+      });
     });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    await service.guessName("alice", "bulbasaur");
-    const res = await service.attemptCapture("alice");
-    expect(res).toMatchObject({ captured: true, probability: 1.0, ball_type: "master" });
+
+    describe("伝説ポケモンで最終評価点が69のとき、英語名で正解したとき", () => {
+      const options: ServiceOverrides = {
+        pokemons: [makePokemon({ is_legendary: true })],
+        llmText: AI_RESPONSE_FINAL_SCORE_69,
+      };
+
+      it("判定結果は正解になる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "bulbasaur");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果のボールはハイパーボールになる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "bulbasaur");
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
+    });
+
+    describe("幻ポケモンで最終評価点が70のとき、日本語名「フシギダネ」で正解したとき", () => {
+      const options: ServiceOverrides = {
+        pokemons: [makePokemon({ is_mythical: true })],
+        llmText: AI_RESPONSE_FINAL_SCORE_70,
+      };
+
+      it("判定結果は正解になる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "フシギダネ");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果のボールはマスターボールになる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "フシギダネ");
+        expect(res).toMatchObject({ ball_type: "master" });
+      });
+
+      it("判定結果で、正解した名前の言語は日本語になる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "フシギダネ");
+        expect(res).toMatchObject({ language: "ja" });
+      });
+    });
+
+    describe("伝説でも幻でもないポケモンで最終評価点が70のとき、英語名で正解したとき", () => {
+      const options: ServiceOverrides = { llmText: AI_RESPONSE_FINAL_SCORE_70 };
+
+      it("判定結果は正解になる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "bulbasaur");
+        expect(res).toMatchObject({ correct: true });
+      });
+
+      it("判定結果のボールはハイパーボールになる", async () => {
+        const service = await startScoredQuest(options);
+        const res = await service.guessName(USER_ID, "bulbasaur");
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
+    });
   });
 });
 
 describe("[名前当て] 名前当てのヒント", () => {
-  it("まだ一度も推測していないとき、1回目のヒントを要求すると出題ポケモンのタイプが返り、残り試行回数が1減る", async () => {
-    const service = makeService({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
-    await service.newQuest("alice");
-    const res = await service.requestHint("alice");
-    expect(res).toEqual({ types: ["grass", "poison"], attempts_remaining: 2 });
-  });
+  describe("正常系", () => {
+    describe("まだ名前当てをしていないとき、1回目のヒントを要求すると", () => {
+      it("要求結果として、出題ポケモンのタイプ (くさ・どく) が開示される", async () => {
+        const service = await startQuest({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
+        const res = await service.requestHint(USER_ID);
+        expect(res).toEqual({ types: ["grass", "poison"], attempts_remaining: expect.any(Number) });
+      });
 
-  it("1回目のヒントに続けて2回目を要求すると、レベルアップで覚える技が返り、残り試行回数がさらに1減る", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ level_up_moves: ["たいあたり", "なきごえ", "つるのムチ"] })],
-      randomValue: 0,
+      it("要求結果の残り挑戦回数は2回になる", async () => {
+        const service = await startQuest({ pokemons: [makePokemon({ types: ["grass", "poison"] })] });
+        const res = await service.requestHint(USER_ID);
+        expect(res).toEqual({ types: expect.any(Array), attempts_remaining: 2 });
+      });
     });
-    await service.newQuest("alice");
-    await service.requestHint("alice");
-    const res = await service.requestHint("alice");
-    expect(res).toEqual({ moves: ["たいあたり", "なきごえ", "つるのムチ"], attempts_remaining: 1 });
+
+    describe("1回目のヒントを要求済みのとき、2回目のヒントを要求すると", () => {
+      async function requestSecondHint(levelUpMoves: string[] | undefined) {
+        const service = await startQuest({
+          pokemons: [makePokemon({ level_up_moves: levelUpMoves })],
+          randomValue: 0,
+        });
+        await service.requestHint(USER_ID);
+        return service.requestHint(USER_ID);
+      }
+
+      it.each<[string, string[] | undefined]>([
+        ["レベルアップで覚える技が3つあるポケモン", ["たいあたり", "なきごえ", "つるのムチ"]],
+        ["レベルアップで覚える技の情報が未設定のポケモン", undefined],
+        ["レベルアップで覚える技の情報が0件のポケモン", []],
+      ])("%sでは、要求結果の残り挑戦回数は1回になる", async (_pokemon, levelUpMoves) => {
+        const res = await requestSecondHint(levelUpMoves);
+        expect(res).toEqual({ moves: expect.any(Array), attempts_remaining: 1 });
+      });
+
+      it("レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」のポケモンでは、要求結果として、その3つの技が開示される", async () => {
+        const res = await requestSecondHint(["たいあたり", "なきごえ", "つるのムチ"]);
+        expect(res).toEqual({
+          moves: ["たいあたり", "なきごえ", "つるのムチ"],
+          attempts_remaining: expect.any(Number),
+        });
+      });
+
+      it.each<[string, string[] | undefined]>([
+        ["未設定", undefined],
+        ["0件", []],
+      ])(
+        "レベルアップで覚える技の情報が%sのポケモンでは、要求結果で開示される技は0件になる",
+        async (_state, levelUpMoves) => {
+          const res = await requestSecondHint(levelUpMoves);
+          expect(res).toEqual({ moves: [], attempts_remaining: expect.any(Number) });
+        },
+      );
+    });
+
+    it("技の抽選結果が異なる2回のクエストで同じポケモンに出会い、それぞれ2回目のヒントを要求したとき、要求結果で開示される技は互いに異なる", async () => {
+      const candidates = ["たいあたり", "なきごえ", "つるのムチ", "やどりぎのタネ"];
+      const pokemons = [makePokemon({ level_up_moves: candidates })];
+
+      const serviceA = await startQuest({ pokemons, randomValue: 0 });
+      await serviceA.requestHint(USER_ID);
+      const resA = await serviceA.requestHint(USER_ID);
+
+      const serviceB = await startQuest({ pokemons, randomValue: 0.9 });
+      await serviceB.requestHint(USER_ID);
+      const resB = await serviceB.requestHint(USER_ID);
+
+      expect(resA.moves).not.toEqual(resB.moves);
+    });
+
+    it("名前当てで1回外して残り挑戦回数が2回のとき、ヒントを要求すると、要求結果の残り挑戦回数は1回になる", async () => {
+      const service = await startQuest();
+      await service.guessName(USER_ID, "wrong");
+      const res = await service.requestHint(USER_ID);
+      expect(res.attempts_remaining).toBe(1);
+    });
+
+    describe("1回外したあとヒントを1回要求し、残り挑戦回数が1回のとき、もう一度外すと", () => {
+      async function missAgainAfterHint() {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "wrong1");
+        await service.requestHint(USER_ID);
+        return service.guessName(USER_ID, "wrong2");
+      }
+
+      it("判定結果は不正解になる", async () => {
+        const res = await missAgainAfterHint();
+        expect(res).toMatchObject({ correct: false });
+      });
+
+      it("判定結果のボールはモンスターボールになる", async () => {
+        const res = await missAgainAfterHint();
+        expect(res).toMatchObject({ ball_type: "poke" });
+      });
+
+      it("判定結果の残り挑戦回数は0回になる", async () => {
+        const res = await missAgainAfterHint();
+        expect(res).toMatchObject({ attempts_remaining: 0 });
+      });
+    });
   });
 
-  it("同じポケモンでも、クエストごとに開示される技が変わりうる", async () => {
-    const candidates = ["たいあたり", "なきごえ", "つるのムチ", "やどりぎのタネ"];
-    const pokemons = [makePokemon({ level_up_moves: candidates })];
+  describe("異常系", () => {
+    it("ヒントを2回要求済みのとき、3回目を要求すると、名前当てが済んでいるか、ヒントを使い切っているエラーになる", async () => {
+      const service = await startQuest();
+      await service.requestHint(USER_ID);
+      await service.requestHint(USER_ID);
+      await expect(service.requestHint(USER_ID)).rejects.toThrow(/already guessed or hints exhausted/);
+    });
 
-    const serviceA = makeService({ pokemons, randomValue: 0 });
-    await serviceA.newQuest("alice");
-    await serviceA.requestHint("alice");
-    const resA = await serviceA.requestHint("alice");
+    it("名前当てで2回外して残り挑戦回数が1回のとき、ヒントを要求すると、残り挑戦回数が足りないエラーになる", async () => {
+      const service = await startQuest();
+      await service.guessName(USER_ID, "wrong1");
+      await service.guessName(USER_ID, "wrong2");
+      await expect(service.requestHint(USER_ID)).rejects.toThrow(/insufficient guess attempts remaining/);
+    });
 
-    const serviceB = makeService({ pokemons, randomValue: 0.9 });
-    await serviceB.newQuest("alice");
-    await serviceB.requestHint("alice");
-    const resB = await serviceB.requestHint("alice");
+    it("名前当てに正解済みのとき、ヒントを要求すると、名前当てが済んでいるか、ヒントを使い切っているエラーになる", async () => {
+      const service = await startQuest();
+      await service.guessName(USER_ID, "bulbasaur");
+      await expect(service.requestHint(USER_ID)).rejects.toThrow(/already guessed or hints exhausted/);
+    });
 
-    expect(resA.moves).not.toEqual(resB.moves);
-  });
-
-  it("ヒントを2回要求済みのとき、3回目を要求するとエラーになる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.requestHint("alice");
-    await service.requestHint("alice");
-    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or hints exhausted/);
-  });
-
-  it("1回不正解で残り2回のとき、ヒントを要求できる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "wrong");
-    const res = await service.requestHint("alice");
-    expect(res.attempts_remaining).toBe(1);
-  });
-
-  it("2回不正解で残り1回のとき、ヒントを要求するとエラーになる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "wrong1");
-    await service.guessName("alice", "wrong2");
-    await expect(service.requestHint("alice")).rejects.toThrow(/insufficient guess attempts remaining/);
-  });
-
-  it("名前当てが正解済みのとき、ヒントを要求するとエラーになる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "bulbasaur");
-    await expect(service.requestHint("alice")).rejects.toThrow(/already guessed or hints exhausted/);
-  });
-
-  it("セッションが無いままヒントを要求すると、セッション不明のエラーになる", async () => {
-    const service = makeService();
-    await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
-  });
-
-  it("レベルアップで覚える技が無いポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
-    const service = makeService({ pokemons: [makePokemon({ level_up_moves: undefined })] });
-    await service.newQuest("alice");
-    await service.requestHint("alice");
-    const res = await service.requestHint("alice");
-    expect(res).toEqual({ moves: [], attempts_remaining: 1 });
-  });
-
-  it("レベルアップで覚える技が0件のポケモンで2回目のヒントを要求すると、技0件が返る", async () => {
-    const service = makeService({ pokemons: [makePokemon({ level_up_moves: [] })] });
-    await service.newQuest("alice");
-    await service.requestHint("alice");
-    const res = await service.requestHint("alice");
-    expect(res).toEqual({ moves: [], attempts_remaining: 1 });
-  });
-
-  it("残り2回でヒントを使い切った直後に不正解にすると、試行が尽きてモンスターボールが確定する", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "wrong1");
-    await service.requestHint("alice");
-    const res = await service.guessName("alice", "wrong2");
-    expect(res).toMatchObject({ correct: false, ball_type: "poke", attempts_remaining: 0 });
+    it("進行中のクエストセッションがないとき、ヒントを要求すると、クエストセッションが見つからないエラーになる", async () => {
+      const service = makeService();
+      await expect(service.requestHint("nobody")).rejects.toThrow(NotFoundError);
+    });
   });
 });
 
-describe("[名前当て] 名前当てスキップと捕獲", () => {
-  it("名前当てをスキップすると、モンスターボールが確定する", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    expect(await service.skipGuess("alice")).toEqual({ ball_type: "poke" });
-  });
-
-  it("セッションが無いまま名前当てをスキップすると、セッション不明のエラーになる", async () => {
-    const service = makeService();
-    await expect(service.skipGuess("nobody")).rejects.toThrow(NotFoundError);
-  });
-
-  it("英語名正解 (ハイパーボール確定) 後に名前当てをスキップしても、ハイパーボールのまま捕獲できる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "bulbasaur");
-    expect(await service.skipGuess("alice")).toEqual({ ball_type: "ultra" });
-    expect((await service.attemptCapture("alice")).ball_type).toBe("ultra");
-  });
-
-  it("日本語名正解 (スーパーボール確定) 後に名前当てをスキップしても、スーパーボールのまま捕獲できる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "フシギダネ");
-    expect(await service.skipGuess("alice")).toEqual({ ball_type: "great" });
-    expect((await service.attemptCapture("alice")).ball_type).toBe("great");
-  });
-
-  it("名前当てにもスキップにも応答していないまま捕獲しようとすると、エラーになる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await expect(service.attemptCapture("alice")).rejects.toThrow(/before a ball/);
-  });
-
-  it("名前当てをスキップして捕獲すると、モンスターボールでの捕獲結果になる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.skipGuess("alice");
-    const res = await service.attemptCapture("alice");
-    expect(res).toMatchObject({
-      captured: true,
-      pokemon_id: 1,
-      name_en: "Bulbasaur",
-      ball_type: "poke",
+describe("[名前当て] 名前当てのスキップ", () => {
+  describe("正常系", () => {
+    it("名前当てをスキップすると、スキップ結果のボールはモンスターボールになる", async () => {
+      const service = await startQuest();
+      expect(await service.skipGuess(USER_ID)).toEqual({ ball_type: "poke" });
     });
-    expect(res.probability).toBeGreaterThan(0);
   });
 
-  it("捕獲確率を乱数が上回ると、捕獲は失敗する", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ base_stat_total: 680 })],
-      randomValue: 0.5,
+  describe("異常系", () => {
+    it("進行中のクエストセッションがないとき、名前当てをスキップすると、クエストセッションが見つからないエラーになる", async () => {
+      const service = makeService();
+      await expect(service.skipGuess("nobody")).rejects.toThrow(NotFoundError);
     });
-    await service.newQuest("alice");
-    await service.skipGuess("alice");
-    const res = await service.attemptCapture("alice");
-    expect(res.captured).toBe(false);
+
+    describe("英語名で正解してハイパーボールが確定済みのとき、名前当てをスキップすると", () => {
+      it("スキップ結果のボールは確定済みのハイパーボールのままになる", async () => {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "bulbasaur");
+        expect(await service.skipGuess(USER_ID)).toEqual({ ball_type: "ultra" });
+      });
+
+      it("その後に捕獲すると、捕獲結果のボールはハイパーボールになる", async () => {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "bulbasaur");
+        await service.skipGuess(USER_ID);
+        expect((await service.attemptCapture(USER_ID)).ball_type).toBe("ultra");
+      });
+    });
+
+    describe("日本語名で正解してスーパーボールが確定済みのとき、名前当てをスキップすると", () => {
+      it("スキップ結果のボールは確定済みのスーパーボールのままになる", async () => {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "フシギダネ");
+        expect(await service.skipGuess(USER_ID)).toEqual({ ball_type: "great" });
+      });
+
+      it("その後に捕獲すると、捕獲結果のボールはスーパーボールになる", async () => {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "フシギダネ");
+        await service.skipGuess(USER_ID);
+        expect((await service.attemptCapture(USER_ID)).ball_type).toBe("great");
+      });
+    });
+  });
+});
+
+describe("[捕獲] 捕獲の実行", () => {
+  describe("正常系", () => {
+    describe("名前当てをスキップしてモンスターボールが確定済みのとき、捕獲すると", () => {
+      async function captureAfterSkip(o: ServiceOverrides = {}) {
+        const service = await startQuest(o);
+        await service.skipGuess(USER_ID);
+        return service.attemptCapture(USER_ID);
+      }
+
+      it("乱数が捕獲確率を下回るとき、捕獲結果は成功になる", async () => {
+        const res = await captureAfterSkip();
+        expect(res.captured).toBe(true);
+      });
+
+      it("捕獲結果のポケモンは、出題されたポケモン (図鑑番号1、英語名 Bulbasaur) になる", async () => {
+        const res = await captureAfterSkip();
+        expect(res).toMatchObject({ pokemon_id: 1, name_en: "Bulbasaur" });
+      });
+
+      it("捕獲結果のボールはモンスターボールになる", async () => {
+        const res = await captureAfterSkip();
+        expect(res.ball_type).toBe("poke");
+      });
+
+      it("捕獲結果の捕獲確率は0より大きくなる", async () => {
+        const res = await captureAfterSkip();
+        expect(res.probability).toBeGreaterThan(0);
+      });
+
+      it("種族値合計が680のポケモンで、乱数が捕獲確率を上回るとき、捕獲結果は失敗になる", async () => {
+        const res = await captureAfterSkip({
+          pokemons: [makePokemon({ base_stat_total: 680 })],
+          randomValue: 0.5,
+        });
+        expect(res.captured).toBe(false);
+      });
+    });
   });
 
-  it("捕獲するとセッションが消費され、2回目はセッション不明のエラーになる", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.skipGuess("alice");
-    await service.attemptCapture("alice");
-    await expect(service.attemptCapture("alice")).rejects.toThrow(NotFoundError);
-  });
+  describe("異常系", () => {
+    it("名前当てにもスキップにも応答していないとき、捕獲すると、ボールが未確定のエラーになる", async () => {
+      const service = await startQuest();
+      await expect(service.attemptCapture(USER_ID)).rejects.toThrow(/before a ball/);
+    });
 
-  it("セッションはユーザごとに分離される", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await expect(service.scoreTranslation("bob", "訳")).rejects.toBeInstanceOf(NotFoundError);
+    it("捕獲を1回行ったあとに、もう一度捕獲すると、クエストセッションが見つからないエラーになる", async () => {
+      const service = await startQuest();
+      await service.skipGuess(USER_ID);
+      await service.attemptCapture(USER_ID);
+      await expect(service.attemptCapture(USER_ID)).rejects.toThrow(NotFoundError);
+    });
   });
 });
 
 describe("[リロード再開] 現在のクエスト取得", () => {
-  it("セッションが無いまま取得すると、セッション不明のエラーになる", async () => {
-    const service = makeService();
-    await expect(service.getCurrentQuest("nobody")).rejects.toBeInstanceOf(NotFoundError);
-  });
+  describe("正常系", () => {
+    describe("図鑑番号150の伝説ポケモン (英語説明文「Mewtwo is powerful.」) を出題して、採点前のとき", () => {
+      const options: ServiceOverrides = {
+        pokemons: [
+          makePokemon({
+            id: 150,
+            name_en: "Mewtwo",
+            name_ja: "ミュウツー",
+            description_en: "Mewtwo is powerful.",
+            base_stat_total: 680,
+            types: ["psychic"],
+            height: 20,
+            weight: 1220,
+            level_up_moves: ["かなしばり", "ねんりき", "スピードスター"],
+            is_legendary: true,
+          }),
+        ],
+      };
 
-  it("採点前 (未採点) は訳文入力の段階として復元され、説明文のポケモン名は伏せられている", async () => {
-    const service = makeService({
-      pokemons: [
-        makePokemon({
-          id: 150,
-          name_en: "Mewtwo",
-          name_ja: "ミュウツー",
-          description_en: "Mewtwo is powerful.",
-          base_stat_total: 680,
-          types: ["psychic"],
-          height: 20,
-          weight: 1220,
-          level_up_moves: ["かなしばり", "ねんりき", "スピードスター"],
-          is_legendary: true,
-        }),
-      ],
+      it("取得結果の段階は訳文入力になる", async () => {
+        const service = await startQuest(options);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toEqual({ phase: "translating", quest: expect.any(Object) });
+      });
+
+      it("取得結果のクエストは図鑑番号150のポケモンになる", async () => {
+        const service = await startQuest(options);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ quest: { pokemon_id: 150 } });
+      });
+
+      it("取得結果のクエストの英語説明文は、ポケモン名を伏せ字にした「This Pokémon is powerful.」になる", async () => {
+        const service = await startQuest(options);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ quest: { description_en: "This Pokémon is powerful." } });
+      });
+
+      it("取得結果のクエストは伝説ポケモンで、幻ではない", async () => {
+        const service = await startQuest(options);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ quest: { is_legendary: true, is_mythical: false } });
+      });
+
+      it("取得結果のクエストの名前当ての最大挑戦回数は3回になる", async () => {
+        const service = await startQuest(options);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ quest: { max_guess_attempts: 3 } });
+      });
     });
-    await service.newQuest("alice");
-    const res = await service.getCurrentQuest("alice");
-    expect(res).toEqual({
-      phase: "translating",
-      quest: {
-        pokemon_id: 150,
-        description_en: "This Pokémon is powerful.",
-        is_legendary: true,
-        is_mythical: false,
-        max_guess_attempts: 3,
-      },
+
+    describe("採点後で名前当てが未確定のとき", () => {
+      async function scoreAndRequestHints(hintCount: number, o: ServiceOverrides = {}) {
+        const service = await startQuest({
+          pokemons: [makePokemon({ level_up_moves: ["たいあたり"] })],
+          randomValue: 0,
+          ...o,
+        });
+        await service.scoreTranslation(USER_ID, "訳");
+        for (let i = 0; i < hintCount; i++) await service.requestHint(USER_ID);
+        return service.getCurrentQuest(USER_ID);
+      }
+
+      it.each([
+        ["ヒントを1回も要求していないとき", 0],
+        ["ヒントを1回要求済みのとき", 1],
+        ["ヒントを2回要求済みのとき", 2],
+      ])("%s、取得結果の段階は名前当てになる", async (_hintStatus, hintCount) => {
+        const res = await scoreAndRequestHints(hintCount);
+        expect(res).toMatchObject({ phase: "guessing" });
+      });
+
+      it("AI が意味単位1件の判定値0.7を返して採点したとき、取得結果の最終評価点は66になる", async () => {
+        const res = await scoreAndRequestHints(0, {
+          llmText: JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
+        });
+        expect(res).toMatchObject({ score: { score: 66 } });
+      });
+
+      it("AI が講評「よい 翻訳だ。」を返して採点したとき、取得結果の講評は「よい 翻訳だ。」になる", async () => {
+        const res = await scoreAndRequestHints(0, {
+          llmText: JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
+        });
+        expect(res).toMatchObject({ score: { review: "よい 翻訳だ。" } });
+      });
+
+      it("日本語説明文が「フシギダネは 緑色だ。」でポケモン名がフシギダネのとき、取得結果の日本語説明文は、ポケモン名を伏せ字にした「この ポケモンは 緑色だ。」になる", async () => {
+        const res = await scoreAndRequestHints(0, {
+          pokemons: [makePokemon({ description_ja: "フシギダネは 緑色だ。" })],
+        });
+        expect(res).toMatchObject({ score: { description_ja: "この ポケモンは 緑色だ。" } });
+      });
+
+      it("訳文「みどり」を採点に送ったとき、取得結果のユーザーの訳文は「みどり」になる", async () => {
+        const service = await startQuest();
+        await service.scoreTranslation(USER_ID, "みどり");
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ user_translation: "みどり" });
+      });
+
+      it("名前当てもヒントもまだ行っていないとき、取得結果の残り挑戦回数は3回になる", async () => {
+        const res = await scoreAndRequestHints(0);
+        expect(res).toMatchObject({ attempts_remaining: 3 });
+      });
+
+      it("ヒントを1回も要求していないとき、取得結果の開示済みのヒントは無しになる", async () => {
+        const res = await scoreAndRequestHints(0);
+        expect(res).toMatchObject({ hint: null });
+      });
+
+      it.each([
+        ["ヒントを1回要求済み", 1],
+        ["ヒントを2回要求済み", 2],
+      ])(
+        "%sのとき、取得結果の開示済みのヒントとして、出題ポケモンのタイプ (くさ・どく) が示される",
+        async (_hintStatus, hintCount) => {
+          const res = await scoreAndRequestHints(hintCount);
+          expect(res).toMatchObject({ hint: { types: ["grass", "poison"] } });
+        },
+      );
+
+      it("ヒントを1回要求済みのとき、取得結果の開示済みのヒントの残り挑戦回数は2回になる", async () => {
+        const res = await scoreAndRequestHints(1);
+        expect(res).toMatchObject({ hint: { attempts_remaining: 2 } });
+      });
+
+      it("レベルアップで覚える技が「たいあたり」のポケモンで、ヒントを2回要求済みのとき、取得結果の開示済みのヒントとして、技「たいあたり」が示される", async () => {
+        const res = await scoreAndRequestHints(2);
+        expect(res).toMatchObject({ hint: { moves: ["たいあたり"] } });
+      });
+
+      it("ヒントを2回要求済みのとき、取得結果の開示済みのヒントの残り挑戦回数は1回になる", async () => {
+        const res = await scoreAndRequestHints(2);
+        expect(res).toMatchObject({ hint: { attempts_remaining: 1 } });
+      });
+    });
+
+    describe("名前当てでボールが確定済みのとき", () => {
+      const cases: [string, (service: QuestService) => Promise<void>][] = [
+        [
+          "名前当てに正解してハイパーボールが確定済み",
+          async (service) => {
+            await service.guessName(USER_ID, "bulbasaur");
+          },
+        ],
+        [
+          "名前当てをスキップしてモンスターボールが確定済み",
+          async (service) => {
+            await service.skipGuess(USER_ID);
+          },
+        ],
+      ];
+
+      it.each(cases)("%sのとき、取得結果の段階は捕獲待機になる", async (_situation, decideBall) => {
+        const service = await startScoredQuest();
+        await decideBall(service);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ phase: "capturing" });
+      });
+
+      it("名前当てに正解してハイパーボールが確定済みのとき、取得結果の確定済みのボールはハイパーボールになる", async () => {
+        const service = await startScoredQuest();
+        await service.guessName(USER_ID, "bulbasaur");
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
+
+      it("名前当てをスキップしてモンスターボールが確定済みのとき、取得結果の確定済みのボールはモンスターボールになる", async () => {
+        const service = await startScoredQuest();
+        await service.skipGuess(USER_ID);
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ ball_type: "poke" });
+      });
     });
   });
 
-  it("採点後 (名前当て未確定) は、得点・講評・ユーザーの訳文・伏せ字済みの日本語説明を保持した状態に復元される", async () => {
-    const service = makeService({
-      pokemons: [makePokemon({ description_ja: "フシギダネは 緑色だ。" })],
-      llmText: JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" }),
+  describe("異常系", () => {
+    it("進行中のクエストセッションがないとき、現在のクエストを取得すると、クエストセッションが見つからないエラーになる", async () => {
+      const service = makeService();
+      await expect(service.getCurrentQuest("nobody")).rejects.toBeInstanceOf(NotFoundError);
     });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "みどり");
-    const res = await service.getCurrentQuest("alice");
-    expect(res).toMatchObject({
-      phase: "guessing",
-      score: { score: 66, review: "よい 翻訳だ。", description_ja: "この ポケモンは 緑色だ。" },
-      user_translation: "みどり",
-      attempts_remaining: 3,
-      hint: null,
+
+    describe("採点前に名前当てに正解してハイパーボールが確定済みのとき", () => {
+      it("取得結果の段階は捕獲待機になる", async () => {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "bulbasaur");
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ phase: "capturing" });
+      });
+
+      it("取得結果の確定済みのボールはハイパーボールになる", async () => {
+        const service = await startQuest();
+        await service.guessName(USER_ID, "bulbasaur");
+        const res = await service.getCurrentQuest(USER_ID);
+        expect(res).toMatchObject({ ball_type: "ultra" });
+      });
     });
-  });
-
-  it.each([
-    [0, null],
-    [1, { types: ["grass", "poison"], attempts_remaining: 2 }],
-    [2, { types: ["grass", "poison"], moves: ["たいあたり"], attempts_remaining: 1 }],
-  ])("ヒントを%i回開示済みのとき、名前当ての段階への復元結果に開示済みの情報が反映される", async (revealCount, expectedHint) => {
-    const service = makeService({
-      pokemons: [makePokemon({ level_up_moves: ["たいあたり"] })],
-      randomValue: 0,
-    });
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    for (let i = 0; i < revealCount; i++) await service.requestHint("alice");
-    const res = await service.getCurrentQuest("alice");
-    expect(res).toMatchObject({ phase: "guessing", hint: expectedHint });
-  });
-
-  it("名前当て正解でボールが確定すると、確定済みのボール種別を保持した捕獲待機の段階として復元される", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    await service.guessName("alice", "bulbasaur");
-    const res = await service.getCurrentQuest("alice");
-    expect(res).toMatchObject({ phase: "capturing", ball_type: "ultra" });
-  });
-
-  it("名前当てをスキップしてボールが確定した場合も、確定済みのボール種別を保持した捕獲待機の段階として復元される", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.scoreTranslation("alice", "訳");
-    await service.skipGuess("alice");
-    const res = await service.getCurrentQuest("alice");
-    expect(res).toMatchObject({ phase: "capturing", ball_type: "poke" });
-  });
-
-  it("採点前に名前当てが完了した異常系でも、確定済みのボール種別を保持した捕獲待機の段階として復元される (ボールの確定を採点済みかより優先して判定する)", async () => {
-    const service = makeService();
-    await service.newQuest("alice");
-    await service.guessName("alice", "bulbasaur");
-    const res = await service.getCurrentQuest("alice");
-    expect(res).toMatchObject({ phase: "capturing", ball_type: "ultra" });
   });
 });

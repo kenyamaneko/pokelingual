@@ -8,13 +8,10 @@ import { AuthContext } from "../contexts/AuthContext";
 import { server, apiUrl } from "../test/mswServer";
 import { SettingsPage } from "./SettingsPage";
 import { spec } from "../test/labels";
-import { CONTACT_FORM_URL, GITHUB_REPO_URL } from "../constants/links";
 
 const fakeUser = { uid: "alice", email: "alice@example.com" } as unknown as User;
 
-// PUT /settings/excluded-pokemon で実際に送られたボディ (保存内容) を HTTP 境界で捕捉する。
 let lastSavedIDs: number[] | null = null;
-// PUT /settings/generations で実際に送られた世代一覧を HTTP 境界で捕捉する。
 let lastSavedGenerations: number[] | null = null;
 
 /**
@@ -102,269 +99,382 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
   );
 }
 
-describe("[設定] 設定画面の遷移", () => {
+describe("[設定] ログアウト", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
 
-  it("ログアウトを押すと、ログイン画面へ遷移する", async () => {
-    const user = userEvent.setup();
-    const logout = vi.fn().mockResolvedValue(undefined);
-    renderSettings(logout);
+  describe("正常系", () => {
+    it("「ログアウト」を押すと、ログイン画面に遷移する", async () => {
+      const user = userEvent.setup();
+      const logout = vi.fn().mockResolvedValue(undefined);
+      renderSettings(logout);
 
-    // 設定読み込み完了 (loading スピナーが消える) を待ってから操作する
-    const logoutButton = await screen.findByRole("button", { name: "ログアウト" });
-    await user.click(logoutButton);
+      // 設定の読み込みが終わってから操作できるため、ログアウトボタンが表示されるのを待つ
+      const logoutButton = await screen.findByRole("button", { name: "ログアウト" });
+      await user.click(logoutButton);
 
-    expect(logout).toHaveBeenCalledOnce();
-    await waitFor(() => {
-      expect(screen.getByTestId("login-page")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId("login-page")).toBeInTheDocument();
+      });
     });
   });
 });
 
-/** ID の範囲・件数上限のバリデーションは backend の責務のため、ここでは検証しない。 */
-describe("[設定] 設定画面の苦手ポケモン管理", () => {
+describe("[設定] 設定の読み込み", () => {
+  describe("異常系", () => {
+    it("設定の取得に失敗したとき、「設定の読み込みに失敗しました」と表示される", async () => {
+      // エラー経路の診断ログは検証対象外のため沈黙させる
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      server.use(http.get(apiUrl("/settings"), () => HttpResponse.error()));
+      renderSettings();
+
+      expect(
+        await screen.findByText(spec("設定の読み込みに失敗しました")),
+      ).toBeInTheDocument();
+      vi.restoreAllMocks();
+    });
+  });
+});
+
+describe("[設定] 苦手ポケモン設定", () => {
   beforeEach(() => {
     lastSavedIDs = null;
   });
 
-  it("設定の読み込みに失敗するとエラーメッセージが表示される", async () => {
-    // エラー経路の診断ログは検証対象外のため沈黙させる
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    server.use(http.get(apiUrl("/settings"), () => HttpResponse.error()));
-    renderSettings();
+  describe("正常系", () => {
+    describe("除外ポケモンがいない状態で、「ゴル」と入力して検索結果の「ゴルバット」を選んだとき", () => {
+      async function searchAndSelectGolbat() {
+        mockGetSettings([]);
+        mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+        mockUpdateSuccess();
+        const user = userEvent.setup();
+        renderSettings();
 
-    expect(
-      await screen.findByText(spec("設定の読み込みに失敗しました")),
-    ).toBeInTheDocument();
-    vi.restoreAllMocks();
+        await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ゴル");
+        await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+      }
+
+      it("除外ポケモンの一覧に「#042」と「ゴルバット」が表示される", async () => {
+        await searchAndSelectGolbat();
+
+        expect(await screen.findByText("#042")).toBeInTheDocument();
+        expect(screen.getByText("ゴルバット")).toBeInTheDocument();
+        expect(
+          screen.queryByText(spec("除外ポケモンはいません")),
+        ).not.toBeInTheDocument();
+      });
+
+      it("保存される除外ポケモンの一覧が、ゴルバット (図鑑番号 42) だけになる", async () => {
+        await searchAndSelectGolbat();
+
+        await waitFor(() => expect(lastSavedIDs).toEqual([42]));
+      });
+    });
+
+    it("検索語「いない」がどのポケモンの名前にも一致しないとき、検索結果に「ゴルバット」が表示されない", async () => {
+      mockGetSettings([]);
+      mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+      const user = userEvent.setup();
+      renderSettings();
+
+      await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "いない");
+      expect(screen.queryByRole("button", { name: /ゴルバット/ })).not.toBeInTheDocument();
+    });
+
+    it("検索語「ニド」が「ニドリーナ」と「ニドクイン」の名前に一致するとき、検索結果に両方が表示される", async () => {
+      mockGetSettings([]);
+      mockSearchCandidates([
+        { pokemon_id: 30, name_ja: "ニドリーナ" },
+        { pokemon_id: 31, name_ja: "ニドクイン" },
+      ]);
+      const user = userEvent.setup();
+      renderSettings();
+
+      await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ニド");
+
+      expect(await screen.findByRole("button", { name: /ニドリーナ/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /ニドクイン/ })).toBeInTheDocument();
+    });
+
+    describe("ゴルバット (図鑑番号 42) を除外済みの状態で、「削除」を押したとき", () => {
+      async function removeGolbat() {
+        mockGetSettings([42]);
+        mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+        mockUpdateSuccess();
+        const user = userEvent.setup();
+        renderSettings();
+
+        await screen.findByText("#042");
+        await user.click(screen.getByRole("button", { name: "削除" }));
+      }
+
+      it("「除外ポケモンはいません」と表示される", async () => {
+        await removeGolbat();
+
+        expect(
+          await screen.findByText(spec("除外ポケモンはいません")),
+        ).toBeInTheDocument();
+        expect(screen.queryByText("#042")).not.toBeInTheDocument();
+      });
+
+      it("保存される除外ポケモンの一覧が空になる", async () => {
+        await removeGolbat();
+
+        await waitFor(() => expect(lastSavedIDs).toEqual([]));
+      });
+    });
   });
 
-  it("名前で検索して候補を選ぶと、その ID が保存され一覧に名前付きで表示される", async () => {
-    mockGetSettings([]);
-    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
-    mockUpdateSuccess();
-    const user = userEvent.setup();
-    renderSettings();
+  describe("異常系", () => {
+    describe("ゴルバット (図鑑番号 42) を除外済みの状態で、「ゴル」と入力して検索結果の「ゴルバット」を選んだとき", () => {
+      async function searchAndSelectExcludedGolbat() {
+        mockGetSettings([42]);
+        mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+        mockUpdateSuccess();
+        const user = userEvent.setup();
+        renderSettings();
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ゴル");
-    await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+        await screen.findByText("#042");
+        await user.type(screen.getByPlaceholderText("ポケモンの名前で探す"), "ゴル");
+        await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+      }
 
-    // 一覧に #042 と名前が現れ、空状態の文言が消え、保存 API に [42] が渡る
-    expect(await screen.findByText("#042")).toBeInTheDocument();
-    expect(screen.getByText("ゴルバット")).toBeInTheDocument();
-    expect(
-      screen.queryByText(spec("除外ポケモンはいません")),
-    ).not.toBeInTheDocument();
-    await waitFor(() => expect(lastSavedIDs).toEqual([42]));
-  });
+      it("除外ポケモンの一覧の「#042」が 1 件のままになる", async () => {
+        await searchAndSelectExcludedGolbat();
 
-  it("検索語に一致するポケモンがなければ候補が出ない", async () => {
-    mockGetSettings([]);
-    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
-    const user = userEvent.setup();
-    renderSettings();
+        await waitFor(() => expect(lastSavedIDs).not.toBeNull());
+        expect(screen.getAllByText("#042")).toHaveLength(1);
+      });
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "いない");
-    expect(screen.queryByRole("button", { name: /ゴルバット/ })).not.toBeInTheDocument();
-  });
+      it("保存される除外ポケモンの一覧が、ゴルバット (図鑑番号 42) だけのままになる", async () => {
+        await searchAndSelectExcludedGolbat();
 
-  it("複数のポケモンが名前にヒットすると、その全てが候補に出る", async () => {
-    mockGetSettings([]);
-    mockSearchCandidates([
-      { pokemon_id: 30, name_ja: "ニドリーナ" },
-      { pokemon_id: 31, name_ja: "ニドクイン" },
-    ]);
-    const user = userEvent.setup();
-    renderSettings();
+        await waitFor(() => expect(lastSavedIDs).toEqual([42]));
+      });
+    });
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ニド");
+    describe("設定の保存に失敗する状態で、「ゴル」と入力して検索結果の「ゴルバット」を選んだとき", () => {
+      async function searchAndSelectGolbatWhenSaveFails() {
+        // エラー経路の診断ログは検証対象外のため沈黙させる
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        mockGetSettings([]);
+        mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
+        mockUpdateFailure();
+        const user = userEvent.setup();
+        renderSettings();
 
-    // 「ニド」に一致する2匹が候補ボタンとして出る
-    expect(await screen.findByRole("button", { name: /ニドリーナ/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ニドクイン/ })).toBeInTheDocument();
-  });
+        await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ゴル");
+        await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+      }
 
-  it("すでに除外済みのポケモンを検索して選んでも、一覧は重複せず変わらない", async () => {
-    mockGetSettings([42]);
-    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
-    mockUpdateSuccess();
-    const user = userEvent.setup();
-    renderSettings();
+      it("「設定の保存に失敗しました」と表示される", async () => {
+        await searchAndSelectGolbatWhenSaveFails();
 
-    await screen.findByText("#042");
-    await user.type(screen.getByPlaceholderText("ポケモンの名前で探す"), "ゴル");
-    await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+        expect(
+          await screen.findByText(spec("設定の保存に失敗しました")),
+        ).toBeInTheDocument();
+        vi.restoreAllMocks();
+      });
 
-    expect(screen.getAllByText("#042")).toHaveLength(1);
-    await waitFor(() => expect(lastSavedIDs).toEqual([42]));
-  });
+      it("除外ポケモンの一覧が空のまま「除外ポケモンはいません」と表示される", async () => {
+        await searchAndSelectGolbatWhenSaveFails();
 
-  it("削除を押すと一覧から取り除かれ、空状態の文言に戻る", async () => {
-    mockGetSettings([42]);
-    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
-    mockUpdateSuccess();
-    const user = userEvent.setup();
-    renderSettings();
+        await screen.findByText(spec("設定の保存に失敗しました"));
+        expect(screen.queryByText("#042")).not.toBeInTheDocument();
+        expect(
+          screen.getByText(spec("除外ポケモンはいません")),
+        ).toBeInTheDocument();
+        vi.restoreAllMocks();
+      });
+    });
 
-    // 一覧には #042 と名前が併記される
-    expect(await screen.findByText("#042")).toBeInTheDocument();
-    expect(screen.getByText("ゴルバット")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "削除" }));
+    describe("ポケモン一覧の取得に失敗したとき", () => {
+      function renderWhenSearchCatalogFails() {
+        // エラー経路の診断ログは検証対象外のため沈黙させる
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        mockGetSettings([]);
+        server.use(http.get(apiUrl("/pokedex/search-candidates"), () => HttpResponse.error()));
+        renderSettings();
+      }
 
-    expect(
-      await screen.findByText(spec("除外ポケモンはいません")),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("#042")).not.toBeInTheDocument();
-    // 保存 API には削除後の空一覧が渡る (実際に送られた HTTP ボディで確認)
-    await waitFor(() => expect(lastSavedIDs).toEqual([]));
-  });
+      it("「ポケモン一覧を読み込めませんでした。ページを再読み込みしてください」と表示される", async () => {
+        renderWhenSearchCatalogFails();
 
-  it("保存に失敗するとエラーメッセージが表示され、一覧は変わらない", async () => {
-    // エラー経路の診断ログは検証対象外のため沈黙させる
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetSettings([]);
-    mockSearchCandidates([{ pokemon_id: 42, name_ja: "ゴルバット" }]);
-    mockUpdateFailure();
-    const user = userEvent.setup();
-    renderSettings();
+        expect(
+          await screen.findByText(spec("ポケモン一覧を読み込めませんでした。ページを再読み込みしてください")),
+        ).toBeInTheDocument();
+        vi.restoreAllMocks();
+      });
 
-    await user.type(await screen.findByPlaceholderText("ポケモンの名前で探す"), "ゴル");
-    await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
+      it("「ポケモンの名前で探す」の検索欄が表示されない", async () => {
+        renderWhenSearchCatalogFails();
 
-    expect(
-      await screen.findByText(spec("設定の保存に失敗しました")),
-    ).toBeInTheDocument();
-    // 保存に失敗した ID は一覧に反映されず、空状態のまま
-    expect(screen.queryByText("#042")).not.toBeInTheDocument();
-    expect(
-      screen.getByText(spec("除外ポケモンはいません")),
-    ).toBeInTheDocument();
-    vi.restoreAllMocks();
-  });
-
-  it("検索候補の取得に失敗すると、再読み込みを促すメッセージを表示する", async () => {
-    // エラー経路の診断ログは検証対象外のため沈黙させる
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetSettings([]);
-    server.use(http.get(apiUrl("/pokedex/search-candidates"), () => HttpResponse.error()));
-    renderSettings();
-
-    expect(
-      await screen.findByText(spec("ポケモン一覧を読み込めませんでした。ページを再読み込みしてください")),
-    ).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("ポケモンの名前で探す")).not.toBeInTheDocument();
-    vi.restoreAllMocks();
+        await screen.findByText(spec("ポケモン一覧を読み込めませんでした。ページを再読み込みしてください"));
+        expect(screen.queryByPlaceholderText("ポケモンの名前で探す")).not.toBeInTheDocument();
+        vi.restoreAllMocks();
+      });
+    });
   });
 });
 
-/** 世代番号・未知値のバリデーションは backend の責務のため、ここでは検証しない。 */
-describe("[設定] 設定画面の出題世代", () => {
+describe("[設定] 出題する世代", () => {
   beforeEach(() => {
     lastSavedGenerations = null;
   });
 
-  it("選択済みの世代がチェック状態で復元される", async () => {
-    mockGetSettings([], [1, 3]);
-    renderSettings();
+  describe("正常系", () => {
+    describe("設定済みの世代が第 1 世代と第 3 世代のとき、設定画面を開くと", () => {
+      it("第 1 世代にチェックが付く", async () => {
+        mockGetSettings([], [1, 3]);
+        renderSettings();
 
-    expect(await screen.findByRole("checkbox", { name: /第1世代/ })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /第2世代/ })).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /第3世代/ })).toBeChecked();
+        expect(await screen.findByRole("checkbox", { name: /第1世代/ })).toBeChecked();
+      });
+
+      it("第 2 世代にはチェックが付かない", async () => {
+        mockGetSettings([], [1, 3]);
+        renderSettings();
+
+        expect(await screen.findByRole("checkbox", { name: /第2世代/ })).not.toBeChecked();
+      });
+
+      it("第 3 世代にチェックが付く", async () => {
+        mockGetSettings([], [1, 3]);
+        renderSettings();
+
+        expect(await screen.findByRole("checkbox", { name: /第3世代/ })).toBeChecked();
+      });
+    });
+
+    describe("第 1 世代から第 3 世代までが選ばれている状態で、第 2 世代のチェックを外したとき", () => {
+      async function uncheckSecondGeneration() {
+        mockGetSettings([], [1, 2, 3]);
+        mockUpdateGenerationsSuccess();
+        const user = userEvent.setup();
+        renderSettings();
+
+        await user.click(await screen.findByRole("checkbox", { name: /第2世代/ }));
+      }
+
+      it("保存される出題世代が、第 1 世代と第 3 世代になる", async () => {
+        await uncheckSecondGeneration();
+
+        await waitFor(() => expect(lastSavedGenerations).toEqual([1, 3]));
+      });
+
+      it("第 2 世代のチェックが外れる", async () => {
+        await uncheckSecondGeneration();
+
+        await waitFor(() => expect(lastSavedGenerations).toEqual([1, 3]));
+        expect(screen.getByRole("checkbox", { name: /第2世代/ })).not.toBeChecked();
+      });
+    });
+
+    describe("第 1 世代だけが選ばれている状態で、第 4 世代のチェックを付けたとき", () => {
+      async function checkFourthGeneration() {
+        mockGetSettings([], [1]);
+        mockUpdateGenerationsSuccess();
+        const user = userEvent.setup();
+        renderSettings();
+
+        await user.click(await screen.findByRole("checkbox", { name: /第4世代/ }));
+      }
+
+      it("保存される出題世代が、第 1 世代と第 4 世代になる", async () => {
+        await checkFourthGeneration();
+
+        await waitFor(() => expect(lastSavedGenerations).toEqual([1, 4]));
+      });
+
+      it("第 4 世代のチェックが付く", async () => {
+        await checkFourthGeneration();
+
+        await waitFor(() => expect(lastSavedGenerations).toEqual([1, 4]));
+        expect(screen.getByRole("checkbox", { name: /第4世代/ })).toBeChecked();
+      });
+    });
   });
 
-  it("世代のチェックを外すと、その世代を除いた一覧が保存される", async () => {
-    mockGetSettings([], [1, 2, 3]);
-    mockUpdateGenerationsSuccess();
-    const user = userEvent.setup();
-    renderSettings();
+  describe("異常系", () => {
+    describe("第 5 世代だけが選ばれている状態のとき", () => {
+      it("第 5 世代のチェックを押しても、チェックが外れない", async () => {
+        mockGetSettings([], [5]);
+        mockUpdateGenerationsSuccess();
+        const user = userEvent.setup();
+        renderSettings();
 
-    await user.click(await screen.findByRole("checkbox", { name: /第2世代/ }));
+        const only = await screen.findByRole("checkbox", { name: /第5世代/ });
+        expect(only).toBeChecked();
+        expect(only).toBeDisabled();
 
-    // 第2世代を外した [1, 3] が保存され、チェックも外れる
-    await waitFor(() => expect(lastSavedGenerations).toEqual([1, 3]));
-    expect(screen.getByRole("checkbox", { name: /第2世代/ })).not.toBeChecked();
-  });
+        await user.click(only);
 
-  it("世代のチェックを付けると、その世代を加えた一覧が保存される", async () => {
-    mockGetSettings([], [1]);
-    mockUpdateGenerationsSuccess();
-    const user = userEvent.setup();
-    renderSettings();
+        expect(only).toBeChecked();
+        expect(lastSavedGenerations).toBeNull();
+      });
 
-    await user.click(await screen.findByRole("checkbox", { name: /第4世代/ }));
+      it("「1つ以上えらんでね（ぜんぶは外せないよ）」と表示される", async () => {
+        mockGetSettings([], [5]);
+        renderSettings();
 
-    // 第4世代を加えた [1, 4] が保存され、チェックが付く
-    await waitFor(() => expect(lastSavedGenerations).toEqual([1, 4]));
-    expect(screen.getByRole("checkbox", { name: /第4世代/ })).toBeChecked();
-  });
-
-  it("選択が1つだけのときはその世代を外せず、1つ以上必要な旨を表示する", async () => {
-    mockGetSettings([], [5]);
-    mockUpdateGenerationsSuccess();
-    const user = userEvent.setup();
-    renderSettings();
-
-    const only = await screen.findByRole("checkbox", { name: /第5世代/ });
-    expect(only).toBeChecked();
-    expect(only).toBeDisabled();
-    // なぜ外せないかが分かる案内を出す
-    expect(
-      screen.getByText(spec("1つ以上えらんでね（ぜんぶは外せないよ）")),
-    ).toBeInTheDocument();
-
-    await user.click(only);
-
-    expect(only).toBeChecked();
-    expect(lastSavedGenerations).toBeNull();
+        await screen.findByRole("checkbox", { name: /第5世代/ });
+        expect(
+          screen.getByText(spec("1つ以上えらんでね（ぜんぶは外せないよ）")),
+        ).toBeInTheDocument();
+      });
+    });
   });
 });
 
-describe("[サイト情報] 設定画面のサイト情報導線", () => {
+describe("[サイト情報] 設定画面の問い合わせ・利用規約・GitHub リポジトリ", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
 
-  it("問い合わせリンクが問い合わせフォームを新しいタブで開く", async () => {
-    renderSettings();
-    const link = await screen.findByRole("link", { name: "問い合わせ" });
-    expect(link).toHaveAttribute("href", CONTACT_FORM_URL);
-    expect(link).toHaveAttribute("target", "_blank");
-  });
+  describe("正常系", () => {
+    describe("設定画面を表示したとき", () => {
+      it("「問い合わせ」のリンクは、問い合わせフォームを新しいタブで開くリンクになっている", async () => {
+        renderSettings();
+        const link = await screen.findByRole("link", { name: "問い合わせ" });
+        expect(link).toHaveAttribute("href", "https://forms.gle/mUhMjSMf8TPJc3CC9");
+        expect(link).toHaveAttribute("target", "_blank");
+      });
 
-  it("利用規約ボタンを押すと、利用規約モーダルが表示される", async () => {
-    const user = userEvent.setup();
-    renderSettings();
+      it("「GitHub リポジトリ」のリンクは、リポジトリのページを新しいタブで開くリンクになっている", async () => {
+        renderSettings();
+        const link = await screen.findByRole("link", { name: "GitHub リポジトリ" });
+        expect(link).toHaveAttribute("href", "https://github.com/kenyamaneko/pokelingual");
+        expect(link).toHaveAttribute("target", "_blank");
+      });
 
-    await user.click(await screen.findByRole("button", { name: "利用規約" }));
+      it("「回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます」と表示される", async () => {
+        renderSettings();
+        await screen.findByRole("link", { name: "GitHub リポジトリ" });
+        expect(
+          screen.getByText("回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます"),
+        ).toBeInTheDocument();
+      });
+    });
 
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-  });
+    it("設定画面で「利用規約」を押すと、利用規約モーダルが表示される", async () => {
+      const user = userEvent.setup();
+      renderSettings();
 
-  it("利用規約モーダルの「閉じる」を押すと、モーダルが閉じて設定画面に戻る", async () => {
-    const user = userEvent.setup();
-    renderSettings();
-    await user.click(await screen.findByRole("button", { name: "利用規約" }));
+      await user.click(await screen.findByRole("button", { name: "利用規約" }));
 
-    await user.click(screen.getByRole("button", { name: "閉じる" }));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument();
-  });
+    it("利用規約モーダルが開いているとき、「閉じる」を押すと、モーダルが閉じて設定画面が表示される", async () => {
+      const user = userEvent.setup();
+      renderSettings();
+      await user.click(await screen.findByRole("button", { name: "利用規約" }));
 
-  it("GitHub リポジトリリンクがリポジトリページを新しいタブで開く", async () => {
-    renderSettings();
-    const link = await screen.findByRole("link", { name: "GitHub リポジトリ" });
-    expect(link).toHaveAttribute("href", GITHUB_REPO_URL);
-    expect(link).toHaveAttribute("target", "_blank");
-  });
+      await user.click(screen.getByRole("button", { name: "閉じる" }));
 
-  it("GitHub リポジトリリンクに、自分の環境にホスティングできる旨の説明が添えられる", async () => {
-    renderSettings();
-    await screen.findByRole("link", { name: "GitHub リポジトリ" });
-    expect(
-      screen.getByText("回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます"),
-    ).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument();
+    });
   });
 });

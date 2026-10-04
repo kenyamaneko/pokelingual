@@ -2,71 +2,118 @@ import { test, expect } from "@playwright/test";
 import { completeTutorialViaApi } from "./helpers";
 import { LINK, BUTTON } from "./labels";
 
-// 認証バイパス済み（DevAuthProvider）の mock モード専用。dev では各ページが認証で保護される。
+// dev では各ページが認証で保護されログインが必要になるため、認証をバイパスする mock モード専用にする。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
-// このファイルは本番導線の配線を検証する。dev-user のチュートリアル完了状態を先に立てておく
+const VIEWPORT_HEIGHT = 800;
+const WIDE_VIEWPORT_WIDTH = 1024;
+const NARROW_VIEWPORT_WIDTH = 375;
+
 test.beforeEach(async ({ page }) => {
   await completeTutorialViaApi(page);
 });
 
-test("ホームの各リンクから対応する画面へ移動できる", async ({ page }) => {
-  await page.goto("/");
+test.describe("ホーム画面のリンクによる画面遷移", () => {
+  test.describe("正常系", () => {
+    test("チュートリアルが完了済みのとき、「ポケモンを探しに行く」を押すと、クエスト画面に遷移する", async ({
+      page,
+    }) => {
+      await page.goto("/");
 
-  // ぼうけんに出かける → /quest
-  await page.getByRole("button", { name: BUTTON.startQuest }).click();
-  await expect(page).toHaveURL("/quest");
+      await page.getByRole("button", { name: BUTTON.startQuest }).click();
+      await expect(page).toHaveURL("/quest");
+    });
 
-  // ヘッダーロゴ → /
-  await page.getByRole("link", { name: LINK.logo }).click();
-  await expect(page).toHaveURL("/");
+    test("「図鑑を見る」を押すと、図鑑画面に遷移する", async ({ page }) => {
+      await page.goto("/");
 
-  // ずかんを見る → /pokedex
-  await page.getByRole("link", { name: LINK.viewPokedex }).click();
-  await expect(page).toHaveURL("/pokedex");
-
-  // ヘッダーロゴ → /
-  await page.getByRole("link", { name: LINK.logo }).click();
-  await expect(page).toHaveURL("/");
-
-  // せってい → /settings
-  await page.getByRole("link", { name: LINK.settings }).first().click();
-  await expect(page).toHaveURL("/settings");
+      await page.getByRole("link", { name: LINK.viewPokedex }).click();
+      await expect(page).toHaveURL("/pokedex");
+    });
+  });
 });
 
-test("ヘッダーのリンクからクエスト・図鑑・設定へ移動できる", async ({ page }) => {
-  await page.goto("/");
+test.describe("ヘッダーのリンクによる画面遷移", () => {
+  test.describe("正常系", () => {
+    test.describe("ホーム画面を表示しているとき", () => {
+      test.beforeEach(async ({ page }) => {
+        await page.goto("/");
+      });
 
-  // ヘッダーの「ぼうけん」リンク
-  await page.getByRole("link", { name: LINK.navQuest, exact: true }).click();
-  await expect(page).toHaveURL("/quest");
+      test("「ぼうけん」を押すと、クエスト画面に遷移する", async ({ page }) => {
+        await page.getByRole("link", { name: LINK.navQuest, exact: true }).click();
+        await expect(page).toHaveURL("/quest");
+      });
 
-  // ヘッダーの「ずかん」リンク
-  await page.getByRole("link", { name: LINK.navPokedex, exact: true }).click();
-  await expect(page).toHaveURL("/pokedex");
+      test("「ずかん」を押すと、図鑑画面に遷移する", async ({ page }) => {
+        await page.getByRole("link", { name: LINK.navPokedex, exact: true }).click();
+        await expect(page).toHaveURL("/pokedex");
+      });
 
-  // ヘッダーの「せってい」リンク
-  await page.getByRole("link", { name: LINK.settings, exact: true }).click();
-  await expect(page).toHaveURL("/settings");
+      test("「せってい」を押すと、設定画面に遷移する", async ({ page }) => {
+        await page.getByRole("link", { name: LINK.settings, exact: true }).click();
+        await expect(page).toHaveURL("/settings");
+      });
+
+      test("画面幅が狭いとき、メニューボタンを押してから「ぼうけん」を押すと、クエスト画面に遷移する", async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: NARROW_VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT });
+
+        await page.getByRole("button", { name: BUTTON.menu }).click();
+        await page.getByRole("link", { name: LINK.navQuest, exact: true }).click();
+        await expect(page).toHaveURL("/quest");
+      });
+    });
+
+    test.describe("ヘッダーのロゴを押したとき", () => {
+      const screens = [
+        { screen: "クエスト画面", path: "/quest" },
+        { screen: "図鑑画面", path: "/pokedex" },
+      ];
+
+      for (const { screen, path } of screens) {
+        test(`${screen}を表示しているとき、ホーム画面に遷移する`, async ({ page }) => {
+          await page.goto(path);
+
+          await page.getByRole("link", { name: LINK.logo }).click();
+          await expect(page).toHaveURL("/");
+        });
+      }
+    });
+  });
 });
 
-test("画面幅が広いとき、ヘッダーのナビゲーションはハンバーガーメニューにならない", async ({ page }) => {
-  await page.setViewportSize({ width: 1024, height: 800 });
-  await page.goto("/");
+test.describe("ヘッダーのメニューボタン", () => {
+  test.describe("正常系", () => {
+    test.describe("画面幅が広いとき", () => {
+      test.beforeEach(async ({ page }) => {
+        await page.setViewportSize({ width: WIDE_VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT });
+        await page.goto("/");
+      });
 
-  await expect(page.getByRole("button", { name: BUTTON.menu })).not.toBeVisible();
-  await expect(page.getByRole("link", { name: LINK.navQuest, exact: true })).toBeVisible();
-});
+      test("ヘッダーを表示すると、「ぼうけん」のリンクが表示される", async ({ page }) => {
+        await expect(page.getByRole("link", { name: LINK.navQuest, exact: true })).toBeVisible();
+      });
 
-test("画面幅が狭いとき、ヘッダーのナビゲーションはハンバーガーメニューに折りたたまれる", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto("/");
+      test("ヘッダーを表示すると、メニューボタンは表示されない", async ({ page }) => {
+        await expect(page.getByRole("button", { name: BUTTON.menu })).not.toBeVisible();
+      });
+    });
 
-  const menuButton = page.getByRole("button", { name: BUTTON.menu });
-  await expect(menuButton).toBeVisible();
-  await expect(page.getByRole("link", { name: LINK.navQuest, exact: true })).not.toBeVisible();
+    test.describe("画面幅が狭いとき", () => {
+      test.beforeEach(async ({ page }) => {
+        await page.setViewportSize({ width: NARROW_VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT });
+        await page.goto("/");
+      });
 
-  await menuButton.click();
-  await page.getByRole("link", { name: LINK.navQuest, exact: true }).click();
-  await expect(page).toHaveURL("/quest");
+      test("ヘッダーを表示すると、メニューボタンが表示される", async ({ page }) => {
+        await expect(page.getByRole("button", { name: BUTTON.menu })).toBeVisible();
+      });
+
+      test("ヘッダーを表示すると、「ぼうけん」のリンクは表示されない", async ({ page }) => {
+        await expect(page.getByRole("link", { name: LINK.navQuest, exact: true })).not.toBeVisible();
+      });
+    });
+  });
 });

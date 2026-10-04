@@ -5,12 +5,6 @@ import type { User } from "firebase/auth";
 import { AuthContext } from "../../contexts/AuthContext";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-/**
- * ProtectedRoute の仕様:
- * - 認証済み (user!=null) なら children を描画する
- * - 未認証 (user=null, loading=false) なら /login へリダイレクトする
- * - 認証状態の確定前 (loading=true) はリダイレクトも描画もせず、ローディングにとどまる
- */
 const fakeUser = { uid: "alice" } as unknown as User;
 
 function renderGuarded(auth: { user: User | null; loading: boolean }) {
@@ -42,25 +36,29 @@ function renderGuarded(auth: { user: User | null; loading: boolean }) {
 }
 
 describe("[認証] ログイン必須画面の保護", () => {
-  it("ログイン済みなら、保護対象の画面が表示される", () => {
-    renderGuarded({ user: fakeUser, loading: false });
+  describe("正常系", () => {
+    it("ログイン済みのとき、保護対象の画面が表示される", () => {
+      renderGuarded({ user: fakeUser, loading: false });
 
-    expect(screen.getByTestId("secret-page")).toBeInTheDocument();
-    expect(screen.queryByTestId("login-page")).not.toBeInTheDocument();
+      expect(screen.getByTestId("secret-page")).toBeInTheDocument();
+      expect(screen.queryByTestId("login-page")).not.toBeInTheDocument();
+    });
+
+    it("ログイン状態の確認が終わっていないとき、「認証を確認中...」の表示のままになる", () => {
+      renderGuarded({ user: null, loading: true });
+
+      expect(screen.getByRole("status", { name: "認証を確認中..." })).toBeInTheDocument();
+      expect(screen.queryByTestId("login-page")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("secret-page")).not.toBeInTheDocument();
+    });
   });
 
-  it("未認証なら、ログイン画面へリダイレクトする", () => {
-    renderGuarded({ user: null, loading: false });
+  describe("異常系", () => {
+    it("ログインしていないとき、保護対象の画面を開くと、ログイン画面が表示される", () => {
+      renderGuarded({ user: null, loading: false });
 
-    expect(screen.getByTestId("login-page")).toBeInTheDocument();
-    expect(screen.queryByTestId("secret-page")).not.toBeInTheDocument();
-  });
-
-  it("認証状態の確定前はリダイレクトせずローディングにとどまる", () => {
-    renderGuarded({ user: null, loading: true });
-
-    expect(screen.getByRole("status")).toBeInTheDocument();
-    expect(screen.queryByTestId("login-page")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("secret-page")).not.toBeInTheDocument();
+      expect(screen.getByTestId("login-page")).toBeInTheDocument();
+      expect(screen.queryByTestId("secret-page")).not.toBeInTheDocument();
+    });
   });
 });

@@ -5,101 +5,116 @@ import {
   validateEnabledGenerations,
 } from "./generation.js";
 
-/**
- * 選択世代を図鑑番号の集合へ展開する仕様。世代境界 (151/152 など) は純関数の定義そのものなので具体値で確かめる。
- */
 describe("[出題] 選択世代に含まれる図鑑番号", () => {
-  it("第1世代は 1〜151 を含み、隣の 152 は含まない", () => {
-    const ids = generationsToPokemonIDs([1]);
-    expect(ids.size).toBe(151);
-    expect(ids.has(1)).toBe(true);
-    expect(ids.has(151)).toBe(true);
-    expect(ids.has(152)).toBe(false);
+  describe("正常系", () => {
+    it.each([
+      ["第1世代のみを選択した", "図鑑番号 1 と 151", [1], [1, 151]],
+      ["第2世代のみを選択した", "図鑑番号 152 と 251", [2], [152, 251]],
+      ["第3世代のみを選択した", "図鑑番号 252", [3], [252]],
+      ["第2世代と第4世代を選択した", "図鑑番号 200 と 400", [2, 4], [200, 400]],
+    ])("%sとき、%s を含む", (_label, _display, generations, included) => {
+      const ids = generationsToPokemonIDs(generations);
+      for (const id of included) {
+        expect(ids.has(id)).toBe(true);
+      }
+    });
+
+    it("第1世代のみを選択したとき、図鑑番号は 151 件になる", () => {
+      expect(generationsToPokemonIDs([1]).size).toBe(151);
+    });
+
+    it.each([
+      ["第1世代のみを選択した", "図鑑番号 152", [1], [152]],
+      ["第2世代のみを選択した", "図鑑番号 151 と 252", [2], [151, 252]],
+      ["第3世代のみを選択した", "図鑑番号 1 と 151", [3], [1, 151]],
+      ["第2世代と第4世代を選択した", "第3世代の図鑑番号 300", [2, 4], [300]],
+    ])("%sとき、%s を含まない", (_label, _display, generations, excluded) => {
+      const ids = generationsToPokemonIDs(generations);
+      for (const id of excluded) {
+        expect(ids.has(id)).toBe(false);
+      }
+    });
   });
 
-  it("第2世代は 152〜251 を含み、両隣の 151・252 は含まない", () => {
-    const ids = generationsToPokemonIDs([2]);
-    expect(ids.has(152)).toBe(true);
-    expect(ids.has(251)).toBe(true);
-    expect(ids.has(151)).toBe(false);
-    expect(ids.has(252)).toBe(false);
-  });
-
-  it("選んでいない世代の番号は含まれない (第3世代のみ選ぶと第1世代は入らない)", () => {
-    const ids = generationsToPokemonIDs([3]);
-    expect(ids.has(252)).toBe(true);
-    expect(ids.has(1)).toBe(false);
-    expect(ids.has(151)).toBe(false);
-  });
-
-  it("飛び石の世代選択 (第2・第4世代) は間の第3世代を含まない", () => {
-    const ids = generationsToPokemonIDs([2, 4]);
-    expect(ids.has(200)).toBe(true);
-    expect(ids.has(400)).toBe(true);
-    expect(ids.has(300)).toBe(false);
-  });
-
-  it("世代が空なら空集合になる", () => {
-    expect(generationsToPokemonIDs([]).size).toBe(0);
+  describe("異常系", () => {
+    it("世代を 1 つも選択していないとき、図鑑番号は 0 件になる", () => {
+      expect(generationsToPokemonIDs([]).size).toBe(0);
+    });
   });
 });
 
-/**
- * 出題プール = 選択世代の展開から除外 ID を差し引いたもの。
- */
 describe("[出題] 出題プールの図鑑番号", () => {
-  it("除外 ID がプールから取り除かれる", () => {
-    const pool = buildQuestPoolIDs([1], new Set([5, 10]));
-    expect(pool.size).toBe(149);
-    expect(pool.has(5)).toBe(false);
-    expect(pool.has(10)).toBe(false);
-    expect(pool.has(1)).toBe(true);
+  describe("正常系", () => {
+    describe("第1世代を選択し、図鑑番号 5 と 10 を除外したとき", () => {
+      const pool = buildQuestPoolIDs([1], new Set([5, 10]));
+
+      it("出題プールは 149 件になる", () => {
+        expect(pool.size).toBe(149);
+      });
+
+      it("除外した図鑑番号 5 と 10 は出題プールに含まれない", () => {
+        expect(pool.has(5)).toBe(false);
+        expect(pool.has(10)).toBe(false);
+      });
+
+      it("除外していない図鑑番号 1 は出題プールに含まれる", () => {
+        expect(pool.has(1)).toBe(true);
+      });
+    });
+
+    it("第1世代を選択し、第1世代の外にある図鑑番号 200 を除外したとき、出題プールは 151 件になる", () => {
+      const pool = buildQuestPoolIDs([1], new Set([200]));
+      expect(pool.size).toBe(151);
+    });
   });
 
-  it("選択世代の外にある除外 ID はプールの大きさに影響しない", () => {
-    const pool = buildQuestPoolIDs([1], new Set([200]));
-    expect(pool.size).toBe(151);
-  });
-
-  it("選択世代の全 ID が除外されると空になる", () => {
-    const allGen1 = new Set(Array.from({ length: 151 }, (_, i) => i + 1));
-    const pool = buildQuestPoolIDs([1], allGen1);
-    expect(pool.size).toBe(0);
+  describe("異常系", () => {
+    it("第1世代を選択し、第1世代の 151 件の図鑑番号をすべて除外したとき、出題プールは空になる", () => {
+      const allGen1 = new Set(Array.from({ length: 151 }, (_, i) => i + 1));
+      const pool = buildQuestPoolIDs([1], allGen1);
+      expect(pool.size).toBe(0);
+    });
   });
 });
 
-/**
- * 世代リストのバリデーション仕様。純関数なので具体値で直接確かめる。
- * 空配列・不正値の経路は設定画面 (チェックボックス・最低1世代) で塞がれるが、API 境界の防御として backend でも弾く。
- */
 describe("[設定] 出題世代設定の検証", () => {
-  it("重複を含む有効な世代を渡すと、重複が除かれ昇順で受理される", () => {
-    expect(validateEnabledGenerations([3, 1, 1])).toEqual({ ok: true, generations: [1, 3] });
+  describe("正常系", () => {
+    it("第3世代・第1世代・第1世代を指定したとき、重複が除かれ第1世代・第3世代の昇順で受理される", () => {
+      expect(validateEnabledGenerations([3, 1, 1])).toEqual({ ok: true, generations: [1, 3] });
+    });
+
+    it.each([
+      ["最小の第1世代", 1],
+      ["最大の第8世代", 8],
+    ])("%sだけを指定したとき、受理される", (_label, generation) => {
+      expect(validateEnabledGenerations([generation]).ok).toBe(true);
+    });
   });
 
-  it("世代の指定が空配列のとき、失敗する", () => {
-    expect(validateEnabledGenerations([]).ok).toBe(false);
-  });
+  describe("異常系", () => {
+    it("世代の一覧が空のとき、最低 1 世代が必要という理由で検証に失敗する", () => {
+      expect(validateEnabledGenerations([])).toEqual({
+        ok: false,
+        message: "at least one generation must be selected",
+      });
+    });
 
-  it("配列でなければ失敗する", () => {
-    expect(validateEnabledGenerations("x").ok).toBe(false);
-  });
+    it.each([
+      ["世代の指定が一覧でなく文字列の", "x"],
+      ["世代の指定がリクエストの本文に無い", undefined],
+    ])("%sとき、世代は一覧で指定する必要があるという理由で検証に失敗する", (_label, raw) => {
+      expect(validateEnabledGenerations(raw)).toEqual({
+        ok: false,
+        message: "generations must be an array",
+      });
+    });
 
-  it("undefined でも失敗する (リクエストボディ欠落)", () => {
-    expect(validateEnabledGenerations(undefined).ok).toBe(false);
-  });
-
-  it("下限: 0 は失敗、1 は成功", () => {
-    expect(validateEnabledGenerations([0]).ok).toBe(false);
-    expect(validateEnabledGenerations([1]).ok).toBe(true);
-  });
-
-  it("上限: 8 は成功、9 は失敗", () => {
-    expect(validateEnabledGenerations([8]).ok).toBe(true);
-    expect(validateEnabledGenerations([9]).ok).toBe(false);
-  });
-
-  it("整数でない世代番号は失敗する", () => {
-    expect(validateEnabledGenerations([1.5]).ok).toBe(false);
+    it.each([
+      ["最小の 1 を下回る 0", 0, "unknown generation: 0 (must be one of 1,2,3,4,5,6,7,8)"],
+      ["最大の 8 を上回る 9", 9, "unknown generation: 9 (must be one of 1,2,3,4,5,6,7,8)"],
+      ["整数でない 1.5", 1.5, "unknown generation: 1.5 (must be one of 1,2,3,4,5,6,7,8)"],
+    ])("世代に%sを指定したとき、未知の世代という理由で検証に失敗する", (_label, generation, message) => {
+      expect(validateEnabledGenerations([generation])).toEqual({ ok: false, message });
+    });
   });
 });

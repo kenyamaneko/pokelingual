@@ -1,28 +1,29 @@
 import { describe, it, expect } from "vitest";
 import { hiraganaToKatakana } from "./kana";
 
-describe("[検索] ひらがなのカタカナ変換", () => {
-  it("ひらがなの文字列は、対応するカタカナに変換される", () => {
-    expect(hiraganaToKatakana("ふしぎだね")).toBe("フシギダネ");
-  });
+describe("[苦手ポケモン検索] ひらがなのカタカナ変換", () => {
+  describe("正常系", () => {
+    it("ひらがなだけの「ふしぎだね」を変換すると、「フシギダネ」になる", () => {
+      expect(hiraganaToKatakana("ふしぎだね")).toBe("フシギダネ");
+    });
 
-  it("小書き文字を含むひらがなは、対応する小書きカタカナに変換される", () => {
-    expect(hiraganaToKatakana("ぴかちゅう")).toBe("ピカチュウ");
-  });
+    it("小書き文字を含む「ぴかちゅう」を変換すると、小書き文字もカタカナになり「ピカチュウ」になる", () => {
+      expect(hiraganaToKatakana("ぴかちゅう")).toBe("ピカチュウ");
+    });
 
-  it("カタカナの文字列は、変換されずそのまま返る", () => {
-    expect(hiraganaToKatakana("フシギダネ")).toBe("フシギダネ");
-  });
+    it("ひらがなとカタカナが混ざった「ふしぎダネ」を変換すると、ひらがなの部分だけがカタカナになり「フシギダネ」になる", () => {
+      expect(hiraganaToKatakana("ふしぎダネ")).toBe("フシギダネ");
+    });
 
-  it("ひらがなとカタカナが混ざった文字列は、ひらがなの部分だけカタカナに変換される", () => {
-    expect(hiraganaToKatakana("ふしぎダネ")).toBe("フシギダネ");
-  });
+    it("長音符を含む「あーぼ」を変換すると、長音符「ー」はそのままで、ひらがなの部分がカタカナになり「アーボ」になる", () => {
+      expect(hiraganaToKatakana("あーぼ")).toBe("アーボ");
+    });
 
-  it("長音符「ー」は、変換されずそのまま返る", () => {
-    expect(hiraganaToKatakana("あーぼ")).toBe("アーボ");
-  });
-
-  it("空文字は、空文字のまま返る", () => {
-    expect(hiraganaToKatakana("")).toBe("");
+    it.each([
+      ["カタカナだけの「フシギダネ」", "フシギダネ"],
+      ["空文字", ""],
+    ])("%sを変換しても、同じ文字列のままになる", (_label, input) => {
+      expect(hiraganaToKatakana(input)).toBe(input);
+    });
   });
 });

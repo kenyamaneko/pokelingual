@@ -6,12 +6,6 @@ import type { User } from "firebase/auth";
 import { AuthContext } from "../contexts/AuthContext";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 
-/**
- * ResetPasswordPage の仕様:
- * - 入力メールアドレスでリセットメール送信を依頼する
- * - 送信成功で完了メッセージを表示し、入力フォームを隠す
- * - 送信失敗でエラーメッセージを表示し、入力フォームを残す
- */
 function renderPage(resetPassword: () => Promise<void>) {
   const auth = {
     user: null as User | null,
@@ -31,37 +25,65 @@ function renderPage(resetPassword: () => Promise<void>) {
   );
 }
 
-describe("[認証] パスワードリセット画面", () => {
-  it("入力メールアドレスでリセットメール送信を依頼する", async () => {
-    const user = userEvent.setup();
-    const resetPassword = vi.fn().mockResolvedValue(undefined);
-    renderPage(resetPassword);
+describe("[認証] パスワードの再設定", () => {
+  describe("メールアドレスを入力して「再設定メールを送る」を押したとき", () => {
+    describe("正常系", () => {
+      it("入力したメールアドレス宛に再設定メールの送信が依頼される", async () => {
+        const user = userEvent.setup();
+        const resetPassword = vi.fn().mockResolvedValue(undefined);
+        renderPage(resetPassword);
 
-    await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
-    await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
+        await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+        await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
 
-    expect(resetPassword).toHaveBeenCalledWith("alice@example.com");
-  });
+        expect(resetPassword).toHaveBeenCalledWith("alice@example.com");
+      });
 
-  it("送信成功で完了メッセージを表示し、フォームを隠す", async () => {
-    const user = userEvent.setup();
-    renderPage(vi.fn().mockResolvedValue(undefined));
+      describe("再設定メールの送信に成功したとき", () => {
+        it("「メールを送信しました」を含む完了メッセージが表示される", async () => {
+          const user = userEvent.setup();
+          renderPage(vi.fn().mockResolvedValue(undefined));
 
-    await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
-    await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
+          await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+          await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
 
-    expect(screen.getByText(/メールを送信しました/)).toBeInTheDocument();
-    expect(screen.queryByTestId("reset-submit")).not.toBeInTheDocument();
-  });
+          expect(screen.getByText(/メールを送信しました/)).toBeInTheDocument();
+        });
 
-  it("送信失敗でエラーメッセージを表示し、フォームを残す", async () => {
-    const user = userEvent.setup();
-    renderPage(vi.fn().mockRejectedValue(new Error("network")));
+        it("メールアドレスの入力フォームが表示されなくなる", async () => {
+          const user = userEvent.setup();
+          renderPage(vi.fn().mockResolvedValue(undefined));
 
-    await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
-    await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
+          await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+          await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
 
-    expect(screen.getByText(/メールの送信に失敗しました/)).toBeInTheDocument();
-    expect(screen.getByTestId("reset-submit")).toBeInTheDocument();
+          expect(screen.queryByTestId("reset-submit")).not.toBeInTheDocument();
+        });
+      });
+    });
+
+    describe("異常系", () => {
+      describe("再設定メールの送信に失敗したとき", () => {
+        it("「メールの送信に失敗しました」を含むエラーメッセージが表示される", async () => {
+          const user = userEvent.setup();
+          renderPage(vi.fn().mockRejectedValue(new Error("network")));
+
+          await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+          await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
+
+          expect(screen.getByText(/メールの送信に失敗しました/)).toBeInTheDocument();
+        });
+
+        it("メールアドレスの入力フォームが表示されたままになる", async () => {
+          const user = userEvent.setup();
+          renderPage(vi.fn().mockRejectedValue(new Error("network")));
+
+          await user.type(screen.getByPlaceholderText("メールアドレス"), "alice@example.com");
+          await user.click(screen.getByRole("button", { name: "再設定メールを送る" }));
+
+          expect(screen.getByTestId("reset-submit")).toBeInTheDocument();
+        });
+      });
+    });
   });
 });

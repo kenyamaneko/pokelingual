@@ -4,13 +4,15 @@ import { describe, it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Routes, Route } from "react-router";
 import type { User } from "firebase/auth";
-import { HomePage, HOME_PAGE_LABELS } from "./HomePage";
+import { HomePage } from "./HomePage";
 import { QuestPage } from "./QuestPage";
 import { TutorialPage } from "./TutorialPage";
 import { AuthContext } from "../contexts/AuthContext";
 import { UsageProvider } from "../contexts/UsageContext";
 import { TutorialProvider } from "../contexts/TutorialContext";
 import { server, apiUrl } from "../test/mswServer";
+
+const START_QUEST_BUTTON = "ポケモンを探しに行く";
 
 const fakeUser = { uid: "trainer-test" } as unknown as User;
 
@@ -52,98 +54,134 @@ function renderHome() {
   );
 }
 
-describe("[チュートリアル] ホーム画面 (「ポケモンを探しに行く」の遷移先出し分け)", () => {
-  it("チュートリアル完了済みのとき、押すと本番クエスト画面に遷移する", async () => {
-    mockTutorialStatus(true);
-    const user = userEvent.setup();
-    renderHome();
+describe("[チュートリアル] 「ポケモンを探しに行く」の遷移先", () => {
+  describe("「ポケモンを探しに行く」を押したとき", () => {
+    describe("正常系", () => {
+      it("チュートリアルが完了済みのとき、本番のクエスト画面に遷移する", async () => {
+        mockTutorialStatus(true);
+        const user = userEvent.setup();
+        renderHome();
 
-    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
+        await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
 
-    expect(
-      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-    ).toBeInTheDocument();
-  });
+        expect(
+          await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+        ).toBeInTheDocument();
+      });
 
-  it("チュートリアル未完了のとき、押すとチュートリアル画面に遷移する", async () => {
-    mockTutorialStatus(false);
-    const user = userEvent.setup();
-    renderHome();
+      it("チュートリアルが未完了のとき、チュートリアル画面に遷移する", async () => {
+        mockTutorialStatus(false);
+        const user = userEvent.setup();
+        renderHome();
 
-    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
+        await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
 
-    expect(await screen.findByRole("heading", { name: "遊び方の説明をします" })).toBeInTheDocument();
-  });
+        expect(await screen.findByRole("heading", { name: "遊び方の説明をします" })).toBeInTheDocument();
+      });
 
-  it("チュートリアル完了状態の確定が遅れている間に押しても、確定後は本番クエスト画面に遷移する", async () => {
-    let resolvePending: () => void = () => {};
-    const pending = new Promise<void>((resolve) => {
-      resolvePending = resolve;
+      describe("チュートリアルの完了状態の確認が終わっていないとき", () => {
+        function mockPendingTutorialStatus() {
+          let resolvePending: () => void = () => {};
+          const pending = new Promise<void>((resolve) => {
+            resolvePending = resolve;
+          });
+          server.use(
+            http.get(apiUrl("/tutorial-status"), async () => {
+              await pending;
+              return HttpResponse.json({ tutorial_completed: true });
+            }),
+          );
+          return resolvePending;
+        }
+
+        it("「確認中...」と表示される", async () => {
+          const resolvePending = mockPendingTutorialStatus();
+          const user = userEvent.setup();
+          renderHome();
+
+          await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+
+          expect(await screen.findByRole("button", { name: "確認中..." })).toBeInTheDocument();
+          resolvePending();
+          await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
+        });
+
+        it("「確認中...」のボタンが押せない状態になる", async () => {
+          const resolvePending = mockPendingTutorialStatus();
+          const user = userEvent.setup();
+          renderHome();
+
+          await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+
+          expect(await screen.findByRole("button", { name: "確認中..." })).toBeDisabled();
+          resolvePending();
+          await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
+        });
+
+        it("確認が終わると本番のクエスト画面に遷移する", async () => {
+          const resolvePending = mockPendingTutorialStatus();
+          const user = userEvent.setup();
+          renderHome();
+
+          await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+          await screen.findByRole("button", { name: "確認中..." });
+          resolvePending();
+
+          expect(
+            await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+          ).toBeInTheDocument();
+        });
+      });
     });
-    server.use(
-      http.get(apiUrl("/tutorial-status"), async () => {
-        await pending;
-        return HttpResponse.json({ tutorial_completed: true });
-      }),
-    );
-    const user = userEvent.setup();
-    renderHome();
 
-    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
+    describe("異常系", () => {
+      it("チュートリアルの完了状態の確認に失敗したとき、「状態の確認に失敗しました。もう一度お試しください」と表示される", async () => {
+        server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
+        const user = userEvent.setup();
+        renderHome();
 
-    expect(await screen.findByRole("button", { name: "確認中..." })).toBeDisabled();
-    resolvePending();
+        await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
 
-    expect(
-      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-    ).toBeInTheDocument();
+        expect(
+          await screen.findByText("状態の確認に失敗しました。もう一度お試しください"),
+        ).toBeInTheDocument();
+      });
+
+      it("チュートリアルの完了状態の確認に失敗したあと、もう一度押して確認に成功すると、本番のクエスト画面に遷移し、エラーメッセージが消える", async () => {
+        let shouldSucceed = false;
+        server.use(
+          http.get(apiUrl("/tutorial-status"), () =>
+            shouldSucceed ? HttpResponse.json({ tutorial_completed: true }) : HttpResponse.error(),
+          ),
+        );
+        const user = userEvent.setup();
+        renderHome();
+
+        await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+        await screen.findByText("状態の確認に失敗しました。もう一度お試しください");
+
+        shouldSucceed = true;
+        await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+
+        expect(
+          await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByText("状態の確認に失敗しました。もう一度お試しください"),
+        ).not.toBeInTheDocument();
+      });
+    });
   });
 });
 
-describe("[チュートリアル] ホーム画面 (チュートリアル完了状態の取得に失敗したときの回復)", () => {
-  it("「ポケモンを探しに行く」を押すと、エラーが表示される", async () => {
-    server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
-    const user = userEvent.setup();
-    renderHome();
+describe("[チュートリアル] ホーム画面のチュートリアルへのリンク", () => {
+  describe("正常系", () => {
+    it("ホーム画面を開くと、「チュートリアルを見る」のリンクがチュートリアル画面を指して表示される", async () => {
+      renderHome();
 
-    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
-
-    expect(
-      await screen.findByText("状態の確認に失敗しました。もう一度お試しください"),
-    ).toBeInTheDocument();
-  });
-
-  it("再度「ポケモンを探しに行く」を押して取得に成功すると、本番クエスト画面に遷移しエラー表示が残らない", async () => {
-    let shouldSucceed = false;
-    server.use(
-      http.get(apiUrl("/tutorial-status"), () =>
-        shouldSucceed ? HttpResponse.json({ tutorial_completed: true }) : HttpResponse.error(),
-      ),
-    );
-    const user = userEvent.setup();
-    renderHome();
-
-    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
-    await screen.findByText("状態の確認に失敗しました。もう一度お試しください");
-
-    shouldSucceed = true;
-    await user.click(screen.getByRole("button", { name: HOME_PAGE_LABELS.startQuest }));
-
-    expect(
-      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText("状態の確認に失敗しました。もう一度お試しください"),
-    ).not.toBeInTheDocument();
-  });
-});
-
-describe("[チュートリアル] ホーム画面 (チュートリアルへのリンク)", () => {
-  it("チュートリアルへのリンクが表示される", async () => {
-    renderHome();
-
-    expect(
-      await screen.findByRole("link", { name: HOME_PAGE_LABELS.tutorialLink }),
-    ).toHaveAttribute("href", "/tutorial");
+      expect(
+        await screen.findByRole("link", { name: "チュートリアルを見る" }),
+      ).toHaveAttribute("href", "/tutorial");
+    });
   });
 });

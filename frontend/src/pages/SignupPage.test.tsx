@@ -8,12 +8,9 @@ import { SignupPage } from "./SignupPage";
 import { spec } from "../test/labels";
 
 /**
- * SignupPage の仕様:
- * - パスワードと確認入力が一致しないときはエラーを表示し、登録を依頼しない
- * - 一致していれば入力したメールアドレスとパスワードで登録を依頼する
- *
- * Firebase 認証は境界として AuthContext ごとモックする。
- * 画面間遷移と登録成功後のリダイレクトは authNavigation.test.tsx で検証済み。
+ * Firebase 認証は外部との境界のため、AuthContext ごとモックする。
+ * @param signup 認証境界となる signup 実装 (成功/失敗を差し込む)。
+ * @returns レンダリング結果。
  */
 function renderPage(signup: (email: string, password: string) => Promise<void>) {
   const auth = {
@@ -51,47 +48,61 @@ async function submitSignup(
   await user.click(screen.getByRole("button", { name: "アカウントを作成する" }));
 }
 
-describe("[認証] 新規登録画面", () => {
-  it("パスワードと確認入力が一致しないとエラーを表示し、登録を依頼しない", async () => {
-    const user = userEvent.setup();
-    const signup = vi.fn().mockResolvedValue(undefined);
-    renderPage(signup);
+describe("[認証] メールアドレスでの新規登録", () => {
+  describe("正常系", () => {
+    it("パスワードと「パスワード（確認）」が一致しているとき、「アカウントを作成する」を押すと、入力したメールアドレスとパスワードで登録が依頼される", async () => {
+      const user = userEvent.setup();
+      const signup = vi.fn().mockResolvedValue(undefined);
+      renderPage(signup);
 
-    await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
+      await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
 
-    expect(await screen.findByTestId("signup-error")).toHaveTextContent(
-      spec("パスワードが一致しません"),
-    );
-    // 不一致はクライアントで弾かれ、認証境界に登録リクエストが飛ばない
-    expect(signup).not.toHaveBeenCalled();
+      expect(signup).toHaveBeenCalledWith("dummy@example.com", "dummy-pass-1");
+      expect(screen.queryByTestId("signup-error")).not.toBeInTheDocument();
+    });
+
+    it("登録に成功したとき、「確認メールを送りました」の案内画面が表示される", async () => {
+      const user = userEvent.setup();
+      renderPage(vi.fn().mockResolvedValue(undefined));
+
+      await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+
+      expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
+    });
   });
 
-  it("パスワードと確認入力が一致していれば入力内容で登録を依頼する", async () => {
-    const user = userEvent.setup();
-    const signup = vi.fn().mockResolvedValue(undefined);
-    renderPage(signup);
+  describe("異常系", () => {
+    describe("パスワードと「パスワード（確認）」が一致しないまま「アカウントを作成する」を押したとき", () => {
+      it("「パスワードが一致しません」と表示される", async () => {
+        const user = userEvent.setup();
+        renderPage(vi.fn().mockResolvedValue(undefined));
 
-    await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+        await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
 
-    expect(signup).toHaveBeenCalledWith("dummy@example.com", "dummy-pass-1");
-    expect(screen.queryByTestId("signup-error")).not.toBeInTheDocument();
-  });
+        expect(await screen.findByTestId("signup-error")).toHaveTextContent(
+          spec("パスワードが一致しません"),
+        );
+      });
 
-  it("登録に成功すると、確認メールの案内画面を表示する", async () => {
-    const user = userEvent.setup();
-    renderPage(vi.fn().mockResolvedValue(undefined));
+      it("登録が依頼されない", async () => {
+        const user = userEvent.setup();
+        const signup = vi.fn().mockResolvedValue(undefined);
+        renderPage(signup);
 
-    await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+        await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
 
-    expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
-  });
+        await screen.findByTestId("signup-error");
+        expect(signup).not.toHaveBeenCalled();
+      });
+    });
 
-  it("既に登録済みのメールでは、登録済みである旨を表示する", async () => {
-    const user = userEvent.setup();
-    renderPage(vi.fn().mockRejectedValue({ code: "auth/email-already-in-use" }));
+    it("すでに登録されているメールアドレスで「アカウントを作成する」を押すと、「既に登録されています」を含むメッセージが表示される", async () => {
+      const user = userEvent.setup();
+      renderPage(vi.fn().mockRejectedValue({ code: "auth/email-already-in-use" }));
 
-    await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+      await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
 
-    expect(await screen.findByText(/既に登録されています/)).toBeInTheDocument();
+      expect(await screen.findByText(/既に登録されています/)).toBeInTheDocument();
+    });
   });
 });

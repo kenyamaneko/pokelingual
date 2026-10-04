@@ -6,7 +6,7 @@ import {
   INVALID_ANSWER_SHAKE_DURATION_MS,
 } from "./TutorialInstructionCallout";
 
-describe("[チュートリアル] チュートリアルの案内表示", () => {
+describe("[チュートリアル] 案内の吹き出しの表示", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -19,22 +19,24 @@ describe("[チュートリアル] チュートリアルの案内表示", () => {
     render(<TutorialInstructionCallout title="この英文を訳してみよう" instruction="テスト用の案内文" />);
   }
 
-  it("ステップが始まった直後は、案内はまだ表示されない", () => {
-    renderCallout();
-    expect(screen.getByText("テスト用の案内文")).not.toBeVisible();
-  });
-
-  it("ステップ開始から一定の遅延が経過すると、タイトルと案内文が表示される", () => {
-    renderCallout();
-    act(() => {
-      vi.advanceTimersByTime(INSTRUCTION_APPEAR_DELAY_MS);
+  describe("正常系", () => {
+    it("ステップが始まった直後は、案内の吹き出しが表示されていない", () => {
+      renderCallout();
+      expect(screen.getByText("テスト用の案内文")).not.toBeVisible();
     });
-    expect(screen.getByText("この英文を訳してみよう")).toBeVisible();
-    expect(screen.getByText("テスト用の案内文")).toBeVisible();
+
+    it("ステップが始まってから表示の遅延時間が経つと、案内の吹き出しにタイトルと案内文が表示される", () => {
+      renderCallout();
+      act(() => {
+        vi.advanceTimersByTime(INSTRUCTION_APPEAR_DELAY_MS);
+      });
+      expect(screen.getByText("この英文を訳してみよう")).toBeVisible();
+      expect(screen.getByText("テスト用の案内文")).toBeVisible();
+    });
   });
 });
 
-describe("[チュートリアル] チュートリアル案内の誤答シェイク", () => {
+describe("[チュートリアル] 誤答時の案内の吹き出しの揺れ", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -67,28 +69,30 @@ describe("[チュートリアル] チュートリアル案内の誤答シェイ�
     return { ...result, rerenderWithSignal };
   }
 
-  it("新しく表示された案内は、警告状態から始まらない", () => {
-    renderVisibleCallout(3);
+  describe("異常系", () => {
+    it("誤答があった状態で案内の吹き出しが新しく表示されたとき、吹き出しは揺れていない", () => {
+      renderVisibleCallout(3);
 
-    expect(screen.getByRole("note")).toHaveAttribute("data-state", "idle");
-  });
-
-  it("誤答が新たに伝えられると、警告状態になる", () => {
-    const { rerenderWithSignal } = renderVisibleCallout(0);
-
-    rerenderWithSignal(1);
-
-    expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid");
-  });
-
-  it("警告状態は、シェイクの再生時間が経過すると解除される", () => {
-    const { rerenderWithSignal } = renderVisibleCallout(0);
-    rerenderWithSignal(1);
-
-    act(() => {
-      vi.advanceTimersByTime(INVALID_ANSWER_SHAKE_DURATION_MS);
+      expect(screen.getByRole("note")).toHaveAttribute("data-state", "idle");
     });
 
-    expect(screen.getByRole("note")).toHaveAttribute("data-state", "idle");
+    it("入力が誤答だったと新たに判定されたとき、吹き出しが揺れる", () => {
+      const { rerenderWithSignal } = renderVisibleCallout(0);
+
+      rerenderWithSignal(1);
+
+      expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid");
+    });
+
+    it("入力が誤答だったと判定されて吹き出しが揺れているとき、揺れの再生時間が経つと、揺れが収まる", () => {
+      const { rerenderWithSignal } = renderVisibleCallout(0);
+      rerenderWithSignal(1);
+
+      act(() => {
+        vi.advanceTimersByTime(INVALID_ANSWER_SHAKE_DURATION_MS);
+      });
+
+      expect(screen.getByRole("note")).toHaveAttribute("data-state", "idle");
+    });
   });
 });

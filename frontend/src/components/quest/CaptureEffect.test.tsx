@@ -28,49 +28,53 @@ describe("[クエスト] 捕獲演出", () => {
     return onComplete;
   }
 
-  it("揺れの再生中は、成否エフェクトを表示しない", () => {
-    renderEffect(true);
-    expect(screen.queryByTestId("capture-effect-fx")).not.toBeInTheDocument();
-  });
+  describe("正常系", () => {
+    it("ボールの揺れの再生中のとき、成否エフェクトは表示されない", () => {
+      renderEffect(true);
+      expect(screen.queryByTestId("capture-effect-fx")).not.toBeInTheDocument();
+    });
 
-  it("揺れの再生完了後、捕獲に成功したときは成功エフェクトを表示する", () => {
-    renderEffect(true);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
-    });
-    expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "success");
-  });
+    describe("ボールの揺れの再生が終わったとき", () => {
+      it("捕獲に成功したとき、花火風のエフェクトが表示される", () => {
+        renderEffect(true);
+        act(() => {
+          vi.advanceTimersByTime(SHAKE_DURATION_MS);
+        });
+        expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "success");
+      });
 
-  it("揺れの再生完了後、捕獲に失敗したときは失敗エフェクトを表示する", () => {
-    renderEffect(false);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
+      it("捕獲に失敗したとき、煙幕風のエフェクトが表示される", () => {
+        renderEffect(false);
+        act(() => {
+          vi.advanceTimersByTime(SHAKE_DURATION_MS);
+        });
+        expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "failure");
+      });
     });
-    expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "failure");
-  });
 
-  it("成否エフェクトの再生完了後、白フェードを表示する", () => {
-    renderEffect(true);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
+    it("成否エフェクトの再生が終わったとき、白フェードが表示される", () => {
+      renderEffect(true);
+      act(() => {
+        vi.advanceTimersByTime(SHAKE_DURATION_MS);
+      });
+      act(() => {
+        vi.advanceTimersByTime(EFFECT_DURATION_MS);
+      });
+      expect(screen.getByTestId("capture-whiteout")).toBeInTheDocument();
     });
-    act(() => {
-      vi.advanceTimersByTime(EFFECT_DURATION_MS);
-    });
-    expect(screen.getByTestId("capture-whiteout")).toBeInTheDocument();
-  });
 
-  it("白フェードの再生完了後、onComplete を呼ぶ", () => {
-    const onComplete = renderEffect(true);
-    act(() => {
-      vi.advanceTimersByTime(SHAKE_DURATION_MS);
+    it("白フェードの再生が終わったとき、結果画面へ切り替える指示が 1 回出される", () => {
+      const onComplete = renderEffect(true);
+      act(() => {
+        vi.advanceTimersByTime(SHAKE_DURATION_MS);
+      });
+      act(() => {
+        vi.advanceTimersByTime(EFFECT_DURATION_MS);
+      });
+      act(() => {
+        vi.advanceTimersByTime(WHITEOUT_DURATION_MS);
+      });
+      expect(onComplete).toHaveBeenCalledTimes(1);
     });
-    act(() => {
-      vi.advanceTimersByTime(EFFECT_DURATION_MS);
-    });
-    act(() => {
-      vi.advanceTimersByTime(WHITEOUT_DURATION_MS);
-    });
-    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 });

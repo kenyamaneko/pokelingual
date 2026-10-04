@@ -7,7 +7,7 @@ import { renderWithProviders } from "../test/render";
 import type { User } from "firebase/auth";
 
 /**
- * GET /usage が指定の利用状況を返す状態をモックする。
+ * バックエンドが利用回数と上限を返す状態にする。
  * @param count 当日の利用回数。
  * @param limit 上限。
  */
@@ -17,7 +17,7 @@ function mockUsage(count: number, limit: number) {
 
 function Probe() {
   const { usage } = useUsage();
-  return <div data-testid="usage">{usage ? `${usage.count}/${usage.limit}` : "none"}</div>;
+  return <div>{usage ? `${usage.count}/${usage.limit}` : "none"}</div>;
 }
 
 const fakeUser = { uid: "alice" } as unknown as User;
@@ -26,38 +26,38 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-describe("[レート制限・利用回数] AI 利用回数の取得と表示", () => {
+describe("[レート制限・利用回数] AI 利用回数の取得", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("ログイン後に AI 利用回数を取得して表示できる", async () => {
-    mockUsage(3, 30);
+  describe("正常系", () => {
+    it("ログインしているとき、起動すると、バックエンドが返した利用回数と上限が表示される", async () => {
+      mockUsage(3, 30);
 
-    renderUsage();
+      renderUsage();
 
-    await waitFor(() => {
-      expect(screen.getByTestId("usage")).toHaveTextContent("3/30");
+      expect(await screen.findByText("3/30")).toBeInTheDocument();
+    });
+
+    it("未ログインのとき、起動しても、利用回数をバックエンドへ問い合わせない", async () => {
+      renderUsage(null);
+      expect(await screen.findByText("none")).toBeInTheDocument();
+      expect(countRequests("/usage")).toBe(0);
     });
   });
 
-  it("利用回数の取得に失敗しても画面はクラッシュせず、使用量が無い状態のまま動作する", async () => {
-    // 使用量は補助情報のため取得失敗を UI では無視する仕様。診断ログは検証対象外なので沈黙させる
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
+  describe("異常系", () => {
+    it("ログインしているとき、利用回数の取得に失敗すると、利用回数が表示されない状態のままになる", async () => {
+      // 診断ログの出力は検証対象外のため、出力を抑止する
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
 
-    renderUsage();
+      renderUsage();
 
-    // 取得の失敗が確定するまで待ってから、使用量なしの表示のままであることを確かめる
-    await waitFor(() => expect(countRequests("/usage")).toBe(1));
-    expect(screen.getByTestId("usage")).toHaveTextContent("none");
-  });
-
-  it("未ログイン時は利用回数を取得しない", async () => {
-    renderUsage(null);
-    await waitFor(() => {
-      expect(screen.getByTestId("usage")).toHaveTextContent("none");
+      // 失敗の確定を待たないと取得前の状態と区別できず、アサーションが常に通るため、取得の完了を待つ
+      await waitFor(() => expect(countRequests("/usage")).toBe(1));
+      expect(screen.getByText("none")).toBeInTheDocument();
     });
-    expect(countRequests("/usage")).toBe(0);
   });
 });
