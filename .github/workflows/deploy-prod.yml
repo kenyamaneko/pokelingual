@@ -1,9 +1,17 @@
 name: Deploy to Prod
 
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump level"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 # 進行中の prod ロールアウトを中断させない
 concurrency:
@@ -16,27 +24,54 @@ env:
   SIGNUP_TEST_EMAIL_DOMAIN: pokelingual.dev
 
 jobs:
-  determine-version:
-    name: Determine Version
+  tag-version:
+    name: Tag Version
+    if: github.ref == 'refs/heads/main'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
+    permissions:
+      contents: write
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Determine version from git tags
-        id: version
+
+      - name: Determine next tag
+        id: tag
+        env:
+          BUMP: ${{ inputs.bump }}
         run: |
-          VERSION=$(git describe --tags --always)
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Detected version: ${VERSION}"
+          latest=$(git tag --list "v*" --sort=-v:refname | head -n1)
+          if [ -z "${latest}" ]; then
+            echo "no v* tag found" >&2
+            exit 1
+          fi
+          IFS='.' read -r major minor patch <<< "${latest#v}"
+          case "${BUMP}" in
+            patch) patch=$((patch + 1)) ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            *) echo "unknown bump: ${BUMP}" >&2; exit 1 ;;
+          esac
+          next="v${major}.${minor}.${patch}"
+          echo "tag=${next}" >> "$GITHUB_OUTPUT"
+          echo "Next tag: ${next}"
+
+      - name: Tag and push
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${TAG}"
+          git push origin "${TAG}"
 
   deploy-backend:
     name: Deploy Backend to Cloud Run
-    needs: determine-version
+    needs: tag-version
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
     environment: prod
@@ -69,7 +104,7 @@ jobs:
           docker build \
             -f backend/Dockerfile \
             -t "${IMAGE_BASE}:${{ github.sha }}" \
-            -t "${IMAGE_BASE}:${{ needs.determine-version.outputs.version }}" \
+            -t "${IMAGE_BASE}:${{ needs.tag-version.outputs.version }}" \
             .
           docker push "${IMAGE_BASE}" --all-tags
 
@@ -146,7 +181,7 @@ jobs:
 
   deploy-frontend:
     name: Deploy Frontend to Firebase Hosting
-    needs: [determine-version, deploy-backend]
+    needs: [tag-version, deploy-backend]
     runs-on: ubicloud-standard-2
     timeout-minutes: 15
     environment: prod
@@ -185,7 +220,7 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
-          VITE_BUILD_VERSION: ${{ needs.determine-version.outputs.version }}
+          VITE_BUILD_VERSION: ${{ needs.tag-version.outputs.version }}
           VITE_ENVIRONMENT: prod
         run: npm run build
 
