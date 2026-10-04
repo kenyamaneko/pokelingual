@@ -120,18 +120,6 @@ describe("[図鑑] 図鑑の一覧表示", () => {
       expect(screen.queryByText(/読み込めませんでした/)).not.toBeInTheDocument();
     });
 
-    it("図鑑のポケモンが 0 匹のとき、「まだポケモンに出会っていません」と表示される", async () => {
-      mockPokedex([], 0, 0);
-
-      render(<PokedexPage />);
-
-      expect(
-        await screen.findByText(spec("まだポケモンに出会っていません")),
-      ).toBeInTheDocument();
-    });
-  });
-
-  describe("異常系", () => {
     it("読み込めなかったポケモンが 1 匹のとき、「1匹読み込めませんでした。あとでもう一度試してください」と表示される", async () => {
       mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 1);
 
@@ -144,6 +132,18 @@ describe("[図鑑] 図鑑の一覧表示", () => {
       ).toBeInTheDocument();
     });
 
+    it("図鑑のポケモンが 0 匹のとき、「まだポケモンに出会っていません」と表示される", async () => {
+      mockPokedex([], 0, 0);
+
+      render(<PokedexPage />);
+
+      expect(
+        await screen.findByText(spec("まだポケモンに出会っていません")),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("異常系", () => {
     it("図鑑の一覧の取得に失敗したとき、「図鑑の読み込みに失敗しました」と表示される", async () => {
       // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
       vi.spyOn(console, "error").mockImplementation(() => {});

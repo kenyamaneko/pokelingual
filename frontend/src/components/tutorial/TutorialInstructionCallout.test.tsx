@@ -69,7 +69,7 @@ describe("[チュートリアル] 誤答時の案内の吹き出しの揺れ", (
     return { ...result, rerenderWithSignal };
   }
 
-  describe("異常系", () => {
+  describe("正常系", () => {
     it("誤答があった状態で案内の吹き出しが新しく表示されたとき、吹き出しは揺れていない", () => {
       renderVisibleCallout(3);
 
