@@ -2,134 +2,110 @@ import { test, expect } from "@playwright/test";
 import { completeTutorialViaApi } from "./helpers";
 import { BUTTON, PLACEHOLDER, TEXT } from "./labels";
 
-// mock モード専用。dev は dev-quest-flow.spec.ts が担当。
-// mock は場所選択・出題・捕獲が MockRandomSource で決定化されている。「廃墟の発電所」(でんき) を
-// 選ぶと出題は必ずピカチュウ、捕獲も必ず成功するため、正誤・捕獲を確定的に検証できる。
+// dev は出題と捕獲が非決定的で正誤・捕獲を確定的に検証できないため、乱数源を差し替えて決定化した mock モード専用にする。
 test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 
-// このファイルは本番クエストを検証する。dev-user のチュートリアル完了状態を先に立てておく
 test.beforeEach(async ({ page }) => {
   await completeTutorialViaApi(page);
 });
 
-test("クエスト全フロー（翻訳 → 採点 → 名前当て正解 → ハイパーボールで捕獲）", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: BUTTON.startQuest }).click();
-  await expect(page).toHaveURL("/quest");
+test.describe("クエストの進行", () => {
+  test.describe("正常系", () => {
+    test.describe("mock モードのとき", () => {
+      test("チュートリアルが完了済みのとき、「ポケモンを探しに行く」を押して「廃墟の発電所」を選ぶと英文が表示され、翻訳を送信するとダメージと博士からのコメントが表示され、出題されたポケモンの英語名を入力して「君に決めた」を押すと「正解！」と表示され、「次へ進む」を押すと「ハイパーボール」が表示され、ボールを使うと、捕まえたポケモンの英語名と日本語名と「次のポケモンを探す」が表示される", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        await page.getByRole("button", { name: BUTTON.startQuest }).click();
+        await expect(page).toHaveURL("/quest");
 
-  await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
+        await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
 
-  // クエストカードが表示される
-  await page.getByTestId("quest-description").waitFor();
-  await expect(page.getByTestId("quest-description")).not.toBeEmpty();
+        await page.getByTestId("quest-description").waitFor();
+        await expect(page.getByTestId("quest-description")).not.toBeEmpty();
 
-  // 翻訳入力 → 送信
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳です");
-  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
+        await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳です");
+        await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
 
-  // スコアと博士のコメントが表示される
-  await expect(page.getByText(TEXT.damage)).toBeVisible();
-  await expect(page.getByText(TEXT.professorComment)).toBeVisible();
+        await expect(page.getByText(TEXT.damage)).toBeVisible();
+        await expect(page.getByText(TEXT.professorComment)).toBeVisible();
 
-  // 出題は決定的にピカチュウなので、英語名の正解を確定的に検証できる
-  await page.getByPlaceholder(PLACEHOLDER.nameGuess).fill("pikachu");
-  await page.getByRole("button", { name: BUTTON.decideName }).click();
-  // 「せいかい！」はタイトルと詳細文の 2 箇所に現れるため first で特定する
-  await expect(page.getByText(TEXT.correct).first()).toBeVisible();
+        await page.getByPlaceholder(PLACEHOLDER.nameGuess).fill("pikachu");
+        await page.getByRole("button", { name: BUTTON.decideName }).click();
+        // 「正解！」はタイトルと詳細文の 2 箇所に現れるため first で特定する。
+        await expect(page.getByText(TEXT.correct).first()).toBeVisible();
 
-  // 英語名正解 → ハイパーボール
-  await page.getByRole("button", { name: BUTTON.proceed }).click();
-  await expect(page.getByText(TEXT.ultraBall).first()).toBeVisible();
-  await page.getByRole("button", { name: BUTTON.useBall }).click();
+        await page.getByRole("button", { name: BUTTON.proceed }).click();
+        await expect(page.getByText(TEXT.ultraBall).first()).toBeVisible();
+        await page.getByRole("button", { name: BUTTON.useBall }).click();
 
-  // 捕獲抽選も決定的 (必ず捕獲)。捕獲したポケモンの名前まで確認する
-  await expect(page.getByText(TEXT.captured)).toBeVisible();
-  await expect(page.getByTestId("captured-name-en")).toHaveText("Pikachu");
-  await expect(page.getByTestId("captured-name-ja")).toHaveText("ピカチュウ");
-  await expect(page.getByRole("button", { name: BUTTON.nextQuest })).toBeVisible();
-});
+        await expect(page.getByText(TEXT.captured)).toBeVisible();
+        await expect(page.getByTestId("captured-name-en")).toHaveText("Pikachu");
+        await expect(page.getByTestId("captured-name-ja")).toHaveText("ピカチュウ");
+        await expect(page.getByRole("button", { name: BUTTON.nextQuest })).toBeVisible();
+      });
 
-test("名前当てに3回失敗すると、モンスターボールで捕獲する", async ({
-  page,
-}) => {
-  await page.goto("/quest");
-  await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
-  await page.getByTestId("quest-description").waitFor();
+      test.describe("「廃墟の発電所」を選んで翻訳を送信し、採点結果が表示されているとき", () => {
+        test.beforeEach(async ({ page }) => {
+          await page.goto("/quest");
+          await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
+          await page.getByTestId("quest-description").waitFor();
 
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト");
-  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
-  await expect(page.getByText(TEXT.damage)).toBeVisible();
+          await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳です");
+          await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
+          await expect(page.getByText(TEXT.damage)).toBeVisible();
+        });
 
-  const nameInput = page.getByPlaceholder(PLACEHOLDER.nameGuess);
+        test("名前当てに3回続けて誤った名前を入力すると、1回目と2回目は「はずれ」、3回目は「残念」と表示され、「次へ進む」を押すと「モンスターボール」が表示され、ボールを使うと「捕まえたぞ」と表示される", async ({
+          page,
+        }) => {
+          const nameInput = page.getByPlaceholder(PLACEHOLDER.nameGuess);
 
-  // 1回目の不正解
-  await nameInput.fill("wrongone");
-  await page.getByRole("button", { name: BUTTON.decideName }).click();
-  await expect(page.getByText(TEXT.wrong).first()).toBeVisible();
+          await nameInput.fill("wrongone");
+          await page.getByRole("button", { name: BUTTON.decideName }).click();
+          await expect(page.getByText(TEXT.wrong).first()).toBeVisible();
 
-  // 2回目の不正解
-  await nameInput.fill("wrongtwo");
-  await page.getByRole("button", { name: BUTTON.decideName }).click();
-  await expect(page.getByText(TEXT.wrong).first()).toBeVisible();
+          await nameInput.fill("wrongtwo");
+          await page.getByRole("button", { name: BUTTON.decideName }).click();
+          await expect(page.getByText(TEXT.wrong).first()).toBeVisible();
 
-  // 3回目の不正解
-  await nameInput.fill("wrongthree");
-  await page.getByRole("button", { name: BUTTON.decideName }).click();
-  await expect(page.getByText(TEXT.wrongFinal)).toBeVisible();
+          await nameInput.fill("wrongthree");
+          await page.getByRole("button", { name: BUTTON.decideName }).click();
+          await expect(page.getByText(TEXT.wrongFinal)).toBeVisible();
 
-  // 失敗時はモンスターボール
-  await page.getByRole("button", { name: BUTTON.proceed }).click();
-  await expect(page.getByText(TEXT.pokeBall).first()).toBeVisible();
-  await page.getByRole("button", { name: BUTTON.useBall }).click();
-  await expect(page.getByText(TEXT.captured)).toBeVisible();
-});
+          await page.getByRole("button", { name: BUTTON.proceed }).click();
+          await expect(page.getByText(TEXT.pokeBall).first()).toBeVisible();
+          await page.getByRole("button", { name: BUTTON.useBall }).click();
+          await expect(page.getByText(TEXT.captured)).toBeVisible();
+        });
 
-test("翻訳採点後にページをリロードすると、場所選択に戻らず同じポケモンの名前当ての段階から再開する", async ({
-  page,
-}) => {
-  await page.goto("/quest");
-  await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
-  await page.getByTestId("quest-description").waitFor();
+        test("ページをリロードすると、場所選択画面に戻らず採点結果が表示され、リロード前に出題されたポケモンの英語名を入力して「君に決めた」を押すと「正解！」と表示され、「次へ進む」を押すと「ハイパーボール」が表示され、ボールを使うと「捕まえたぞ」と表示される", async ({
+          page,
+        }) => {
+          await page.reload();
 
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳です");
-  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
-  await expect(page.getByText(TEXT.damage)).toBeVisible();
+          await expect(page.getByText(TEXT.damage)).toBeVisible();
 
-  await page.reload();
+          await page.getByPlaceholder(PLACEHOLDER.nameGuess).fill("pikachu");
+          await page.getByRole("button", { name: BUTTON.decideName }).click();
+          await expect(page.getByText(TEXT.correct).first()).toBeVisible();
 
-  // 場所選択画面には戻らず、名前当ての段階から再開する
-  await expect(page.getByText(TEXT.damage)).toBeVisible();
+          await page.getByRole("button", { name: BUTTON.proceed }).click();
+          await expect(page.getByText(TEXT.ultraBall).first()).toBeVisible();
+          await page.getByRole("button", { name: BUTTON.useBall }).click();
+          await expect(page.getByText(TEXT.captured)).toBeVisible();
+        });
 
-  // 出題は決定的にピカチュウなので、同じポケモンに戻っていることを名前当てで確認できる
-  await page.getByPlaceholder(PLACEHOLDER.nameGuess).fill("pikachu");
-  await page.getByRole("button", { name: BUTTON.decideName }).click();
-  await expect(page.getByText(TEXT.correct).first()).toBeVisible();
+        test("名前当てをスキップすると、「モンスターボール」が表示され、ボールを使うと「捕まえたぞ」と表示される", async ({
+          page,
+        }) => {
+          await page.getByRole("button", { name: BUTTON.skip }).click();
+          await expect(page.getByText(TEXT.pokeBall).first()).toBeVisible();
 
-  await page.getByRole("button", { name: BUTTON.proceed }).click();
-  await expect(page.getByText(TEXT.ultraBall).first()).toBeVisible();
-  await page.getByRole("button", { name: BUTTON.useBall }).click();
-  await expect(page.getByText(TEXT.captured)).toBeVisible();
-});
-
-test("翻訳 → 名前スキップ → モンスターボールで捕獲の最短フロー", async ({ page }) => {
-  await page.goto("/quest");
-  await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
-  await page.getByTestId("quest-description").waitFor();
-
-  // 最低限の翻訳を入力
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト");
-  await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
-
-  // スコア表示
-  await expect(page.getByText(TEXT.damage)).toBeVisible();
-
-  // 名前スキップ → モンスターボール
-  await page.getByRole("button", { name: BUTTON.skip }).click();
-  await expect(page.getByText(TEXT.pokeBall).first()).toBeVisible();
-
-  // ボール使用 → 必ず捕獲
-  await page.getByRole("button", { name: BUTTON.useBall }).click();
-  await expect(page.getByText(TEXT.captured)).toBeVisible();
+          await page.getByRole("button", { name: BUTTON.useBall }).click();
+          await expect(page.getByText(TEXT.captured)).toBeVisible();
+        });
+      });
+    });
+  });
 });

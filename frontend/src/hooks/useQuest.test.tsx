@@ -1,5 +1,5 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
 import type { User } from "firebase/auth";
@@ -89,572 +89,798 @@ async function mountAndSelectLocation() {
 }
 
 /**
- * useQuest の仕様:
- * - クエストセッションのライフサイクル (new → score → guess → capture) を state machine として管理する
- * - 全 API 呼び出しで 429 は UsageProvider のモーダルに委譲し、ローカル error は設定しない
- * - 全 API 呼び出しで 5xx (および 401/403/404 等) は error メッセージを保持しつつフェーズは保留
- *
- * フェーズ遷移とエラー処理の振り分けを検証する。採点成功時の refreshUsage 副作用
- * (残量表示の同期) は scoreUsageSync.test.tsx が別ファイルで確かめる。
- * API 境界は MSW でモックし、UsageContext は AuthContext 同様に本物の Provider を通す。
+ * 出題を得て訳文入力の段階になるまで進めた useQuest をマウントする。
+ * @returns renderHook の戻り値。
  */
-describe("[クエスト] クエスト進行", () => {
-  it("マウント時に場所選択が表示され、場所を選ぶと訳文入力の段階へ遷移する", async () => {
-    mockNewQuest();
+async function mountInTranslating() {
+  mockNewQuest();
+  const hook = await mountAndSelectLocation();
+  await waitFor(() => expect(hook.result.current.phase).toBe("translating"));
+  return hook;
+}
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
-    await waitFor(() => expect(result.current.phase).toBe("selectLocation"));
-    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+type QuestHook = ReturnType<typeof useQuest>;
 
-    await act(async () => {
-      await result.current.selectLocation(result.current.locations[0].id);
+const guessCorrect: GuessResponse = {
+  correct: true,
+  ball_type: "ultra",
+  language: "en",
+  attempts_remaining: 2,
+};
+
+const captureFailed: CaptureResponse = {
+  captured: false,
+  probability: 0.2,
+  pokemon_id: 25,
+  name_en: "Pikachu",
+  name_ja: "ピカチュウ",
+  sprite_url: "https://example.com/p.png",
+  score: 40,
+  description_en: "x",
+  description_ja: "y",
+  base_stat_total: 320,
+  ball_type: "poke",
+  types: ["electric"],
+  height: 4,
+  weight: 60,
+  is_legendary: false,
+  is_mythical: false,
+};
+
+const operations = [
+  {
+    operation: "訳文を送信する",
+    path: "/quest/score",
+    call: (r: QuestHook) => r.submitTranslation("yaku"),
+    buildSuccess: () => HttpResponse.json(scoreResp),
+  },
+  {
+    operation: "名前を送信する",
+    path: "/quest/guess-name",
+    call: (r: QuestHook) => r.submitGuess("Pikachu"),
+    buildSuccess: () => HttpResponse.json({ correct: false, attempts_remaining: 2 }),
+  },
+  {
+    operation: "ヒントを要求する",
+    path: "/quest/hint",
+    call: (r: QuestHook) => r.requestHint(),
+    buildSuccess: () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+  },
+  {
+    operation: "捕獲を実行する",
+    path: "/quest/capture",
+    call: (r: QuestHook) => r.capture(),
+    buildSuccess: () => HttpResponse.json(captureResp),
+  },
+];
+
+const operationRows = operations.map((op) => [op.operation, op] as const);
+
+/**
+ * 採点・名前当ての正解・ヒントの要求まで進めたあと、新しいクエストを開始する。
+ * @returns renderHook の戻り値。
+ */
+async function startNewQuestAfterProgress() {
+  server.use(
+    http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)),
+    http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guessCorrect)),
+  );
+  const hook = await mountInTranslating();
+  await act(async () => {
+    await hook.result.current.submitTranslation("テスト");
+  });
+  await act(async () => {
+    await hook.result.current.submitGuess("Pikachu");
+  });
+  await act(async () => {
+    await hook.result.current.requestHint();
+  });
+  mockNewQuest({ ...questResp, pokemon_id: 1 });
+  await act(async () => {
+    await hook.result.current.startNewQuest();
+  });
+  return hook;
+}
+
+describe("[クエスト] 場所選択と出題の開始", () => {
+  describe("正常系", () => {
+    describe("場所選択の段階で場所を選んだとき", () => {
+      it("訳文入力の段階になる", async () => {
+        mockNewQuest();
+
+        const { result } = await mountAndSelectLocation();
+
+        await waitFor(() => expect(result.current.phase).toBe("translating"));
+      });
+
+      it("バックエンドが返した出題の内容が得られる", async () => {
+        mockNewQuest();
+
+        const { result } = await mountAndSelectLocation();
+
+        await waitFor(() => expect(result.current.quest).toEqual(questResp));
+      });
     });
-
-    expect(result.current.phase).toBe("translating");
-    expect(result.current.quest).toEqual(questResp);
   });
 
-  it("場所の取得に失敗すると、エラー画面に遷移してメッセージを保持する", async () => {
-    server.use(http.get(apiUrl("/quest/locations"), () => HttpResponse.json({}, { status: 500 })));
+  describe("異常系", () => {
+    describe("場所の一覧の取得が 500 で失敗したとき", () => {
+      const mockLocationsFailure = () =>
+        server.use(http.get(apiUrl("/quest/locations"), () => HttpResponse.json({}, { status: 500 })));
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
-    await waitFor(() => expect(result.current.phase).toBe("error"));
+      it("エラー画面になる", async () => {
+        mockLocationsFailure();
 
-    expect(result.current.error).not.toBeNull();
-  });
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
 
-  it("場所を選んだ後の出題取得に失敗すると、エラー画面に遷移してメッセージを保持する", async () => {
-    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })));
+        await waitFor(() => expect(result.current.phase).toBe("error"));
+      });
 
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("error"));
+      it("エラーメッセージに「場所の読み込みに失敗しました」が含まれる", async () => {
+        mockLocationsFailure();
 
-    expect(result.current.error).not.toBeNull();
-  });
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("error"));
 
-  // ステータスごとにユーザー向け文言が切り替わる仕様。表示される文言 (観測結果) で確かめる。
-  it.each([
-    { status: 401, expected: /認証/ },
-    { status: 403, expected: /アクセス権/ },
-    { status: 404, expected: /セッションが切断されました/ },
-    { status: 502, expected: /外部サービス/ },
-  ])("出題取得が $status のとき、ステータスに応じた文言を表示する", async ({ status, expected }) => {
-    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("error"));
-
-    expect(result.current.error).toMatch(expected);
-  });
-
-  it("ネットワーク断 (レスポンス無し) では接続エラーの文言を表示する", async () => {
-    server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.error()));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("error"));
-
-    expect(result.current.error).toMatch(/接続できません/);
-  });
-
-  it("採点が成功すると名前当てに進み、得点と翻訳内容を保持する", async () => {
-    mockNewQuest();
-    server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.submitTranslation("テスト翻訳");
+        expect(result.current.error).toContain("場所の読み込みに失敗しました");
+      });
     });
 
-    expect(result.current.phase).toBe("guessing");
-    expect(result.current.score).toEqual(scoreResp);
-    expect(result.current.userTranslation).toBe("テスト翻訳");
-  });
+    describe("場所を選んだ後の出題の取得が 500 で失敗したとき", () => {
+      const mockNewQuestFailure = () =>
+        server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })));
 
-  // submitTranslation / submitGuess / capture すべてのフェーズで「429 は UsageProvider に委譲、
-  // 5xx はローカル error 文言として保持」する仕様。3 API 分まとめて検証する。
-  it.each([
-    ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
-    ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
-    ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
-  ] as const)("%sで 429 が返っても、エラー文言を出さずフェーズも変えない (上限は利用上限モーダルに委譲)", async (
-    _api,
-    path,
-    call,
-  ) => {
-    mockNewQuest();
-    server.use(
-      http.post(apiUrl(path), () =>
-        HttpResponse.json({ error: "user", message: "x" }, { status: 429 }),
-      ),
-    );
+      it("エラー画面になる", async () => {
+        mockNewQuestFailure();
 
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
+        const { result } = await mountAndSelectLocation();
 
-    await act(async () => {
-      await call(result.current);
+        await waitFor(() => expect(result.current.phase).toBe("error"));
+      });
+
+      it("エラーメッセージに「データの読み込みに失敗しました」が含まれる", async () => {
+        mockNewQuestFailure();
+
+        const { result } = await mountAndSelectLocation();
+        await waitFor(() => expect(result.current.phase).toBe("error"));
+
+        expect(result.current.error).toContain("データの読み込みに失敗しました");
+      });
     });
 
-    expect(result.current.error).toBeNull();
-    expect(result.current.phase).toBe("translating");
-  });
+    describe("場所を選んだ後の出題の取得が失敗したとき", () => {
+      it.each([
+        [401, "認証に失敗しました"],
+        [403, "アクセス権がありません"],
+        [404, "セッションが切断されました"],
+        [502, "外部サービスが応答しません"],
+      ])("ステータスが %i のとき、エラーメッセージに「%s」が含まれる", async (status, message) => {
+        server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })));
 
-  it.each([
-    ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
-    ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
-    ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
-  ] as const)("%sで 5xx が返っても、エラーメッセージを保持しフェーズは変えない", async (
-    _api,
-    path,
-    call,
-  ) => {
-    mockNewQuest();
-    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 502 })));
+        const { result } = await mountAndSelectLocation();
+        await waitFor(() => expect(result.current.phase).toBe("error"));
 
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
+        expect(result.current.error).toContain(message);
+      });
 
-    await act(async () => {
-      await call(result.current);
+      it("ネットワークが切れていて応答が無いとき、エラーメッセージに「サーバーに接続できません」が含まれる", async () => {
+        server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.error()));
+
+        const { result } = await mountAndSelectLocation();
+        await waitFor(() => expect(result.current.phase).toBe("error"));
+
+        expect(result.current.error).toContain("サーバーに接続できません");
+      });
     });
-
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.phase).toBe("translating");
-  });
-
-  it.each([
-    [
-      "採点",
-      "/quest/score",
-      () => HttpResponse.json(scoreResp),
-      (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku"),
-    ],
-    [
-      "名前推測",
-      "/quest/guess-name",
-      () => HttpResponse.json({ correct: false, attempts_remaining: 2 }),
-      (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu"),
-    ],
-    [
-      "ヒント要求",
-      "/quest/hint",
-      () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
-      (r: ReturnType<typeof useQuest>) => r.requestHint(),
-    ],
-    [
-      "捕獲",
-      "/quest/capture",
-      () => HttpResponse.json(captureResp),
-      (r: ReturnType<typeof useQuest>) => r.capture(),
-    ],
-  ] as const)("%sが 5xx で失敗した後、再試行して成功すると、エラーメッセージが消える", async (
-    _api,
-    path,
-    buildSuccess,
-    call,
-  ) => {
-    mockNewQuest();
-    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 502 })));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await call(result.current);
-    });
-    expect(result.current.error).not.toBeNull();
-
-    server.use(http.post(apiUrl(path), buildSuccess));
-
-    await act(async () => {
-      await call(result.current);
-    });
-    expect(result.current.error).toBeNull();
-  });
-
-  it.each([
-    ["採点", "/quest/score", (r: ReturnType<typeof useQuest>) => r.submitTranslation("yaku")],
-    ["名前推測", "/quest/guess-name", (r: ReturnType<typeof useQuest>) => r.submitGuess("Pikachu")],
-    ["ヒント要求", "/quest/hint", (r: ReturnType<typeof useQuest>) => r.requestHint()],
-    ["捕獲", "/quest/capture", (r: ReturnType<typeof useQuest>) => r.capture()],
-  ] as const)("%sで 404 (セッション切断) になると、エラー画面へ切り替わり切断を案内する", async (
-    _api,
-    path,
-    call,
-  ) => {
-    mockNewQuest();
-    server.use(http.post(apiUrl(path), () => HttpResponse.json({}, { status: 404 })));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await call(result.current);
-    });
-
-    expect(result.current.phase).toBe("error");
-    expect(result.current.error).toMatch(/セッションが切断されました/);
-  });
-
-  it("名前当てが成立してボールの種類が返ると、その種類を保持する", async () => {
-    mockNewQuest();
-    const guess: GuessResponse = {
-      correct: true,
-      ball_type: "ultra",
-      language: "en",
-      attempts_remaining: 2,
-    };
-    server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guess)));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.submitGuess("Pikachu");
-    });
-
-    expect(result.current.guessResult).toEqual(guess);
-    expect(result.current.ballType).toBe("ultra");
-  });
-
-  it("ヒントを要求すると、タイプと残り試行回数を保持する", async () => {
-    mockNewQuest();
-    server.use(
-      http.post(apiUrl("/quest/hint"), () =>
-        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
-      ),
-    );
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.requestHint();
-    });
-
-    expect(result.current.hintResult).toEqual({ types: ["electric"], attempts_remaining: 2 });
-    expect(result.current.attemptsRemaining).toBe(2);
-  });
-
-  it("1回目のヒントでタイプ、2回目のヒントで技を取得すると、1回目に取得したタイプの情報は2回目の技の取得後も参照できる", async () => {
-    mockNewQuest();
-    server.use(
-      http.post(apiUrl("/quest/hint"), () =>
-        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
-      ),
-    );
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.requestHint();
-    });
-
-    server.use(
-      http.post(apiUrl("/quest/hint"), () =>
-        HttpResponse.json({
-          moves: ["たいあたり", "なきごえ", "でんきショック"],
-          attempts_remaining: 1,
-        }),
-      ),
-    );
-
-    await act(async () => {
-      await result.current.requestHint();
-    });
-
-    expect(result.current.hintResult).toEqual({
-      types: ["electric"],
-      moves: ["たいあたり", "なきごえ", "でんきショック"],
-      attempts_remaining: 1,
-    });
-    expect(result.current.attemptsRemaining).toBe(1);
-  });
-
-  it("名前当て確定後に捕獲の段階へ進んでも、スキップの通信は発生しない", async () => {
-    mockNewQuest();
-    const guess: GuessResponse = {
-      correct: true,
-      ball_type: "ultra",
-      language: "en",
-      attempts_remaining: 2,
-    };
-    server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guess)));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.submitGuess("Pikachu");
-    });
-
-    act(() => {
-      result.current.proceedToCapture();
-    });
-
-    expect(countRequests("/quest/skip-guess")).toBe(0);
-    expect(result.current.phase).toBe("capturing");
-  });
-
-  it("名前当てをスキップすると、サーバに明示的に伝えてモンスターボールに確定し、捕獲の段階へ遷移する", async () => {
-    mockNewQuest();
-    server.use(
-      http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
-    );
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.skipGuess();
-    });
-
-    // スキップはクライアント内で完結せず、サーバの /quest/skip-guess を叩く
-    expect(countRequests("/quest/skip-guess")).toBe(1);
-    expect(result.current.ballType).toBe("poke");
-    expect(result.current.phase).toBe("capturing");
-  });
-
-  it("捕獲すると捕獲演出に進み、捕獲結果が保持される", async () => {
-    mockNewQuest();
-    const captured: CaptureResponse = {
-      captured: true,
-      probability: 0.9,
-      pokemon_id: 25,
-      name_en: "Pikachu",
-      name_ja: "ピカチュウ",
-      sprite_url: "https://example.com/p.png",
-      score: 90,
-      description_en: "x",
-      description_ja: "y",
-      base_stat_total: 320,
-      ball_type: "ultra",
-      types: ["electric"],
-      height: 4,
-      weight: 60,
-      is_legendary: false,
-      is_mythical: false,
-    };
-    server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captured)));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.capture();
-    });
-
-    expect(result.current.phase).toBe("revealing");
-    expect(result.current.captureResult).toEqual(captured);
-  });
-
-  it("捕獲演出が終わると、結果表示の段階へ進み捕獲結果を維持する", async () => {
-    mockNewQuest();
-    const captured: CaptureResponse = {
-      captured: false,
-      probability: 0.2,
-      pokemon_id: 25,
-      name_en: "Pikachu",
-      name_ja: "ピカチュウ",
-      sprite_url: "https://example.com/p.png",
-      score: 40,
-      description_en: "x",
-      description_ja: "y",
-      base_stat_total: 320,
-      ball_type: "poke",
-      types: ["electric"],
-      height: 4,
-      weight: 60,
-      is_legendary: false,
-      is_mythical: false,
-    };
-    server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captured)));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    await act(async () => {
-      await result.current.capture();
-    });
-    expect(result.current.phase).toBe("revealing");
-
-    act(() => {
-      result.current.revealCaptureResult();
-    });
-
-    expect(result.current.phase).toBe("result");
-    expect(result.current.captureResult).toEqual(captured);
-  });
-
-  it("新しいクエストを開始すると状態がリセットされ場所選択に戻り、選び直すと新しい出題になる", async () => {
-    mockNewQuest();
-    server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
-
-    const { result } = await mountAndSelectLocation();
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-
-    // 進捗を進めて state を持たせた状態を作る
-    await act(async () => {
-      await result.current.submitTranslation("テスト");
-    });
-    expect(result.current.phase).toBe("guessing");
-
-    await act(async () => {
-      await result.current.requestHint();
-    });
-    expect(result.current.hintResult).not.toBeNull();
-
-    const second: QuestNewResponse = { ...questResp, pokemon_id: 1 };
-    mockNewQuest(second);
-
-    await act(async () => {
-      await result.current.startNewQuest();
-    });
-
-    expect(result.current.phase).toBe("selectLocation");
-    expect(result.current.score).toBeNull();
-    expect(result.current.userTranslation).toBe("");
-    expect(result.current.ballType).toBeNull();
-    expect(result.current.attemptsRemaining).toBeNull();
-    expect(result.current.hintResult).toBeNull();
-
-    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
-    await act(async () => {
-      await result.current.selectLocation(result.current.locations[0].id);
-    });
-    expect(result.current.phase).toBe("translating");
-    expect(result.current.quest).toEqual(second);
   });
 });
 
-/**
- * リロード再開の仕様:
- * - 起動時にまず現在のクエストを問い合わせる
- * - セッションが無ければ (404) 従来通り場所選択から始まる
- * - セッションがあれば、その段階 (訳文入力・名前当て・捕獲待機) に必要な状態を復元する
- * - 取得自体が 404 以外で失敗した場合は、生きたセッションを潰さないようエラー画面にする (場所選択にフォールバックしない)
- * - リロード再開を無効にしている場合 (チュートリアル) は現在のクエストを問い合わせない
- */
-describe("[リロード再開] クエストの復元", () => {
-  it("セッションが無い (404) ときは、従来通り場所選択から始まる", async () => {
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+describe("[クエスト] 訳文の採点", () => {
+  describe("正常系", () => {
+    describe("訳文入力の段階で訳文を送信し、採点に成功したとき", () => {
+      async function submitTranslationSuccessfully() {
+        server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.submitTranslation("テスト翻訳");
+        });
+        return result;
+      }
 
-    await waitFor(() => expect(result.current.phase).toBe("selectLocation"));
-    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+      it("名前当ての段階になる", async () => {
+        const result = await submitTranslationSuccessfully();
+
+        expect(result.current.phase).toBe("guessing");
+      });
+
+      it("バックエンドが返した採点結果が得られる", async () => {
+        const result = await submitTranslationSuccessfully();
+
+        expect(result.current.score).toEqual(scoreResp);
+      });
+
+      it("送信した訳文が得られる", async () => {
+        const result = await submitTranslationSuccessfully();
+
+        expect(result.current.userTranslation).toBe("テスト翻訳");
+      });
+    });
   });
+});
 
-  it("起動時に採点前のセッションがあれば、場所選択を経由せず訳文入力の段階として復元される", async () => {
-    server.use(
-      http.get(apiUrl("/quest/current"), () =>
-        HttpResponse.json({ phase: "translating", quest: questResp }),
-      ),
-    );
+describe("[クエスト] 名前当ての回答", () => {
+  describe("正常系", () => {
+    describe("名前を送信し、バックエンドが正解と判定してボールを返したとき", () => {
+      async function submitCorrectGuess() {
+        server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guessCorrect)));
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.submitGuess("Pikachu");
+        });
+        return result;
+      }
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+      it("バックエンドが返した名前当ての結果が得られる", async () => {
+        const result = await submitCorrectGuess();
 
-    await waitFor(() => expect(result.current.phase).toBe("translating"));
-    expect(result.current.quest).toEqual(questResp);
-    expect(countRequests("/quest/locations")).toBe(0);
+        expect(result.current.guessResult).toEqual(guessCorrect);
+      });
+
+      it("獲得したボールが、バックエンドが返したボールになる", async () => {
+        const result = await submitCorrectGuess();
+
+        expect(result.current.ballType).toBe("ultra");
+      });
+    });
   });
+});
 
-  it("起動時に採点後・名前当て未確定のセッションがあれば、得点・訳文・残り試行・ヒントを保持した名前当ての段階として復元される", async () => {
-    server.use(
-      http.get(apiUrl("/quest/current"), () =>
-        HttpResponse.json({
-          phase: "guessing",
-          quest: questResp,
-          score: scoreResp,
-          user_translation: "テスト訳",
-          attempts_remaining: 2,
-          hint: { types: ["electric"], attempts_remaining: 2 },
-        }),
-      ),
-    );
+describe("[クエスト] 名前当てのスキップ", () => {
+  describe("正常系", () => {
+    describe("名前当てをスキップし、バックエンドがボールを返したとき", () => {
+      async function skipGuessSuccessfully() {
+        server.use(
+          http.post(apiUrl("/quest/skip-guess"), () => HttpResponse.json({ ball_type: "poke" })),
+        );
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.skipGuess();
+        });
+        return result;
+      }
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+      it("バックエンドへスキップの通信が 1 回送られる", async () => {
+        await skipGuessSuccessfully();
 
-    await waitFor(() => expect(result.current.phase).toBe("guessing"));
-    expect(result.current.score).toEqual(scoreResp);
-    expect(result.current.userTranslation).toBe("テスト訳");
-    expect(result.current.attemptsRemaining).toBe(2);
-    expect(result.current.hintResult).toEqual({ types: ["electric"], attempts_remaining: 2 });
+        expect(countRequests("/quest/skip-guess")).toBe(1);
+      });
+
+      it("獲得したボールが、バックエンドが返したボールになる", async () => {
+        const result = await skipGuessSuccessfully();
+
+        expect(result.current.ballType).toBe("poke");
+      });
+
+      it("捕獲待機の段階になる", async () => {
+        const result = await skipGuessSuccessfully();
+
+        expect(result.current.phase).toBe("capturing");
+      });
+    });
   });
+});
 
-  it("起動時に採点後・名前当て未確定のセッションがあれば、名前当ての正誤バナーは復元されない", async () => {
-    server.use(
-      http.get(apiUrl("/quest/current"), () =>
-        HttpResponse.json({
-          phase: "guessing",
-          quest: questResp,
-          score: scoreResp,
-          user_translation: "テスト訳",
-          attempts_remaining: 2,
-          hint: null,
-        }),
-      ),
-    );
+describe("[クエスト] 名前当てから捕獲待機への移行", () => {
+  describe("正常系", () => {
+    describe("名前当てに正解した後、捕獲へ進む操作をしたとき", () => {
+      async function proceedToCaptureAfterCorrectGuess() {
+        server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guessCorrect)));
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.submitGuess("Pikachu");
+        });
+        act(() => {
+          result.current.proceedToCapture();
+        });
+        return result;
+      }
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+      it("捕獲待機の段階になる", async () => {
+        const result = await proceedToCaptureAfterCorrectGuess();
 
-    await waitFor(() => expect(result.current.phase).toBe("guessing"));
-    expect(result.current.guessResult).toBeNull();
+        expect(result.current.phase).toBe("capturing");
+      });
+
+      it("スキップの通信はバックエンドへ送られない", async () => {
+        await proceedToCaptureAfterCorrectGuess();
+
+        expect(countRequests("/quest/skip-guess")).toBe(0);
+      });
+    });
   });
+});
 
-  it("起動時に名前当てが確定済みのセッションがあれば、確定済みボール種別を保持した捕獲待機の段階として復元される", async () => {
-    server.use(
-      http.get(apiUrl("/quest/current"), () =>
-        HttpResponse.json({ phase: "capturing", quest: questResp, ball_type: "ultra" }),
-      ),
-    );
+describe("[クエスト] ヒントの要求", () => {
+  describe("正常系", () => {
+    describe("ヒントを要求し、バックエンドがタイプと残り挑戦回数を返したとき", () => {
+      async function requestHintOnce() {
+        server.use(
+          http.post(apiUrl("/quest/hint"), () =>
+            HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+          ),
+        );
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.requestHint();
+        });
+        return result;
+      }
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+      it("バックエンドが返したヒントの内容が得られる", async () => {
+        const result = await requestHintOnce();
 
-    await waitFor(() => expect(result.current.phase).toBe("capturing"));
-    expect(result.current.ballType).toBe("ultra");
-  });
+        expect(result.current.hintResult).toEqual({ types: ["electric"], attempts_remaining: 2 });
+      });
 
-  it("現在のクエスト取得が5xxで失敗すると、エラー画面になり場所選択にはフォールバックしない", async () => {
-    server.use(http.get(apiUrl("/quest/current"), () => HttpResponse.json({}, { status: 502 })));
+      it("残り挑戦回数が、バックエンドが返した値になる", async () => {
+        const result = await requestHintOnce();
 
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
-
-    await waitFor(() => expect(result.current.phase).toBe("error"));
-    expect(result.current.error).not.toBeNull();
-    expect(countRequests("/quest/locations")).toBe(0);
-  });
-
-  it("現在のクエスト取得が5xxで失敗した後、再試行してセッションが無ければ、場所選択から始められる", async () => {
-    server.use(http.get(apiUrl("/quest/current"), () => HttpResponse.json({}, { status: 502 })));
-
-    const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
-    await waitFor(() => expect(result.current.phase).toBe("error"));
-
-    server.use(http.get(apiUrl("/quest/current"), () => new HttpResponse(null, { status: 404 })));
-    await act(async () => {
-      await result.current.startNewQuest();
+        expect(result.current.attemptsRemaining).toBe(2);
+      });
     });
 
-    expect(result.current.phase).toBe("selectLocation");
-    expect(result.current.error).toBeNull();
-    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+    describe("1 回目のヒントでタイプ、2 回目のヒントで技を取得したとき", () => {
+      async function requestHintTwice() {
+        server.use(
+          http.post(apiUrl("/quest/hint"), () =>
+            HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+          ),
+        );
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.requestHint();
+        });
+        server.use(
+          http.post(apiUrl("/quest/hint"), () =>
+            HttpResponse.json({
+              moves: ["たいあたり", "なきごえ", "でんきショック"],
+              attempts_remaining: 1,
+            }),
+          ),
+        );
+        await act(async () => {
+          await result.current.requestHint();
+        });
+        return result;
+      }
+
+      it("2 回目の後も、1 回目に取得したタイプと 2 回目に取得した技の両方が得られる", async () => {
+        const result = await requestHintTwice();
+
+        expect(result.current.hintResult).toEqual({
+          types: ["electric"],
+          moves: ["たいあたり", "なきごえ", "でんきショック"],
+          attempts_remaining: 1,
+        });
+      });
+
+      it("残り挑戦回数が、2 回目にバックエンドが返した値になる", async () => {
+        const result = await requestHintTwice();
+
+        expect(result.current.attemptsRemaining).toBe(1);
+      });
+    });
+  });
+});
+
+describe("[クエスト] 捕獲の実行", () => {
+  describe("正常系", () => {
+    describe("捕獲を実行し、バックエンドが捕獲結果を返したとき", () => {
+      async function captureSuccessfully() {
+        server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captureResp)));
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.capture();
+        });
+        return result;
+      }
+
+      it("捕獲演出の段階になる", async () => {
+        const result = await captureSuccessfully();
+
+        expect(result.current.phase).toBe("revealing");
+      });
+
+      it("バックエンドが返した捕獲結果が得られる", async () => {
+        const result = await captureSuccessfully();
+
+        expect(result.current.captureResult).toEqual(captureResp);
+      });
+    });
+
+    describe("捕獲演出の段階で、演出が終わったとき", () => {
+      async function finishCaptureEffect() {
+        server.use(http.post(apiUrl("/quest/capture"), () => HttpResponse.json(captureFailed)));
+        const { result } = await mountInTranslating();
+        await act(async () => {
+          await result.current.capture();
+        });
+        expect(result.current.phase).toBe("revealing");
+        act(() => {
+          result.current.revealCaptureResult();
+        });
+        return result;
+      }
+
+      it("結果画面の段階になる", async () => {
+        const result = await finishCaptureEffect();
+
+        expect(result.current.phase).toBe("result");
+      });
+
+      it("捕獲結果が演出の前と同じ内容のまま得られる", async () => {
+        const result = await finishCaptureEffect();
+
+        expect(result.current.captureResult).toEqual(captureFailed);
+      });
+    });
+  });
+});
+
+describe("[クエスト] 新しいクエストの開始", () => {
+  describe("正常系", () => {
+    describe("採点・名前当ての正解・ヒントの要求まで進めたクエストで、新しいクエストを開始したとき", () => {
+      it("場所選択の段階に戻る", async () => {
+        const { result } = await startNewQuestAfterProgress();
+
+        expect(result.current.phase).toBe("selectLocation");
+      });
+
+      it("採点結果が破棄される", async () => {
+        const { result } = await startNewQuestAfterProgress();
+
+        expect(result.current.score).toBeNull();
+      });
+
+      it("入力した訳文が空になる", async () => {
+        const { result } = await startNewQuestAfterProgress();
+
+        expect(result.current.userTranslation).toBe("");
+      });
+
+      it("獲得したボールが未確定に戻る", async () => {
+        const { result } = await startNewQuestAfterProgress();
+
+        expect(result.current.ballType).toBeNull();
+      });
+
+      it("残り挑戦回数が未確定に戻る", async () => {
+        const { result } = await startNewQuestAfterProgress();
+
+        expect(result.current.attemptsRemaining).toBeNull();
+      });
+
+      it("ヒントが破棄される", async () => {
+        const { result } = await startNewQuestAfterProgress();
+
+        expect(result.current.hintResult).toBeNull();
+      });
+    });
+
+    describe("新しいクエストを開始した後、場所を選び直したとき", () => {
+      async function reselectLocation() {
+        const { result } = await startNewQuestAfterProgress();
+        await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+        await act(async () => {
+          await result.current.selectLocation(result.current.locations[0].id);
+        });
+        return result;
+      }
+
+      it("訳文入力の段階になる", async () => {
+        const result = await reselectLocation();
+
+        expect(result.current.phase).toBe("translating");
+      });
+
+      it("バックエンドが返した新しい出題の内容が得られる", async () => {
+        const result = await reselectLocation();
+
+        expect(result.current.quest).toEqual({ ...questResp, pokemon_id: 1 });
+      });
+    });
+  });
+});
+
+describe("[クエスト] 進行中の通信エラーの扱い", () => {
+  describe("異常系", () => {
+    async function mountAndCall(
+      path: string,
+      status: number,
+      body: Record<string, string>,
+      call: (r: QuestHook) => Promise<unknown>,
+    ) {
+      server.use(http.post(apiUrl(path), () => HttpResponse.json(body, { status })));
+      const hook = await mountInTranslating();
+      await act(async () => {
+        await call(hook.result.current);
+      });
+      return hook.result;
+    }
+
+    describe("バックエンドが 429 を返したとき", () => {
+      const limitBody = { error: "user", message: "x" };
+
+      it.each(operationRows)("%sと、エラーメッセージは出ない", async (_operation, { path, call }) => {
+        const result = await mountAndCall(path, 429, limitBody, call);
+
+        expect(result.current.error).toBeNull();
+      });
+
+      it.each(operationRows)("%sと、操作の前の段階のまま変わらない", async (_operation, { path, call }) => {
+        const result = await mountAndCall(path, 429, limitBody, call);
+
+        expect(result.current.phase).toBe("translating");
+      });
+    });
+
+    describe("バックエンドが 502 を返したとき", () => {
+      it.each(operationRows)(
+        "%sと、エラーメッセージに「外部サービスが応答しません」が含まれる",
+        async (_operation, { path, call }) => {
+          const result = await mountAndCall(path, 502, {}, call);
+
+          expect(result.current.error).toContain("外部サービスが応答しません");
+        },
+      );
+
+      it.each(operationRows)("%sと、操作の前の段階のまま変わらない", async (_operation, { path, call }) => {
+        const result = await mountAndCall(path, 502, {}, call);
+
+        expect(result.current.phase).toBe("translating");
+      });
+    });
+
+    describe("バックエンドが 502 を返して失敗した後、同じ操作をもう一度行って成功したとき", () => {
+      it.each(operationRows)("%sと、エラーメッセージが消える", async (_operation, { path, call, buildSuccess }) => {
+        const result = await mountAndCall(path, 502, {}, call);
+        expect(result.current.error).not.toBeNull();
+
+        server.use(http.post(apiUrl(path), buildSuccess));
+        await act(async () => {
+          await call(result.current);
+        });
+
+        expect(result.current.error).toBeNull();
+      });
+    });
+
+    describe("バックエンドが 404 を返したとき", () => {
+      it.each(operationRows)("%sと、エラー画面になる", async (_operation, { path, call }) => {
+        const result = await mountAndCall(path, 404, {}, call);
+
+        expect(result.current.phase).toBe("error");
+      });
+
+      it.each(operationRows)(
+        "%sと、エラーメッセージに「セッションが切断されました」が含まれる",
+        async (_operation, { path, call }) => {
+          const result = await mountAndCall(path, 404, {}, call);
+
+          expect(result.current.error).toContain("セッションが切断されました");
+        },
+      );
+    });
+  });
+});
+
+describe("[リロード再開] クエストの復元", () => {
+  describe("正常系", () => {
+    it("進行中のクエストが無いとき、起動すると、場所の一覧が得られる", async () => {
+      const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+      await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+    });
+
+    describe("起動時に採点前のセッションがあるとき", () => {
+      beforeEach(() => {
+        server.use(
+          http.get(apiUrl("/quest/current"), () =>
+            HttpResponse.json({ phase: "translating", quest: questResp }),
+          ),
+        );
+      });
+
+      it("訳文入力の段階として復元される", async () => {
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+
+        await waitFor(() => expect(result.current.phase).toBe("translating"));
+      });
+
+      it("出題の内容が復元される", async () => {
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+        expect(result.current.quest).toEqual(questResp);
+      });
+
+      it("場所の一覧はバックエンドから取得されない", async () => {
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("translating"));
+
+        expect(countRequests("/quest/locations")).toBe(0);
+      });
+    });
+
+    describe("起動時に採点後で名前当てが確定していないセッションがあるとき", () => {
+      const mockGuessingSession = (hint: unknown) =>
+        server.use(
+          http.get(apiUrl("/quest/current"), () =>
+            HttpResponse.json({
+              phase: "guessing",
+              quest: questResp,
+              score: scoreResp,
+              user_translation: "テスト訳",
+              attempts_remaining: 2,
+              hint,
+            }),
+          ),
+        );
+      const electricHint = { types: ["electric"], attempts_remaining: 2 };
+
+      async function mountRestoredGuessing(hint: unknown) {
+        mockGuessingSession(hint);
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("guessing"));
+        return result;
+      }
+
+      it("名前当ての段階として復元される", async () => {
+        const result = await mountRestoredGuessing(electricHint);
+
+        expect(result.current.phase).toBe("guessing");
+      });
+
+      it("採点結果が復元される", async () => {
+        const result = await mountRestoredGuessing(electricHint);
+
+        expect(result.current.score).toEqual(scoreResp);
+      });
+
+      it("入力した訳文が復元される", async () => {
+        const result = await mountRestoredGuessing(electricHint);
+
+        expect(result.current.userTranslation).toBe("テスト訳");
+      });
+
+      it("残り挑戦回数が復元される", async () => {
+        const result = await mountRestoredGuessing(electricHint);
+
+        expect(result.current.attemptsRemaining).toBe(2);
+      });
+
+      it("ヒントが復元される", async () => {
+        const result = await mountRestoredGuessing(electricHint);
+
+        expect(result.current.hintResult).toEqual(electricHint);
+      });
+
+      it("名前当ての正誤の結果は復元されない", async () => {
+        const result = await mountRestoredGuessing(null);
+
+        expect(result.current.guessResult).toBeNull();
+      });
+    });
+
+    describe("起動時に名前当てが確定済みのセッションがあるとき", () => {
+      async function mountRestoredCapturing() {
+        server.use(
+          http.get(apiUrl("/quest/current"), () =>
+            HttpResponse.json({ phase: "capturing", quest: questResp, ball_type: "ultra" }),
+          ),
+        );
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("capturing"));
+        return result;
+      }
+
+      it("捕獲待機の段階として復元される", async () => {
+        const result = await mountRestoredCapturing();
+
+        expect(result.current.phase).toBe("capturing");
+      });
+
+      it("確定済みのボールが復元される", async () => {
+        const result = await mountRestoredCapturing();
+
+        expect(result.current.ballType).toBe("ultra");
+      });
+    });
+
+    describe("リロード再開を無効にしているとき、セッションがあっても", () => {
+      async function mountWithResumeDisabled() {
+        server.use(
+          http.get(apiUrl("/quest/current"), () =>
+            HttpResponse.json({ phase: "translating", quest: questResp }),
+          ),
+        );
+        const { result } = renderHook(() => useQuest({ enableResume: false }), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+        return result;
+      }
+
+      it("場所選択の段階から始まる", async () => {
+        const result = await mountWithResumeDisabled();
+
+        expect(result.current.phase).toBe("selectLocation");
+      });
+
+      it("現在のクエストをバックエンドへ問い合わせない", async () => {
+        await mountWithResumeDisabled();
+
+        expect(countRequests("/quest/current")).toBe(0);
+      });
+    });
   });
 
-  it("リロード再開を無効にしている場合は、セッションがあっても現在のクエストを問い合わせず場所選択から始まる", async () => {
-    server.use(
-      http.get(apiUrl("/quest/current"), () =>
-        HttpResponse.json({ phase: "translating", quest: questResp }),
-      ),
-    );
+  describe("異常系", () => {
+    describe("起動時に現在のクエストの問い合わせが 502 で失敗したとき", () => {
+      async function mountWithCurrentQuestFailure() {
+        server.use(http.get(apiUrl("/quest/current"), () => HttpResponse.json({}, { status: 502 })));
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("error"));
+        return result;
+      }
 
-    const { result } = renderHook(() => useQuest({ enableResume: false }), { wrapper: Wrapper });
+      it("エラー画面になる", async () => {
+        const result = await mountWithCurrentQuestFailure();
 
-    await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
-    expect(result.current.phase).toBe("selectLocation");
-    expect(countRequests("/quest/current")).toBe(0);
+        expect(result.current.phase).toBe("error");
+      });
+
+      it("エラーメッセージに「外部サービスが応答しません」が含まれる", async () => {
+        const result = await mountWithCurrentQuestFailure();
+
+        expect(result.current.error).toContain("外部サービスが応答しません");
+      });
+
+      it("場所の一覧はバックエンドから取得されない", async () => {
+        await mountWithCurrentQuestFailure();
+
+        expect(countRequests("/quest/locations")).toBe(0);
+      });
+    });
+
+    describe("現在のクエストの問い合わせが 502 で失敗した後、「もう一度探す」でセッションが無いとわかったとき", () => {
+      async function retryAfterCurrentQuestFailure() {
+        server.use(http.get(apiUrl("/quest/current"), () => HttpResponse.json({}, { status: 502 })));
+        const { result } = renderHook(() => useQuest(), { wrapper: Wrapper });
+        await waitFor(() => expect(result.current.phase).toBe("error"));
+
+        server.use(http.get(apiUrl("/quest/current"), () => new HttpResponse(null, { status: 404 })));
+        await act(async () => {
+          await result.current.startNewQuest();
+        });
+        return result;
+      }
+
+      it("場所選択の段階になる", async () => {
+        const result = await retryAfterCurrentQuestFailure();
+
+        expect(result.current.phase).toBe("selectLocation");
+      });
+
+      it("場所の一覧が得られる", async () => {
+        const result = await retryAfterCurrentQuestFailure();
+
+        await waitFor(() => expect(result.current.locations.length).toBeGreaterThan(0));
+      });
+
+      it("エラーメッセージが消える", async () => {
+        const result = await retryAfterCurrentQuestFailure();
+
+        expect(result.current.error).toBeNull();
+      });
+    });
   });
 });

@@ -3,23 +3,10 @@ import type { Request, Response, NextFunction } from "express";
 import type { Auth, DecodedIdToken } from "firebase-admin/auth";
 import { firebaseAuth } from "./auth.js";
 
-// HTTP 境界での仕様: トークン検証の結果をレスポンスで確かめる。
-// Firebase Auth は外部境界なので verifyIdToken だけをスタブに差し替える。
-
-/**
- * verifyIdToken の挙動だけを差し替えた Auth クライアントのスタブを作る。
- * @param verifyIdToken トークン検証の代替実装。
- * @returns firebaseAuth に渡す Auth クライアントスタブ。
- */
 function stubAuthClient(verifyIdToken: () => Promise<Partial<DecodedIdToken>>): Auth {
   return { verifyIdToken } as unknown as Auth;
 }
 
-/**
- * リクエスト・レスポンスのスタブを組み立てる。
- * @param authorization Authorization ヘッダ値 (省略時はヘッダ無し)。
- * @returns req / res / next とアサーション用の spy。
- */
 function makeReqRes(authorization?: string) {
   const status = vi.fn().mockReturnThis();
   const json = vi.fn().mockReturnThis();
@@ -31,73 +18,82 @@ function makeReqRes(authorization?: string) {
   return { req, res, next, status, json };
 }
 
-describe("API 認証", () => {
-  it("認証情報が無いリクエストは 401 で拒否する", async () => {
-    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
-    const { req, res, next, status } = makeReqRes();
+describe("[認証] API リクエストの認証", () => {
+  describe("正常系", () => {
+    it("メール確認済みのトークンを送ると、リクエストは通過する", async () => {
+      const mw = firebaseAuth(
+        stubAuthClient(async () => ({ uid: "user-1", email: "anyone@example.com", email_verified: true })),
+      );
+      const { req, res, next, status } = makeReqRes("Bearer dummy-token");
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    expect(status).toHaveBeenLastCalledWith(401);
-    expect(next).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledOnce();
+      expect(status).not.toHaveBeenCalled();
+    });
+
+    it("メール確認済みのトークンを送ると、後続の処理から見たユーザー ID はトークンに記録されたユーザー ID になる", async () => {
+      const mw = firebaseAuth(
+        stubAuthClient(async () => ({ uid: "user-1", email: "anyone@example.com", email_verified: true })),
+      );
+      const { req, res, next } = makeReqRes("Bearer dummy-token");
+
+      await mw(req, res, next);
+
+      expect(res.locals.userId).toBe("user-1");
+    });
   });
 
-  it("認証情報の形式が正しくないリクエストは 401 で拒否する", async () => {
-    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
-    const { req, res, next, status } = makeReqRes("Basic dummy-credential");
+  describe("異常系", () => {
+    it("認証情報が無いとき、リクエストは 401 で拒否され、認証情報が無い旨が返る", async () => {
+      const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
+      const { req, res, next, status, json } = makeReqRes();
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    expect(status).toHaveBeenLastCalledWith(401);
-    expect(next).not.toHaveBeenCalled();
-  });
+      expect(status).toHaveBeenLastCalledWith(401);
+      expect(json).toHaveBeenLastCalledWith({ error: "missing authorization header" });
+      expect(next).not.toHaveBeenCalled();
+    });
 
-  it("トークン検証に失敗したら 401 で拒否する", async () => {
-    const mw = firebaseAuth(
-      stubAuthClient(async () => {
-        throw new Error("token expired");
-      }),
-    );
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
+    it("認証情報の形式が正しくないとき、リクエストは 401 で拒否され、認証情報の形式が正しくない旨が返る", async () => {
+      const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1" })));
+      const { req, res, next, status, json } = makeReqRes("Basic dummy-credential");
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    expect(status).toHaveBeenLastCalledWith(401);
-    expect(next).not.toHaveBeenCalled();
-  });
+      expect(status).toHaveBeenLastCalledWith(401);
+      expect(json).toHaveBeenLastCalledWith({ error: "invalid authorization format" });
+      expect(next).not.toHaveBeenCalled();
+    });
 
-  it("メール確認済みユーザーは通過し、後続処理でユーザー ID が使える", async () => {
-    const mw = firebaseAuth(
-      stubAuthClient(async () => ({ uid: "user-1", email: "anyone@example.com", email_verified: true })),
-    );
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
+    it("トークンの検証に失敗したとき、リクエストは 401 で拒否され、トークンが無効である旨が返る", async () => {
+      const mw = firebaseAuth(
+        stubAuthClient(async () => {
+          throw new Error("token expired");
+        }),
+      );
+      const { req, res, next, status, json } = makeReqRes("Bearer dummy-token");
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    expect(next).toHaveBeenCalledOnce();
-    expect(status).not.toHaveBeenCalled();
-    expect(res.locals.userId).toBe("user-1");
-  });
+      expect(status).toHaveBeenLastCalledWith(401);
+      expect(json).toHaveBeenLastCalledWith({ error: "invalid token" });
+      expect(next).not.toHaveBeenCalled();
+    });
 
-  it("メール未確認のトークンは 403 で拒否する", async () => {
-    const mw = firebaseAuth(
-      stubAuthClient(async () => ({ uid: "user-1", email: "unverified@example.com", email_verified: false })),
-    );
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
+    it.each([
+      ["メール確認済みかどうかの情報が無いトークン", { uid: "user-1", email: "no-claim@example.com" }],
+      ["メール未確認のトークン", { uid: "user-1", email: "unverified@example.com", email_verified: false }],
+    ])("%s のとき、リクエストは 403 で拒否され、メール未確認である旨が返る", async (_given, token) => {
+      const mw = firebaseAuth(stubAuthClient(async () => token));
+      const { req, res, next, status, json } = makeReqRes("Bearer dummy-token");
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    expect(status).toHaveBeenLastCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("メール確認済みかどうかの情報が無いトークンは 403 で拒否する", async () => {
-    const mw = firebaseAuth(stubAuthClient(async () => ({ uid: "user-1", email: "no-claim@example.com" })));
-    const { req, res, next, status } = makeReqRes("Bearer dummy-token");
-
-    await mw(req, res, next);
-
-    expect(status).toHaveBeenLastCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
+      expect(status).toHaveBeenLastCalledWith(403);
+      expect(json).toHaveBeenLastCalledWith({ error: "email not verified" });
+      expect(next).not.toHaveBeenCalled();
+    });
   });
 });

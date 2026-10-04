@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { GenericContainer, type StartedTestContainer } from "testcontainers";
 import { Redis } from "ioredis";
 import express from "express";
@@ -45,11 +45,6 @@ afterAll(async () => {
   await container.stop();
 });
 
-/**
- * テスト用のクエストセッションを作る。
- * @param overrides 上書きするフィールド。
- * @returns クエストセッション。
- */
 function makeSession(overrides: Partial<QuestSession> = {}): QuestSession {
   return {
     pokemon_id: 1,
@@ -73,46 +68,6 @@ function makeSession(overrides: Partial<QuestSession> = {}): QuestSession {
   };
 }
 
-describe("クエストセッションの永続化 (Valkey)", () => {
-  it("セッションを保存していない状態で取得すると、null が返る", async () => {
-    const client = new Redis(redisURL);
-    const store = new RedisQuestSessionStore(client, "test:missing:", 60);
-
-    expect(await store.get("nobody")).toBeNull();
-    await client.quit();
-  });
-
-  it("TTL を 60 秒に設定してセッションを保存すると、TTL が 60 秒以下の正の値になる", async () => {
-    const client = new Redis(redisURL);
-    const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
-
-    await store.set("alice", makeSession());
-    const ttl = await client.ttl("test:ttl:alice");
-
-    expect(ttl).toBeGreaterThan(0);
-    expect(ttl).toBeLessThanOrEqual(60);
-    await client.quit();
-  });
-
-  it("保存済みのセッションを削除すると、取得できなくなる", async () => {
-    const client = new Redis(redisURL);
-    const store = new RedisQuestSessionStore(client, "test:delete:", 60);
-    await store.set("alice", makeSession());
-
-    await store.delete("alice");
-
-    expect(await store.get("alice")).toBeNull();
-    await client.quit();
-  });
-});
-
-/**
- * 指定したセッションストアで、公開入口 (HTTP) から叩ける Express アプリを組み立てる。
- * Cloud Run の 1 インスタンスを模す。
- * @param sessionStore 本番クエスト用のセッションストア。
- * @param tutorialSessionStore チュートリアル用のセッションストア。
- * @returns supertest で叩ける Express アプリ。
- */
 function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore: QuestSessionStore) {
   const pokemonClient = makePokemonClient([makePokemon()]);
   const llm: LLMClient = {
@@ -170,64 +125,125 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
   return app;
 }
 
-describe("クエストセッションのインスタンス間引き継ぎ (Valkey)", () => {
-  it("別インスタンスへリクエストが分散しても、出題から捕獲まで通り、スキップで確定したボール種別が捕獲結果に引き継がれる", async () => {
-    // instanceA/B は Redis クライアントもセッションストアも別オブジェクトにし、Cloud Run の
-    // 別プロセスを模す。両者が JS オブジェクトを一切共有しないことで、セッションの引き継ぎが
-    // プロセス内の参照共有ではなく Valkey 経由であることを保証する。
-    const clientA = new Redis(redisURL);
-    const clientB = new Redis(redisURL);
-    const instanceA = buildAppInstance(
-      new RedisQuestSessionStore(clientA, "test:handoff:quest:", 60),
-      new RedisQuestSessionStore(clientA, "test:handoff:tutorial:", 60),
-    );
-    const instanceB = buildAppInstance(
-      new RedisQuestSessionStore(clientB, "test:handoff:quest:", 60),
-      new RedisQuestSessionStore(clientB, "test:handoff:tutorial:", 60),
-    );
 
-    const quest = await request(instanceA).get("/api/quest/new");
-    expect(quest.status).toBe(200);
+const openClients: Redis[] = [];
 
-    const score = await request(instanceB).post("/api/quest/score").send({ translation: "はやい" });
-    expect(score.status).toBe(200);
+afterEach(async () => {
+  await Promise.all(openClients.splice(0).map((client) => client.quit()));
+});
 
-    const guess = await request(instanceA).post("/api/quest/guess-name").send({ guess: "wrong" });
-    expect(guess.status).toBe(200);
+function connectRedis(): Redis {
+  const client = new Redis(redisURL);
+  openClients.push(client);
+  return client;
+}
 
-    const skip = await request(instanceB).post("/api/quest/skip-guess").send({});
-    expect(skip.status).toBe(200);
-    expect(skip.body).toEqual({ ball_type: "poke" });
+function buildTwoInstances(keyPrefix: string) {
+  // プロセス内の参照共有ではなく Valkey 経由でセッションが引き継がれることを確かめるため、Cloud Run の別プロセスを模して、インスタンスごとに Redis クライアントとセッションストアを別オブジェクトにする。
+  const clientA = connectRedis();
+  const clientB = connectRedis();
+  return {
+    instanceA: buildAppInstance(
+      new RedisQuestSessionStore(clientA, `${keyPrefix}quest:`, 60),
+      new RedisQuestSessionStore(clientA, `${keyPrefix}tutorial:`, 60),
+    ),
+    instanceB: buildAppInstance(
+      new RedisQuestSessionStore(clientB, `${keyPrefix}quest:`, 60),
+      new RedisQuestSessionStore(clientB, `${keyPrefix}tutorial:`, 60),
+    ),
+  };
+}
 
-    const capture = await request(instanceA).post("/api/quest/capture").send({});
-    expect(capture.status).toBe(200);
-    expect(capture.body).toMatchObject({ ball_type: "poke", pokemon_id: 1 });
+async function playQuestToCaptureAlternatingInstances(keyPrefix: string) {
+  const { instanceA, instanceB } = buildTwoInstances(keyPrefix);
 
-    await clientA.quit();
-    await clientB.quit();
+  const quest = await request(instanceA).get("/api/quest/new");
+  expect(quest.status).toBe(200);
+
+  const score = await request(instanceB).post("/api/quest/score").send({ translation: "はやい" });
+  expect(score.status).toBe(200);
+
+  const guess = await request(instanceA).post("/api/quest/guess-name").send({ guess: "wrong" });
+  expect(guess.status).toBe(200);
+
+  const skip = await request(instanceB).post("/api/quest/skip-guess").send({});
+  expect(skip.status).toBe(200);
+  expect(skip.body).toEqual({ ball_type: "poke" });
+
+  const capture = await request(instanceA).post("/api/quest/capture").send({});
+  expect(capture.status).toBe(200);
+  return capture;
+}
+
+async function getCurrentQuestOnOtherInstanceAfterScore(keyPrefix: string) {
+  const { instanceA, instanceB } = buildTwoInstances(keyPrefix);
+
+  await request(instanceA).get("/api/quest/new");
+  await request(instanceA).post("/api/quest/score").send({ translation: "はやい" });
+
+  const current = await request(instanceB).get("/api/quest/current");
+  expect(current.status).toBe(200);
+  return current;
+}
+
+describe("[クエストセッション] セッションの保存・取得・削除", () => {
+  describe("正常系", () => {
+    it("セッションを一度も保存していないユーザーのセッションを取得すると、セッションは見つからない", async () => {
+      const store = new RedisQuestSessionStore(connectRedis(), "test:missing:", 60);
+
+      expect(await store.get("nobody")).toBeNull();
+    });
+
+    it("有効期限を設定してセッションを保存すると、保存直後の残り有効期間は 0 秒より大きく、設定した有効期限以下になる", async () => {
+      const client = connectRedis();
+      const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
+
+      await store.set("alice", makeSession());
+      const ttl = await client.ttl("test:ttl:alice");
+
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThanOrEqual(60);
+    });
+
+    it("セッションを保存したユーザーのセッションを削除した後に取得すると、セッションは見つからない", async () => {
+      const store = new RedisQuestSessionStore(connectRedis(), "test:delete:", 60);
+      await store.set("alice", makeSession());
+
+      await store.delete("alice");
+
+      expect(await store.get("alice")).toBeNull();
+    });
   });
+});
 
-  it("採点済みのセッションは別インスタンスに分散しても、現在のクエストを取得すると名前当ての段階として復元される", async () => {
-    const clientA = new Redis(redisURL);
-    const clientB = new Redis(redisURL);
-    const instanceA = buildAppInstance(
-      new RedisQuestSessionStore(clientA, "test:resume:quest:", 60),
-      new RedisQuestSessionStore(clientA, "test:resume:tutorial:", 60),
-    );
-    const instanceB = buildAppInstance(
-      new RedisQuestSessionStore(clientB, "test:resume:quest:", 60),
-      new RedisQuestSessionStore(clientB, "test:resume:tutorial:", 60),
-    );
+describe("[クエストセッション] インスタンス間でのセッションの引き継ぎ", () => {
+  describe("正常系", () => {
+    describe("出題から捕獲までの各操作のリクエストが、2 つのインスタンスに交互に届くとき", () => {
+      it("名前当てをスキップすると、捕獲結果のボールはモンスターボールになる", async () => {
+        const capture = await playQuestToCaptureAlternatingInstances("test:handoff:ball:");
 
-    await request(instanceA).get("/api/quest/new");
-    await request(instanceA).post("/api/quest/score").send({ translation: "はやい" });
+        expect(capture.body).toMatchObject({ ball_type: "poke" });
+      });
 
-    const current = await request(instanceB).get("/api/quest/current");
+      it("捕獲結果のポケモンは、出題されたポケモンになる", async () => {
+        const capture = await playQuestToCaptureAlternatingInstances("test:handoff:pokemon:");
 
-    expect(current.status).toBe(200);
-    expect(current.body).toMatchObject({ phase: "guessing", user_translation: "はやい" });
+        expect(capture.body).toMatchObject({ pokemon_id: 1 });
+      });
+    });
 
-    await clientA.quit();
-    await clientB.quit();
+    describe("採点した後に、採点とは別のインスタンスで現在のクエストを取得するとき", () => {
+      it("現在のクエストは、名前当ての段階として得られる", async () => {
+        const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:phase:");
+
+        expect(current.body).toMatchObject({ phase: "guessing" });
+      });
+
+      it("現在のクエストは、採点時に入力した訳文とともに得られる", async () => {
+        const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:translation:");
+
+        expect(current.body).toMatchObject({ user_translation: "はやい" });
+      });
+    });
   });
 });

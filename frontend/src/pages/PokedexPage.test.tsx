@@ -76,135 +76,168 @@ function mockDetail(detail: PokemonDetailResponse) {
   server.use(http.get(apiUrl("/pokedex/:id"), () => HttpResponse.json(detail)));
 }
 
-/**
- * PokedexPage の仕様:
- * - 一覧取得に成功すると全ポケモンのカードと見つけた数・捕まえた数を表示する
- * - 読み込めなかったポケモンが 1 匹以上あるときだけ警告バナーを表示する
- * - 一覧が空なら空状態メッセージを表示する
- * - 一覧・詳細の取得に失敗したらエラーメッセージを表示する
- * - カードを選ぶと詳細モーダルを表示する
- *
- * API 境界 (HTTP) のみ MSW でモックし、グリッド・詳細カードは実部品で組み立てる。
- */
-describe("図鑑画面", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-  it("一覧2件のうち1件だけ捕獲済みのとき、見つけた数2種類・捕まえた数1種類が別々に表示される", async () => {
-    mockPokedex(
-      [makeEntry(1, "Bulbasaur", "フシギダネ"), { ...makeEntry(4, "Charmander", "ヒトカゲ"), status: "encountered" }],
-      1,
-      0,
-    );
+describe("[図鑑] 図鑑の一覧表示", () => {
+  describe("正常系", () => {
+    describe("ポケモンを 2 匹見つけ、うち 1 匹だけ捕まえているとき", () => {
+      function mockOneCapturedOneEncountered() {
+        mockPokedex(
+          [makeEntry(1, "Bulbasaur", "フシギダネ"), { ...makeEntry(4, "Charmander", "ヒトカゲ"), status: "encountered" }],
+          1,
+          0,
+        );
+      }
 
-    render(<PokedexPage />);
+      it("2 匹のカードが一覧に表示される", async () => {
+        mockOneCapturedOneEncountered();
 
-    expect(await screen.findByText("フシギダネ")).toBeInTheDocument();
-    expect(screen.getByText("ヒトカゲ")).toBeInTheDocument();
-    expect(screen.getByText("見つけた数 2種類")).toBeInTheDocument();
-    expect(screen.getByText("捕まえた数 1種類")).toBeInTheDocument();
-  });
+        render(<PokedexPage />);
 
-  it("よみこめなかったポケモンが 0 匹のときは警告バナーが出ない", async () => {
-    mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
+        expect(await screen.findByText("フシギダネ")).toBeInTheDocument();
+        expect(screen.getByText("ヒトカゲ")).toBeInTheDocument();
+      });
 
-    render(<PokedexPage />);
+      it("「見つけた数 2種類」「捕まえた数 1種類」と表示される", async () => {
+        mockOneCapturedOneEncountered();
 
-    // 読み込み完了を待ってからバナーの不在を確かめる
-    await screen.findByText("フシギダネ");
-    expect(screen.queryByText(/読み込めませんでした/)).not.toBeInTheDocument();
-  });
+        render(<PokedexPage />);
 
-  it("よみこめなかったポケモンが 1 匹のときは警告バナーが出る", async () => {
-    mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 1);
+        expect(await screen.findByText("見つけた数 2種類")).toBeInTheDocument();
+        expect(screen.getByText("捕まえた数 1種類")).toBeInTheDocument();
+      });
+    });
 
-    render(<PokedexPage />);
+    it("読み込めなかったポケモンが 0 匹のとき、「読み込めませんでした」を含むメッセージが表示されない", async () => {
+      mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
 
-    expect(
-      await screen.findByText(
-        spec("1匹読み込めませんでした。あとでもう一度試してください"),
-      ),
-    ).toBeInTheDocument();
-  });
+      render(<PokedexPage />);
 
-  it("まだポケモンに出会っていない (0 件) ときは空状態メッセージが出る", async () => {
-    mockPokedex([], 0, 0);
+      // 読み込みの完了を待ってから不在を確かめるため、カードが表示されるのを待つ
+      await screen.findByText("フシギダネ");
+      expect(screen.queryByText(/読み込めませんでした/)).not.toBeInTheDocument();
+    });
 
-    render(<PokedexPage />);
+    it("図鑑のポケモンが 0 匹のとき、「まだポケモンに出会っていません」と表示される", async () => {
+      mockPokedex([], 0, 0);
 
-    expect(
-      await screen.findByText(spec("まだポケモンに出会っていません")),
-    ).toBeInTheDocument();
-  });
+      render(<PokedexPage />);
 
-  it("一覧の取得に失敗するとエラーメッセージが表示される", async () => {
-    // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    server.use(http.get(apiUrl("/pokedex"), () => HttpResponse.error()));
-
-    render(<PokedexPage />);
-
-    expect(
-      await screen.findByText(spec("図鑑の読み込みに失敗しました")),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId("pokemon-card")).not.toBeInTheDocument();
-  });
-
-  it("カードを選ぶと詳細モーダルが表示される", async () => {
-    mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
-    mockDetail(dummyDetail);
-    const user = userEvent.setup();
-
-    render(<PokedexPage />);
-
-    await user.click(await screen.findByRole("button", { name: /フシギダネ/ }));
-
-    expect(
-      await screen.findByText(
-        spec("「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」"),
-      ),
-    ).toBeInTheDocument();
-    // タイプバッジが日本語表示名で描画される (詳細カードを実部品で組み立てた結果の観測)
-    expect(screen.getByText("くさ")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "閉じる" })).toBeInTheDocument();
-  });
-
-  it("詳細モーダルの「閉じる」を押すと一覧へ戻る", async () => {
-    mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
-    mockDetail(dummyDetail);
-    const user = userEvent.setup();
-
-    render(<PokedexPage />);
-
-    await user.click(await screen.findByRole("button", { name: /フシギダネ/ }));
-    await user.click(await screen.findByRole("button", { name: "閉じる" }));
-
-    // モーダルが閉じ、詳細説明が消えて一覧のカードだけが残る
-    await waitFor(() =>
       expect(
-        screen.queryByText(
-          spec("「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」"),
-        ),
-      ).not.toBeInTheDocument(),
-    );
-    expect(screen.getByRole("button", { name: /フシギダネ/ })).toBeInTheDocument();
+        await screen.findByText(spec("まだポケモンに出会っていません")),
+      ).toBeInTheDocument();
+    });
   });
 
-  it("詳細の取得に失敗するとエラーメッセージが表示され、モーダルは開かない", async () => {
-    // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
-    server.use(http.get(apiUrl("/pokedex/:id"), () => HttpResponse.error()));
-    const user = userEvent.setup();
+  describe("異常系", () => {
+    it("読み込めなかったポケモンが 1 匹のとき、「1匹読み込めませんでした。あとでもう一度試してください」と表示される", async () => {
+      mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 1);
 
-    render(<PokedexPage />);
+      render(<PokedexPage />);
 
-    await user.click(await screen.findByRole("button", { name: /フシギダネ/ }));
+      expect(
+        await screen.findByText(
+          spec("1匹読み込めませんでした。あとでもう一度試してください"),
+        ),
+      ).toBeInTheDocument();
+    });
 
-    expect(
-      await screen.findByText(spec("ポケモンの詳細の読み込みに失敗しました")),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "閉じる" })).not.toBeInTheDocument();
+    it("図鑑の一覧の取得に失敗したとき、「図鑑の読み込みに失敗しました」と表示される", async () => {
+      // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      server.use(http.get(apiUrl("/pokedex"), () => HttpResponse.error()));
+
+      render(<PokedexPage />);
+
+      expect(
+        await screen.findByText(spec("図鑑の読み込みに失敗しました")),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId("pokemon-card")).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe("[図鑑] ポケモンの詳細表示", () => {
+  describe("正常系", () => {
+    describe("一覧のカードを選んだとき", () => {
+      async function selectBulbasaurCard() {
+        mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
+        mockDetail(dummyDetail);
+        const user = userEvent.setup();
+
+        render(<PokedexPage />);
+
+        await user.click(await screen.findByRole("button", { name: /フシギダネ/ }));
+      }
+
+      it("詳細モーダルに、そのポケモンの説明文が表示される", async () => {
+        await selectBulbasaurCard();
+
+        expect(
+          await screen.findByText(
+            spec("「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」"),
+          ),
+        ).toBeInTheDocument();
+      });
+
+      it("詳細モーダルに、「閉じる」ボタンが表示される", async () => {
+        await selectBulbasaurCard();
+
+        await screen.findByText(
+          spec("「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」"),
+        );
+        expect(screen.getByRole("button", { name: "閉じる" })).toBeInTheDocument();
+      });
+
+      it("詳細モーダルに、持っているタイプの「くさ」が表示される", async () => {
+        await selectBulbasaurCard();
+
+        await screen.findByText(
+          spec("「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」"),
+        );
+        expect(screen.getByText("くさ")).toBeInTheDocument();
+      });
+    });
+
+    it("詳細モーダルが開いているとき、「閉じる」を押すと、モーダルが閉じて一覧が表示される", async () => {
+      mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
+      mockDetail(dummyDetail);
+      const user = userEvent.setup();
+
+      render(<PokedexPage />);
+
+      await user.click(await screen.findByRole("button", { name: /フシギダネ/ }));
+      await user.click(await screen.findByRole("button", { name: "閉じる" }));
+
+      await waitFor(() =>
+        expect(
+          screen.queryByText(
+            spec("「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」"),
+          ),
+        ).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole("button", { name: /フシギダネ/ })).toBeInTheDocument();
+    });
+  });
+
+  describe("異常系", () => {
+    it("ポケモンの詳細の取得に失敗するとき、一覧のカードを選ぶと、「ポケモンの詳細の読み込みに失敗しました」と表示される", async () => {
+      // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      mockPokedex([makeEntry(1, "Bulbasaur", "フシギダネ")], 1, 0);
+      server.use(http.get(apiUrl("/pokedex/:id"), () => HttpResponse.error()));
+      const user = userEvent.setup();
+
+      render(<PokedexPage />);
+
+      await user.click(await screen.findByRole("button", { name: /フシギダネ/ }));
+
+      expect(
+        await screen.findByText(spec("ポケモンの詳細の読み込みに失敗しました")),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "閉じる" })).not.toBeInTheDocument();
+    });
   });
 });

@@ -2,28 +2,34 @@ import { describe, it, expect } from "vitest";
 import { pickRandomSample } from "./random.js";
 import type { RandomSource } from "./ports.js";
 
-/** 固定値を返す乱数ソース。 */
 function fixedRandom(value: number): RandomSource {
   return { next: () => value };
 }
 
 describe("[乱数] プールからの重複無し抽選", () => {
-  it("プールの件数以下を指定したとき、指定した件数だけ重複なく返す", () => {
-    const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
-    expect(picked).toHaveLength(3);
-    expect(new Set(picked).size).toBe(3);
+  describe("正常系", () => {
+    it("プールが 4 件で 3 件を指定したとき、選ばれる件数は 3 件になる", () => {
+      const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
+      expect(picked).toHaveLength(3);
+    });
+
+    it("プールが 4 件で 3 件を指定したとき、選ばれた 3 件に重複は無い", () => {
+      const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
+      expect(new Set(picked).size).toBe(3);
+    });
+
+    it("プールが 2 件で 5 件を指定したとき、選ばれる件数は 2 件になる", () => {
+      const picked = pickRandomSample(["a", "b"], 5, fixedRandom(0));
+      expect(picked).toHaveLength(2);
+    });
   });
 
-  it("プールの件数より多く指定したとき、プールの件数までしか返さない", () => {
-    const picked = pickRandomSample(["a", "b"], 5, fixedRandom(0));
-    expect(picked).toHaveLength(2);
-  });
-
-  it("0件を指定したとき、空配列を返す", () => {
-    expect(pickRandomSample(["a", "b"], 0, fixedRandom(0))).toEqual([]);
-  });
-
-  it("空のプールを指定したとき、空配列を返す", () => {
-    expect(pickRandomSample([], 3, fixedRandom(0))).toEqual([]);
+  describe("異常系", () => {
+    it.each([
+      ["プールが空で 3 件を指定した", [], 3],
+      ["プールが 2 件で 0 件を指定した", ["a", "b"], 0],
+    ])("%sとき、選ばれた一覧は空になる", (_label, pool, count) => {
+      expect(pickRandomSample(pool, count, fixedRandom(0))).toEqual([]);
+    });
   });
 });

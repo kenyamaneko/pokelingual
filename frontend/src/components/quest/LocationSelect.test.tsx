@@ -9,14 +9,22 @@ const locations: QuestLocation[] = [
 ];
 
 describe("[クエスト] 場所選択画面", () => {
-  it("候補の場所を名前・説明付きで表示する", () => {
-    render(<LocationSelect locations={locations} onSelect={() => {}} />);
-    expect(screen.getByText("テスト草原")).toBeInTheDocument();
-    expect(screen.getByText("みどりの草原")).toBeInTheDocument();
-  });
+  describe("正常系", () => {
+    describe("選べる場所があるとき", () => {
+      it("場所の名前が表示される", () => {
+        render(<LocationSelect locations={locations} onSelect={() => {}} />);
+        expect(screen.getByText("テスト草原")).toBeInTheDocument();
+      });
 
-  it("候補を取得できるまでは読み込み中を表示する", () => {
-    render(<LocationSelect locations={[]} onSelect={() => {}} />);
-    expect(screen.getByText(/探しています/)).toBeInTheDocument();
+      it("場所の説明が表示される", () => {
+        render(<LocationSelect locations={locations} onSelect={() => {}} />);
+        expect(screen.getByText("みどりの草原")).toBeInTheDocument();
+      });
+    });
+
+    it("選べる場所が 0 件のとき、「行き先を　探しています」と表示される", () => {
+      render(<LocationSelect locations={[]} onSelect={() => {}} />);
+      expect(screen.getByText(/探しています/)).toBeInTheDocument();
+    });
   });
 });

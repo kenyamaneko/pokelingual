@@ -30,25 +30,14 @@ import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 
 interface AppOverrides {
-  /** LLM が投げるエラー (指定時は generateText が失敗する)。 */
   llmError?: Error;
-  /** レートリミットが投げる到達種別 (指定時は checkAndIncrement が RateLimitError を投げる)。 */
   rateLimitKind?: RateLimitKind;
-  /** settings 取得が投げるエラー (想定外エラー→500 の検証用)。 */
   settingsError?: Error;
-  /** ポケモン種別クライアントが投げるエラー (指定時は getPokemonByID が失敗する)。 */
   pokemonError?: Error;
-  /** クエストセッションストアが投げるエラー (指定時は get/set/delete がこのエラーを投げる)。 */
   sessionStoreError?: Error;
-  /** 図鑑詳細エンドポイントの検証用に、事前に保存済みとして扱うユーザ実績。 */
   seededUserPokemon?: UserPokemon[];
 }
 
-/**
- * 本物の router/handler/service にスタブの外部境界を注入した Express アプリを組み立てる。
- * @param o スタブ挙動の上書き。
- * @returns supertest で叩ける Express アプリ。
- */
 function makeApp(o: AppOverrides = {}) {
   const pokemonClient = makePokemonClient([makePokemon()], { error: o.pokemonError });
   const llm: LLMClient = {
@@ -57,11 +46,10 @@ function makeApp(o: AppOverrides = {}) {
       return JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
     },
   };
-  // 除外設定の検証用の供給可能な図鑑番号 (ダミー)。1..100 を供給リストとして扱う。
   const servablePokemonIDs = new Set(Array.from({ length: 100 }, (_, i) => i + 1));
   const random: RandomSource = { next: () => 0 };
 
-  // インメモリの Firestore 代替。保存された値を公開 API (GET /pokedex 等) から観測するために状態を持つ。
+  // 保存結果を公開 API から観測するため、状態を持つインメモリ実装にする。
   const pokemonStore = new Map<number, UserPokemon>();
   for (const entry of o.seededUserPokemon ?? []) {
     pokemonStore.set(entry.pokemon_id, entry);
@@ -147,307 +135,445 @@ function makeApp(o: AppOverrides = {}) {
   return app;
 }
 
-describe("エラー時の HTTP レスポンス (公開入口経由)", () => {
-  it("セッションが無い採点リクエストは 404 を返す", async () => {
-    const res = await request(makeApp()).post("/api/quest/score").send({ translation: "訳" });
-    expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: "resource not found" });
-  });
+describe("[クエスト] 出題から捕獲までの一連の操作", () => {
+  describe("正常系", () => {
+    it("出題、採点、名前当てのスキップ、捕獲を順に行うと、捕獲したポケモンが図鑑に捕獲済みとして現れる", async () => {
+      const app = makeApp();
 
-  it("セッションが無い現在のクエスト取得は 404 を返す", async () => {
-    const res = await request(makeApp()).get("/api/quest/current");
-    expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: "resource not found" });
-  });
+      const quest = await request(app).get("/api/quest/new");
+      expect(quest.status).toBe(200);
+      expect(quest.body.description_en).toBe(
+        "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+      );
 
-  it("AI 呼び出しが失敗した採点は 502 を返す", async () => {
-    const app = makeApp({ llmError: new Error("llm down") });
-    await request(app).get("/api/quest/new");
-    const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
-    expect(res.status).toBe(502);
-    expect(res.body).toEqual({ error: "external service unavailable" });
-  });
+      const score = await request(app).post("/api/quest/score").send({ translation: "はやい" });
+      expect(score.status).toBe(200);
+      expect(score.body.score).toBe(66);
 
-  it("ポケモン情報の取得に失敗した出題リクエストは 502 を返す", async () => {
-    const app = makeApp({ pokemonError: new Error("pokemon data unavailable") });
-    const res = await request(app).get("/api/quest/new");
-    expect(res.status).toBe(502);
-    expect(res.body).toEqual({ error: "external service unavailable" });
-  });
+      const skip = await request(app).post("/api/quest/skip-guess").send({});
+      expect(skip.status).toBe(200);
+      expect(skip.body).toEqual({ ball_type: "poke" });
 
-  it("ポケモン情報の取得に失敗した図鑑詳細リクエストは 502 を返す", async () => {
-    const app = makeApp({
-      pokemonError: new Error("pokemon data unavailable"),
-      seededUserPokemon: [
-        {
-          pokemon_id: 1,
-          status: "seen",
-          total_captures: 0,
-          total_encounters: 1,
-          last_captured_at: null,
-          last_encountered_at: new Date(),
-          best_score: 0,
-        },
-      ],
+      const capture = await request(app).post("/api/quest/capture").send({});
+      expect(capture.status).toBe(200);
+      expect(capture.body.captured).toBe(true);
+      expect(capture.body.ball_type).toBe("poke");
+
+      const pokedex = await request(app).get("/api/pokedex");
+      expect(pokedex.status).toBe(200);
+      expect(pokedex.body.pokemon).toHaveLength(1);
+      expect(pokedex.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
+      expect(pokedex.body.captured_count).toBe(1);
     });
-    const res = await request(app).get("/api/pokedex/1");
-    expect(res.status).toBe(502);
-    expect(res.body).toEqual({ error: "external service unavailable" });
-  });
-
-  it("自分の利用上限に達すると 429 になり、個人の上限である旨とユーザー向けメッセージを返す", async () => {
-    const app = makeApp({ rateLimitKind: "user" });
-    const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
-    expect(res.status).toBe(429);
-    expect(res.body.error).toBe("user");
-    expect(res.body.message).toBeTruthy();
-  });
-
-  it("全体の利用上限に達すると 429 になり、全体の上限である旨を返し、メッセージはユーザー上限時と異なる", async () => {
-    const userRes = await request(makeApp({ rateLimitKind: "user" }))
-      .post("/api/quest/score")
-      .send({ translation: "訳" });
-    const globalRes = await request(makeApp({ rateLimitKind: "global" }))
-      .post("/api/quest/score")
-      .send({ translation: "訳" });
-    expect(globalRes.status).toBe(429);
-    expect(globalRes.body.error).toBe("global");
-    expect(globalRes.body.message).not.toBe(userRes.body.message);
-  });
-
-  it("想定外のエラーは 500 を返す", async () => {
-    const app = makeApp({ settingsError: new Error("boom") });
-    const res = await request(app).get("/api/quest/new");
-    expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "internal server error" });
-  });
-
-  it("残り試行回数が不足した状態でヒントを要求すると 500 を返す", async () => {
-    const app = makeApp();
-    await request(app).get("/api/quest/new");
-    await request(app).post("/api/quest/guess-name").send({ guess: "wrong1" });
-    await request(app).post("/api/quest/guess-name").send({ guess: "wrong2" });
-    const res = await request(app).post("/api/quest/hint").send({});
-    expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: "internal server error" });
-  });
-
-  it("セッションストアの書き込みに失敗した出題リクエストは 502 を返す", async () => {
-    const app = makeApp({ sessionStoreError: new Error("redis unavailable") });
-    const res = await request(app).get("/api/quest/new");
-    expect(res.status).toBe(502);
-    expect(res.body).toEqual({ error: "external service unavailable" });
   });
 });
 
-describe("入力バリデーションの 400 (公開入口経由)", () => {
-  it("訳文が無い採点リクエストは 400", async () => {
-    const res = await request(makeApp()).post("/api/quest/score").send({});
-    expect(res.status).toBe(400);
-  });
+describe("[出題] クエストの出題", () => {
+  describe("異常系", () => {
+    it("ポケモン情報の取得が失敗したとき、出題すると、502 になり、外部サービスが利用できない旨が返る", async () => {
+      const app = makeApp({ pokemonError: new Error("pokemon data unavailable") });
+      const res = await request(app).get("/api/quest/new");
+      expect(res.status).toBe(502);
+      expect(res.body).toEqual({ error: "external service unavailable" });
+    });
 
-  it("名前当ての回答が無いリクエストは 400", async () => {
-    const res = await request(makeApp()).post("/api/quest/guess-name").send({});
-    expect(res.status).toBe(400);
-  });
+    it("クエストセッションの保存が失敗したとき、出題すると、502 になり、外部サービスが利用できない旨が返る", async () => {
+      const app = makeApp({ sessionStoreError: new Error("redis unavailable") });
+      const res = await request(app).get("/api/quest/new");
+      expect(res.status).toBe(502);
+      expect(res.body).toEqual({ error: "external service unavailable" });
+    });
 
-  it("数値でない図鑑 ID は 400", async () => {
-    const res = await request(makeApp()).get("/api/pokedex/abc");
-    expect(res.status).toBe(400);
-  });
-
-  it("配列でない除外設定は 400", async () => {
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: "1" });
-    expect(res.status).toBe(400);
-  });
-
-  it.each([0, 101])("供給リストに無い除外 ID %s は 400", async (id) => {
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [id] });
-    expect(res.status).toBe(400);
-  });
-
-  it("件数上限を超える除外設定は 400", async () => {
-    const ids = Array.from({ length: 31 }, (_, i) => i + 1);
-    const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: ids });
-    expect(res.status).toBe(400);
-  });
-
-  it("空の世代設定は 400 (最低1世代必須)", async () => {
-    const res = await request(makeApp()).put("/api/settings/generations").send({ generations: [] });
-    expect(res.status).toBe(400);
-  });
-
-  it("未知の世代番号を含む世代設定は 400", async () => {
-    const res = await request(makeApp()).put("/api/settings/generations").send({ generations: [99] });
-    expect(res.status).toBe(400);
+    it("ユーザー設定の取得が想定外のエラーで失敗したとき、出題すると、500 になり、サーバー内部のエラーである旨が返る", async () => {
+      const app = makeApp({ settingsError: new Error("boom") });
+      const res = await request(app).get("/api/quest/new");
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: "internal server error" });
+    });
   });
 });
 
-describe("正常系フロー (公開入口経由)", () => {
-  it("出題→採点→スキップ→捕獲が通り、捕獲結果が図鑑に保存される", async () => {
-    const app = makeApp();
+describe("[出題] 場所の候補提示", () => {
+  describe("正常系", () => {
+    it("候補を取得すると、設定された提示件数と同じ数の場所が返る", async () => {
+      const res = await request(makeApp()).get("/api/quest/locations");
+      expect(res.status).toBe(200);
+      expect(res.body.locations).toHaveLength(DEFAULT_QUEST_TUNING.locationChoiceCount);
+    });
 
-    const quest = await request(app).get("/api/quest/new");
-    expect(quest.status).toBe(200);
-    expect(quest.body.description_en).toBe(
-      "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    it("候補を取得すると、候補の先頭の場所に ID・名前・説明・タイプが含まれる", async () => {
+      const res = await request(makeApp()).get("/api/quest/locations");
+      expect(res.status).toBe(200);
+      expect(res.body.locations[0]).toMatchObject({
+        id: expect.any(String),
+        name: expect.any(String),
+        description: expect.any(String),
+        types: expect.any(Array),
+      });
+    });
+  });
+});
+
+describe("[クエスト] 翻訳の採点", () => {
+  describe("異常系", () => {
+    it("クエストセッションが無いとき、採点すると、404 になり、対象が見つからない旨が返る", async () => {
+      const res = await request(makeApp()).post("/api/quest/score").send({ translation: "訳" });
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: "resource not found" });
+    });
+
+    it("出題後に AI の呼び出しが失敗したとき、採点すると、502 になり、外部サービスが利用できない旨が返る", async () => {
+      const app = makeApp({ llmError: new Error("llm down") });
+      await request(app).get("/api/quest/new");
+      const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+      expect(res.status).toBe(502);
+      expect(res.body).toEqual({ error: "external service unavailable" });
+    });
+
+    it("訳文が無いとき、採点すると、400 になり、訳文が必須である旨が返る", async () => {
+      const res = await request(makeApp()).post("/api/quest/score").send({});
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "translation is required" });
+    });
+  });
+});
+
+describe("[レート制限・利用回数] 採点の利用上限", () => {
+  describe("異常系", () => {
+    describe("個人の利用上限に達しているとき", () => {
+      it("採点すると、429 になり、個人の上限に達した旨が返る", async () => {
+        const app = makeApp({ rateLimitKind: "user" });
+        const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+        expect(res.status).toBe(429);
+        expect(res.body.error).toBe("user");
+      });
+
+      it("採点すると、429 の応答に、「そろそろ　研究に　戻るぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる", async () => {
+        const app = makeApp({ rateLimitKind: "user" });
+        const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+        expect(res.body.message).toBe("そろそろ　研究に　戻るぞ。また　明日　来てくれ");
+      });
+    });
+
+    describe("全体の利用上限に達しているとき", () => {
+      it("採点すると、429 になり、全体の上限に達した旨が返る", async () => {
+        const app = makeApp({ rateLimitKind: "global" });
+        const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+        expect(res.status).toBe(429);
+        expect(res.body.error).toBe("global");
+      });
+
+      it("採点すると、429 の応答に、「今日は　たくさんの　トレーナーが　来ているぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる", async () => {
+        const app = makeApp({ rateLimitKind: "global" });
+        const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+        expect(res.body.message).toBe("今日は　たくさんの　トレーナーが　来ているぞ。また　明日　来てくれ");
+      });
+    });
+  });
+});
+
+describe("[レート制限・利用回数] AI 利用回数の取得", () => {
+  describe("正常系", () => {
+    it("取得すると、今日の利用回数が返る", async () => {
+      const res = await request(makeApp()).get("/api/usage");
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(3);
+    });
+
+    it("取得すると、今日の利用上限が返る", async () => {
+      const res = await request(makeApp()).get("/api/usage");
+      expect(res.status).toBe(200);
+      expect(res.body.limit).toBe(30);
+    });
+  });
+});
+
+describe("[リロード再開] 進行中のクエストの取得", () => {
+  describe("正常系", () => {
+    it("採点を終えた後に取得すると、名前当ての段階であることが返る", async () => {
+      const app = makeApp();
+      await request(app).get("/api/quest/new");
+      await request(app).post("/api/quest/score").send({ translation: "はやい" });
+
+      const res = await request(app).get("/api/quest/current");
+      expect(res.status).toBe(200);
+      expect(res.body.phase).toBe("guessing");
+    });
+
+    it("採点を終えた後に取得すると、採点で送った訳文が返る", async () => {
+      const app = makeApp();
+      await request(app).get("/api/quest/new");
+      await request(app).post("/api/quest/score").send({ translation: "はやい" });
+
+      const res = await request(app).get("/api/quest/current");
+      expect(res.status).toBe(200);
+      expect(res.body.user_translation).toBe("はやい");
+    });
+  });
+
+  describe("異常系", () => {
+    it("クエストセッションが無いとき、取得すると、404 になり、対象が見つからない旨が返る", async () => {
+      const res = await request(makeApp()).get("/api/quest/current");
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: "resource not found" });
+    });
+  });
+});
+
+describe("[名前当て] 名前当ての回答", () => {
+  describe("異常系", () => {
+    it("回答が無いとき、回答を送ると、400 になり、回答が必須である旨が返る", async () => {
+      const res = await request(makeApp()).post("/api/quest/guess-name").send({});
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "guess is required" });
+    });
+  });
+});
+
+describe("[名前当て] 名前当てのヒント", () => {
+  describe("正常系", () => {
+    it("出題直後にヒントを要求すると、出題ポケモンのタイプ (くさ・どく) が返る", async () => {
+      const app = makeApp();
+      await request(app).get("/api/quest/new");
+      const res = await request(app).post("/api/quest/hint").send({});
+      expect(res.status).toBe(200);
+      expect(res.body.types).toEqual(["grass", "poison"]);
+    });
+
+    it("出題直後にヒントを要求すると、残り挑戦回数は 2 回になる", async () => {
+      const app = makeApp();
+      await request(app).get("/api/quest/new");
+      const res = await request(app).post("/api/quest/hint").send({});
+      expect(res.status).toBe(200);
+      expect(res.body.attempts_remaining).toBe(2);
+    });
+  });
+
+  describe("異常系", () => {
+    it("名前当てを 2 回間違えて残り挑戦回数が 1 回のとき、ヒントを要求すると、500 になり、サーバー内部のエラーである旨が返る", async () => {
+      const app = makeApp();
+      await request(app).get("/api/quest/new");
+      await request(app).post("/api/quest/guess-name").send({ guess: "wrong1" });
+      await request(app).post("/api/quest/guess-name").send({ guess: "wrong2" });
+      const res = await request(app).post("/api/quest/hint").send({});
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: "internal server error" });
+    });
+  });
+});
+
+describe("[図鑑] 図鑑詳細の取得", () => {
+  describe("異常系", () => {
+    it("図鑑番号が数値でないとき、詳細を取得すると、400 になり、図鑑番号が不正である旨が返る", async () => {
+      const res = await request(makeApp()).get("/api/pokedex/abc");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "invalid pokemon id" });
+    });
+
+    it("図鑑に記録済みのポケモンについてポケモン情報の取得が失敗したとき、詳細を取得すると、502 になり、外部サービスが利用できない旨が返る", async () => {
+      const app = makeApp({
+        pokemonError: new Error("pokemon data unavailable"),
+        seededUserPokemon: [
+          {
+            pokemon_id: 1,
+            status: "seen",
+            total_captures: 0,
+            total_encounters: 1,
+            last_captured_at: null,
+            last_encountered_at: new Date(),
+            best_score: 0,
+          },
+        ],
+      });
+      const res = await request(app).get("/api/pokedex/1");
+      expect(res.status).toBe(502);
+      expect(res.body).toEqual({ error: "external service unavailable" });
+    });
+  });
+});
+
+describe("[設定] 除外ポケモンの更新", () => {
+  describe("正常系", () => {
+    it("重複や順序を含む除外設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
+      const app = makeApp();
+      const put = await request(app).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [7, 3, 3] });
+      expect(put.status).toBe(200);
+
+      // 重複排除・昇順に正規化されて保存される。世代は未設定なので全世代が返る
+      const got = await request(app).get("/api/settings");
+      expect(got.status).toBe(200);
+      expect(got.body).toEqual({ excluded_pokemon_ids: [3, 7], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] });
+    });
+  });
+
+  describe("異常系", () => {
+    it("除外ポケモンが配列でないとき、更新すると、400 になり、配列でなければならない旨が返る", async () => {
+      const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: "1" });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "excluded_pokemon_ids must be an array" });
+    });
+
+    it.each([
+      ["最小値の 1 つ手前の", 0],
+      ["最大値の 1 つ先の", 101],
+    ])(
+      "出題可能な図鑑番号の%s番号を除外ポケモンに指定したとき、更新すると、400 になり、その番号が図鑑に無い旨が返る",
+      async (_position, id) => {
+        const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [id] });
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: `pokemon id not in pokedex: ${id}` });
+      },
     );
 
-    const score = await request(app).post("/api/quest/score").send({ translation: "はやい" });
-    expect(score.status).toBe(200);
-    expect(score.body.score).toBe(66);
-
-    const skip = await request(app).post("/api/quest/skip-guess").send({});
-    expect(skip.status).toBe(200);
-    expect(skip.body).toEqual({ ball_type: "poke" });
-
-    const capture = await request(app).post("/api/quest/capture").send({});
-    expect(capture.status).toBe(200);
-    expect(capture.body.captured).toBe(true);
-    expect(capture.body.ball_type).toBe("poke");
-
-    // 操作の結果まで確かめる: 捕獲したポケモンが公開 API 経由で図鑑に現れる
-    const pokedex = await request(app).get("/api/pokedex");
-    expect(pokedex.status).toBe(200);
-    expect(pokedex.body.pokemon).toHaveLength(1);
-    expect(pokedex.body.pokemon[0]).toMatchObject({ pokemon_id: 1, status: "captured" });
-    expect(pokedex.body.captured_count).toBe(1);
-  });
-
-  it("採点後に現在のクエストを取得すると、名前当ての段階として得点・訳文を含む状態が返る", async () => {
-    const app = makeApp();
-    await request(app).get("/api/quest/new");
-    await request(app).post("/api/quest/score").send({ translation: "はやい" });
-
-    const res = await request(app).get("/api/quest/current");
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ phase: "guessing", user_translation: "はやい" });
-  });
-
-  it("出題後にヒントを要求すると、出題ポケモンのタイプと消費後の残り試行回数が返る", async () => {
-    const app = makeApp();
-    await request(app).get("/api/quest/new");
-    const res = await request(app).post("/api/quest/hint").send({});
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ types: ["grass", "poison"], attempts_remaining: 2 });
-  });
-
-  it("重複や順序を含む除外設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
-    const app = makeApp();
-    const put = await request(app).put("/api/settings/excluded-pokemon").send({ pokemon_ids: [7, 3, 3] });
-    expect(put.status).toBe(200);
-
-    // 重複排除・昇順に正規化されて保存される。世代は未設定なので全世代が返る
-    const got = await request(app).get("/api/settings");
-    expect(got.status).toBe(200);
-    expect(got.body).toEqual({ excluded_pokemon_ids: [3, 7], enabled_generations: [1, 2, 3, 4, 5, 6, 7, 8] });
-  });
-
-  it("重複や順序を含む世代設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
-    const app = makeApp();
-    const put = await request(app).put("/api/settings/generations").send({ generations: [3, 1, 1] });
-    expect(put.status).toBe(200);
-
-    // 重複排除・昇順に正規化され、除外は未設定なので空で返る
-    const got = await request(app).get("/api/settings");
-    expect(got.status).toBe(200);
-    expect(got.body).toEqual({ excluded_pokemon_ids: [], enabled_generations: [1, 3] });
-  });
-
-  it("認証済みユーザーが利用状況を取得すると、利用回数と上限が返る", async () => {
-    const res = await request(makeApp()).get("/api/usage");
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ count: 3, limit: 30 });
-  });
-
-  it("チュートリアル未完了のとき、完了状態を取得すると false が返る", async () => {
-    const res = await request(makeApp()).get("/api/tutorial-status");
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ tutorial_completed: false });
-  });
-
-  it("完了フラグを立てた後に完了状態を取得すると、true が返る", async () => {
-    const app = makeApp();
-    const complete = await request(app).put("/api/tutorial-status/complete");
-    expect(complete.status).toBe(200);
-
-    const got = await request(app).get("/api/tutorial-status");
-    expect(got.body).toEqual({ tutorial_completed: true });
-  });
-
-  it("場所選択の候補として、決められた数の場所が ID・名前・説明・タイプ付きで返る", async () => {
-    const res = await request(makeApp()).get("/api/quest/locations");
-    expect(res.status).toBe(200);
-    expect(res.body.locations).toHaveLength(DEFAULT_QUEST_TUNING.locationChoiceCount);
-    expect(res.body.locations[0]).toMatchObject({
-      id: expect.any(String),
-      name: expect.any(String),
-      description: expect.any(String),
-      types: expect.any(Array),
+    it("除外ポケモンの数が上限を 1 つ超えるとき、更新すると、400 になり、上限を超えている旨が返る", async () => {
+      const ids = Array.from({ length: 31 }, (_, i) => i + 1);
+      const res = await request(makeApp()).put("/api/settings/excluded-pokemon").send({ pokemon_ids: ids });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "excluded_pokemon_ids exceeds limit (max 30)" });
     });
   });
 });
 
-describe("チュートリアル用クエスト (公開入口経由)", () => {
-  it("出題はピカチュウ固定で、決まった英文が返る", async () => {
-    const res = await request(makeApp()).get("/api/tutorial/quest/new");
-    expect(res.status).toBe(200);
-    expect(res.body.pokemon_id).toBe(25);
-    expect(res.body.description_en).toBe("It is an Electric-type Mouse Pokémon.");
+describe("[設定] 出題世代の更新", () => {
+  describe("正常系", () => {
+    it("重複や順序を含む世代設定を保存すると、取得時は重複を除いた昇順の内容が返る", async () => {
+      const app = makeApp();
+      const put = await request(app).put("/api/settings/generations").send({ generations: [3, 1, 1] });
+      expect(put.status).toBe(200);
+
+      // 重複排除・昇順に正規化され、除外は未設定なので空で返る
+      const got = await request(app).get("/api/settings");
+      expect(got.status).toBe(200);
+      expect(got.body).toEqual({ excluded_pokemon_ids: [], enabled_generations: [1, 3] });
+    });
   });
 
-  it("採点は最終評価点の上限 (99) になる", async () => {
-    const app = makeApp();
-    await request(app).get("/api/tutorial/quest/new");
-    const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
-    expect(res.status).toBe(200);
-    expect(res.body.score).toBe(99);
+  describe("異常系", () => {
+    it("世代を 1 つも選ばないとき、更新すると、400 になり、1 つ以上の世代の選択が必要な旨が返る", async () => {
+      const res = await request(makeApp()).put("/api/settings/generations").send({ generations: [] });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "at least one generation must be selected" });
+    });
+
+    it("第 1〜8 世代に無い世代番号を含むとき、更新すると、400 になり、存在しない世代である旨が返る", async () => {
+      const res = await request(makeApp()).put("/api/settings/generations").send({ generations: [99] });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "unknown generation: 99 (must be one of 1,2,3,4,5,6,7,8)" });
+    });
+  });
+});
+
+describe("[チュートリアル] チュートリアル完了状態の取得と記録", () => {
+  describe("正常系", () => {
+    it("チュートリアルが未完了のとき、完了状態を取得すると、未完了として返る", async () => {
+      const res = await request(makeApp()).get("/api/tutorial-status");
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ tutorial_completed: false });
+    });
+
+    it("チュートリアルを完了にした後に、完了状態を取得すると、完了済みとして返る", async () => {
+      const app = makeApp();
+      const complete = await request(app).put("/api/tutorial-status/complete");
+      expect(complete.status).toBe(200);
+
+      const got = await request(app).get("/api/tutorial-status");
+      expect(got.body).toEqual({ tutorial_completed: true });
+    });
+  });
+});
+
+describe("[チュートリアル] 固定シナリオのクエスト", () => {
+  describe("出題", () => {
+    describe("正常系", () => {
+      it("出題すると、出題ポケモンは図鑑番号 25 のピカチュウになる", async () => {
+        const res = await request(makeApp()).get("/api/tutorial/quest/new");
+        expect(res.status).toBe(200);
+        expect(res.body.pokemon_id).toBe(25);
+      });
+
+      it("出題すると、英文は「It is an Electric-type Mouse Pokémon.」になる", async () => {
+        const res = await request(makeApp()).get("/api/tutorial/quest/new");
+        expect(res.status).toBe(200);
+        expect(res.body.description_en).toBe("It is an Electric-type Mouse Pokémon.");
+      });
+    });
   });
 
-  it("英語名で正解すると、ハイパーボールが手に入る", async () => {
-    const app = makeApp();
-    await request(app).get("/api/tutorial/quest/new");
-    const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "pikachu" });
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ correct: true, ball_type: "ultra" });
+  describe("採点", () => {
+    describe("正常系", () => {
+      it("どのような訳文でも、採点すると、最終評価点は 99 になる", async () => {
+        const app = makeApp();
+        await request(app).get("/api/tutorial/quest/new");
+        const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
+        expect(res.status).toBe(200);
+        expect(res.body.score).toBe(99);
+      });
+    });
+
+    describe("異常系", () => {
+      it("個人の利用上限に達していても、採点すると、最終評価点は 99 になる", async () => {
+        const app = makeApp({ rateLimitKind: "user" });
+        await request(app).get("/api/tutorial/quest/new");
+        const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
+        expect(res.status).toBe(200);
+        expect(res.body.score).toBe(99);
+      });
+    });
   });
 
-  it("日本語名で正解すると、スーパーボールが手に入る", async () => {
-    const app = makeApp();
-    await request(app).get("/api/tutorial/quest/new");
-    const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ correct: true, ball_type: "great" });
+  describe("名前当て", () => {
+    describe("正常系", () => {
+      it("英語名「pikachu」で答えて正解すると、ハイパーボールが手に入る", async () => {
+        const app = makeApp();
+        await request(app).get("/api/tutorial/quest/new");
+        const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "pikachu" });
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ correct: true, ball_type: "ultra" });
+      });
+
+      it("日本語名「ピカチュウ」で答えて正解すると、スーパーボールが手に入る", async () => {
+        const app = makeApp();
+        await request(app).get("/api/tutorial/quest/new");
+        const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ correct: true, ball_type: "great" });
+      });
+    });
   });
 
-  it("採点して名前を当てた後の捕獲は必ず成功する", async () => {
-    const app = makeApp();
-    await request(app).get("/api/tutorial/quest/new");
-    await request(app).post("/api/tutorial/quest/score").send({ translation: "電気タイプのねずみポケモン" });
-    await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
-    const res = await request(app).post("/api/tutorial/quest/capture").send({});
-    expect(res.status).toBe(200);
-    expect(res.body.captured).toBe(true);
-  });
+  describe("捕獲", () => {
+    async function proceedToCapture(app: ReturnType<typeof makeApp>) {
+      await request(app).get("/api/tutorial/quest/new");
+      await request(app).post("/api/tutorial/quest/score").send({ translation: "電気タイプのねずみポケモン" });
+      await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
+      const capture = await request(app).post("/api/tutorial/quest/capture").send({});
+      return capture;
+    }
 
-  it("捕獲まで進めても、ユーザーの図鑑には記録されない", async () => {
-    const app = makeApp();
-    await request(app).get("/api/tutorial/quest/new");
-    await request(app).post("/api/tutorial/quest/score").send({ translation: "電気タイプのねずみポケモン" });
-    await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
-    await request(app).post("/api/tutorial/quest/capture").send({});
+    describe("正常系", () => {
+      it("採点と名前当てを終えた後に捕獲すると、必ず捕獲に成功する", async () => {
+        const res = await proceedToCapture(makeApp());
+        expect(res.status).toBe(200);
+        expect(res.body.captured).toBe(true);
+      });
 
-    const pokedex = await request(app).get("/api/pokedex");
-    expect(pokedex.status).toBe(200);
-    expect(pokedex.body.pokemon).toHaveLength(0);
-    expect(pokedex.body.captured_count).toBe(0);
-  });
+      it("捕獲まで進めた後に図鑑を取得すると、ポケモンの一覧は空になる", async () => {
+        const app = makeApp();
+        await proceedToCapture(app);
 
-  it("採点は利用上限に達していても実行できる", async () => {
-    const app = makeApp({ rateLimitKind: "user" });
-    await request(app).get("/api/tutorial/quest/new");
-    const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
-    expect(res.status).toBe(200);
-    expect(res.body.score).toBe(99);
+        const pokedex = await request(app).get("/api/pokedex");
+        expect(pokedex.status).toBe(200);
+        expect(pokedex.body.pokemon).toHaveLength(0);
+      });
+
+      it("捕獲まで進めた後に図鑑を取得すると、捕獲数は 0 になる", async () => {
+        const app = makeApp();
+        await proceedToCapture(app);
+
+        const pokedex = await request(app).get("/api/pokedex");
+        expect(pokedex.status).toBe(200);
+        expect(pokedex.body.captured_count).toBe(0);
+      });
+    });
   });
 });

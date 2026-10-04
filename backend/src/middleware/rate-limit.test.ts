@@ -4,9 +4,6 @@ import { rateLimit } from "./rate-limit.js";
 import { RateLimitError } from "../domain/errors.js";
 import type { DailyUsage, RateLimitRepository } from "../domain/ports.js";
 
-// HTTP 境界での仕様: 上限以内は通し、超えたら 429 を返す。
-// Repo 自体の挙動はリポジトリ層のコントラクトテストでカバーする前提で、ここではミドルウェアの
-// HTTP マッピングだけ検証する。Repo は最小スタブで差し替えて副作用を排除する。
 function makeReqRes() {
   const status = vi.fn().mockReturnThis();
   const json = vi.fn().mockReturnThis();
@@ -16,7 +13,6 @@ function makeReqRes() {
   return { req, res, next, status, json };
 }
 
-/** 渡した checkAndIncrement の挙動だけを差し替える最小スタブ。 */
 function stubRepo(checkAndIncrement: RateLimitRepository["checkAndIncrement"]): RateLimitRepository {
   return {
     checkAndIncrement,
@@ -24,46 +20,52 @@ function stubRepo(checkAndIncrement: RateLimitRepository["checkAndIncrement"]): 
   };
 }
 
-describe("レート制限", () => {
-  it("利用回数が上限内なら、リクエストは通過する", async () => {
-    const mw = rateLimit(stubRepo(async () => ({ count: 1, limit: 3 })));
-    const { req, res, next, status } = makeReqRes();
+describe("[レート制限・利用回数] 利用上限の判定", () => {
+  describe("正常系", () => {
+    it("利用回数が上限以内のとき、リクエストは通過する", async () => {
+      const mw = rateLimit(stubRepo(async () => ({ count: 1, limit: 3 })));
+      const { req, res, next, status } = makeReqRes();
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    expect(next).toHaveBeenCalledOnce();
-    expect(status).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledOnce();
+      expect(status).not.toHaveBeenCalled();
+    });
   });
 
-  it("自分の利用上限を超えると 429 になり、個人の上限である旨が返る", async () => {
-    const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("user"); }));
-    const { req, res, next, status, json } = makeReqRes();
+  describe("異常系", () => {
+    describe("個人の利用上限を超えたとき", () => {
+      it("リクエストは 429 で拒否され、個人の上限に達した旨が返る", async () => {
+        const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("user"); }));
+        const { req, res, next, status, json } = makeReqRes();
 
-    await mw(req, res, next);
+        await mw(req, res, next);
 
-    expect(status).toHaveBeenLastCalledWith(429);
-    expect(json).toHaveBeenLastCalledWith(expect.objectContaining({ error: "user" }));
-    expect(next).not.toHaveBeenCalled();
-  });
+        expect(status).toHaveBeenLastCalledWith(429);
+        expect(json).toHaveBeenLastCalledWith(expect.objectContaining({ error: "user" }));
+        expect(next).not.toHaveBeenCalled();
+      });
 
-  it("全体の利用上限を超えると 429 になり、全体の上限である旨が返る", async () => {
-    const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("global"); }));
-    const { req, res, next, status, json } = makeReqRes();
+      it("429 の応答に、「そろそろ　研究に　戻るぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる", async () => {
+        const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("user"); }));
+        const { req, res, next, json } = makeReqRes();
 
-    await mw(req, res, next);
+        await mw(req, res, next);
 
-    expect(status).toHaveBeenLastCalledWith(429);
-    expect(json).toHaveBeenLastCalledWith(expect.objectContaining({ error: "global" }));
-  });
+        expect(json).toHaveBeenLastCalledWith(
+          expect.objectContaining({ message: "そろそろ　研究に　戻るぞ。また　明日　来てくれ" }),
+        );
+      });
+    });
 
-  it("429 レスポンスにはユーザー向けメッセージが含まれる", async () => {
-    const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("user"); }));
-    const { req, res, next, json } = makeReqRes();
+    it("全体の利用上限を超えたとき、リクエストは 429 で拒否され、全体の上限に達した旨が返る", async () => {
+      const mw = rateLimit(stubRepo(async () => { throw new RateLimitError("global"); }));
+      const { req, res, next, status, json } = makeReqRes();
 
-    await mw(req, res, next);
+      await mw(req, res, next);
 
-    const body = json.mock.calls[0][0] as { message: string };
-    expect(body.message).toBeTruthy();
-    expect(body.message.length).toBeGreaterThan(5);
+      expect(status).toHaveBeenLastCalledWith(429);
+      expect(json).toHaveBeenLastCalledWith(expect.objectContaining({ error: "global" }));
+    });
   });
 });
