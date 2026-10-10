@@ -15,3 +15,7 @@ prod リリースに向けてバージョン管理が必要になった。これ
 ## Amendment: 2026-07-10 GitHub Flow 移行と prod 昇格方式の変更
 
 `develop` ブランチを廃止し GitHub Flow (`main` 1 本) へ移行した (`rules/flow.md`)。環境反映は「`main` マージ → dev、`v*` タグ push → prod」に分かれ、旧手順にあった `main → develop` へのマージバックは不要になった。prod デプロイはタグ時にテストを走らせず、同一コミットを prod 用に再ビルドしてデプロイする（dev と prod は別プロジェクト・別レジストリのため。詳細は ADR-025）。
+
+## Amendment: 2026-10-10 タグを CI が打つ方式への変更
+
+prod へのデプロイは、`v*` タグの push ではなく、「Deploy to Prod」の手動実行で起動する。実行時に選んだバージョンの種類 (patch / minor / major) から、CI が最新の `v*` タグを基に次のタグを打つ。共通のデプロイ戦略 (`merge-dev-tag-prod`) に合わせるため。
