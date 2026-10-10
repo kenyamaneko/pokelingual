@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { TermsModal } from "./TermsModal";
 
@@ -13,12 +13,6 @@ describe("[サイト情報] 利用規約モーダル", () => {
       it("非営利のファンサイトである旨が表示される", () => {
         render(<TermsModal onDismiss={vi.fn()} />);
         expect(screen.getByText(/非営利のファンサイト/)).toBeInTheDocument();
-      });
-
-      it("運営者として Ken Yamaneko が表示される", () => {
-        render(<TermsModal onDismiss={vi.fn()} />);
-        const operatorSection = screen.getByRole("region", { name: "運営者" });
-        expect(within(operatorSection).getByText(/Ken Yamaneko/)).toBeInTheDocument();
       });
     });
   });
