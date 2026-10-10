@@ -47,6 +47,11 @@ export function TermsModal({ onDismiss }: Props) {
           </section>
 
           <section>
+            <h3 className="font-bold text-gray-800 mb-2">運営者</h3>
+            <p>Ken Yamaneko</p>
+          </section>
+
+          <section>
             <h3 className="font-bold text-gray-800 mb-2">著作権・商標について</h3>
             <p>
               「ポケットモンスター」「ポケモン」およびポケモンの名称・画像・キャラクター等に関する著作権・商標権その他の権利は、各権利者に帰属します。本サイトはこれらを英語学習の目的で利用する、非公式のファンによる二次的な創作物です。権利者からのお申し出があった場合は、速やかに対応します。
