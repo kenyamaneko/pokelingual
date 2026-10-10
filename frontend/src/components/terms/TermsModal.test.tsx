@@ -17,7 +17,7 @@ describe("[サイト情報] 利用規約モーダル", () => {
 
       it("運営者として Ken Yamaneko が表示される", () => {
         render(<TermsModal onDismiss={vi.fn()} />);
-        const operatorSection = screen.getByRole("heading", { name: "運営者" }).parentElement!;
+        const operatorSection = screen.getByRole("region", { name: "運営者" });
         expect(within(operatorSection).getByText(/Ken Yamaneko/)).toBeInTheDocument();
       });
     });
