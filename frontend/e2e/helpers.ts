@@ -126,22 +126,14 @@ async function setTutorialStatusOfLoggedInUser(
   await page.reload();
 }
 
-/**
- * 検証済みのテスト用ユーザーでログインし、チュートリアルを指定の状態にしてホーム画面を読み直す。dev 専用。
- * @param state 用意する状態。完了済みにするなら "complete"、未完了に戻すなら "reset"。
- */
-export async function loginAsTestUserWithTutorialStatus(page: Page, state: "complete" | "reset") {
-  const tutorialStatusResponse = await loginAsTestUser(page);
-  await setTutorialStatusOfLoggedInUser(page, tutorialStatusResponse, state);
-}
-
 async function prepareLocalUserWithIncompleteTutorial(page: Page) {
   await resetTutorialStatus(page);
   await page.goto("/");
 }
 
 async function prepareDevUserWithIncompleteTutorial(page: Page) {
-  await loginAsTestUserWithTutorialStatus(page, "reset");
+  const tutorialStatusResponse = await loginAsTestUser(page);
+  await setTutorialStatusOfLoggedInUser(page, tutorialStatusResponse, "reset");
 }
 
 async function prepareLocalUserWithCompletedTutorialAndNoExcludedPokemon(page: Page) {
