@@ -10,9 +10,12 @@ function stubAuthClient(verifyIdToken: () => Promise<Partial<DecodedIdToken>>): 
 
 function makeApp(authClient: Auth) {
   const app = express();
-  app.get("/api/quest/score", firebaseAuth(authClient), (_req, res) => {
+  const router = express.Router();
+  router.use(firebaseAuth(authClient));
+  router.get("/quest/score", (_req, res) => {
     res.status(200).json({ reached: true, userId: res.locals.userId });
   });
+  app.use("/api", router);
   return app;
 }
 
