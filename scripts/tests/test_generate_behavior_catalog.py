@@ -192,10 +192,33 @@ class Test運用__テスト観点カタログ__ステップの組み立て:
                     )
                     assert steps == (Step("前提のとき", ("操作A",), "結果A"), Step("", ("操作B",), "結果B"))
 
+                def test_parse_steps_returns_step_with_then_per_environment(self):
+                    steps = parse_steps(
+                        [("When", "操作A"), ("Then:ローカル", "ローカルの結果"), ("Then:dev環境", "dev環境の結果")], "場所"
+                    )
+                    assert steps == (Step("", ("操作A",), "", (("ローカル", "ローカルの結果"), ("dev環境", "dev環境の結果"))),)
+
+                def test_parse_steps_closes_environment_step_when_next_when_comes(self):
+                    steps = parse_steps(
+                        [
+                            ("When", "操作A"), ("Then:ローカル", "結果A1"), ("Then:dev環境", "結果A2"),
+                            ("When", "操作B"), ("Then", "結果B"),
+                        ],
+                        "場所",
+                    )
+                    assert steps == (
+                        Step("", ("操作A",), "", (("ローカル", "結果A1"), ("dev環境", "結果A2"))),
+                        Step("", ("操作B",), "結果B"),
+                    )
+
             class Test異常系:
                 @pytest.mark.parametrize(
                     ("pairs", "message"),
                     [
+                        pytest.param([("When", "操作"), ("Then:ローカル", "結果"), ("Then", "結果")], "混ざっています", id="環境ごとの Then のあとに Then が続いたとき、Then が混ざるエラーになる"),
+                        pytest.param([("When", "操作"), ("Then:ローカル", "結果"), ("Then:ローカル", "別の結果")], "2 つあります", id="同じ環境の Then が 2 つ続いたとき、環境の Then が重複するエラーになる"),
+                        pytest.param([("When", "操作"), ("Then:本番", "結果")], "いずれでもありません", id="環境が「本番」の Then のとき、環境のエラーになる"),
+                        pytest.param([("Then:ローカル", "結果")], "When の無い Then", id="When が無いまま環境ごとの Then が来たとき、When の無い Then のエラーになる"),
                         pytest.param([("Given", "前提のとき"), ("Then", "結果")], "When の無い Then", id="Given のあとに When が無く Then が来たとき、When の無い Then のエラーになる"),
                         pytest.param([("Given", "前提のとき"), ("When", "操作")], "Then の無いステップ", id="Then が無いまま終わったとき、Then の無いステップのエラーになる"),
                         pytest.param([("Given", "前提A"), ("Given", "前提B")], "Then の前に Given", id="Given が続いたとき、Then の前に Given が続くエラーになる"),
@@ -250,7 +273,54 @@ class Test運用__テスト観点カタログ__JUnit_XMLの読み取り:
                     assert cases[0].is_skipped is True
                     assert cases[0].steps == ()
 
+                def test_parse_junit_file_returns_scenario_case_with_environments_in_listed_order(self, tmp_path):
+                    pairs = [("種別", "シナリオテスト"), ("正常異常", "正常系"), ("環境", "dev環境"), ("環境", "ローカル")] + [
+                        ("Given", "ログインしているとき"),
+                        ("When", "ホーム画面で「探しに行く」を押す"),
+                        ("Then:dev環境", "出題の英文が表示される"),
+                        ("Then:ローカル", "英文「Hello.」が表示される"),
+                    ]
+                    path = write_junit_xml(tmp_path, build_case_xml("[シナリオ:商品を購入する:通常の動線]注文 > あ", pairs))
+                    case = parse_junit_file(path, FEATURES)[0]
+                    assert case.environments == ("ローカル", "dev環境")
+                    assert case.steps[0].then_by_environment == (("ローカル", "英文「Hello.」が表示される"), ("dev環境", "出題の英文が表示される"))
+
             class Test異常系:
+                @pytest.mark.parametrize(
+                    ("kind", "extra", "message"),
+                    [
+                        pytest.param("単体テスト", [("環境", "ローカル")], "シナリオテスト だけに付けられます", id="単体テストに環境のタグが付いているとき、環境のタグはシナリオテストだけのエラーになる"),
+                        pytest.param("シナリオテスト", [], "環境のタグが必要です", id="シナリオテストに環境のタグが無いとき、環境のタグが必要なエラーになる"),
+                        pytest.param("シナリオテスト", [("環境", "ローカル"), ("環境", "ローカル")], "重複しています", id="環境のタグが重複しているとき、環境のタグが重複するエラーになる"),
+                        pytest.param("シナリオテスト", [("環境", "本番")], "いずれでもありません", id="環境のタグが「本番」のとき、環境のエラーになる"),
+                    ],
+                )
+                def test_parse_junit_file_raises_for_invalid_environment_tag(self, tmp_path, kind, extra, message):
+                    pairs = [("種別", kind), ("正常異常", "正常系")] + extra + [("When", "操作"), ("Then", "結果")]
+                    path = write_junit_xml(tmp_path, build_case_xml("[シナリオ:商品を購入する:通常の動線]注文 > あ", pairs))
+                    with pytest.raises(CatalogError, match=message):
+                        parse_junit_file(path, FEATURES)
+
+                @pytest.mark.parametrize(
+                    ("environments", "thens", "message"),
+                    [
+                        pytest.param(["ローカル", "dev環境"], [("Then:ローカル", "結果A"), ("Then:dev環境", "結果A")], "同じ内容です", id="環境ごとの Then が同じ内容のとき、Then を 1 つにするエラーになる"),
+                        pytest.param(["ローカル", "dev環境"], [("Then:ローカル", "結果A")], "一致しません", id="環境のタグ 2 つに対して Then が 1 つのとき、環境の食い違いのエラーになる"),
+                        pytest.param(["ローカル"], [("Then:ローカル", "結果A")], "2 つ以上の環境", id="環境のタグが 1 つで環境ごとの Then のとき、2 つ以上の環境で書くエラーになる"),
+                    ],
+                )
+                def test_parse_junit_file_raises_for_invalid_then_per_environment(self, tmp_path, environments, thens, message):
+                    pairs = [("種別", "シナリオテスト"), ("正常異常", "正常系")] + [("環境", e) for e in environments] + [("When", "操作")] + thens
+                    path = write_junit_xml(tmp_path, build_case_xml("[シナリオ:商品を購入する:通常の動線]注文 > あ", pairs))
+                    with pytest.raises(CatalogError, match=message):
+                        parse_junit_file(path, FEATURES)
+
+                def test_parse_junit_file_raises_for_then_per_environment_in_non_scenario(self, tmp_path):
+                    pairs = [("種別", "単体テスト"), ("正常異常", "正常系"), ("When", "操作"), ("Then:ローカル", "結果A"), ("Then:dev環境", "結果B")]
+                    path = write_junit_xml(tmp_path, build_case_xml("[本体:認証]ログイン > あ", pairs))
+                    with pytest.raises(CatalogError, match="だけに書けます"):
+                        parse_junit_file(path, FEATURES)
+
                 def test_parse_junit_file_raises_for_case_without_properties(self, tmp_path):
                     path = write_junit_xml(tmp_path, build_case_xml("[本体:認証]ログイン > あ"))
                     with pytest.raises(CatalogError, match="種別"):
@@ -296,6 +366,14 @@ class Test運用__テスト観点カタログ__HTML形式の出力:
                     assert payload["cases"][0]["s"] == "ログイン"
                     assert payload["cases"][0]["steps"] == [{"G": "", "W": ["操作する"], "T": "結果になる"}]
                     assert payload["commit"] == "abc123"
+
+                def test_render_html_embeds_environments_and_then_per_environment(self):
+                    step = Step("", ("操作する",), "", (("ローカル", "結果A"), ("dev環境", "結果B")))
+                    case = CatalogCase("シナリオ", "商品を購入する", "通常の動線", "注文", "シナリオテスト", "正常系", (step,), False, ("ローカル", "dev環境"))
+                    html = render_html([case], None, ".dummy{}")
+                    payload = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>', html, re.S).group(1))
+                    assert payload["cases"][0]["e"] == ["ローカル", "dev環境"]
+                    assert payload["cases"][0]["steps"] == [{"G": "", "W": ["操作する"], "T": "", "E": [["ローカル", "結果A"], ["dev環境", "結果B"]]}]
 
                 def test_render_html_embeds_css(self):
                     html = render_html([build_case()], None, ".css-from-tailwind{color:red}")

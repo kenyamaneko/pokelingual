@@ -195,9 +195,9 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting --project ${{ vars.FIREBASE_PROJECT_ID }}
 
-  # 実 Firebase Auth・実 Gemini・実 Firestore を通す唯一の自動テストで、Gemini を消費するため、smoke-dev でデプロイ・環境・シークレットの設定が生きていることを確かめた後に実行する。
-  smoke-dev-real:
-    name: Smoke Test with Real Services (dev)
+  # 実 Firebase Auth・実 Gemini・実 Firestore を通す唯一のシナリオテストで、Gemini を消費するため、smoke-dev でデプロイ・環境・シークレットの設定が生きていることを確かめた後に実行する。
+  scenario-dev-real:
+    name: Scenario Tests with Real Services (dev)
     needs: [smoke-dev, deploy-frontend]
     runs-on: ubicloud-standard-2
     timeout-minutes: 15
@@ -221,7 +221,7 @@ jobs:
         working-directory: frontend
         run: npx playwright install chromium --with-deps
 
-      - name: Run smoke tests (cloud dev)
+      - name: Run scenario tests (cloud dev)
         working-directory: frontend
         env:
           E2E_MODE: dev
@@ -234,7 +234,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: smoke-dev-real-results
+          name: scenario-dev-real-results
           path: frontend/test-results/
           retention-days: 7
 

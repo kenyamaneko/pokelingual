@@ -15,7 +15,7 @@
     --fg: #1d2330; --muted: #566074; --faint: #8b93a5; --line: #dde1e8; --line-strong: #aab3c5;
     --accent: #1f5fbf; --accent-soft: #e3edfb;
     --ok: #17663f; --ok-soft: #e0f2e8; --err: #9a3412; --err-soft: #fde8d8;
-    --k0: #64748b; --k1: #2563eb; --k2: #7c3aed; --k3: #0d9488; --k4: #db2777; --k5: #ca8a04; --k6: #ea580c;
+    --k0: #64748b; --k1: #2563eb; --k2: #7c3aed; --k3: #0d9488; --k4: #db2777; --k5: #ca8a04;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -23,7 +23,7 @@
       --fg: #e6e9f0; --muted: #a2abbd; --faint: #78819a; --line: #2e3544; --line-strong: #5a6580;
       --accent: #7fb0ff; --accent-soft: #1f2f4d;
       --ok: #6fd3a0; --ok-soft: #173627; --err: #ffb27a; --err-soft: #46261a;
-      --k0: #94a3b8; --k1: #60a5fa; --k2: #a78bfa; --k3: #2dd4bf; --k4: #f472b6; --k5: #facc15; --k6: #fb923c;
+      --k0: #94a3b8; --k1: #60a5fa; --k2: #a78bfa; --k3: #2dd4bf; --k4: #f472b6; --k5: #facc15;
       color-scheme: dark;
     }
   }
@@ -32,7 +32,7 @@
     --fg: #e6e9f0; --muted: #a2abbd; --faint: #78819a; --line: #2e3544; --line-strong: #5a6580;
     --accent: #7fb0ff; --accent-soft: #1f2f4d;
     --ok: #6fd3a0; --ok-soft: #173627; --err: #ffb27a; --err-soft: #46261a;
-    --k0: #94a3b8; --k1: #60a5fa; --k2: #a78bfa; --k3: #2dd4bf; --k4: #f472b6; --k5: #facc15; --k6: #fb923c;
+    --k0: #94a3b8; --k1: #60a5fa; --k2: #a78bfa; --k3: #2dd4bf; --k4: #f472b6; --k5: #facc15;
     color-scheme: dark;
   }
   body { background: var(--bg); color: var(--fg); font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif; }
@@ -91,7 +91,7 @@
 (function () {
   var DATA = JSON.parse(document.getElementById('data').textContent);
   var CASES = DATA.cases;
-  var KINDS = ['単体テスト', '部品間結合テスト', 'インフラ結合テスト', 'サービス間結合テスト', 'E2Eテスト', 'シナリオテスト', 'スモークテスト'];
+  var KINDS = ['単体テスト', '部品間結合テスト', 'インフラ結合テスト', 'サービス間結合テスト', 'E2Eテスト', 'シナリオテスト'];
   var REGIONS = DATA.regions;
   var state = { kinds: new Set(), na: '', openAll: null };
 
@@ -117,8 +117,9 @@
       ? '<span class="inline-flex items-center rounded-full bg-err-soft px-2 py-0.5 text-[0.6875rem] font-bold text-err whitespace-nowrap">異常系</span>'
       : c.n === '正常系'
         ? '<span class="inline-flex items-center rounded-full bg-ok-soft px-2 py-0.5 text-[0.6875rem] font-medium text-ok whitespace-nowrap">正常系</span>' : '';
+    var environments = (c.e || []).map(function (e) { return '<span class="inline-flex items-center rounded-md border border-line bg-surface px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap">' + esc(e) + '</span>'; }).join('');
     var skip = c.x ? '<span class="inline-flex items-center rounded-full border border-dashed border-strong px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap">skip 中</span>' : '';
-    return kind + na + skip;
+    return kind + environments + na + skip;
   }
 
   function cellText(text) {
@@ -129,7 +130,7 @@
   function gOf(c) { return c.steps[0].G; }
   function wOf(c) { return c.steps[0].W.join('\u0001'); }
 
-  function canShareWhenCell(a, b) { return !isMultiStep(a) && !isMultiStep(b) && wOf(a) === wOf(b); }
+  function canShareWhenCell(a, b) { return !isBlockCase(a) && !isBlockCase(b) && wOf(a) === wOf(b); }
 
   function countMerges(rows) {
     var n = 0;
@@ -174,9 +175,11 @@
     return '<ol class="list-decimal space-y-1 pl-6 ' + markerSize + '">' + operations.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
   }
 
-  function isMultiStep(c) { return c.steps.length > 1; }
+  function rowsOfStep(st) { return st.E ? st.E.length : 1; }
 
-  function rowsOf(c) { return c.steps.length; }
+  function isBlockCase(c) { return c.steps.length > 1 || c.steps.some(function (st) { return st.E; }); }
+
+  function rowsOf(c) { return c.steps.reduce(function (n, st) { return n + rowsOfStep(st); }, 0); }
 
   function givenSpan(rows, start) {
     var n = 0, i = start;
@@ -184,15 +187,27 @@
     return n;
   }
 
+  function environmentThenHtml(environment, text) {
+    return '<span class="mr-2 inline-flex items-center rounded-md border border-line bg-surface px-1.5 py-0.5 align-middle text-[0.6875rem] font-medium text-muted whitespace-nowrap">' + esc(environment) + '</span>' + cellText(text);
+  }
+
   function stepRowsHtml(c, newG, span, rowClass, cell) {
-    var n = c.steps.length, html = '';
+    var total = rowsOf(c), numbered = c.steps.length > 1, html = '';
     c.steps.forEach(function (st, i) {
-      html += '<tr class="' + (i === 0 ? (newG ? 'border-t-2' : 'border-t') : 'border-t border-dashed') + ' border-strong ' + rowClass + '">';
-      if (i === 0 && newG) html += '<td rowspan="' + span + '" class="' + cell.replace('border-l border-strong', '') + ' font-medium">' + cellText(st.G) + '</td>';
-      html += '<td class="' + cell + '"><div class="flex items-start gap-2.5"><span class="mt-px inline-flex h-6 min-w-6 flex-none items-center justify-center rounded-full bg-accent-soft px-1.5 text-base font-bold text-accent">' + (i + 1) + '</span><div class="min-w-0 flex-1">' + whenHtml(st.W, true) + '</div></div></td>' +
-        '<td class="' + cell + ' font-medium">' + cellText(st.T) + '</td>';
-      if (i === 0) html += '<td rowspan="' + n + '" class="' + cell + '"><div class="flex flex-wrap gap-1.5">' + tagsHtml(c) + '</div></td>';
-      html += '</tr>';
+      var rows = rowsOfStep(st);
+      var whenCell = numbered
+        ? '<div class="flex items-start gap-2.5"><span class="mt-px inline-flex h-6 min-w-6 flex-none items-center justify-center rounded-full bg-accent-soft px-1.5 text-base font-bold text-accent">' + (i + 1) + '</span><div class="min-w-0 flex-1">' + whenHtml(st.W, true) + '</div></div>'
+        : whenHtml(st.W, false);
+      for (var r = 0; r < rows; r++) {
+        var isFirstRow = i === 0 && r === 0;
+        var border = r > 0 ? 'border-t border-dashed' : isFirstRow ? (newG ? 'border-t-2' : 'border-t') : 'border-t border-dashed';
+        html += '<tr class="' + border + ' border-strong ' + rowClass + '">';
+        if (isFirstRow && newG) html += '<td rowspan="' + span + '" class="' + cell.replace('border-l border-strong', '') + ' font-medium">' + cellText(st.G) + '</td>';
+        if (r === 0) html += '<td' + (rows > 1 ? ' rowspan="' + rows + '"' : '') + ' class="' + cell + '">' + whenCell + '</td>';
+        html += '<td class="' + cell + ' font-medium">' + (st.E ? environmentThenHtml(st.E[r][0], st.E[r][1]) : cellText(st.T)) + '</td>';
+        if (isFirstRow) html += '<td rowspan="' + total + '" class="' + cell + '"><div class="flex flex-wrap gap-1.5">' + tagsHtml(c) + '</div></td>';
+        html += '</tr>';
+      }
     });
     return html;
   }
@@ -209,7 +224,7 @@
       var newG = !prev || gOf(prev) !== gOf(c);
       if (newG) groupNo++;
       var bg = groupNo % 2 ? 'bg-sunken' : '';
-      if (isMultiStep(c)) { html += stepRowsHtml(c, newG, newG ? givenSpan(rows, i) : 0, bg, cell); return; }
+      if (isBlockCase(c)) { html += stepRowsHtml(c, newG, newG ? givenSpan(rows, i) : 0, bg, cell); return; }
       var newW = !prev || !canShareWhenCell(prev, c);
       var st = c.steps[0];
       html += '<tr class="' + (newG ? 'border-t-2' : 'border-t') + ' border-strong ' + bg + '">';
