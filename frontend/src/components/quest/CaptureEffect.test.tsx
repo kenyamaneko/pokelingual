@@ -34,7 +34,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const SHOW_EFFECT = "捕獲演出を表示する";
+const SHOW_EFFECT = "クエスト画面で、捕獲演出を表示する";
+const WAIT_FOR_SHAKE = "クエスト画面の捕獲演出で、ボールの揺れの再生が終わるまで待つ";
+const WAIT_FOR_EFFECT =
+  "クエスト画面の捕獲演出で、ボールの揺れと、捕獲の成否を示すエフェクトの再生が終わるまで待つ";
+const WAIT_FOR_WHITEOUT =
+  "クエスト画面の捕獲演出で、ボールの揺れ、捕獲の成否を示すエフェクト、白フェードの再生が終わるまで待つ";
 
 describe("[本体:捕獲]捕獲演出", () => {
   defineCase(
@@ -61,8 +66,7 @@ describe("[本体:捕獲]捕獲演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "捕獲の成否を示すエフェクトの再生が終わったとき",
-          When: [SHOW_EFFECT],
+          When: [SHOW_EFFECT, WAIT_FOR_EFFECT],
           Then: "白フェードが表示される",
         },
       ],
@@ -81,8 +85,7 @@ describe("[本体:捕獲]捕獲演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "白フェードの再生が終わったとき",
-          When: [SHOW_EFFECT],
+          When: [SHOW_EFFECT, WAIT_FOR_WHITEOUT],
           Then: "結果画面へ切り替える指示が 1 回出される",
         },
       ],
@@ -102,8 +105,8 @@ describe("[本体:捕獲]捕獲演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ボールの揺れの再生が終わった時点で、捕獲に成功したとき",
-          When: [SHOW_EFFECT],
+          Given: "捕獲に成功しているとき",
+          When: [SHOW_EFFECT, WAIT_FOR_SHAKE],
           Then: "花火風のエフェクトが表示される",
         },
       ],
@@ -121,8 +124,8 @@ describe("[本体:捕獲]捕獲演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ボールの揺れの再生が終わった時点で、捕獲に失敗したとき",
-          When: [SHOW_EFFECT],
+          Given: "捕獲に失敗しているとき",
+          When: [SHOW_EFFECT, WAIT_FOR_SHAKE],
           Then: "煙幕風のエフェクトが表示される",
         },
       ],

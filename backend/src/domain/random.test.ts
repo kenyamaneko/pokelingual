@@ -9,12 +9,18 @@ function fixedRandom(value: number): RandomSource {
 
 const POOL_OF_FOUR = "プールが 4 件のとき";
 
+function drawFromPool(count: number): string {
+  return `クエスト画面のポケモン名当てのヒントに出す技を、プールから ${count} 件抽選する`;
+}
+
+const DRAW_3 = drawFromPool(3);
+
 describe("[本体:クエスト]プールからの重複無し抽選", () => {
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: POOL_OF_FOUR, When: ["3 件を指定して抽選する"], Then: "選ばれる件数は 3 件になる" }],
+      steps: [{ Given: POOL_OF_FOUR, When: [DRAW_3], Then: "選ばれる件数は 3 件になる" }],
     },
     () => {
       const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
@@ -26,7 +32,7 @@ describe("[本体:クエスト]プールからの重複無し抽選", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: POOL_OF_FOUR, When: ["3 件を指定して抽選する"], Then: "選ばれた 3 件に重複は無い" }],
+      steps: [{ Given: POOL_OF_FOUR, When: [DRAW_3], Then: "選ばれた 3 件に重複は無い" }],
     },
     () => {
       const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
@@ -39,7 +45,7 @@ describe("[本体:クエスト]プールからの重複無し抽選", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: POOL_OF_FOUR, When: [`${count} 件を指定して抽選する`], Then: "選ばれる件数は 4 件になる" }],
+        steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(count)], Then: "選ばれる件数は 4 件になる" }],
       },
       () => {
         const picked = pickRandomSample(["a", "b", "c", "d"], count, fixedRandom(0));
@@ -52,7 +58,7 @@ describe("[本体:クエスト]プールからの重複無し抽選", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "プールが 1 件のとき", When: ["1 件を指定して抽選する"], Then: "選ばれた一覧はその 1 件になる" }],
+      steps: [{ Given: "プールが 1 件のとき", When: [drawFromPool(1)], Then: "選ばれた一覧はその 1 件になる" }],
     },
     () => {
       expect(pickRandomSample(["a"], 1, fixedRandom(0))).toEqual(["a"]);
@@ -63,7 +69,7 @@ describe("[本体:クエスト]プールからの重複無し抽選", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "プールが 2 件のとき", When: ["5 件を指定して抽選する"], Then: "選ばれる件数は 2 件になる" }],
+      steps: [{ Given: "プールが 2 件のとき", When: [drawFromPool(5)], Then: "選ばれる件数は 2 件になる" }],
     },
     () => {
       const picked = pickRandomSample(["a", "b"], 5, fixedRandom(0));
@@ -79,7 +85,7 @@ describe("[本体:クエスト]プールからの重複無し抽選", () => {
       {
         種別: "単体テスト",
         正常異常: "異常系",
-        steps: [{ Given: given, When: [`${count} 件を指定して抽選する`], Then: "選ばれた一覧は空になる" }],
+        steps: [{ Given: given, When: [drawFromPool(count)], Then: "選ばれた一覧は空になる" }],
       },
       () => {
         expect(pickRandomSample(pool, count, fixedRandom(0))).toEqual([]);

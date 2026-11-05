@@ -43,8 +43,8 @@ async function requestWithLimitError(kind: string): Promise<RateLimitDetail> {
   return (handler.mock.calls[0][0] as CustomEvent<RateLimitDetail>).detail;
 }
 
-const SEND_REQUEST = "バックエンドへリクエストを送る";
-const SEND_REQUEST_AGAIN = "もう一度バックエンドへリクエストを送る";
+const SEND_REQUEST = "クエスト画面の AI 呼び出しを伴う操作で、バックエンドへリクエストを送る";
+const SEND_REQUEST_AGAIN = "クエスト画面の AI 呼び出しを伴う操作で、もう一度バックエンドへリクエストを送る";
 const NOTHING_NOTIFIED = "日次上限の通知を受け取る側には何も届かない";
 const INVALID_KIND_429 = "バックエンドが 429 を返し、上限の種類が「invalid」でユーザーでも全体でもないとき";
 const USER_KIND_429 = "バックエンドが 429 を返し、上限の種類がユーザーのとき";
@@ -58,7 +58,7 @@ describe("[本体:認証]バックエンド呼び出しへの認証トークン�
       steps: [
         {
           Given: "VITE_APP_MODE が mock のとき",
-          When: [SEND_REQUEST],
+          When: ["ログイン後の画面の操作で、バックエンドへリクエストを送る"],
           Then: "リクエストの Authorization ヘッダーが「Bearer dev-token」になる",
         },
       ],
@@ -152,7 +152,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
       status: 429,
       body: { error: "user", message: "" },
     },
-    { given: "バックエンドが 500 を返したとき", status: 500, body: { error: "internal" } },
+    { given: "バックエンドが 500 を返すとき", status: 500, body: { error: "internal" } },
   ]) {
     defineCase(
       {

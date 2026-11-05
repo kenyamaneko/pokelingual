@@ -2,7 +2,7 @@ import { describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { buildLogEntry, logger } from "./logger.js";
 import { defineCase } from "../test/defineCase.js";
 
-const BUILD_LOG_ENTRY = "ログを 1 件組み立てる";
+const BUILD_LOG_ENTRY = "ログ出力に、ログ 1 件の組み立てを依頼する";
 const CURRENT_TIME = "現在時刻が 2026-07-03T04:56:07.000Z で";
 
 describe("[運用:ログ出力]ログの形式", () => {
@@ -21,7 +21,7 @@ describe("[運用:ログ出力]ログの形式", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${CURRENT_TIME}、severity に INFO、メッセージに starting server、追加フィールドに port が 8080 を指定したとき`,
+          Given: `${CURRENT_TIME}、severity が INFO、メッセージが starting server、追加フィールドの port が 8080 のとき`,
           When: [BUILD_LOG_ENTRY],
           Then: "ログの JSON は severity が INFO、message が starting server、time が 2026-07-03T04:56:07.000Z、port が 8080 になる",
         },
@@ -45,7 +45,7 @@ describe("[運用:ログ出力]ログの形式", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "severity に INFO、メッセージに starting server、追加フィールドに port が 8080 を指定したとき",
+          Given: "severity が INFO、メッセージが starting server、追加フィールドの port が 8080 のとき",
           When: [BUILD_LOG_ENTRY],
           Then: "ログは 1 行に収まり改行を含まない",
         },
@@ -64,7 +64,7 @@ describe("[運用:ログ出力]ログの形式", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${CURRENT_TIME}、severity に WARNING、メッセージに running in public mode を指定し、追加フィールドを指定しないとき`,
+          Given: `${CURRENT_TIME}、severity が WARNING、メッセージが running in public mode で、追加フィールドが無いとき`,
           When: [BUILD_LOG_ENTRY],
           Then: "ログの JSON は severity が WARNING、message が running in public mode、time が 2026-07-03T04:56:07.000Z の 3 項目だけになる",
         },
@@ -88,7 +88,7 @@ describe("[運用:ログ出力]ログの形式", () => {
         正常異常: "異常系",
         steps: [
           {
-            Given: `追加フィールドに ${reservedKey} を含めたとき`,
+            Given: `追加フィールドに ${reservedKey} が含まれているとき`,
             When: [BUILD_LOG_ENTRY],
             Then: `${reservedKey} を上書きしようとしたエラーになる`,
           },
@@ -123,7 +123,7 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
   });
 
   const MESSAGE_AND_FIELD = "メッセージが something happened で、追加フィールド path が /api/quest で";
-  const WRITE_LOG = "ログを出力する";
+  const WRITE_LOG = "ログ出力に、ログの書き出しを依頼する";
 
   defineCase(
     {

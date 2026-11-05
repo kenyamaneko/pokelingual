@@ -152,8 +152,8 @@ describe("[本体:認証]パスワードの再設定", () => {
       steps: [
         { Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: FAILURE_MESSAGE },
         {
-          Given: "送信できるようになったとき",
-          When: ["もう一度「再設定メールを送る」を押す"],
+          Given: "再設定メールを送信できるとき",
+          When: ["パスワード再設定画面で、もう一度「再設定メールを送る」を押す"],
           Then: COMPLETION_MESSAGE,
         },
       ],

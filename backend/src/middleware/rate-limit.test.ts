@@ -37,7 +37,7 @@ function rejectOnlyFirstRequest(kind: RateLimitKind): RateLimitRepository["check
   };
 }
 
-const SEND_REQUEST = "リクエストを送る";
+const SEND_REQUEST = "クエスト画面の翻訳の採点を依頼して、AI 呼び出し回数の日次上限を確認する";
 const REJECTED_USER_LIMIT = "リクエストは 429 で拒否され、ユーザーの日次上限に達した旨が返る";
 const REJECTED_GLOBAL_LIMIT = "リクエストは 429 で拒否され、全体の日次上限に達した旨が返る";
 const RECOVERED = "リクエストは 200 で後続の処理に渡される";
@@ -71,7 +71,7 @@ describe("[本体:AI 呼び出し回数]ユーザーごとの日次上限超過�
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: "ユーザーの日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT }],
+      steps: [{ Given: "ユーザーの日次上限を超えているとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT }],
     },
     async () => {
       const app = makeApp(async () => {
@@ -91,7 +91,7 @@ describe("[本体:AI 呼び出し回数]ユーザーごとの日次上限超過�
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの日次上限を超えたとき",
+          Given: "ユーザーの日次上限を超えているとき",
           When: [SEND_REQUEST],
           Then: "429 の応答に、「そろそろ　研究に　戻るぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる",
         },
@@ -113,8 +113,8 @@ describe("[本体:AI 呼び出し回数]ユーザーごとの日次上限超過�
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: "ユーザーの日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT },
-        { Given: "次のリクエスト時には日次上限以内になったとき", When: ["もう一度リクエストを送る"], Then: RECOVERED },
+        { Given: "ユーザーの日次上限を超えているとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT },
+        { Given: "次の依頼時には日次上限以内であるとき", When: ["クエスト画面の翻訳の採点をもう一度依頼して、AI 呼び出し回数の日次上限を確認する"], Then: RECOVERED },
       ],
     },
     async () => {
@@ -136,7 +136,7 @@ describe("[本体:AI 呼び出し回数]全体の日次上限超過の拒否", (
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: "全体の日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT }],
+      steps: [{ Given: "全体の日次上限を超えているとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT }],
     },
     async () => {
       const app = makeApp(async () => {
@@ -155,8 +155,8 @@ describe("[本体:AI 呼び出し回数]全体の日次上限超過の拒否", (
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: "全体の日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT },
-        { Given: "次のリクエスト時には日次上限以内になったとき", When: ["もう一度リクエストを送る"], Then: RECOVERED },
+        { Given: "全体の日次上限を超えているとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT },
+        { Given: "次の依頼時には日次上限以内であるとき", When: ["クエスト画面の翻訳の採点をもう一度依頼して、AI 呼び出し回数の日次上限を確認する"], Then: RECOVERED },
       ],
     },
     async () => {

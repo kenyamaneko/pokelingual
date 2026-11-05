@@ -77,8 +77,8 @@ function convertCharmander() {
   return convertToPokemonRecord(CHARMANDER_SPECIES, CHARMANDER_POKEMON, CHARMANDER_LEVEL_UP_MOVES);
 }
 
-const CLEAN_FLAVOR_TEXT = "説明文を整形する";
-const CREATE_POKEMON_RECORD = "ポケモンデータを作成する";
+const CLEAN_FLAVOR_TEXT = "ポケモンのスナップショットを生成するために、PokeAPI から取得した説明文を整形する";
+const CREATE_POKEMON_RECORD = "ポケモンのスナップショットを生成するために、PokeAPI から取得した元データからポケモンデータを作成する";
 const FLAVOR_TEXT_PAIR_COUNT = "作成したポケモンデータの説明文ペアの一覧は 2 組になる";
 const BULBASAUR_FLAVOR_TEXTS_GIVEN =
   "フシギダネのバージョン X の説明文が英語「A strange seed was planted on its back at birth.⏎The plant sprouts and grows with this Pokémon.」・日本語「生まれたときから　背中に⏎不思議な　タネが　植えてあって⏎体と　ともに　育つという。」、バージョン Y の説明文が英語「For some time after its birth, it grows by gaining⏎nourishment from the seed on its back.」・日本語「生まれてから　しばらくの　あいだは⏎背中の　タネから　栄養を　もらって⏎大きく　育つ。」のとき";
@@ -275,7 +275,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "レベルアップで覚える技の日本語名としてたいあたり・なきごえ・つるのムチが渡されたとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのレベルアップで覚える技は、たいあたり・なきごえ・つるのムチの順になる" }],
+      steps: [{ Given: "レベルアップで覚える技の日本語名としてたいあたり・なきごえ・つるのムチが渡されているとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのレベルアップで覚える技は、たいあたり・なきごえ・つるのムチの順になる" }],
     },
     () => {
       expect(convertBulbasaur().level_up_moves).toEqual(["たいあたり", "なきごえ", "つるのムチ"]);
@@ -286,7 +286,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "レベルアップで覚える技の日本語名としてひっかく・なきごえ・ひのこが渡されたとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのレベルアップで覚える技は、ひっかく・なきごえ・ひのこの順になる" }],
+      steps: [{ Given: "レベルアップで覚える技の日本語名としてひっかく・なきごえ・ひのこが渡されているとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのレベルアップで覚える技は、ひっかく・なきごえ・ひのこの順になる" }],
     },
     () => {
       expect(convertCharmander().level_up_moves).toEqual(["ひっかく", "なきごえ", "ひのこ"]);

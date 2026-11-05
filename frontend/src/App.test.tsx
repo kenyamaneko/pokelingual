@@ -12,7 +12,7 @@ describe("[本体:共通画面]404 画面の表示", () => {
       steps: [
         {
           Given: "VITE_APP_MODE が mock のとき",
-          When: ["URL「/no-such-page」の画面を開く"],
+          When: ["存在しない URL「/no-such-page」を開いて、404 画面を表示する"],
           Then: "見出し「ページが見つかりません」が表示される",
         },
       ],
@@ -35,7 +35,7 @@ describe("[本体:共通画面]404 画面の表示", () => {
       steps: [
         {
           Given: "VITE_APP_MODE が mock のとき",
-          When: ["URL「/no-such-page」の画面を開く", "「ホーム画面に戻る」を押す"],
+          When: ["存在しない URL「/no-such-page」を開いて、404 画面を表示する", "404 画面の「ホーム画面に戻る」を押す"],
           Then: "ホーム画面の「ポケモンを探しに行く」ボタンが表示される",
         },
       ],
@@ -60,7 +60,7 @@ describe("[本体:共通画面]404 画面の表示", () => {
       steps: [
         {
           Given: "VITE_APP_MODE が mock のとき",
-          When: ["定義済みの URL「/」の画面を開く"],
+          When: ["定義済みの URL「/」を開いて、ホーム画面を表示する"],
           Then: "「Pokelingual」が表示され、見出し「ページが見つかりません」は表示されない",
         },
       ],

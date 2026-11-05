@@ -17,9 +17,9 @@ function moveEntry(
   };
 }
 
-const DETERMINE_CANDIDATES = "レベルアップで覚える技の候補を決定する";
-const DETERMINE_MOVE_NAME = "技の日本語名を決定する";
-const CREATE_NAME_LIST = "技の候補の日本語名の一覧を作成する";
+const DETERMINE_CANDIDATES = "ポケモンデータのスナップショット生成で、ポケモンの技のデータから、レベルアップで覚える技の候補を決定する";
+const DETERMINE_MOVE_NAME = "ポケモンデータのスナップショット生成で、技の名称の一覧から、技の日本語名を決定する";
+const CREATE_NAME_LIST = "ポケモンデータのスナップショット生成で、技の候補の日本語名の一覧を作成する";
 
 describe("[外部連携:ポケモンデータ提供元]レベルアップで覚える技の候補の決定", () => {
   defineCase(

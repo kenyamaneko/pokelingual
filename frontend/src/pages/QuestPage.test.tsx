@@ -18,14 +18,18 @@ const PROCEED_BUTTON = "次へ進む";
 const CORRECT_TITLE = "正解！";
 const NEXT_QUEST_BUTTON = "次のポケモンを探す";
 
-const OPEN_QUEST_SCREEN = "クエスト画面を開く";
-const SELECT_PLACE = "場所「テスト草原」を選ぶ";
+const OPEN_QUEST_SCREEN = "クエスト画面を開いて、場所の選択を表示する";
+const SELECT_PLACE = "場所選択画面で、場所「テスト草原」を選ぶ";
+const SELECT_PLACE_FOR_SIGN =
+  "場所選択画面で場所「テスト草原」を選んで、伝説・幻の気配演出の表示先である翻訳画面を開く";
 const PRESS_HINT = "名前当て画面で「ヒントを見る（チャンスを1回使う）」を押す";
-const PRESS_HINT_AGAIN = "もう一度「ヒントを見る（チャンスを1回使う）」を押す";
+const PRESS_HINT_AGAIN = "名前当て画面で、もう一度「ヒントを見る（チャンスを1回使う）」を押す";
 const PRESS_SKIP = "名前当て画面で「わからないのでスキップ →」を押す";
-const PRESS_PROCEED = "「次へ進む」を押す";
-const SUBMIT_NAME_BULBASAUR = "名前当て画面で名前「Bulbasaur」を送信する";
-const SUBMIT_NAME_BULBASAUR_AGAIN = "もう一度名前「Bulbasaur」を送信する";
+const PRESS_SKIP_TO_DECIDE_BALL =
+  "名前当て画面で、捕獲に使うボールを決めるために「わからないのでスキップ →」を押す";
+const PRESS_PROCEED = "名前当て画面で、捕獲に進むために「次へ進む」を押す";
+const SUBMIT_NAME_BULBASAUR = "名前当て画面で、名前の判定のために名前「Bulbasaur」を送信する";
+const SUBMIT_NAME_BULBASAUR_AGAIN = "名前当て画面で、名前の判定のために、もう一度名前「Bulbasaur」を送信する";
 const HINT_FAILED_ONCE = "ヒント要求がサーバーエラー (500) で失敗するとき";
 const HINT_FAILURE_MESSAGE = "名前当て画面に「ヒントの取得に失敗しました」が表示される";
 const HINT_FAILURE_GONE = "「ヒントの取得に失敗しました」が表示されなくなる";
@@ -108,19 +112,19 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
           Then: "出題の英文「The first wild creature.」が表示される",
         },
         {
-          When: ["翻訳「さいしょのやくぶん」を送信する"],
+          When: ["翻訳画面で、出題の英文への翻訳「さいしょのやくぶん」を送信する"],
           Then: "翻訳「さいしょのやくぶん」が表示される",
         },
         {
-          When: ["名前「ピカチュウ」を答える"],
+          When: ["名前当て画面で、出題されたポケモンの名前「ピカチュウ」を答える"],
           Then: "「正解！」が表示される",
         },
         {
-          When: [PRESS_PROCEED, "ハイパーボールを使う"],
+          When: [PRESS_PROCEED, "捕獲待機画面で、捕獲に使うボールとして「ハイパーボール」を使う"],
           Then: "「やったー！　ピカチュウを　捕まえたぞ！」が表示される",
         },
         {
-          When: ["「次のポケモンを探す」を押す", SELECT_PLACE],
+          When: ["捕獲結果画面で、次の出題に進むために「次のポケモンを探す」を押す", SELECT_PLACE],
           Then: "2 回目の出題の英文「A second wild creature.」が表示される",
         },
       ],
@@ -366,7 +370,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: HINT_ELECTRIC_THEN_MOVES,
-          When: [PRESS_HINT, "「別のヒントを見る（チャンスを1回使う）」を押す"],
+          When: [PRESS_HINT, "名前当て画面で「別のヒントを見る（チャンスを1回使う）」を押す"],
           Then: "ヒントで返された技「たいあたり」「なきごえ」「でんきショック」が、「「たいあたり」「なきごえ」「でんきショック」を覚えるよ」の形で表示される",
         },
       ],
@@ -387,7 +391,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: HINT_ELECTRIC_THEN_MOVES,
-          When: [PRESS_HINT, "「別のヒントを見る（チャンスを1回使う）」を押す"],
+          When: [PRESS_HINT, "名前当て画面で「別のヒントを見る（チャンスを1回使う）」を押す"],
           Then: "名前当て画面の残り挑戦回数が 1 回になる",
         },
       ],
@@ -768,22 +772,22 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
   for (const { given, answerOperations, ballCase } of [
     {
       given: `${AT_NAME_GUESS_SCREEN}とき`,
-      answerOperations: [PRESS_SKIP],
+      answerOperations: [PRESS_SKIP_TO_DECIDE_BALL],
       ballCase: SKIPPED_NAME_GUESS,
     },
     {
       given: `${AT_NAME_GUESS_SCREEN}うえ、日本語名「フシギダネ」が正解と判定されるとき`,
-      answerOperations: ["名前当て画面で日本語名「フシギダネ」を答える", PRESS_PROCEED],
+      answerOperations: ["名前当て画面で、捕獲に使うボールを決めるために日本語名「フシギダネ」を答える", PRESS_PROCEED],
       ballCase: CORRECT_JAPANESE_NAME_GUESS,
     },
     {
       given: `${AT_NAME_GUESS_SCREEN}うえ、英語名「Bulbasaur」が正解と判定されるとき`,
-      answerOperations: ["名前当て画面で英語名「Bulbasaur」を答える", PRESS_PROCEED],
+      answerOperations: ["名前当て画面で、捕獲に使うボールを決めるために英語名「Bulbasaur」を答える", PRESS_PROCEED],
       ballCase: CORRECT_ENGLISH_NAME_GUESS,
     },
     {
       given: `${AT_NAME_GUESS_SCREEN}うえ、英語名「Bulbasaur」が正解と判定され、マスターボールが確定するとき`,
-      answerOperations: ["名前当て画面で英語名「Bulbasaur」を答える", PRESS_PROCEED],
+      answerOperations: ["名前当て画面で、捕獲に使うボールを決めるために英語名「Bulbasaur」を答える", PRESS_PROCEED],
       ballCase: CORRECT_ENGLISH_NAME_GUESS_WITH_MASTER_BALL,
     },
   ] as const) {
@@ -813,7 +817,7 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
         steps: [
           {
             Given: given,
-            When: [...answerOperations, `捕獲待機画面で${useButtonLabel}を押す`],
+            When: [...answerOperations, `捕獲待機画面で、捕獲に使うボールとして${useButtonLabel}を押す`],
             Then: `捕獲演出に${ballCase.ballName}が表示される`,
           },
         ],
@@ -831,7 +835,7 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
       steps: [
         {
           Given: `${AT_NAME_GUESS_SCREEN}うえ、英語名「Bulbasaur」が正解と判定され、マスターボールが確定するとき`,
-          When: ["名前当て画面で英語名「Bulbasaur」を答える", PRESS_PROCEED],
+          When: ["名前当て画面で、捕獲に使うボールを決めるために英語名「Bulbasaur」を答える", PRESS_PROCEED],
           Then: "博士の「今こそ　このボールを　使うときだ！」が表示される",
         },
       ],
@@ -867,7 +871,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     return user;
   }
 
-  const SUBMIT_TRANSLATION = "場所を選び、翻訳「やくぶん」を送信する";
+  const SUBMIT_TRANSLATION = "場所選択画面で場所を選び、翻訳画面で採点のために翻訳「やくぶん」を送信する";
 
   defineCase(
     {
@@ -891,7 +895,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
       steps: [
         { Given: SESSION_EXPIRED_SCORING, When: [SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
         {
-          When: ["「もう一度探す」を押す"],
+          When: ["エラー画面で、セッション切れから回復するために「もう一度探す」を押す"],
           Then: "場所選択画面に「テスト草原」のボタンが表示される",
         },
       ],
@@ -918,7 +922,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [SELECT_PLACE], Then: LEGENDARY_SIGN }],
+        steps: [{ Given: given, When: [SELECT_PLACE_FOR_SIGN], Then: LEGENDARY_SIGN }],
       },
       async () => {
         const user = userEvent.setup();
@@ -949,7 +953,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
       steps: [
         {
           Given: "出題ポケモンが伝説・幻のどちらでもないとき",
-          When: [SELECT_PLACE],
+          When: [SELECT_PLACE_FOR_SIGN],
           Then: "「ただならない　気配を感じる...」と表示されない",
         },
       ],

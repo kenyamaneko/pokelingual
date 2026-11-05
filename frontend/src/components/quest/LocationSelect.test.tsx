@@ -10,7 +10,7 @@ const locations: QuestLocation[] = [
   { id: "place-b", name: "テスト洞窟", description: "くらい洞窟", types: ["rock"] },
 ];
 
-const SHOW_LOCATION_SELECT = "場所選択画面を表示する";
+const SHOW_LOCATION_SELECT = "クエストの場所選択画面で、選べる場所を表示する";
 
 describe("[本体:クエスト]場所選択画面", () => {
   defineCase(

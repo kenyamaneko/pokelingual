@@ -2,7 +2,8 @@ import { describe, expect } from "vitest";
 import { hiraganaToKatakana } from "./kana";
 import { defineCase } from "../test/defineCase";
 
-const CONVERT_TO_KATAKANA = "カタカナに変換する";
+const CONVERT_TO_KATAKANA =
+  "設定画面のポケモン名の検索欄に入力された文字列のうち、ひらがなの部分をカタカナに変換する";
 
 describe("[本体:設定]ひらがなのカタカナ変換", () => {
   defineCase(

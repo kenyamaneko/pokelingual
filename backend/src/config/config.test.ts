@@ -67,7 +67,7 @@ function setRealModeEnv(): void {
   setRealRequiredEnv();
 }
 
-const LOAD_CONFIG = "起動設定を読み込む";
+const LOAD_CONFIG = "バックエンドの起動時に、環境変数から起動設定を読み込む";
 const TUNING_SET = "チューニングパラメーターの環境変数がすべて設定されていて";
 const MOCK_MODE = `${TUNING_SET}、APP_MODE が mock で`;
 const REAL_MODE = `${TUNING_SET}、APP_MODE が real で、チューニングパラメーター以外の必須の環境変数がすべて設定されていて`;

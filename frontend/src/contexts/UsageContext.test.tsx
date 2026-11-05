@@ -41,7 +41,7 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-const START_UP = "起動する";
+const START_UP = "アプリを起動して、ヘッダーに残り回数を表示するために AI 呼び出し回数を取得する";
 const LOGGED_OUT = "未ログインのとき";
 const USAGE_NOT_FETCHED = "AI 呼び出し回数の表示が「未取得」のままになる";
 
@@ -104,7 +104,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "異常系",
       steps: [
         {
-          Given: "ログインしていて、バックエンドの AI 呼び出し回数の取得が通信エラーで失敗したとき",
+          Given: "ログインしていて、バックエンドの AI 呼び出し回数の取得が通信エラーで失敗するとき",
           When: [START_UP],
           Then: USAGE_NOT_FETCHED,
         },
@@ -129,7 +129,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
         {
           Given:
             "ログインしていて、バックエンドの AI 呼び出し回数の取得が最初は通信エラーで失敗し、日次上限に達する操作に 429 を返し、その後の取得で AI 呼び出し回数 30、日次上限 30 を返すとき",
-          When: [START_UP, "日次上限に達する操作をする"],
+          When: [START_UP, "AI を呼び出す画面で「日次上限に達する操作」ボタンを押す"],
           Then: "AI 呼び出し回数の表示が「30/30」になる",
         },
       ],

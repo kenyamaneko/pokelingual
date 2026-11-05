@@ -11,8 +11,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const THREE_CHAR_TEXT_STARTED = "3 文字の文章「ABC」の演出が始まったとき";
-const ONE_CHAR_INTERVAL_PASSES = "1 文字分の時間が経つ";
+const THREE_CHAR_TEXT_STARTED = "3 文字の文章「ABC」の演出が始まっているとき";
+const ONE_CHAR_INTERVAL_PASSES = "クエスト画面の文章のタイプライター演出で、1 文字分の時間が経つ";
 
 describe("[本体:クエスト]文章のタイプライター演出", () => {
   defineCase(
@@ -22,7 +22,7 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       steps: [
         {
           Given: "文章「ABC」の演出が始まる前のとき",
-          When: ["文章を描画する"],
+          When: ["クエスト画面に、タイプライター演出の文章を配置する"],
           Then: "文字が表示されない",
         },
       ],
@@ -40,7 +40,7 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       steps: [
         {
           Given: "表示する文章が空のとき",
-          When: ["演出を始める", ONE_CHAR_INTERVAL_PASSES],
+          When: ["クエスト画面で、文章のタイプライター演出を始める", ONE_CHAR_INTERVAL_PASSES],
           Then: "何も表示されない",
         },
       ],
@@ -82,7 +82,7 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       steps: [
         {
           Given: THREE_CHAR_TEXT_STARTED,
-          When: ["3 文字分の時間が経つ"],
+          When: ["クエスト画面の文章のタイプライター演出で、3 文字分の時間が経つ"],
           Then: "3 文字が「ABC」と全文表示される",
         },
       ],

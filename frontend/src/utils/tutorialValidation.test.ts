@@ -12,7 +12,7 @@ describe("[本体:チュートリアル]英文当てステップの入力の判�
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: `入力が${label}のとき`, When: ["入力を判定する"], Then: "送信が許可される" }],
+        steps: [{ Given: `入力が${label}のとき`, When: ["チュートリアル画面の英文当てステップで、入力を判定する"], Then: "送信が許可される" }],
       },
       () => {
         expect(validateTutorialTranslation(input)).toBe(true);
@@ -29,7 +29,7 @@ describe("[本体:チュートリアル]英文当てステップの入力の判�
       {
         種別: "単体テスト",
         正常異常: "異常系",
-        steps: [{ Given: `入力が${label}のとき`, When: ["入力を判定する"], Then: "送信が拒否される" }],
+        steps: [{ Given: `入力が${label}のとき`, When: ["チュートリアル画面の英文当てステップで、入力を判定する"], Then: "送信が拒否される" }],
       },
       () => {
         expect(validateTutorialTranslation(input)).toBe(false);
@@ -49,7 +49,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップの入�
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: `入力が${label}のとき`, When: ["入力を判定する"], Then: "送信が許可される" }],
+        steps: [{ Given: `入力が${label}のとき`, When: ["チュートリアル画面のポケモン名当てステップで、入力を判定する"], Then: "送信が許可される" }],
       },
       () => {
         expect(validateTutorialName(input)).toBe(true);
@@ -66,7 +66,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップの入�
       {
         種別: "単体テスト",
         正常異常: "異常系",
-        steps: [{ Given: `入力が${label}のとき`, When: ["入力を判定する"], Then: "送信が拒否される" }],
+        steps: [{ Given: `入力が${label}のとき`, When: ["チュートリアル画面のポケモン名当てステップで、入力を判定する"], Then: "送信が拒否される" }],
       },
       () => {
         expect(validateTutorialName(input)).toBe(false);
