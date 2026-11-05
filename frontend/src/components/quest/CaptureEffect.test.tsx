@@ -7,74 +7,72 @@ import {
   WHITEOUT_DURATION_MS,
 } from "./CaptureEffect";
 
-describe("[クエスト] 捕獲演出", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
+function renderEffect(captured: boolean, onComplete = vi.fn()) {
+  render(
+    <CaptureEffect
+      ballSprite="https://example.com/ball.png"
+      ballName="テストボール"
+      captured={captured}
+      onComplete={onComplete}
+    />,
+  );
+  return onComplete;
+}
+
+function advance(ms: number) {
+  act(() => {
+    vi.advanceTimersByTime(ms);
   });
+}
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+beforeEach(() => {
+  vi.useFakeTimers();
+});
 
-  function renderEffect(captured: boolean, onComplete = vi.fn()) {
-    render(
-      <CaptureEffect
-        ballSprite="https://example.com/ball.png"
-        ballName="テストボール"
-        captured={captured}
-        onComplete={onComplete}
-      />,
-    );
-    return onComplete;
-  }
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-  describe("正常系", () => {
-    it("ボールの揺れの再生中のとき、成否エフェクトは表示されない", () => {
-      renderEffect(true);
-      expect(screen.queryByTestId("capture-effect-fx")).not.toBeInTheDocument();
-    });
-
-    describe("ボールの揺れの再生が終わったとき", () => {
-      it("捕獲に成功したとき、花火風のエフェクトが表示される", () => {
+describe("[本体:捕獲]捕獲演出", () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("ボールの揺れの再生中のとき、捕獲の成否を示すエフェクトは表示されない", () => {
         renderEffect(true);
-        act(() => {
-          vi.advanceTimersByTime(SHAKE_DURATION_MS);
-        });
-        expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "success");
+        expect(screen.queryByTestId("capture-effect-fx")).not.toBeInTheDocument();
       });
 
-      it("捕獲に失敗したとき、煙幕風のエフェクトが表示される", () => {
-        renderEffect(false);
-        act(() => {
-          vi.advanceTimersByTime(SHAKE_DURATION_MS);
-        });
-        expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "failure");
+      it("捕獲の成否を示すエフェクトの再生が終わったとき、白フェードが表示される", () => {
+        renderEffect(true);
+        advance(SHAKE_DURATION_MS);
+        advance(EFFECT_DURATION_MS);
+        expect(screen.getByTestId("capture-whiteout")).toBeInTheDocument();
+      });
+
+      it("白フェードの再生が終わったとき、結果画面へ切り替える指示が 1 回出される", () => {
+        const onComplete = renderEffect(true);
+        advance(SHAKE_DURATION_MS);
+        advance(EFFECT_DURATION_MS);
+        advance(WHITEOUT_DURATION_MS);
+        expect(onComplete).toHaveBeenCalledTimes(1);
       });
     });
+  });
 
-    it("成否エフェクトの再生が終わったとき、白フェードが表示される", () => {
-      renderEffect(true);
-      act(() => {
-        vi.advanceTimersByTime(SHAKE_DURATION_MS);
-      });
-      act(() => {
-        vi.advanceTimersByTime(EFFECT_DURATION_MS);
-      });
-      expect(screen.getByTestId("capture-whiteout")).toBeInTheDocument();
-    });
+  describe("ボールの揺れの再生が終わったとき", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("捕獲に成功したとき、花火風のエフェクトが表示される", () => {
+          renderEffect(true);
+          advance(SHAKE_DURATION_MS);
+          expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "success");
+        });
 
-    it("白フェードの再生が終わったとき、結果画面へ切り替える指示が 1 回出される", () => {
-      const onComplete = renderEffect(true);
-      act(() => {
-        vi.advanceTimersByTime(SHAKE_DURATION_MS);
+        it("捕獲に失敗したとき、煙幕風のエフェクトが表示される", () => {
+          renderEffect(false);
+          advance(SHAKE_DURATION_MS);
+          expect(screen.getByTestId("capture-effect-fx")).toHaveAttribute("data-state", "failure");
+        });
       });
-      act(() => {
-        vi.advanceTimersByTime(EFFECT_DURATION_MS);
-      });
-      act(() => {
-        vi.advanceTimersByTime(WHITEOUT_DURATION_MS);
-      });
-      expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });
 });

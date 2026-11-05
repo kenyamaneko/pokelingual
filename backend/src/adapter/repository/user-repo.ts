@@ -43,4 +43,12 @@ export class UserRepo implements UserRepository {
   async markTutorialCompleted(userId: string): Promise<void> {
     await this.getUserRef(userId).set({ tutorial_completed: true }, { merge: true });
   }
+
+  /**
+   * チュートリアル完了フラグを未完了に戻す。
+   * @param userId ユーザ ID。
+   */
+  async resetTutorialCompleted(userId: string): Promise<void> {
+    await this.getUserRef(userId).set({ tutorial_completed: false }, { merge: true });
+  }
 }

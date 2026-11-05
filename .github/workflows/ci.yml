@@ -105,6 +105,29 @@ jobs:
       - name: Lint
         run: npm run lint
 
+  scripts-test:
+    name: Scripts Tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run catalog generator unit tests
+        run: python -m pytest scripts
+
   backend-test:
     name: Backend Tests
     needs: changes
@@ -145,9 +168,9 @@ jobs:
       - name: Run tests with coverage (Firestore emulator)
         run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage"
 
-      # Valkey コンテナ (testcontainers) を要するため、Firestore emulator の外側で別途実行する。
-      - name: Run integration tests (Valkey testcontainers)
-        run: npm run test:integration
+      # 引き継ぎのテストは Valkey コンテナ (testcontainers) と Firestore emulator の両方を実物で使う。
+      - name: Run integration tests (Valkey testcontainers and Firestore emulator)
+        run: npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:integration"
 
       # 同一 run 内でテスト観点カタログを組むためだけに使うので保持は最短にする。
       - name: Upload JUnit XML

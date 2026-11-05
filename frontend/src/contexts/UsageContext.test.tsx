@@ -1,14 +1,16 @@
 import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
+import api from "../api/client";
 import { useUsage } from "./UsageContext";
 import { server, apiUrl, countRequests } from "../test/mswServer";
 import { renderWithProviders } from "../test/render";
 import type { User } from "firebase/auth";
 
 /**
- * バックエンドが利用回数と上限を返す状態にする。
- * @param count 当日の利用回数。
+ * バックエンドが AI 呼び出し回数と上限を返す状態にする。
+ * @param count 当日の AI 呼び出し回数。
  * @param limit 上限。
  */
 function mockUsage(count: number, limit: number) {
@@ -17,7 +19,19 @@ function mockUsage(count: number, limit: number) {
 
 function Probe() {
   const { usage } = useUsage();
-  return <div>{usage ? `${usage.count}/${usage.limit}` : "none"}</div>;
+  return <div>{usage ? `${usage.count}/${usage.limit}` : "未取得"}</div>;
+}
+
+function LimitTrigger() {
+  return (
+    <button
+      onClick={() => {
+        api.get("/limited").catch(() => {});
+      }}
+    >
+      日次上限に達する操作
+    </button>
+  );
 }
 
 const fakeUser = { uid: "alice" } as unknown as User;
@@ -26,38 +40,81 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-describe("[レート制限・利用回数] AI 利用回数の取得", () => {
+describe("[本体:AI 呼び出し回数]AI 呼び出し回数の取得", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe("正常系", () => {
-    it("ログインしているとき、起動すると、バックエンドが返した利用回数と上限が表示される", async () => {
-      mockUsage(3, 30);
+  describe("部品間結合テスト", () => {
+    describe("正常系", () => {
+      it("ログインしていて、バックエンドが AI 呼び出し回数 3、日次上限 30 を返すとき、起動すると、AI 呼び出し回数の表示が「3/30」になる", async () => {
+        mockUsage(3, 30);
 
-      renderUsage();
+        renderUsage();
 
-      expect(await screen.findByText("3/30")).toBeInTheDocument();
-    });
-
-    it("未ログインのとき、起動しても、利用回数をバックエンドへ問い合わせない", async () => {
-      renderUsage(null);
-      expect(await screen.findByText("none")).toBeInTheDocument();
-      expect(countRequests("/usage")).toBe(0);
+        expect(await screen.findByText("3/30")).toBeInTheDocument();
+      });
     });
   });
 
-  describe("異常系", () => {
-    it("ログインしているとき、利用回数の取得に失敗すると、利用回数が表示されない状態のままになる", async () => {
-      // 診断ログの出力は検証対象外のため、出力を抑止する
-      vi.spyOn(console, "warn").mockImplementation(() => {});
-      server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
+  describe("未ログインのとき", () => {
+    describe("起動すると", () => {
+      describe("部品間結合テスト", () => {
+        describe("正常系", () => {
+          it("AI 呼び出し回数の表示が「未取得」のままになる", async () => {
+            renderUsage(null);
 
-      renderUsage();
+            expect(await screen.findByText("未取得")).toBeInTheDocument();
+          });
 
-      // 失敗の確定を待たないと取得前の状態と区別できず、アサーションが常に通るため、取得の完了を待つ
-      await waitFor(() => expect(countRequests("/usage")).toBe(1));
-      expect(screen.getByText("none")).toBeInTheDocument();
+          it("バックエンドの「/usage」へのリクエストは 0 件のままになる", async () => {
+            renderUsage(null);
+            await screen.findByText("未取得");
+
+            expect(countRequests("/usage")).toBe(0);
+          });
+        });
+      });
+    });
+  });
+
+  describe("ログインしていて、バックエンドの AI 呼び出し回数の取得が通信エラーで失敗したとき", () => {
+    describe("部品間結合テスト", () => {
+      describe("異常系", () => {
+        it("起動すると、AI 呼び出し回数の表示が「未取得」のままになる", async () => {
+          const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+          server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
+
+          renderUsage();
+
+          await waitFor(() => expect(warnSpy).toHaveBeenCalled());
+          expect(screen.getByText("未取得")).toBeInTheDocument();
+        });
+
+        it("バックエンドが日次上限に達する操作に 429 を返し、その後の取得で AI 呼び出し回数 30、日次上限 30 を返すとき、日次上限に達する操作をすると、AI 呼び出し回数の表示が「30/30」になる", async () => {
+          const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+          server.use(
+            http.get(apiUrl("/usage"), () => HttpResponse.error(), { once: true }),
+            http.get(apiUrl("/usage"), () => HttpResponse.json({ count: 30, limit: 30 })),
+            http.get(apiUrl("/limited"), () =>
+              HttpResponse.json({ error: "user", message: "上限に たっしました" }, { status: 429 }),
+            ),
+          );
+          const user = userEvent.setup();
+          renderWithProviders(
+            <>
+              <Probe />
+              <LimitTrigger />
+            </>,
+            { user: fakeUser },
+          );
+          await waitFor(() => expect(warnSpy).toHaveBeenCalled());
+
+          await user.click(screen.getByRole("button", { name: "日次上限に達する操作" }));
+
+          expect(await screen.findByText("30/30")).toBeInTheDocument();
+        });
+      });
     });
   });
 });

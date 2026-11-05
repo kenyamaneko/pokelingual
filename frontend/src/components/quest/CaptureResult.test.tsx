@@ -29,124 +29,103 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   };
 }
 
+const DUMMY_IDENTITY = { pokemon_id: 9999, name_en: "Testmon", name_ja: "テスト用ポケモン" };
 const LEGENDARY_IDENTITY = { pokemon_id: 150, name_en: "Mewtwo", name_ja: "ミュウツー" };
 
-describe("[クエスト] 捕獲結果画面", () => {
-  describe("正常系", () => {
-    describe("捕獲に成功し、伝説でも幻でもないとき", () => {
-      it.each([
-        [
-          320,
-          "やったー！　ピカチュウを　捕まえたぞ！",
-          { pokemon_id: 25, name_en: "Pikachu", name_ja: "ピカチュウ" },
-        ],
-        [599, "やったー！　ミュウツーを　捕まえたぞ！", LEGENDARY_IDENTITY],
-      ])("種族値が %i のとき、「%s」と表示される", (baseStatTotal, title, identity) => {
-        renderWithProviders(
-          <CaptureResult
-            result={baseResult({ ...identity, base_stat_total: baseStatTotal })}
-            onNewQuest={vi.fn()}
-          />,
-          { withRouter: true },
-        );
-        expect(screen.getByText(spec(title))).toBeInTheDocument();
-      });
+function renderCaptureResult(result: CaptureResponse) {
+  renderWithProviders(<CaptureResult result={result} onNewQuest={vi.fn()} />, {
+    withRouter: true,
+  });
+}
 
-      it("種族値が 600 のとき、「やったー！　強そうな　ミュウツーを　捕まえたぞ！」と表示される", () => {
-        renderWithProviders(
-          <CaptureResult
-            result={baseResult({ ...LEGENDARY_IDENTITY, base_stat_total: 600 })}
-            onNewQuest={vi.fn()}
-          />,
-          { withRouter: true },
-        );
-        expect(
-          screen.getByText(spec("やったー！　強そうな　ミュウツーを　捕まえたぞ！")),
-        ).toBeInTheDocument();
+describe("[本体:捕獲]捕獲結果画面", () => {
+  describe("捕獲に成功し、伝説でも幻でもないとき", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("種族値が 320 のピカチュウのとき、「やったー！　ピカチュウを　捕まえたぞ！」と表示される", () => {
+          renderCaptureResult(baseResult({ base_stat_total: 320 }));
+          expect(screen.getByText(spec("やったー！　ピカチュウを　捕まえたぞ！"))).toBeInTheDocument();
+        });
+
+        it("種族値が 599 のテスト用ポケモンのとき、「やったー！　テスト用ポケモンを　捕まえたぞ！」と表示される", () => {
+          renderCaptureResult(baseResult({ ...DUMMY_IDENTITY, base_stat_total: 599 }));
+          expect(screen.getByText(spec("やったー！　テスト用ポケモンを　捕まえたぞ！"))).toBeInTheDocument();
+        });
+
+        it("種族値が 600 のテスト用ポケモンのとき、「やったー！　強そうな　テスト用ポケモンを　捕まえたぞ！」と表示される", () => {
+          renderCaptureResult(baseResult({ ...DUMMY_IDENTITY, base_stat_total: 600 }));
+          expect(
+            screen.getByText(spec("やったー！　強そうな　テスト用ポケモンを　捕まえたぞ！")),
+          ).toBeInTheDocument();
+        });
       });
     });
+  });
 
-    describe("捕獲に成功し、種族値が 680 のとき", () => {
-      it("伝説なら、「やったー！　伝説の　ミュウツーを　捕まえたぞ！」と表示される", () => {
-        renderWithProviders(
-          <CaptureResult
-            result={baseResult({
+  describe("捕獲に成功し、種族値が 680 のミュウツーのとき", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("伝説なら、「やったー！　伝説の　ミュウツーを　捕まえたぞ！」と表示される", () => {
+          renderCaptureResult(
+            baseResult({
               ...LEGENDARY_IDENTITY,
               base_stat_total: 680,
               is_legendary: true,
               is_mythical: false,
-            })}
-            onNewQuest={vi.fn()}
-          />,
-          { withRouter: true },
-        );
-        expect(
-          screen.getByText(spec("やったー！　伝説の　ミュウツーを　捕まえたぞ！")),
-        ).toBeInTheDocument();
-      });
+            }),
+          );
+          expect(
+            screen.getByText(spec("やったー！　伝説の　ミュウツーを　捕まえたぞ！")),
+          ).toBeInTheDocument();
+        });
 
-      it("幻なら、「信じられない！　幻の　ミュウツーを　捕まえたぞ！」と表示される", () => {
-        renderWithProviders(
-          <CaptureResult
-            result={baseResult({
+        it("幻なら、「信じられない！　幻の　ミュウツーを　捕まえたぞ！」と表示される", () => {
+          renderCaptureResult(
+            baseResult({
               ...LEGENDARY_IDENTITY,
               base_stat_total: 680,
               is_legendary: false,
               is_mythical: true,
-            })}
-            onNewQuest={vi.fn()}
-          />,
-          { withRouter: true },
-        );
-        expect(
-          screen.getByText(spec("信じられない！　幻の　ミュウツーを　捕まえたぞ！")),
-        ).toBeInTheDocument();
+            }),
+          );
+          expect(
+            screen.getByText(spec("信じられない！　幻の　ミュウツーを　捕まえたぞ！")),
+          ).toBeInTheDocument();
+        });
       });
     });
+  });
 
-    it("捕獲に失敗したとき、「野生の　ピカチュウは　逃げ出した！」と表示される", () => {
-      renderWithProviders(
-        <CaptureResult
-          result={baseResult({ captured: false })}
-          onNewQuest={vi.fn()}
-        />,
-        { withRouter: true },
-      );
-      expect(
-        screen.getByText(spec("野生の　ピカチュウは　逃げ出した！")),
-      ).toBeInTheDocument();
-    });
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("捕獲に失敗したとき、「野生の　ピカチュウは　逃げ出した！」と表示される", () => {
+        renderCaptureResult(baseResult({ captured: false }));
+        expect(screen.getByText(spec("野生の　ピカチュウは　逃げ出した！"))).toBeInTheDocument();
+      });
 
-    it("ポケモンのタイプがでんきのとき、「でんき」と表示される", () => {
-      renderWithProviders(
-        <CaptureResult result={baseResult()} onNewQuest={vi.fn()} />,
-        { withRouter: true },
-      );
-      expect(screen.getByText("でんき")).toBeInTheDocument();
-    });
+      it("ポケモンのタイプがでんきのとき、「でんき」と表示される", () => {
+        renderCaptureResult(baseResult());
+        expect(screen.getByText("でんき")).toBeInTheDocument();
+      });
 
-    it("「メニューに戻る」を押すと、ホーム画面が表示される", async () => {
-      const user = userEvent.setup();
-      render(
-        <MemoryRouter initialEntries={["/quest"]}>
-          <Routes>
-            <Route
-              path="/quest"
-              element={
-                <CaptureResult
-                  result={baseResult()}
-                  onNewQuest={vi.fn()}
-                />
-              }
-            />
-            <Route path="/" element={<div data-testid="home-page" />} />
-          </Routes>
-        </MemoryRouter>,
-      );
+      it("「メニューに戻る」を押すと、ホーム画面が表示される", async () => {
+        const user = userEvent.setup();
+        render(
+          <MemoryRouter initialEntries={["/quest"]}>
+            <Routes>
+              <Route
+                path="/quest"
+                element={<CaptureResult result={baseResult()} onNewQuest={vi.fn()} />}
+              />
+              <Route path="/" element={<div data-testid="home-page" />} />
+            </Routes>
+          </MemoryRouter>,
+        );
 
-      await user.click(screen.getByRole("button", { name: "メニューに戻る" }));
+        await user.click(screen.getByRole("button", { name: "メニューに戻る" }));
 
-      expect(screen.getByTestId("home-page")).toBeInTheDocument();
+        expect(screen.getByTestId("home-page")).toBeInTheDocument();
+      });
     });
   });
 });

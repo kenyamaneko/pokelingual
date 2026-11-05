@@ -16,129 +16,132 @@ function moveEntry(
   };
 }
 
-describe("[ポケモンデータ] レベルアップで覚える技の候補の決定", () => {
-  describe("正常系", () => {
-    it("ソード・シールドでレベルアップで覚える技が 3 つあるとき、その 3 つがすべて候補になる", () => {
-      const moves = [
-        moveEntry("vine-whip", 22, [{ versionGroup: "sword-shield", level: 7 }]),
-        moveEntry("tackle", 33, [{ versionGroup: "sword-shield", level: 1 }]),
-        moveEntry("growl", 45, [{ versionGroup: "sword-shield", level: 1 }]),
-      ];
-      const candidates = resolveLevelUpMoveCandidates(moves);
-      expect(candidates).toHaveLength(3);
-      expect(candidates).toEqual(
-        expect.arrayContaining([
-          { slug: "tackle", id: 33 },
-          { slug: "growl", id: 45 },
-          { slug: "vine-whip", id: 22 },
-        ]),
-      );
-    });
+describe("[外部連携:ポケモンデータ:スナップショット生成]レベルアップで覚える技の候補の決定", () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("ソード・シールドでレベルアップで覚える技が vine-whip (技の番号 22・Lv.7)・tackle (33・Lv.1)・growl (45・Lv.1) の 3 つあるとき、技の候補は、tackle (技の番号 33)・growl (45)・vine-whip (22) の 3 件になる (並びは問わない)", () => {
+        const moves = [
+          moveEntry("vine-whip", 22, [{ versionGroup: "sword-shield", level: 7 }]),
+          moveEntry("tackle", 33, [{ versionGroup: "sword-shield", level: 1 }]),
+          moveEntry("growl", 45, [{ versionGroup: "sword-shield", level: 1 }]),
+        ];
+        const candidates = resolveLevelUpMoveCandidates(moves);
+        expect(candidates).toHaveLength(3);
+        expect(candidates).toEqual(
+          expect.arrayContaining([
+            { slug: "tackle", id: 33 },
+            { slug: "growl", id: 45 },
+            { slug: "vine-whip", id: 22 },
+          ]),
+        );
+      });
 
-    it("ソード・シールドでレベルアップで覚える技が 1 つだけのとき、その 1 つだけが候補になる", () => {
-      const moves = [moveEntry("sketch", 166, [{ versionGroup: "sword-shield", level: 1 }])];
-      expect(resolveLevelUpMoveCandidates(moves)).toEqual([{ slug: "sketch", id: 166 }]);
-    });
+      it("ソード・シールドでレベルアップで覚える技が sketch (技の番号 166・Lv.1) の 1 つだけのとき、技の候補は sketch (技の番号 166) の 1 件だけになる", () => {
+        const moves = [moveEntry("sketch", 166, [{ versionGroup: "sword-shield", level: 1 }])];
+        expect(resolveLevelUpMoveCandidates(moves)).toEqual([{ slug: "sketch", id: 166 }]);
+      });
 
-    it("ソード・シールドにレベルアップで覚える技のデータが無く X・Y にだけあるとき、X・Y でレベルアップで覚える技が候補になる", () => {
-      const moves = [
-        moveEntry("tackle", 33, [{ versionGroup: "x-y", level: 1 }]),
-        moveEntry("growl", 45, [{ versionGroup: "x-y", level: 1 }]),
-      ];
-      const candidates = resolveLevelUpMoveCandidates(moves);
-      expect(candidates).toHaveLength(2);
-      expect(candidates).toEqual(
-        expect.arrayContaining([
-          { slug: "tackle", id: 33 },
-          { slug: "growl", id: 45 },
-        ]),
-      );
-    });
+      it("ソード・シールドにレベルアップで覚える技のデータが無く、X・Y に tackle (技の番号 33・Lv.1) と growl (45・Lv.1) があるとき、技の候補は tackle (33) と growl (45) の 2 件になる (並びは問わない)", () => {
+        const moves = [
+          moveEntry("tackle", 33, [{ versionGroup: "x-y", level: 1 }]),
+          moveEntry("growl", 45, [{ versionGroup: "x-y", level: 1 }]),
+        ];
+        const candidates = resolveLevelUpMoveCandidates(moves);
+        expect(candidates).toHaveLength(2);
+        expect(candidates).toEqual(
+          expect.arrayContaining([
+            { slug: "tackle", id: 33 },
+            { slug: "growl", id: 45 },
+          ]),
+        );
+      });
 
-    it("ソード・シールドで同じ技を 2 つの異なるレベルで覚えるとき、その技は候補に 1 件だけ入る", () => {
-      const moves = [
-        moveEntry("double-edge", 38, [
-          { versionGroup: "sword-shield", level: 10 },
-          { versionGroup: "sword-shield", level: 30 },
-        ]),
-      ];
-      expect(resolveLevelUpMoveCandidates(moves)).toEqual([{ slug: "double-edge", id: 38 }]);
-    });
+      it("ソード・シールドで double-edge (技の番号 38) を Lv.10 と Lv.30 の 2 つのレベルで覚えるとき、技の候補は double-edge (技の番号 38) の 1 件だけになる", () => {
+        const moves = [
+          moveEntry("double-edge", 38, [
+            { versionGroup: "sword-shield", level: 10 },
+            { versionGroup: "sword-shield", level: 30 },
+          ]),
+        ];
+        expect(resolveLevelUpMoveCandidates(moves)).toEqual([{ slug: "double-edge", id: 38 }]);
+      });
 
-    it.each([
-      [
-        "タマゴ技など、レベルアップ以外の方法でしか覚えない技だけの",
-        [moveEntry("egg-move", 99, [{ versionGroup: "sword-shield", level: 0, learnMethod: "egg" }])],
-      ],
-      ["技のデータが 1 件も無い", []],
-    ])("%sとき、候補は空になる", (_label, moves) => {
-      expect(resolveLevelUpMoveCandidates(moves)).toEqual([]);
-    });
-  });
-});
-
-describe("[ポケモンデータ] 技の日本語名の決定", () => {
-  describe("正常系", () => {
-    it("技の名称に通常表記の日本語名があるとき、決定した日本語名は通常表記の名称になる", () => {
-      const names = [
-        { name: "Tackle", language: { name: "en" } },
-        { name: "たいあたり", language: { name: "ja" } },
-      ];
-      expect(resolveMoveNameJA(names)).toBe("たいあたり");
-    });
-
-    it("通常表記の日本語名が無くかな表記の名称があるとき、決定した日本語名はかな表記の名称になる", () => {
-      const names = [
-        { name: "Tackle", language: { name: "en" } },
-        { name: "たいあたり", language: { name: "ja-Hrkt" } },
-      ];
-      expect(resolveMoveNameJA(names)).toBe("たいあたり");
-    });
-  });
-
-  describe("異常系", () => {
-    it("通常表記もかな表記も日本語名が無いとき、決定すると日本語名が無いというエラーになる", () => {
-      const names = [{ name: "Tackle", language: { name: "en" } }];
-      expect(() => resolveMoveNameJA(names)).toThrow(/no japanese name/);
+      it.each([
+        [
+          "ソード・シールドで、タマゴ技 (egg-move・技の番号 99) のようにレベルアップ以外の方法でしか覚えない技だけがある",
+          [moveEntry("egg-move", 99, [{ versionGroup: "sword-shield", level: 0, learnMethod: "egg" }])],
+        ],
+        ["技のデータが 1 件も無い", []],
+      ])("%sとき、技の候補は空になる", (_given, moves) => {
+        expect(resolveLevelUpMoveCandidates(moves)).toEqual([]);
+      });
     });
   });
 });
 
-describe("[ポケモンデータ] 技の候補の日本語名への変換", () => {
-  const moveNamesJA = new Map([
-    ["tackle", "たいあたり"],
-    ["growl", "なきごえ"],
-    ["vine-whip", "つるのムチ"],
-    ["leech-seed", "やどりぎのタネ"],
-  ]);
-
-  describe("正常系", () => {
-    it("候補の技すべてに日本語名があるとき、日本語名の一覧は候補と同じ件数・同じ順序になる", () => {
-      const candidates = [
-        { slug: "tackle", id: 1 },
-        { slug: "growl", id: 2 },
-        { slug: "vine-whip", id: 3 },
-        { slug: "leech-seed", id: 4 },
-      ];
-      expect(resolveLevelUpMoveNames(candidates, moveNamesJA)).toEqual([
-        "たいあたり",
-        "なきごえ",
-        "つるのムチ",
-        "やどりぎのタネ",
-      ]);
+describe("[外部連携:ポケモンデータ:スナップショット生成]技の日本語名の決定", () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it.each([
+        { given: "技の名称に通常表記の日本語名「たいあたり」があるとき", languageCode: "ja" },
+        { given: "通常表記の日本語名が無く、かな表記の名称「たいあたり」があるとき", languageCode: "ja-Hrkt" },
+      ])("$given、技の日本語名は「たいあたり」になる", ({ languageCode }) => {
+        const names = [
+          { name: "Tackle", language: { name: "en" } },
+          { name: "たいあたり", language: { name: languageCode } },
+        ];
+        expect(resolveMoveNameJA(names)).toBe("たいあたり");
+      });
     });
 
-    it("候補が 0 件のとき、日本語名の一覧は空になる", () => {
-      expect(resolveLevelUpMoveNames([], moveNamesJA)).toEqual([]);
+    describe("異常系", () => {
+      it("技の名称に英語名 Tackle しか無く、通常表記もかな表記も日本語名が無いとき、決定すると、日本語名が無いことを示すエラーになる", () => {
+        const names = [{ name: "Tackle", language: { name: "en" } }];
+        expect(() => resolveMoveNameJA(names)).toThrow(/no japanese name/);
+      });
     });
   });
+});
 
-  describe("異常系", () => {
-    it("日本語名を調べ終えていない技が候補にあるとき、変換すると日本語名が解決されていないというエラーになる", () => {
-      const candidates = [{ slug: "unknown-move", id: 999 }];
-      expect(() => resolveLevelUpMoveNames(candidates, moveNamesJA)).toThrow(
-        /no resolved japanese name/,
-      );
+describe("[外部連携:ポケモンデータ:スナップショット生成]技の候補の日本語名の一覧の作成", () => {
+  describe("日本語名を調べ終えている技が、tackle (たいあたり)・growl (なきごえ)・vine-whip (つるのムチ)・leech-seed (やどりぎのタネ) の 4 つのとき", () => {
+    const moveNamesJA = new Map([
+      ["tackle", "たいあたり"],
+      ["growl", "なきごえ"],
+      ["vine-whip", "つるのムチ"],
+      ["leech-seed", "やどりぎのタネ"],
+    ]);
+
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("技の候補が tackle・growl・vine-whip・leech-seed の順で 4 件あるとき、日本語名の一覧は、たいあたり・なきごえ・つるのムチ・やどりぎのタネの順の 4 件になる", () => {
+          const candidates = [
+            { slug: "tackle", id: 1 },
+            { slug: "growl", id: 2 },
+            { slug: "vine-whip", id: 3 },
+            { slug: "leech-seed", id: 4 },
+          ];
+          expect(resolveLevelUpMoveNames(candidates, moveNamesJA)).toEqual([
+            "たいあたり",
+            "なきごえ",
+            "つるのムチ",
+            "やどりぎのタネ",
+          ]);
+        });
+
+        it("技の候補が 0 件のとき、日本語名の一覧は空になる", () => {
+          expect(resolveLevelUpMoveNames([], moveNamesJA)).toEqual([]);
+        });
+      });
+
+      describe("異常系", () => {
+        it("技の候補に、日本語名を調べ終えていない技 (unknown-move) があるとき、作成すると、日本語名が解決されていないことを示すエラーになる", () => {
+          const candidates = [{ slug: "unknown-move", id: 999 }];
+          expect(() => resolveLevelUpMoveNames(candidates, moveNamesJA)).toThrow(
+            /no resolved japanese name/,
+          );
+        });
+      });
     });
   });
 });

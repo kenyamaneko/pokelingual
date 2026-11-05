@@ -3,31 +3,33 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { spec } from "../../test/labels";
 import { RateLimitModal, formatUntilJstMidnight } from "./RateLimitModal";
 
-describe("[レート制限・利用回数] 利用上限モーダル", () => {
-  describe("異常系", () => {
-    it("自分の利用上限に達したとき、「博士は忙しそうにしている」と表示される", () => {
-      render(
-        <RateLimitModal
-          detail={{ kind: "user", message: "x" }}
-          onDismiss={vi.fn()}
-        />,
-      );
-      expect(screen.getByText(spec("博士は忙しそうにしている"))).toBeInTheDocument();
-    });
+describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
+  describe("単体テスト", () => {
+    describe("異常系", () => {
+      it("ユーザーの日次上限に達したとき、「博士は忙しそうにしている」と表示される", () => {
+        render(
+          <RateLimitModal
+            detail={{ kind: "user", message: "x" }}
+            onDismiss={vi.fn()}
+          />,
+        );
+        expect(screen.getByText(spec("博士は忙しそうにしている"))).toBeInTheDocument();
+      });
 
-    it("全体の利用上限に達したとき、「研究所は大にぎわいのようだ」と表示される", () => {
-      render(
-        <RateLimitModal
-          detail={{ kind: "global", message: "x" }}
-          onDismiss={vi.fn()}
-        />,
-      );
-      expect(screen.getByText(spec("研究所は大にぎわいのようだ"))).toBeInTheDocument();
+      it("全体の日次上限に達したとき、「研究所は大にぎわいのようだ」と表示される", () => {
+        render(
+          <RateLimitModal
+            detail={{ kind: "global", message: "x" }}
+            onDismiss={vi.fn()}
+          />,
+        );
+        expect(screen.getByText(spec("研究所は大にぎわいのようだ"))).toBeInTheDocument();
+      });
     });
   });
 });
 
-describe("[レート制限・利用回数] 利用リセットまでの残り時間表示", () => {
+describe("[本体:AI 呼び出し回数]日次上限のリセットまでの残り時間表示", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -36,18 +38,32 @@ describe("[レート制限・利用回数] 利用リセットまでの残り時�
     vi.useRealTimers();
   });
 
-  describe("正常系", () => {
-    // JST は UTC+9 のため、JST 0:00 は UTC の前日 15:00:00 として指定する。
-    it.each([
-      ["JST 23:59:59 (リセット 1 秒前)", "00:00:01", "2026-01-01T14:59:59.000Z"],
-      ["JST 0:00:00 (リセットの瞬間)", "00:00:00", "2026-01-01T15:00:00.000Z"],
-      ["JST 0:00:01 (リセット 1 秒後)", "23:59:59", "2026-01-01T15:00:01.000Z"],
-      ["JST 12:34:56 (日中)", "11:25:04", "2026-01-02T03:34:56.000Z"],
-      ["残り時間が 9 時間 9 分 9 秒", "09:09:09", "2026-01-02T05:50:51.000Z"],
-    ])("%s のとき、残り時間は %s と表示される", (_given, expected, nowUtc) => {
-      vi.setSystemTime(new Date(nowUtc));
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("現在時刻が JST 23:59:59 のとき、リセットまでの残り時間は 00:00:01 になる", () => {
+        vi.setSystemTime(new Date("2026-01-01T23:59:59+09:00"));
+        expect(formatUntilJstMidnight()).toBe("00:00:01");
+      });
 
-      expect(formatUntilJstMidnight()).toBe(expected);
+      it("現在時刻が JST 0:00:00 のとき、リセットまでの残り時間は 00:00:00 になる", () => {
+        vi.setSystemTime(new Date("2026-01-02T00:00:00+09:00"));
+        expect(formatUntilJstMidnight()).toBe("00:00:00");
+      });
+
+      it("現在時刻が JST 0:00:01 のとき、リセットまでの残り時間は 23:59:59 になる", () => {
+        vi.setSystemTime(new Date("2026-01-02T00:00:01+09:00"));
+        expect(formatUntilJstMidnight()).toBe("23:59:59");
+      });
+
+      it("現在時刻が JST 12:34:56 のとき、リセットまでの残り時間は 11:25:04 になる", () => {
+        vi.setSystemTime(new Date("2026-01-02T12:34:56+09:00"));
+        expect(formatUntilJstMidnight()).toBe("11:25:04");
+      });
+
+      it("現在時刻が JST 14:50:51 のとき、リセットまでの残り時間は 09:09:09 になる", () => {
+        vi.setSystemTime(new Date("2026-01-02T14:50:51+09:00"));
+        expect(formatUntilJstMidnight()).toBe("09:09:09");
+      });
     });
   });
 });
