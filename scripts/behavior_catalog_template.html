@@ -227,7 +227,8 @@
         var minors = Array.from(groupBy(mcases, function (c) { return c.m || ''; }).entries());
         var sec = '<section id="' + id + '" class="scroll-mt-40"><div class="mb-3 flex items-baseline gap-3 border-b border-line pb-2">' +
           '<span class="text-xs font-medium text-faint">' + esc(region) + '</span><h2 class="text-xl font-bold">' + esc(major) + '</h2>' +
-          '</div><div class="flex flex-col gap-6">';
+          '<div class="ml-auto flex gap-1.5 self-center"><button type="button" data-fold="open" class="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて開く</button>' +
+          '<button type="button" data-fold="close" class="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて閉じる</button></div></div><div class="flex flex-col gap-6">';
         minors.forEach(function (entry) {
           var minor = entry[0], ml = entry[1];
           var smalls = groupBy(ml, function (c) { return c.s; });
@@ -277,6 +278,11 @@
       state.na = b.getAttribute('data-na');
       nf.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
       render();
+    });
+    document.getElementById('content').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-fold]'); if (!b) return;
+      var isOpen = b.getAttribute('data-fold') === 'open';
+      b.closest('section').querySelectorAll('details').forEach(function (d) { d.open = isOpen; });
     });
     document.getElementById('expand').addEventListener('click', function () { state.openAll = true; render(); });
     document.getElementById('collapse').addEventListener('click', function () { state.openAll = false; render(); });
