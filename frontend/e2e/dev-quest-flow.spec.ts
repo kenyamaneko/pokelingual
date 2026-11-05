@@ -63,8 +63,9 @@ async function loginAsTestUserWithTutorialStatus(page: Page, state: "complete" |
 test.describe("[本体:クエスト]クエストの進行", () => {
   defineCase(
     {
-      種別: "スモークテスト",
+      種別: "シナリオテスト",
       正常異常: "正常系",
+      環境: ["dev環境"],
       steps: [
         {
           Given: "dev 環境で、メール確認済みのテスト用ユーザーとしてログインしていて、チュートリアルが未完了であるとき",
@@ -122,8 +123,9 @@ test.describe("[本体:クエスト]クエストの進行", () => {
 
   defineCase(
     {
-      種別: "スモークテスト",
+      種別: "シナリオテスト",
       正常異常: "正常系",
+      環境: ["dev環境"],
       steps: [
         {
           Given: "dev 環境で、メール確認済みのテスト用ユーザーとしてログインしていて、チュートリアルが完了済みであるとき",

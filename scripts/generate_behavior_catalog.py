@@ -3,6 +3,7 @@
 
 テスト名の先頭 `[区分:大機能(:中機能)]小機能` と、ケースの結果に載せた項目
 (種別・正常異常・Given・When・Then) を読み、小機能ごとの表にして標準出力へ書き出す。
+シナリオテストには実行する環境のタグを付け、環境で結果が違うステップは環境ごとの結果を表に並べる。
 項目が足りないケースと、一覧にない大機能・中機能の組はエラーにする。
 """
 
@@ -31,8 +32,11 @@ KINDS = (
     "サービス間結合テスト",
     "E2Eテスト",
     "シナリオテスト",
-    "スモークテスト",
 )
+
+SCENARIO_KIND = "シナリオテスト"
+
+ENVIRONMENTS = ("ローカル", "dev環境")
 
 OUTCOMES = ("正常系", "異常系")
 
@@ -41,6 +45,9 @@ PROPERTY_OUTCOME = "正常異常"
 PROPERTY_GIVEN = "Given"
 PROPERTY_WHEN = "When"
 PROPERTY_THEN = "Then"
+PROPERTY_ENVIRONMENT = "環境"
+# 環境ごとに結果が違うステップは、`Then:ローカル` のように環境名を添えたキーで載せる
+THEN_ENVIRONMENT_PREFIX = "Then:"
 
 # テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
 DISCLAIMER = (
@@ -68,12 +75,14 @@ class Step:
     Args:
         given: 前提。無ければ空文字。
         whens: 実行順の操作。
-        then: 結果。
+        then: 環境によらない結果。環境ごとに結果が違うステップでは空文字。
+        then_by_environment: 環境ごとの結果。環境によらない結果のステップでは空。
     """
 
     given: str
     whens: tuple[str, ...]
     then: str
+    then_by_environment: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -89,6 +98,7 @@ class CatalogCase:
         outcome: 正常系か異常系か。skip 中のケースでは空文字のことがある。
         steps: ステップ。skip 中のケースでは空。
         is_skipped: skip されて実行されていないケースかどうか。
+        environments: 実行する環境。シナリオテストだけに付く。
     """
 
     region: str
@@ -99,6 +109,7 @@ class CatalogCase:
     outcome: str
     steps: tuple[Step, ...]
     is_skipped: bool
+    environments: tuple[str, ...] = ()
 
 
 def split_test_name(raw_name: str) -> tuple[str, str]:
@@ -139,7 +150,8 @@ def parse_top_level(top: str, where: str) -> tuple[str, str, str, str]:
 def parse_steps(properties: list[tuple[str, str]], where: str) -> tuple[Step, ...]:
     """結果に載った Given・When・Then の並びを、ステップに組み立てる。
 
-    ステップは「Given (任意)、When (1 つ以上)、Then」で閉じる。
+    ステップは「Given (任意)、When (1 つ以上)、Then」で閉じる。環境ごとに結果が違うステップは、
+    Then の代わりに `Then:環境名` が環境の数だけ続いて閉じる。
 
     Args:
         properties: 載った順の (キー, 値)。
@@ -153,25 +165,89 @@ def parse_steps(properties: list[tuple[str, str]], where: str) -> tuple[Step, ..
     """
     steps: list[Step] = []
     given, whens, open_step = "", [], False
+    thens_by_environment: list[tuple[str, str]] = []
+
+    def close_environment_step() -> None:
+        nonlocal given, whens, open_step, thens_by_environment
+        steps.append(Step(given, tuple(whens), "", tuple(thens_by_environment)))
+        given, whens, open_step, thens_by_environment = "", [], False, []
+
     for key, value in properties:
         if key == PROPERTY_GIVEN:
+            if thens_by_environment:
+                close_environment_step()
             if open_step:
                 raise CatalogError(f"Then の前に Given が続いています: {where}")
             given, whens, open_step = value, [], True
         elif key == PROPERTY_WHEN:
+            if thens_by_environment:
+                close_environment_step()
             if not open_step:
                 given, whens, open_step = "", [], True
             whens.append(value)
         elif key == PROPERTY_THEN:
+            if thens_by_environment:
+                raise CatalogError(f"同じステップに Then と環境ごとの Then が混ざっています: {where}")
             if not whens:
                 raise CatalogError(f"When の無い Then があります: {where}")
             steps.append(Step(given, tuple(whens), value))
             given, whens, open_step = "", [], False
+        elif key.startswith(THEN_ENVIRONMENT_PREFIX):
+            environment = key[len(THEN_ENVIRONMENT_PREFIX):]
+            if not whens:
+                raise CatalogError(f"When の無い Then があります: {where}")
+            if environment not in ENVIRONMENTS:
+                raise CatalogError(f"環境「{environment}」は {'・'.join(ENVIRONMENTS)} のいずれでもありません: {where}")
+            if any(existing == environment for existing, _ in thens_by_environment):
+                raise CatalogError(f"同じステップに環境「{environment}」の Then が 2 つあります: {where}")
+            thens_by_environment.append((environment, value))
+    if thens_by_environment:
+        close_environment_step()
     if open_step:
         raise CatalogError(f"Then の無いステップがあります: {where}")
     if not steps:
         raise CatalogError(f"Given・When・Then が載っていません: {where}")
     return tuple(steps)
+
+
+def validate_environments(kind: str, environments: tuple[str, ...], steps: tuple[Step, ...], where: str) -> tuple[Step, ...]:
+    """実行する環境のタグと、環境ごとの結果を確かめ、環境の並びを一覧の順にそろえる。
+
+    Args:
+        kind: テストの種別。
+        environments: 結果に載った実行環境。
+        steps: ステップ。
+        where: エラー表示に使う、テストの所在。
+
+    Returns:
+        環境ごとの結果を ENVIRONMENTS の順にそろえたステップ。
+
+    Raises:
+        CatalogError: 環境のタグがシナリオテスト以外にあるとき、シナリオテストに無いとき、
+            環境ごとの結果がタグと食い違うとき、または環境ごとの結果が同じとき。
+    """
+    if kind != SCENARIO_KIND:
+        if environments:
+            raise CatalogError(f"環境のタグは {SCENARIO_KIND} だけに付けられます: {where}")
+        if any(step.then_by_environment for step in steps):
+            raise CatalogError(f"環境ごとの Then は {SCENARIO_KIND} だけに書けます: {where}")
+        return steps
+    if not environments:
+        raise CatalogError(f"{SCENARIO_KIND} には実行する環境のタグが必要です: {where}")
+    ordered = []
+    for step in steps:
+        if not step.then_by_environment:
+            ordered.append(step)
+            continue
+        if {environment for environment, _ in step.then_by_environment} != set(environments):
+            raise CatalogError(f"環境ごとの Then の環境が、ケースの環境のタグと一致しません: {where}")
+        if len(step.then_by_environment) < 2:
+            raise CatalogError(f"環境ごとの Then は、2 つ以上の環境で書きます: {where}")
+        if len({text for _, text in step.then_by_environment}) < 2:
+            raise CatalogError(f"環境ごとの Then が同じ内容です。Then は 1 つにします: {where}")
+        sorted_thens = tuple(sorted(step.then_by_environment, key=lambda pair: ENVIRONMENTS.index(pair[0])))
+        ordered.append(Step(step.given, step.whens, step.then, sorted_thens))
+    return tuple(ordered)
 
 
 def load_features(path: Path) -> dict[str, dict[str, list[str]]]:
@@ -235,16 +311,25 @@ def parse_junit_file(path: Path, features: dict) -> list[CatalogCase]:
         is_skipped = testcase.find("skipped") is not None
         properties = [(p.get("name"), p.get("value")) for p in testcase.iter("property")]
         meta = {key: value for key, value in properties if key in (PROPERTY_KIND, PROPERTY_OUTCOME)}
+        environments = tuple(value for key, value in properties if key == PROPERTY_ENVIRONMENT)
+        for environment in environments:
+            if environment not in ENVIRONMENTS:
+                raise CatalogError(f"環境「{environment}」は {'・'.join(ENVIRONMENTS)} のいずれでもありません: {where}")
+        if len(set(environments)) != len(environments):
+            raise CatalogError(f"環境のタグが重複しています: {where}")
         kind, outcome = meta.get(PROPERTY_KIND, ""), meta.get(PROPERTY_OUTCOME, "")
         if is_skipped and not properties:
-            cases.append(CatalogCase(region, major, minor, feature, kind, outcome, (), True))
+            cases.append(CatalogCase(region, major, minor, feature, kind, outcome, (), True, ()))
             continue
         if kind not in KINDS:
             raise CatalogError(f"種別「{kind}」は「テストの種別」のいずれでもありません: {where}")
         if outcome not in OUTCOMES:
             raise CatalogError(f"正常異常「{outcome}」は {'・'.join(OUTCOMES)} のいずれでもありません: {where}")
-        steps = parse_steps([p for p in properties if p[0] in (PROPERTY_GIVEN, PROPERTY_WHEN, PROPERTY_THEN)], where)
-        cases.append(CatalogCase(region, major, minor, feature, kind, outcome, steps, is_skipped))
+        step_keys = (PROPERTY_GIVEN, PROPERTY_WHEN, PROPERTY_THEN)
+        steps = parse_steps([p for p in properties if p[0] in step_keys or p[0].startswith(THEN_ENVIRONMENT_PREFIX)], where)
+        steps = validate_environments(kind, environments, steps, where)
+        ordered_environments = tuple(environment for environment in ENVIRONMENTS if environment in environments)
+        cases.append(CatalogCase(region, major, minor, feature, kind, outcome, steps, is_skipped, ordered_environments))
     return cases
 
 
@@ -265,6 +350,21 @@ def sort_cases(cases: list[CatalogCase], features: dict) -> list[CatalogCase]:
         return REGIONS.index(case.region), allowed["大機能"].index(case.major), minor_rank
 
     return sorted(cases, key=rank)
+
+
+def build_step_payload(step: Step) -> dict:
+    """ステップを画面の描画に渡すデータにする。
+
+    Args:
+        step: ステップ。
+
+    Returns:
+        前提・操作・結果。環境ごとに結果が違うときは、結果の代わりに環境と結果の組の並びを持つ。
+    """
+    payload = {"G": step.given, "W": list(step.whens), "T": step.then}
+    if step.then_by_environment:
+        payload["E"] = [[environment, text] for environment, text in step.then_by_environment]
+    return payload
 
 
 def build_payload(cases: list[CatalogCase], commit: str | None) -> dict:
@@ -291,7 +391,8 @@ def build_payload(cases: list[CatalogCase], commit: str | None) -> dict:
                 "t": case.kind,
                 "n": case.outcome,
                 "x": case.is_skipped,
-                "steps": [{"G": step.given, "W": list(step.whens), "T": step.then} for step in case.steps],
+                "e": list(case.environments),
+                "steps": [build_step_payload(step) for step in case.steps],
             }
             for case in cases
         ],
