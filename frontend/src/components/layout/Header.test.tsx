@@ -26,14 +26,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const SHOW_HEADER = "ヘッダーを表示する";
+const SHOW_ENVIRONMENT = "ログイン後の画面を開いて、ヘッダーに実行環境を表示する";
+const SHOW_REMAINING_COUNT = "ログイン後の画面を開いて、ヘッダーに AI 呼び出しの残り回数を表示する";
+const SHOW_HEADER_ON_SCREEN = "画面を開いて、ヘッダーを表示する";
+const SHOW_HAMBURGER_MENU = "ログイン後の画面を開いて、ヘッダーのハンバーガーメニューを表示する";
+const SUBMIT_TRANSLATION_FOR_SCORING = "クエスト画面で、場所「テスト草原」を選び、翻訳を入力して「この翻訳に決めた！」を押し、AI に採点を依頼する";
 
 describe("[本体:共通画面]実行環境の表示", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が local のとき", When: [SHOW_HEADER], Then: "「LOCAL」と表示される" }],
+      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が local のとき", When: [SHOW_ENVIRONMENT], Then: "「LOCAL」と表示される" }],
     },
     async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "local");
@@ -49,7 +53,7 @@ describe("[本体:共通画面]実行環境の表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が dev のとき", When: [SHOW_HEADER], Then: "「DEV」と表示される" }],
+      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が dev のとき", When: [SHOW_ENVIRONMENT], Then: "「DEV」と表示される" }],
     },
     async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "dev");
@@ -68,7 +72,7 @@ describe("[本体:共通画面]実行環境の表示", () => {
       steps: [
         {
           Given: "ログインしていて、VITE_ENVIRONMENT が prod のとき",
-          When: [SHOW_HEADER],
+          When: [SHOW_ENVIRONMENT],
           Then: "「LOCAL」も「DEV」も表示されない",
         },
       ],
@@ -93,7 +97,7 @@ describe("[本体:共通画面]実行環境の表示", () => {
       steps: [
         {
           Given: "ログインしていて、VITE_ENVIRONMENT が未設定のとき",
-          When: [SHOW_HEADER],
+          When: [SHOW_ENVIRONMENT],
           Then: "「LOCAL」も「DEV」も表示されない",
         },
       ],
@@ -119,7 +123,7 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       steps: [
         {
           Given: "ログインしていて、今日の AI 呼び出し回数の日次上限が 30 回で、今日の AI 呼び出し回数が 29 回のとき",
-          When: [SHOW_HEADER],
+          When: [SHOW_REMAINING_COUNT],
           Then: "「残り 1/30」と表示される",
         },
       ],
@@ -140,7 +144,7 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       steps: [
         {
           Given: "ログインしていて、今日の AI 呼び出し回数の日次上限が 30 回で、今日の AI 呼び出し回数が 30 回のとき",
-          When: [SHOW_HEADER],
+          When: [SHOW_REMAINING_COUNT],
           Then: "「残り 0/30」と表示される",
         },
       ],
@@ -161,7 +165,7 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       steps: [
         {
           Given: "ログインしていて、今日の AI 呼び出し回数の日次上限が 30 回で、今日の AI 呼び出し回数が 31 回のとき",
-          When: [SHOW_HEADER],
+          When: [SHOW_REMAINING_COUNT],
           Then: "「残り 0/30」と表示される",
         },
       ],
@@ -181,8 +185,8 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ログインしていて、今日の AI 呼び出し回数の取得に失敗したとき",
-          When: [SHOW_HEADER],
+          Given: "ログインしていて、今日の AI 呼び出し回数の取得に失敗するとき",
+          When: [SHOW_REMAINING_COUNT],
           Then: "残り回数が表示されない",
         },
       ],
@@ -208,8 +212,8 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       steps: [
         {
           Given:
-            "ログインしていて、今日の AI 呼び出し回数の取得に失敗したあと、バックエンドが翻訳の送信に日次上限の 429 を返し、次の取得で AI 呼び出し回数 30 回、日次上限 30 回が返るとき",
-          When: ["ヘッダーとクエスト画面を表示する", "翻訳を送信する"],
+            "ログインしていて、バックエンドが最初の AI 呼び出し回数の取得に失敗し、翻訳の送信に日次上限の 429 を返し、次の取得で AI 呼び出し回数 30 回、日次上限 30 回を返すとき",
+          When: ["クエスト画面を開いて、ヘッダーに AI 呼び出しの残り回数を表示する", SUBMIT_TRANSLATION_FOR_SCORING],
           Then: "「残り 0/30」と表示される",
         },
       ],
@@ -249,7 +253,7 @@ describe("[本体:共通画面]表示の条件", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: "ログインしていないとき", When: [SHOW_HEADER], Then: "ヘッダーが表示されない" }],
+      steps: [{ Given: "ログインしていないとき", When: [SHOW_HEADER_ON_SCREEN], Then: "ヘッダーが表示されない" }],
     },
     () => {
       renderHeader(null);
@@ -264,7 +268,7 @@ describe("[本体:共通画面]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしているとき", When: [SHOW_HEADER], Then: "メニューが閉じている" }],
+      steps: [{ Given: "ログインしているとき", When: [SHOW_HAMBURGER_MENU], Then: "メニューが閉じている" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
@@ -281,7 +285,7 @@ describe("[本体:共通画面]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしているとき", When: [SHOW_HEADER, "メニューボタンを押す"], Then: "メニューが開く" }],
+      steps: [{ Given: "ログインしているとき", When: [SHOW_HAMBURGER_MENU, "ヘッダーのハンバーガーメニューのボタン「メニュー」を押す"], Then: "メニューが開く" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
@@ -301,7 +305,7 @@ describe("[本体:共通画面]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、メニューが開いているとき", When: ["「ぼうけん」のリンクを押す"], Then: "メニューが閉じる" }],
+      steps: [{ Given: "ログインしていて、メニューが開いているとき", When: ["ヘッダーのハンバーガーメニューで「ぼうけん」のリンクを押す"], Then: "メニューが閉じる" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });

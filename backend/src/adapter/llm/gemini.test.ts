@@ -16,7 +16,7 @@ function makeClient(text: string): GeminiClient {
   return makeClientWithCandidates([{ content: { parts: [{ text }] } }]);
 }
 
-const REQUEST_TEXT_GENERATION = "AI にテキストの生成を依頼する";
+const REQUEST_TEXT_GENERATION = "クエストの翻訳を採点するために、AI にテキストの生成を依頼して、AI 応答からテキストを取り出す";
 
 describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
   defineCase(

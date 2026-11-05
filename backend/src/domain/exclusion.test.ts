@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { buildExcludedPokemonIDs } from "./exclusion.js";
 import { defineCase } from "../test/defineCase.js";
 
-const DECIDE_EXCLUDED_POKEMON = "除外ポケモンの一覧を決める";
+const DECIDE_EXCLUDED_POKEMON = "クエスト画面の出題の除外のため、除外ポケモンの一覧を決める";
 
 describe("[本体:クエスト]出題除外の決定", () => {
   defineCase(
@@ -28,7 +28,7 @@ describe("[本体:クエスト]出題除外の決定", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ユーザーが除外ポケモンを 0 匹で設定したとき",
+          Given: "ユーザーが除外ポケモンを 0 匹で設定しているとき",
           When: [DECIDE_EXCLUDED_POKEMON],
           Then: "除外ポケモンの一覧は空になる",
         },
@@ -45,7 +45,7 @@ describe("[本体:クエスト]出題除外の決定", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ユーザーが図鑑番号 10 のポケモンだけを除外に設定したとき",
+          Given: "ユーザーが図鑑番号 10 のポケモンだけを除外に設定しているとき",
           When: [DECIDE_EXCLUDED_POKEMON],
           Then: "除外ポケモンの一覧は図鑑番号 10 だけになる",
         },
@@ -62,7 +62,7 @@ describe("[本体:クエスト]出題除外の決定", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ユーザーが図鑑番号 10 と 20 のポケモンを除外に設定したとき",
+          Given: "ユーザーが図鑑番号 10 と 20 のポケモンを除外に設定しているとき",
           When: [DECIDE_EXCLUDED_POKEMON],
           Then: "除外ポケモンの一覧は図鑑番号 10 と 20 になる",
         },

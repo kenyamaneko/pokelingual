@@ -28,12 +28,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const DISPLAY_SCORE = "採点スコアを表示する";
-const WAIT_UNTIL_HP_DECREASE_ENDS = "HP の減少が終わるまで待つ";
-const WAIT_UNTIL_HALF_OF_HP_DECREASE = "HP の減少にかかる時間の半分が経つまで待つ";
-const WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE = "HP の減少にかかる時間の 6 割が経つまで待つ";
-const WAIT_UNTIL_DAMAGE_REVEAL = "HP の減少が終わってからダメージ数値を出すまでの間が経つまで待つ";
-const WAIT_UNTIL_EFFECT_REVEAL = "HP の減少が終わってからこうか表示を出すまでの間が経つまで待つ";
+const DISPLAY_SCORE = "クエスト画面で、採点スコアの演出を表示する";
+const WAIT_UNTIL_HP_DECREASE_ENDS = "クエスト画面の採点スコアの演出で、HP の減少が終わるまで待つ";
+const WAIT_UNTIL_HALF_OF_HP_DECREASE = "クエスト画面の採点スコアの演出で、HP の減少にかかる時間の半分が経つまで待つ";
+const WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE = "クエスト画面の採点スコアの演出で、HP の減少にかかる時間の 6 割が経つまで待つ";
+const WAIT_UNTIL_DAMAGE_REVEAL = "クエスト画面の採点スコアの演出で、HP の減少が終わってからダメージ数値を出すまでの間が経つまで待つ";
+const WAIT_UNTIL_EFFECT_REVEAL = "クエスト画面の採点スコアの演出で、HP の減少が終わってからこうか表示を出すまでの間が経つまで待つ";
 
 type HpBandRow = {
   score: number;

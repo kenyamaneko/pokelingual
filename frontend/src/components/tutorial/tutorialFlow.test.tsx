@@ -76,12 +76,14 @@ async function completeTutorial(): Promise<UserEvent> {
   return user;
 }
 
-const OPEN_TUTORIAL = "チュートリアルを開く";
-const PRESS_INTRO_DISMISS = "遊び方の説明モーダルの「はじめる」を押す";
-const INTRO_CLOSED = "遊び方の説明モーダルを閉じたとき";
-const SUBMIT_TRANSLATION = "翻訳「電気タイプのねずみポケモン」を送信する";
-const NAME_STEP_STARTED = "英文当てステップを終えてポケモン名当てステップが始まったとき";
-const PRESS_PROCEED = "「次へ進む」を押す";
+const OPEN_TUTORIAL = "遊び方の説明を表示するために、チュートリアル画面を開く";
+const PRESS_INTRO_DISMISS = "チュートリアル画面の遊び方の説明モーダルで、「はじめる」を押す";
+const SUBMIT_TRANSLATION = "チュートリアル画面の英文当てステップで、翻訳「電気タイプのねずみポケモン」を送信する";
+const TRANSLATION_WITHOUT_ELECTRIC = "英文当てステップに入力する翻訳が、「電気」を含まない「ねずみポケモン」であるとき";
+const SUBMIT_TRANSLATION_ANY = "チュートリアル画面の英文当てステップで、翻訳を送信する";
+const NAME_OTHER_THAN_PIKACHU = "ポケモン名当てステップに入力する名前が、ピカチュウ以外の「raichu」であるとき";
+const SUBMIT_NAME_ANY = "チュートリアル画面のポケモン名当てステップで、名前を送信する";
+const PRESS_PROCEED = "チュートリアル画面のポケモン名当てステップで、「次へ進む」を押す";
 const SHAKE_GUIDE_BUBBLE = "案内の吹き出しが揺れる";
 
 describe("[本体:チュートリアル]遊び方の説明", () => {
@@ -112,7 +114,7 @@ describe("[本体:チュートリアル]遊び方の説明", () => {
       steps: [
         {
           Given: "遊び方の説明モーダルが表示されているとき",
-          When: ["「はじめる」を押す"],
+          When: [PRESS_INTRO_DISMISS],
           Then: "遊び方の説明モーダルが画面から消える",
         },
       ],
@@ -177,8 +179,11 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: INTRO_CLOSED,
-          When: ["「電気」と「ねずみ」を両方含む翻訳「電気タイプのねずみポケモン」を送信する"],
+          When: [
+            OPEN_TUTORIAL,
+            PRESS_INTRO_DISMISS,
+            "チュートリアル画面の英文当てステップで、「電気」と「ねずみ」を両方含む翻訳「電気タイプのねずみポケモン」を送信する",
+          ],
           Then: "最終評価点が上限の 99% と表示される",
         },
       ],
@@ -198,8 +203,8 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "遊び方の説明モーダルを閉じ、「電気」を含まない翻訳「ねずみポケモン」を入力したとき",
-          When: ["翻訳を送信する"],
+          Given: TRANSLATION_WITHOUT_ELECTRIC,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION_ANY],
           Then: "採点結果画面に進まず、翻訳の入力欄が表示されたままになる",
         },
       ],
@@ -220,8 +225,8 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "遊び方の説明モーダルを閉じ、「電気」を含まない翻訳「ねずみポケモン」を入力したとき",
-          When: ["翻訳を送信する"],
+          Given: TRANSLATION_WITHOUT_ELECTRIC,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION_ANY],
           Then: SHAKE_GUIDE_BUBBLE,
         },
       ],
@@ -285,8 +290,13 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: NAME_STEP_STARTED,
-          When: ["英語名「pikachu」を送信する", PRESS_PROCEED],
+          When: [
+            OPEN_TUTORIAL,
+            PRESS_INTRO_DISMISS,
+            SUBMIT_TRANSLATION,
+            "チュートリアル画面のポケモン名当てステップで、英語名「pikachu」を送信する",
+            PRESS_PROCEED,
+          ],
           Then: "捕獲待機画面で「ハイパーボールを　使う」ボタンが表示される",
         },
       ],
@@ -309,8 +319,13 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: NAME_STEP_STARTED,
-          When: ["日本語名「ピカチュウ」を送信する", PRESS_PROCEED],
+          When: [
+            OPEN_TUTORIAL,
+            PRESS_INTRO_DISMISS,
+            SUBMIT_TRANSLATION,
+            "チュートリアル画面のポケモン名当てステップで、日本語名「ピカチュウ」を送信する",
+            PRESS_PROCEED,
+          ],
           Then: "捕獲待機画面で「スーパーボールを　使う」ボタンが表示される",
         },
       ],
@@ -333,8 +348,8 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "異常系",
       steps: [
         {
-          Given: "英文当てステップを終えてポケモン名当てステップが始まり、ピカチュウ以外の名前「raichu」を入力したとき",
-          When: ["名前を送信する"],
+          Given: NAME_OTHER_THAN_PIKACHU,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION, SUBMIT_NAME_ANY],
           Then: "捕獲待機画面に進まず、名前の入力欄が表示されたままになる",
         },
       ],
@@ -355,8 +370,8 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "異常系",
       steps: [
         {
-          Given: "英文当てステップを終えてポケモン名当てステップが始まり、ピカチュウ以外の名前「raichu」を入力したとき",
-          When: ["名前を送信する"],
+          Given: NAME_OTHER_THAN_PIKACHU,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION, SUBMIT_NAME_ANY],
           Then: SHAKE_GUIDE_BUBBLE,
         },
       ],
@@ -385,8 +400,14 @@ describe("[本体:チュートリアル]捕獲ステップと完了", () => {
         正常異常: "正常系",
         steps: [
           {
-            Given: `ポケモン名当てで${language}「${input}」で正解して「次へ進む」を押し、捕獲待機画面が表示されているとき`,
-            When: [`「${useButton}」を押す`],
+            When: [
+              OPEN_TUTORIAL,
+              PRESS_INTRO_DISMISS,
+              SUBMIT_TRANSLATION,
+              `チュートリアル画面のポケモン名当てステップで、正解の${language}「${input}」を送信する`,
+              PRESS_PROCEED,
+              `チュートリアル画面の捕獲ステップで、「${useButton}」を押す`,
+            ],
             Then: "捕獲成功の演出が表示される",
           },
         ],
@@ -410,8 +431,14 @@ describe("[本体:チュートリアル]捕獲ステップと完了", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名当てで英語名「pikachu」で正解して「次へ進む」を押し、捕獲待機画面が表示されているとき",
-          When: [`「${ULTRA_BALL_USE_BUTTON}」を押す`],
+          When: [
+            OPEN_TUTORIAL,
+            PRESS_INTRO_DISMISS,
+            SUBMIT_TRANSLATION,
+            "チュートリアル画面のポケモン名当てステップで、正解の英語名「pikachu」を送信する",
+            PRESS_PROCEED,
+            `チュートリアル画面の捕獲ステップで、「${ULTRA_BALL_USE_BUTTON}」を押す`,
+          ],
           Then: "捕獲に成功し、結果画面に完了案内の吹き出し「これでチュートリアルは完了だよ。ポケモンを探しに行こう！」が表示される",
         },
       ],
@@ -437,9 +464,9 @@ describe("[本体:チュートリアル]捕獲ステップと完了", () => {
         {
           Given: "チュートリアルが未完了のホーム画面が表示されているとき",
           When: [
-            "「ポケモンを探しに行く」を押してチュートリアルを最後まで終える",
-            "「メニューに戻る」を押す",
-            "再びホーム画面で「ポケモンを探しに行く」を押す",
+            "ホーム画面で「ポケモンを探しに行く」を押して、チュートリアル画面のチュートリアルを最後まで終える",
+            "チュートリアル画面の結果画面で、「メニューに戻る」を押す",
+            "場所選択画面を開くために、ホーム画面で再び「ポケモンを探しに行く」を押す",
           ],
           Then: "見出し「どこに　ポケモンを　探しに行く？」の場所選択画面が表示される",
         },

@@ -21,14 +21,14 @@ async function showScoreAfterSubmittingTranslation(page: Page) {
   await expect(page.getByText(TEXT.damage)).toBeVisible();
 }
 
-const PRESS_DECIDE_NAME = "「君に決めた」を押す";
-const PRESS_PROCEED = "「次へ進む」を押す";
-const USE_BALL = "ボールを使う";
+const PRESS_DECIDE_NAME = "クエスト画面の名前当てで「君に決めた」を押す";
+const PRESS_PROCEED = "クエスト画面で「次へ進む」を押す";
+const USE_BALL = "クエスト画面でボールを使う";
 const CAPTURED_SHOWN = "「捕まえたぞ」と表示される";
 const SCORE_SHOWN_ENVIRONMENT =
-  "外部サービスをモックにした環境で、チュートリアルが完了済みで、「廃墟の発電所」を選んで翻訳「テスト翻訳です」を送信し、採点結果が表示されているとき";
+  "外部サービスをモックにした環境で、チュートリアルが完了済みで、「廃墟の発電所」を選んであり、翻訳「テスト翻訳です」を送信済みで、採点結果が表示されているとき";
 const SCORE_SHOWN_ENVIRONMENT_WITHOUT_EXCLUSIONS =
-  "外部サービスをモックにした環境で、チュートリアルが完了済みで、除外ポケモンが未設定で、「廃墟の発電所」を選んで翻訳「テスト翻訳です」を送信し、採点結果が表示されているとき";
+  "外部サービスをモックにした環境で、チュートリアルが完了済みで、除外ポケモンが未設定で、「廃墟の発電所」を選んであり、翻訳「テスト翻訳です」を送信済みで、採点結果が表示されているとき";
 
 test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホーム画面から捕獲結果画面", () => {
   test.beforeEach(async ({ page }) => {
@@ -51,11 +51,11 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
           Then: "英文「It raises its tail to check its surroundings. The tail is sometimes struck by lightning in this pose.」が表示される",
         },
         {
-          When: ["翻訳「テスト翻訳です」を送信する"],
+          When: ["クエスト画面で、翻訳「テスト翻訳です」を送信する"],
           Then: "ダメージがモックの採点が取りうる範囲内で表示され、博士からのコメントに「モック講評だぞ」が表示される",
         },
         {
-          When: ["英語名「pikachu」を入力する", PRESS_DECIDE_NAME],
+          When: ["クエスト画面の名前当てに、英語名「pikachu」を入力する", PRESS_DECIDE_NAME],
           Then: "「正解！」と表示される",
         },
         { When: [PRESS_PROCEED], Then: "「ハイパーボール」が表示される" },
@@ -127,21 +127,21 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]クエ�
         {
           Given: SCORE_SHOWN_ENVIRONMENT,
           When: [
-            "名前当てに、出題されたポケモンの英語名ではない名前を 1 回目として入力する",
+            "クエスト画面の名前当てに、出題されたポケモンの英語名ではない名前を 1 回目として入力する",
             PRESS_DECIDE_NAME,
           ],
           Then: "「もう一度やってみよう」と表示される",
         },
         {
           When: [
-            "名前当てに、出題されたポケモンの英語名ではない名前を 2 回目として入力する",
+            "クエスト画面の名前当てに、出題されたポケモンの英語名ではない名前を 2 回目として入力する",
             PRESS_DECIDE_NAME,
           ],
           Then: "「ラストチャンス」と表示される",
         },
         {
           When: [
-            "名前当てに、出題されたポケモンの英語名ではない名前を 3 回目として入力する",
+            "クエスト画面の名前当てに、出題されたポケモンの英語名ではない名前を 3 回目として入力する",
             PRESS_DECIDE_NAME,
           ],
           Then: "「残念」と表示される",
@@ -179,7 +179,7 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]クエ�
       steps: [
         {
           Given: SCORE_SHOWN_ENVIRONMENT,
-          When: ["名前当てをスキップする"],
+          When: ["クエスト画面の名前当てをスキップする"],
           Then: "「モンスターボール」が表示される",
         },
         { When: [USE_BALL], Then: CAPTURED_SHOWN },
@@ -209,11 +209,11 @@ test.describe("[シナリオ:ポケモンを捕まえる:異常から回復し�
       steps: [
         {
           Given: SCORE_SHOWN_ENVIRONMENT_WITHOUT_EXCLUSIONS,
-          When: ["ページをリロードする"],
+          When: ["クエスト画面のページをリロードする"],
           Then: "リロード前と同じダメージの採点結果が表示される",
         },
         {
-          When: ["出題されていたポケモンの英語名「pikachu」を入力する", PRESS_DECIDE_NAME],
+          When: ["クエスト画面の名前当てに、出題されていたポケモンの英語名「pikachu」を入力する", PRESS_DECIDE_NAME],
           Then: "「正解！」と表示される",
         },
         { When: [PRESS_PROCEED], Then: "「ハイパーボール」が表示される" },

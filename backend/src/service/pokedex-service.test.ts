@@ -83,9 +83,9 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   return new PokedexService(repo, pokemonClient, settingsRepo);
 }
 
-const GET_POKEDEX = "図鑑一覧を取得する";
-const GET_SEARCH_CANDIDATES = "名前検索の候補を取得する";
-const GET_POKEMON_DETAIL = "図鑑番号 1 の図鑑詳細を取得する";
+const GET_POKEDEX = "図鑑画面を開くために、図鑑一覧を取得する";
+const GET_SEARCH_CANDIDATES = "設定画面の苦手ポケモン設定で、ポケモンの名前で探すために、名前検索の候補を取得する";
+const GET_POKEMON_DETAIL = "図鑑画面でポケモンの詳細を開くために、図鑑番号 1 の図鑑詳細を取得する";
 
 const NO_RECORDS = "図鑑に記録が 1 件も無いとき";
 const SINGLE_RECORD = "図鑑番号 1 の記録 (捕獲済み・捕獲回数 2・最高スコア 90) が 1 件あるとき";

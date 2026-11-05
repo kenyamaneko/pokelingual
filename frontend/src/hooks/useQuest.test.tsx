@@ -171,7 +171,7 @@ interface CommunicationOperation {
 
 const translationOperation: CommunicationOperation = {
   path: "/quest/score",
-  when: "出題を得た直後の翻訳の入力画面で、翻訳を送信する",
+  when: "出題を得た直後の翻訳の入力画面で、翻訳を送信して採点を依頼する",
   successResponse: "最終評価点 75、講評「review」、日本語版の説明「ja desc」の採点結果",
   call: (r) => r.submitTranslation("yaku"),
   buildSuccess: () => HttpResponse.json(scoreResp),
@@ -185,7 +185,7 @@ const translationOperation: CommunicationOperation = {
 
 const guessOperation: CommunicationOperation = {
   path: "/quest/guess-name",
-  when: "出題を得た直後の翻訳の入力画面で、名前を送信する",
+  when: "出題を得た直後の翻訳の入力画面で、名前当ての回答として名前を送信する",
   successResponse: "不正解、残り挑戦回数 2 の名前当ての結果",
   call: (r) => r.submitGuess("Pikachu"),
   buildSuccess: () =>
@@ -274,8 +274,11 @@ const QUEST_FROM_BACKEND = `${QUEST_DETAIL}の出題`;
 const NO_QUEST_IN_PROGRESS = "現在のクエストの問い合わせが 404 (進行中のセッションが無い) を返し";
 const GRASSLAND_FROM_BACKEND = "バックエンドが場所「テスト草原」の 1 件を返す";
 
-const SELECT_LOCATION = "場所の選択画面で場所を選ぶ";
-const OPEN_QUEST_SCREEN = "クエスト画面を開く";
+const SELECT_LOCATION = "場所の選択画面で、場所を選んで出題を開始する";
+const RESELECT_LOCATION = "場所の選択画面で、場所を選び直して出題を開始する";
+const RETURN_FROM_ERROR_SCREEN = "エラー画面で、「もう一度探す」を押して場所の選択画面に戻る";
+const OPEN_QUEST_SCREEN_TO_START = "クエスト画面を開いて、新しいクエストを開始する";
+const OPEN_QUEST_SCREEN_TO_RESUME = "クエスト画面を開いて、進行中のクエストを再開する";
 const IN_TRANSLATING = "出題を得た直後の翻訳の入力画面で、";
 
 const TRANSLATING_SCREEN = "呼び出し元に返る表示画面が翻訳の入力画面になる";
@@ -316,35 +319,35 @@ async function selectLocationWhenNewQuestFails(status: number) {
 
 const newQuestFailures = [
   {
-    cause: "場所を選んだ後の出題の取得が 500 で失敗したとき",
+    cause: "出題の取得が 500 で失敗するとき",
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })),
       ),
   },
   {
-    cause: "場所を選んだ後の出題の取得が 401 で失敗したとき",
+    cause: "出題の取得が 401 で失敗するとき",
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 401 })),
       ),
   },
   {
-    cause: "場所を選んだ後の出題の取得が 403 で失敗したとき",
+    cause: "出題の取得が 403 で失敗するとき",
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 403 })),
       ),
   },
   {
-    cause: "場所を選んだ後の出題の取得が 404 で失敗したとき",
+    cause: "出題の取得が 404 で失敗するとき",
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 404 })),
       ),
   },
   {
-    cause: "場所を選んだ後、ネットワークが切れていて応答が無いとき",
+    cause: "ネットワークが切れていて、出題の取得に応答が無いとき",
     fail: () => server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.error())),
   },
 ];
@@ -411,7 +414,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "場所を選んだ後の出題の取得が 500 で失敗したとき",
+          Given: "出題の取得が 500 で失敗するとき",
           When: [SELECT_LOCATION],
           Then: ERROR_SCREEN,
         },
@@ -432,7 +435,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "場所を選んだ後の出題の取得が 500 で失敗したとき",
+          Given: "出題の取得が 500 で失敗するとき",
           When: [SELECT_LOCATION],
           Then: "エラーメッセージに「データの読み込みに失敗しました」が含まれる",
         },
@@ -455,7 +458,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
         正常異常: "異常系",
         steps: [
           {
-            Given: `場所を選んだ後の出題の取得が ${status} で失敗したとき`,
+            Given: `出題の取得が ${status} で失敗するとき`,
             When: [SELECT_LOCATION],
             Then: `エラーメッセージに「${message}」が含まれる`,
           },
@@ -475,7 +478,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "場所を選んだ後、ネットワークが切れていて応答が無いとき",
+          Given: "ネットワークが切れていて、出題の取得に応答が無いとき",
           When: [SELECT_LOCATION],
           Then: "エラーメッセージに「サーバーに接続できません」が含まれる",
         },
@@ -500,7 +503,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
           { Given: cause, When: [SELECT_LOCATION], Then: ERROR_SCREEN },
           {
             Given: `${NO_QUEST_IN_PROGRESS}、バックエンドが${QUEST_FROM_BACKEND}を返すとき`,
-            When: ["エラー画面で「もう一度探す」を押す", "場所の選択画面で場所を選び直す"],
+            When: [RETURN_FROM_ERROR_SCREEN, RESELECT_LOCATION],
             Then: TRANSLATING_SCREEN,
           },
         ],
@@ -520,7 +523,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
           { Given: cause, When: [SELECT_LOCATION], Then: ERROR_SCREEN },
           {
             Given: `${NO_QUEST_IN_PROGRESS}、バックエンドが${QUEST_FROM_BACKEND}を返すとき`,
-            When: ["エラー画面で「もう一度探す」を押す", "場所の選択画面で場所を選び直す"],
+            When: [RETURN_FROM_ERROR_SCREEN, RESELECT_LOCATION],
             Then: ERROR_MESSAGE_CLEARED,
           },
         ],
@@ -537,7 +540,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
 
 const SCORE_FROM_BACKEND =
   "バックエンドが最終評価点 75、講評「review」、日本語版の説明「ja desc」の採点結果を返すとき";
-const SUBMIT_TRANSLATION = "翻訳の入力画面で、翻訳「テスト翻訳」を送信する";
+const SUBMIT_TRANSLATION = "翻訳の入力画面で、翻訳「テスト翻訳」を送信して採点を依頼する";
 
 async function submitTranslationSuccessfully() {
   server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
@@ -597,7 +600,7 @@ describe("[本体:採点]翻訳の採点", () => {
 
 const CORRECT_GUESS_FROM_BACKEND =
   "バックエンドが、正解、獲得したボールはハイパーボール、回答の言語は英語、残り挑戦回数 2 を返すとき";
-const SUBMIT_PIKACHU = `${IN_TRANSLATING}名前「Pikachu」を送信する`;
+const SUBMIT_PIKACHU = `${IN_TRANSLATING}名前当ての回答として、名前「Pikachu」を送信する`;
 
 async function submitCorrectGuess() {
   server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guessCorrect)));
@@ -710,8 +713,8 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
   );
 });
 
-const AFTER_CORRECT_GUESS = "名前「Pikachu」の送信に正解し、ハイパーボールを獲得した後のとき";
-const PROCEED_TO_CAPTURE = "「次へ進む」を押す";
+const AFTER_CORRECT_GUESS = "名前「Pikachu」の送信に正解し、ハイパーボールを獲得しているとき";
+const PROCEED_TO_CAPTURE = "名前当て画面で、「次へ進む」を押して捕獲待機に移行する";
 
 async function proceedToCaptureAfterCorrectGuess() {
   server.use(http.post(apiUrl("/quest/guess-name"), () => HttpResponse.json(guessCorrect)));
@@ -961,7 +964,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
       steps: [
         {
           Given: CAPTURE_FAILURE_FROM_BACKEND,
-          When: [EXECUTE_CAPTURE, "捕獲演出を終える"],
+          When: [EXECUTE_CAPTURE, "捕獲演出画面で、捕獲演出を終えて捕獲結果画面に進む"],
           Then: "呼び出し元に返る表示画面が捕獲結果画面になる",
         },
       ],
@@ -980,7 +983,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
       steps: [
         {
           Given: CAPTURE_FAILURE_FROM_BACKEND,
-          When: [EXECUTE_CAPTURE, "捕獲演出を終える"],
+          When: [EXECUTE_CAPTURE, "捕獲演出画面で、捕獲演出を終えて捕獲結果画面に進む"],
           Then: "呼び出し元に返る捕獲結果は、演出が終わる前と同じ、捕獲失敗、捕獲確率 0.2、ピカチュウ (図鑑番号 25)、最終評価点 40、モンスターボールになる",
         },
       ],
@@ -994,12 +997,12 @@ describe("[本体:捕獲]捕獲の実行", () => {
 });
 
 const PROGRESSED_STATE =
-  "現在のクエストの問い合わせが 404 (進行中のセッションが無い) を返す状態で、翻訳「テスト」を送信して最終評価点 75 の採点結果を得て、名前「Pikachu」の送信に正解してハイパーボールを獲得し、ヒントを要求してタイプ「ノーマル」と残り挑戦回数 2 を得た後";
-const START_NEW_QUEST = "新しいクエストを開始する";
+  "現在のクエストの問い合わせが 404 (進行中のセッションが無い) を返す状態で、翻訳「テスト」の最終評価点 75 の採点結果と、名前「Pikachu」への正解で獲得したハイパーボールと、ヒントのタイプ「ノーマル」と残り挑戦回数 2 が得られている";
+const START_NEW_QUEST = "クエスト画面で、新しいクエストを開始する";
 const NEW_QUEST_FIRST_FROM_BACKEND =
   "バックエンドが図鑑番号 1、英語の説明文「A wild creature.」、伝説でも幻でもない、最大挑戦回数 3 の出題を返すとき";
-const RETRY_AFTER_ERROR_SCREEN_GIVEN = `もう一度探すときの${NO_QUEST_IN_PROGRESS}、${GRASSLAND_FROM_BACKEND}とき`;
-const RETRY_AFTER_ERROR_SCREEN = "エラー画面で「もう一度探す」を押す";
+const RETRY_AFTER_ERROR_SCREEN_GIVEN = `${NO_QUEST_IN_PROGRESS}、${GRASSLAND_FROM_BACKEND}とき`;
+const RETRY_AFTER_ERROR_SCREEN = "エラー画面で、「もう一度探す」を押して新しいクエストを開始する";
 
 async function reselectLocation() {
   const { result } = await startNewQuestAfterProgress();
@@ -1045,7 +1048,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}のとき`,
+          Given: `${PROGRESSED_STATE}とき`,
           When: [START_NEW_QUEST],
           Then: "呼び出し元に返る表示画面が場所の選択画面に戻る",
         },
@@ -1064,7 +1067,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}のとき`,
+          Given: `${PROGRESSED_STATE}とき`,
           When: [START_NEW_QUEST],
           Then: "呼び出し元に返る採点結果が無い状態になる",
         },
@@ -1083,7 +1086,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}のとき`,
+          Given: `${PROGRESSED_STATE}とき`,
           When: [START_NEW_QUEST],
           Then: "呼び出し元に返る入力した翻訳が空文字になる",
         },
@@ -1102,7 +1105,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}のとき`,
+          Given: `${PROGRESSED_STATE}とき`,
           When: [START_NEW_QUEST],
           Then: "呼び出し元に返る獲得したボールが無い状態に戻る",
         },
@@ -1121,7 +1124,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}のとき`,
+          Given: `${PROGRESSED_STATE}とき`,
           When: [START_NEW_QUEST],
           Then: "呼び出し元に返る残り挑戦回数が無い状態に戻る",
         },
@@ -1140,7 +1143,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}のとき`,
+          Given: `${PROGRESSED_STATE}とき`,
           When: [START_NEW_QUEST],
           Then: "呼び出し元に返るヒントの内容が無い状態になる",
         },
@@ -1159,8 +1162,8 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}、${NEW_QUEST_FIRST_FROM_BACKEND}`,
-          When: [START_NEW_QUEST, "場所の選択画面で場所を選び直す"],
+          Given: `${PROGRESSED_STATE}状態で、${NEW_QUEST_FIRST_FROM_BACKEND}`,
+          When: [START_NEW_QUEST, RESELECT_LOCATION],
           Then: TRANSLATING_SCREEN,
         },
       ],
@@ -1178,8 +1181,8 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}、${NEW_QUEST_FIRST_FROM_BACKEND}`,
-          When: [START_NEW_QUEST, "場所の選択画面で場所を選び直す"],
+          Given: `${PROGRESSED_STATE}状態で、${NEW_QUEST_FIRST_FROM_BACKEND}`,
+          When: [START_NEW_QUEST, RESELECT_LOCATION],
           Then: "呼び出し元に返る出題の内容は、図鑑番号 1、英語の説明文「A wild creature.」、伝説でも幻でもない、最大挑戦回数 3 になる",
         },
       ],
@@ -1196,11 +1199,11 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
 
   const failures = [
     {
-      failure: "場所の一覧の取得が 500 で失敗したとき",
+      failure: "場所の一覧の取得が 500 で失敗するとき",
       retry: retryAfterLocationsFailure,
     },
     {
-      failure: "現在のクエストの問い合わせが 502 で失敗したとき",
+      failure: "現在のクエストの問い合わせが 502 で失敗するとき",
       retry: retryAfterCurrentQuestFailure,
     },
   ];
@@ -1211,7 +1214,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
         種別: "部品間結合テスト",
         正常異常: "異常系",
         steps: [
-          { Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN },
+          { Given: failure, When: [OPEN_QUEST_SCREEN_TO_START], Then: ERROR_SCREEN },
           {
             Given: RETRY_AFTER_ERROR_SCREEN_GIVEN,
             When: [RETRY_AFTER_ERROR_SCREEN],
@@ -1231,7 +1234,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
         種別: "部品間結合テスト",
         正常異常: "異常系",
         steps: [
-          { Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN },
+          { Given: failure, When: [OPEN_QUEST_SCREEN_TO_START], Then: ERROR_SCREEN },
           {
             Given: RETRY_AFTER_ERROR_SCREEN_GIVEN,
             When: [RETRY_AFTER_ERROR_SCREEN],
@@ -1251,7 +1254,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
         種別: "部品間結合テスト",
         正常異常: "異常系",
         steps: [
-          { Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN },
+          { Given: failure, When: [OPEN_QUEST_SCREEN_TO_START], Then: ERROR_SCREEN },
           {
             Given: RETRY_AFTER_ERROR_SCREEN_GIVEN,
             When: [RETRY_AFTER_ERROR_SCREEN],
@@ -1276,7 +1279,7 @@ const FAILURE_RESPONSES: { status: number; body: Record<string, string> }[] = [
 function defineCommunicationErrorCases(operation: CommunicationOperation) {
   const { path, call, buildSuccess, when, successResponse, recoveredOutcome, expectRecovered } =
     operation;
-  const retryWhen = [when, "同じ操作をもう一度行う"] as const;
+  const retryWhen = [when, "同じ翻訳の入力画面で、直前と同じ操作をもう一度行う"] as const;
 
   async function mountAndCall(status: number, body: Record<string, string>) {
     server.use(http.post(apiUrl(path), () => HttpResponse.json(body, { status })));
@@ -1423,8 +1426,8 @@ describe("[本体:クエスト]進行中の通信エラーの扱い", () => {
   defineCommunicationErrorCases(captureOperation);
 });
 
-const CURRENT_QUEST_FAILS_502 = "現在のクエストの問い合わせが 502 で失敗したとき";
-const LOCATIONS_FAIL_500 = "場所の一覧の取得が 500 で失敗したとき";
+const CURRENT_QUEST_FAILS_502 = "現在のクエストの問い合わせが 502 で失敗するとき";
+const LOCATIONS_FAIL_500 = "場所の一覧の取得が 500 で失敗するとき";
 
 async function mountResumedTranslating() {
   server.use(
@@ -1521,7 +1524,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: `${NO_QUEST_IN_PROGRESS}、${GRASSLAND_FROM_BACKEND}とき`,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: GRASSLAND_LIST,
         },
       ],
@@ -1544,7 +1547,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: TRANSLATING_SESSION, When: [OPEN_QUEST_SCREEN], Then: TRANSLATING_SCREEN }],
+      steps: [{ Given: TRANSLATING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: TRANSLATING_SCREEN }],
     },
     async () => {
       const result = await mountResumedTranslating();
@@ -1557,7 +1560,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: TRANSLATING_SESSION, When: [OPEN_QUEST_SCREEN], Then: QUEST_CONTENT }],
+      steps: [{ Given: TRANSLATING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: QUEST_CONTENT }],
     },
     async () => {
       const result = await mountResumedTranslating();
@@ -1573,7 +1576,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: TRANSLATING_SESSION,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "バックエンドへ場所の一覧の取得要求が届かない",
         },
       ],
@@ -1592,7 +1595,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: GUESSING_SESSION, When: [OPEN_QUEST_SCREEN], Then: GUESSING_SCREEN }],
+      steps: [{ Given: GUESSING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: GUESSING_SCREEN }],
     },
     async () => {
       const result = await mountResumedGuessing();
@@ -1605,7 +1608,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: GUESSING_SESSION, When: [OPEN_QUEST_SCREEN], Then: SCORE_CONTENT }],
+      steps: [{ Given: GUESSING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: SCORE_CONTENT }],
     },
     async () => {
       const result = await mountResumedGuessing();
@@ -1621,7 +1624,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: GUESSING_SESSION,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "呼び出し元に返る入力した翻訳は「テスト訳」になる",
         },
       ],
@@ -1640,7 +1643,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: GUESSING_SESSION,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "呼び出し元に返る残り挑戦回数は 2 になる",
         },
       ],
@@ -1656,7 +1659,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: GUESSING_SESSION, When: [OPEN_QUEST_SCREEN], Then: HINT_CONTENT }],
+      steps: [{ Given: GUESSING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: HINT_CONTENT }],
     },
     async () => {
       const result = await mountResumedGuessing();
@@ -1672,7 +1675,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: GUESSING_SESSION,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "呼び出し元に返る名前当ての結果が無い状態になる",
         },
       ],
@@ -1691,7 +1694,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: CAPTURING_SESSION, When: [OPEN_QUEST_SCREEN], Then: CAPTURING_SCREEN }],
+      steps: [{ Given: CAPTURING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: CAPTURING_SCREEN }],
     },
     async () => {
       const result = await mountResumedCapturing();
@@ -1704,7 +1707,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: CAPTURING_SESSION, When: [OPEN_QUEST_SCREEN], Then: ULTRA_BALL }],
+      steps: [{ Given: CAPTURING_SESSION, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: ULTRA_BALL }],
     },
     async () => {
       const result = await mountResumedCapturing();
@@ -1714,13 +1717,13 @@ describe("[本体:クエスト]クエストの再開", () => {
   );
 
   const RESUME_DISABLED =
-    "現在のクエストの問い合わせが、翻訳の入力画面の段階のセッションを返す状態で、リロード再開を無効にして起動するとき";
+    "現在のクエストの問い合わせが、翻訳の入力画面の段階のセッションを返す状態で、リロード再開が無効になっているとき";
 
   defineCase(
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: RESUME_DISABLED, When: [OPEN_QUEST_SCREEN], Then: SELECT_LOCATION_SCREEN }],
+      steps: [{ Given: RESUME_DISABLED, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: SELECT_LOCATION_SCREEN }],
     },
     async () => {
       const result = await mountWithResumeDisabled();
@@ -1736,7 +1739,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: RESUME_DISABLED,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "バックエンドへ現在のクエストの問い合わせが届かない",
         },
       ],
@@ -1756,7 +1759,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
-        steps: [{ Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN }],
+        steps: [{ Given: failure, When: [OPEN_QUEST_SCREEN_TO_RESUME], Then: ERROR_SCREEN }],
       },
       async () => {
         const result = await mount();
@@ -1773,7 +1776,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: LOCATIONS_FAIL_500,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "エラーメッセージに「場所の読み込みに失敗しました」が含まれる",
         },
       ],
@@ -1792,7 +1795,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: CURRENT_QUEST_FAILS_502,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "エラーメッセージに「外部サービスが応答しません」が含まれる",
         },
       ],
@@ -1811,7 +1814,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       steps: [
         {
           Given: CURRENT_QUEST_FAILS_502,
-          When: [OPEN_QUEST_SCREEN],
+          When: [OPEN_QUEST_SCREEN_TO_RESUME],
           Then: "バックエンドへ場所の一覧の取得要求が届かない",
         },
       ],

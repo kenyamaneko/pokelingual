@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { getScoreLabel } from "./scoreLabel";
 import { defineCase } from "../test/defineCase";
 
-const GET_LABEL = "『こうか』のラベルを取得する";
+const GET_LABEL = "クエスト画面の採点結果に表示するために、最終評価点に応じた『こうか』ラベルを取得する";
 
 describe("[本体:クエスト]最終評価点に応じた『こうか』ラベル", () => {
   defineCase(

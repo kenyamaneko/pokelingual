@@ -81,8 +81,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const OPEN_POKEDEX = "図鑑画面を開く";
-const SELECT_BULBASAUR_CARD = "一覧の「フシギダネ」のカードを選ぶ";
+const OPEN_POKEDEX = "図鑑の一覧を表示するために、図鑑画面を開く";
+const SELECT_BULBASAUR_CARD = "図鑑画面のポケモンの詳細を表示するために、一覧の「フシギダネ」のカードを選ぶ";
+const CLOSE_DETAIL_MODAL = "図鑑画面のポケモンの詳細モーダルで、「閉じる」を押す";
 const BULBASAUR_IN_POKEDEX = "図鑑に「フシギダネ」があり";
 const DESCRIPTION_TEXT = "「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」";
 const POKEDEX_LOAD_FAILED = "「図鑑の読み込みに失敗しました」と表示される";
@@ -363,7 +364,7 @@ describe("[本体:図鑑]ポケモンの詳細表示", () => {
       steps: [
         {
           Given: `${BULBASAUR_IN_POKEDEX}、その詳細モーダルが開いているとき`,
-          When: ["「閉じる」を押す"],
+          When: [CLOSE_DETAIL_MODAL],
           Then: `詳細モーダルの説明文${DESCRIPTION_TEXT}が表示されなくなる`,
         },
       ],
@@ -386,7 +387,7 @@ describe("[本体:図鑑]ポケモンの詳細表示", () => {
       steps: [
         {
           Given: `${BULBASAUR_IN_POKEDEX}、その詳細モーダルが開いているとき`,
-          When: ["「閉じる」を押す"],
+          When: [CLOSE_DETAIL_MODAL],
           Then: "一覧の「フシギダネ」のカードが表示される",
         },
       ],

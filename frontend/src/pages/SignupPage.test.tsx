@@ -70,7 +70,7 @@ async function submitSignup(
 
 const SUBMIT_SIGNUP =
   "新規登録画面で、メールアドレス・パスワード・「パスワード（確認）」を入力して「アカウントを作成する」を押す";
-const RETRY_SIGNUP = "もう一度「アカウントを作成する」を押す";
+const RETRY_SIGNUP = "新規登録画面で、もう一度「アカウントを作成する」を押す";
 const SUCCESSFUL_SIGNUP =
   "メールアドレスが「dummy@example.com」、パスワードと「パスワード（確認）」がどちらも「dummy-pass-1」で、登録に成功するとき";
 const ALREADY_REGISTERED = "すでに登録されているメールアドレスのとき";
@@ -161,7 +161,7 @@ describe("[本体:認証]メールアドレスでの新規登録", () => {
       steps: [
         { Given: ALREADY_REGISTERED, When: [SUBMIT_SIGNUP], Then: ALREADY_REGISTERED_MESSAGE },
         {
-          When: ["別のメールアドレス「other@example.com」に入力し直す", RETRY_SIGNUP],
+          When: ["新規登録画面で、メールアドレスを別の「other@example.com」に入力し直す", RETRY_SIGNUP],
           Then: VERIFICATION_NOTICE_SHOWN,
         },
       ],
@@ -229,7 +229,7 @@ describe("[本体:認証]メールアドレスでの新規登録", () => {
       steps: [
         { Given: PASSWORD_MISMATCH, When: [SUBMIT_SIGNUP], Then: PASSWORD_MISMATCH_MESSAGE },
         {
-          When: ["「パスワード（確認）」を「パスワード」と同じ「dummy-pass-1」に入力し直す", RETRY_SIGNUP],
+          When: ["新規登録画面で、「パスワード（確認）」を「パスワード」と同じ「dummy-pass-1」に入力し直す", RETRY_SIGNUP],
           Then: VERIFICATION_NOTICE_SHOWN,
         },
       ],

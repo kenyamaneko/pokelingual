@@ -10,7 +10,7 @@ const entries = [
 ];
 
 const ENTRIES_GIVEN = "検索対象のポケモン名が「アズマオウ」「アーボック」「イーブイ」「アーボ」の順で並んでいて";
-const SEARCH_POKEMON_NAME = "ポケモン名を検索する";
+const SEARCH_POKEMON_NAME = "設定画面の苦手ポケモン設定で、検索欄に入力されたポケモン名を前方一致で検索する";
 
 describe("[本体:設定]ポケモン名の前方一致検索", () => {
   defineCase(

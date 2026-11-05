@@ -70,7 +70,7 @@ async function submitLogin(
 const CORRECT_PASSWORD = "dummy-password";
 
 const SUBMIT_LOGIN = "ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押す";
-const RETRY_LOGIN = "もう一度「メールでログイン」を押す";
+const RETRY_LOGIN = "ログイン画面で、もう一度「メールでログイン」を押す";
 const UNVERIFIED_ACCOUNT = "メールアドレスが未確認のアカウントのとき";
 const WRONG_CREDENTIALS = "メールアドレスまたはパスワードが間違っているとき";
 const HOME_SHOWN = "ホーム画面が表示される";
@@ -148,7 +148,7 @@ describe("[本体:認証]メールアドレスでのログイン", () => {
       正常異常: "異常系",
       steps: [
         { Given: UNVERIFIED_ACCOUNT, When: [SUBMIT_LOGIN], Then: UNVERIFIED_MESSAGE },
-        { Given: "メールアドレスの確認が済んだとき", When: [RETRY_LOGIN], Then: HOME_SHOWN },
+        { Given: "メールアドレスの確認が済んでいるとき", When: [RETRY_LOGIN], Then: HOME_SHOWN },
       ],
     },
     async () => {
@@ -209,7 +209,7 @@ describe("[本体:認証]メールアドレスでのログイン", () => {
       正常異常: "異常系",
       steps: [
         { Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: WRONG_CREDENTIALS_MESSAGE },
-        { When: ["正しいパスワードに入力し直す", RETRY_LOGIN], Then: HOME_SHOWN },
+        { When: ["ログイン画面のパスワード欄に、正しいパスワードを入力し直す", RETRY_LOGIN], Then: HOME_SHOWN },
       ],
     },
     async () => {
@@ -236,7 +236,7 @@ describe("[本体:サイト情報]ログイン画面の問い合わせ", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["ログイン画面を開く"],
+          When: ["問い合わせのリンクを表示するために、ログイン画面を開く"],
           Then: "「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く",
         },
       ],
@@ -263,7 +263,7 @@ describe("[本体:サイト情報]ログイン画面の利用規約", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ When: ["ログイン画面で「利用規約」を押す"], Then: "利用規約モーダルが表示される" }],
+      steps: [{ When: ["ログイン画面で、利用規約を表示するために「利用規約」を押す"], Then: "利用規約モーダルが表示される" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -282,7 +282,7 @@ describe("[本体:サイト情報]ログイン画面の利用規約", () => {
       steps: [
         {
           Given: "利用規約モーダルが開いているとき",
-          When: ["「閉じる」を押す"],
+          When: ["ログイン画面の利用規約モーダルで、「閉じる」を押す"],
           Then: "モーダルが閉じてログイン画面が表示される",
         },
       ],
@@ -302,7 +302,7 @@ describe("[本体:サイト情報]ログイン画面の利用規約", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: "利用規約モーダルが開いているとき", When: ["モーダルの外側をクリックする"], Then: "モーダルが閉じる" },
+        { Given: "利用規約モーダルが開いているとき", When: ["ログイン画面の利用規約モーダルで、モーダルの外側をクリックする"], Then: "モーダルが閉じる" },
       ],
     },
     async () => {

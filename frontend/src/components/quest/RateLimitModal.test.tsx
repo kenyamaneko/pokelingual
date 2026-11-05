@@ -4,7 +4,7 @@ import { spec } from "../../test/labels";
 import { defineCase } from "../../test/defineCase";
 import { RateLimitModal, formatUntilJstMidnight } from "./RateLimitModal";
 
-const SHOW_MODAL = "日次上限モーダルを表示する";
+const SHOW_MODAL = "AI 呼び出しの日次上限に達した旨の日次上限モーダルを表示する";
 
 describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
   defineCase(
@@ -13,7 +13,7 @@ describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの日次上限に達したとき",
+          Given: "ユーザーの日次上限に達しているとき",
           When: [SHOW_MODAL],
           Then: "「博士は忙しそうにしている」と表示される",
         },
@@ -36,7 +36,7 @@ describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "全体の日次上限に達したとき",
+          Given: "全体の日次上限に達しているとき",
           When: [SHOW_MODAL],
           Then: "「研究所は大にぎわいのようだ」と表示される",
         },
@@ -77,7 +77,7 @@ describe("[本体:AI 呼び出し回数]日次上限のリセットまでの残�
         steps: [
           {
             Given: `現在時刻が JST ${jstTime} のとき`,
-            When: ["リセットまでの残り時間を求める"],
+            When: ["日次上限モーダルに表示する、日次上限のリセットまでの残り時間を求める"],
             Then: `リセットまでの残り時間は ${remaining} になる`,
           },
         ],

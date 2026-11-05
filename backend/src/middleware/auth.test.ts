@@ -20,7 +20,9 @@ function makeApp(authClient: Auth) {
   return app;
 }
 
-const SEND_REQUEST_WITH_BEARER_TOKEN = "Bearer 形式でトークンを付けてリクエストを送る";
+const SEND_REQUEST_WITH_BEARER_TOKEN =
+  "ログイン後の画面から、API リクエストの認証を受けるために、Bearer 形式でトークンを付けて API にリクエストを送る";
+const SEND_REQUEST = "ログイン後の画面から、API リクエストの認証を受けるために、API にリクエストを送る";
 const VERIFIED_TOKEN = "トークンがメール確認済みのとき";
 
 describe("[本体:認証]API リクエストの認証", () => {
@@ -78,7 +80,7 @@ describe("[本体:認証]API リクエストの認証", () => {
       steps: [
         {
           Given: "Authorization ヘッダが無いとき",
-          When: ["リクエストを送る"],
+          When: [SEND_REQUEST],
           Then: "リクエストは 401 で拒否され、認証情報が無い旨が返る",
         },
       ],
@@ -100,7 +102,7 @@ describe("[本体:認証]API リクエストの認証", () => {
       steps: [
         {
           Given: "Authorization ヘッダの値が Basic 形式のとき",
-          When: ["リクエストを送る"],
+          When: [SEND_REQUEST],
           Then: "リクエストは 401 で拒否され、認証情報の形式が正しくない旨が返る",
         },
       ],
@@ -121,7 +123,7 @@ describe("[本体:認証]API リクエストの認証", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "トークンの検証に失敗したとき",
+          Given: "トークンの検証が失敗するとき",
           When: [SEND_REQUEST_WITH_BEARER_TOKEN],
           Then: "リクエストは 401 で拒否され、トークンが無効である旨が返る",
         },

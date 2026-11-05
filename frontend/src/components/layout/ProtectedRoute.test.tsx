@@ -54,7 +54,7 @@ function renderGuarded() {
   );
 }
 
-const OPEN_PROTECTED_SCREEN = "保護対象の画面を開く";
+const OPEN_PROTECTED_SCREEN = "ログイン必須の保護対象の画面を開く";
 const NOT_SIGNED_IN = "ログインしていないとき";
 
 describe("[本体:認証]ログイン必須画面の保護", () => {
@@ -118,7 +118,7 @@ describe("[本体:認証]ログイン必須画面の保護", () => {
       steps: [
         {
           Given: NOT_SIGNED_IN,
-          When: [OPEN_PROTECTED_SCREEN, "メールアドレスとパスワードを入力して「メールでログイン」を押す"],
+          When: [OPEN_PROTECTED_SCREEN, "ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押す"],
           Then: "保護対象の画面が表示される",
         },
       ],

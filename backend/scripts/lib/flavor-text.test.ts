@@ -7,7 +7,7 @@ function entry(version: string, language: string, text: string): FlavorTextSourc
   return { version, language, text };
 }
 
-const BUILD_PAIRS = "説明文ペアの一覧を構築する";
+const BUILD_PAIRS = "図鑑画面のポケモン詳細とクエスト画面の出題のために、英日説明文ペアの一覧を構築する";
 
 describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの構築", () => {
   defineCase(
