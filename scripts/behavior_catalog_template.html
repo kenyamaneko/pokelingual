@@ -129,16 +129,36 @@
   function gOf(c) { return c.steps[0].G; }
   function wOf(c) { return c.steps[0].W.join('\u0001'); }
 
-  function orderByShared(list) {
-    var gi = new Map(), wi = new Map();
+  function canShareWhenCell(a, b) { return !isMultiStep(a) && !isMultiStep(b) && wOf(a) === wOf(b); }
+
+  function countMerges(rows) {
+    var n = 0;
+    rows.forEach(function (c, i) {
+      var prev = rows[i - 1];
+      if (!prev) return;
+      if (gOf(prev) === gOf(c)) n++;
+      if (canShareWhenCell(prev, c)) n++;
+    });
+    return n;
+  }
+
+  function sortByKeys(list, primary, secondary) {
+    var primaryOrder = new Map(), secondaryOrder = new Map();
     list.forEach(function (c) {
-      if (!gi.has(gOf(c))) gi.set(gOf(c), gi.size);
-      var k = gOf(c) + '\u0000' + wOf(c);
-      if (!wi.has(k)) wi.set(k, wi.size);
+      if (!primaryOrder.has(primary(c))) primaryOrder.set(primary(c), primaryOrder.size);
+      var pair = primary(c) + '\u0000' + secondary(c);
+      if (!secondaryOrder.has(pair)) secondaryOrder.set(pair, secondaryOrder.size);
     });
     return list.slice().sort(function (a, b) {
-      return gi.get(gOf(a)) - gi.get(gOf(b)) || wi.get(gOf(a) + '\u0000' + wOf(a)) - wi.get(gOf(b) + '\u0000' + wOf(b));
+      return primaryOrder.get(primary(a)) - primaryOrder.get(primary(b)) ||
+        secondaryOrder.get(primary(a) + '\u0000' + secondary(a)) - secondaryOrder.get(primary(b) + '\u0000' + secondary(b));
     });
+  }
+
+  function orderByShared(list) {
+    var givenFirst = sortByKeys(list, gOf, wOf);
+    var whenFirst = sortByKeys(list, wOf, gOf);
+    return countMerges(whenFirst) > countMerges(givenFirst) ? whenFirst : givenFirst;
   }
 
   function runLength(rows, start, same) {
@@ -190,15 +210,14 @@
       if (newG) groupNo++;
       var bg = groupNo % 2 ? 'bg-sunken' : '';
       if (isMultiStep(c)) { html += stepRowsHtml(c, newG, newG ? givenSpan(rows, i) : 0, bg, cell); return; }
-      var prevPlain = prev && !isMultiStep(prev);
-      var newW = newG || !prevPlain || wOf(prev) !== wOf(c);
+      var newW = !prev || !canShareWhenCell(prev, c);
       var st = c.steps[0];
       html += '<tr class="' + (newG ? 'border-t-2' : 'border-t') + ' border-strong ' + bg + '">';
       if (newG) {
         html += '<td rowspan="' + givenSpan(rows, i) + '" class="' + cell.replace('border-l border-strong', '') + ' font-medium">' + cellText(st.G) + '</td>';
       }
       if (newW) {
-        html += '<td rowspan="' + runLength(rows, i, function (a, b) { return !isMultiStep(b) && gOf(a) === gOf(b) && wOf(a) === wOf(b); }) + '" class="' + cell + '">' + whenHtml(st.W, false) + '</td>';
+        html += '<td rowspan="' + runLength(rows, i, canShareWhenCell) + '" class="' + cell + '">' + whenHtml(st.W, false) + '</td>';
       }
       html += '<td class="' + cell + ' font-medium">' + cellText(st.T) + (c.x ? '<span class="ml-2 text-xs font-normal text-faint">skip 中のため未検証</span>' : '') + '</td>' +
         '<td class="' + cell + '"><div class="flex flex-wrap gap-1.5">' + tagsHtml(c) + '</div></td></tr>';
