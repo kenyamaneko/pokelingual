@@ -195,7 +195,7 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting --project ${{ vars.FIREBASE_PROJECT_ID }}
 
-  # 実 Firebase Auth・実 Gemini・実 Firestore を通す唯一の自動テストで、Gemini を消費するため、smoke-dev でデプロイ・環境・secret の設定が生きていることを確かめた後に実行する。
+  # 実 Firebase Auth・実 Gemini・実 Firestore を通す唯一の自動テストで、Gemini を消費するため、smoke-dev でデプロイ・環境・シークレットの設定が生きていることを確かめた後に実行する。
   smoke-dev-real:
     name: Smoke Test with Real Services (dev)
     needs: [smoke-dev, deploy-frontend]
