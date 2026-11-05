@@ -47,7 +47,7 @@ const SEND_SUCCEEDED = "再設定メールの送信に成功したとき";
 const COMPLETION_MESSAGE = "「メールを送信しました」を含む完了メッセージが表示される";
 const FAILURE_MESSAGE = "「メールの送信に失敗しました」を含むエラーメッセージが表示される";
 
-describe("[本体:認証]パスワードの再設定", () => {
+describe("[共通:認証]パスワードの再設定", () => {
   defineCase(
     {
       種別: "部品間結合テスト",

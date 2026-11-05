@@ -57,7 +57,7 @@ function renderGuarded() {
 const OPEN_PROTECTED_SCREEN = "ログイン必須の保護対象の画面を開く";
 const NOT_SIGNED_IN = "ログインしていないとき";
 
-describe("[本体:認証]ログイン必須画面の保護", () => {
+describe("[共通:認証]ログイン必須画面の保護", () => {
   defineCase(
     {
       種別: "部品間結合テスト",

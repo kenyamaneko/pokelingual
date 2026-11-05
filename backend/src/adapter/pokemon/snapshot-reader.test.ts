@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { createSnapshotReader } from "./snapshot-reader.js";
 import { defineCase } from "../../test/defineCase.js";
 
-describe("[本体:ポケモンデータ]スナップショットの読み込み元の選択", () => {
+describe("[共通:機能共通]スナップショットの読み込み元の選択", () => {
   defineCase(
     {
       種別: "単体テスト",

@@ -21,7 +21,7 @@ function makeService(initialSettings: UserSettings): SettingsService {
   return new SettingsService(settingsRepo, SERVABLE_IDS, DEFAULT_MAX_EXCLUDED_POKEMON_COUNT);
 }
 
-describe("[本体:設定]除外ポケモンの更新", () => {
+describe("[共通:設定]除外ポケモンの更新", () => {
   defineCase(
     {
       種別: "単体テスト",
@@ -66,7 +66,7 @@ describe("[本体:設定]除外ポケモンの更新", () => {
   );
 });
 
-describe("[本体:設定]出題世代の更新", () => {
+describe("[共通:設定]出題世代の更新", () => {
   defineCase(
     {
       種別: "単体テスト",

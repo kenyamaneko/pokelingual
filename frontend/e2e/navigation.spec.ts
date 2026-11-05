@@ -27,7 +27,7 @@ async function mockCompletedTutorialAndUsage(page: Page) {
 
 const TUTORIAL_COMPLETED_AT_HOME = "チュートリアルが完了済みで、ホーム画面を表示しているとき";
 
-test.describe("[本体:共通画面]リンクによる画面遷移", () => {
+test.describe("[共通:画面共通]リンクによる画面遷移", () => {
   test.beforeEach(async ({ page }) => {
     await completeTutorialViaApi(page);
   });
@@ -191,7 +191,7 @@ test.describe("[本体:共通画面]リンクによる画面遷移", () => {
   }
 });
 
-test.describe("[本体:共通画面]画面幅に応じたヘッダーの表示", () => {
+test.describe("[共通:画面共通]画面幅に応じたヘッダーの表示", () => {
   test.beforeEach(async ({ page }) => {
     await mockCompletedTutorialAndUsage(page);
   });
