@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { describe, expect } from "vitest";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Routes, Route } from "react-router";
 import type { User } from "firebase/auth";
@@ -11,6 +11,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { UsageProvider } from "../contexts/UsageContext";
 import { TutorialProvider } from "../contexts/TutorialContext";
 import { server, apiUrl } from "../test/mswServer";
+import { defineCase } from "../test/defineCase";
 
 const START_QUEST_BUTTON = "ポケモンを探しに行く";
 
@@ -54,164 +55,251 @@ function renderHome() {
   );
 }
 
-describe("[本体:チュートリアル]「ポケモンを探しに行く」の遷移先", () => {
-  describe("ホーム画面で「ポケモンを探しに行く」を押すと", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("チュートリアルが完了済みのとき、本番のクエストの場所選択画面 (「どこに　ポケモンを　探しに行く？」の見出し) に遷移する", async () => {
-          mockTutorialStatus(true);
-          const user = userEvent.setup();
-          renderHome();
+const PRESS_START_QUEST = "ホーム画面で「ポケモンを探しに行く」を押す";
+const PRESS_START_QUEST_AGAIN = "もう一度「ポケモンを探しに行く」を押す";
+const QUEST_SELECT_SHOWN = "本番のクエストの場所選択画面 (「どこに　ポケモンを　探しに行く？」の見出し) に遷移する";
+const STATUS_CHECK_FAILED_MESSAGE = "「状態の確認に失敗しました。もう一度お試しください」と表示される";
+const STATUS_CHECK_PENDING = "チュートリアルの完了状態の確認が終わっていないとき";
 
-          await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+async function pressStartQuestButtonAgainAfterFailure() {
+  let shouldSucceed = false;
+  server.use(
+    http.get(apiUrl("/tutorial-status"), () =>
+      shouldSucceed ? HttpResponse.json({ tutorial_completed: true }) : HttpResponse.error(),
+    ),
+  );
+  const user = userEvent.setup();
+  renderHome();
 
-          expect(
-            await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-          ).toBeInTheDocument();
-        });
+  await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+  await screen.findByText("状態の確認に失敗しました。もう一度お試しください");
 
-        it("チュートリアルが未完了のとき、チュートリアル画面 (「遊び方の説明をします」の見出し) に遷移する", async () => {
-          mockTutorialStatus(false);
-          const user = userEvent.setup();
-          renderHome();
+  shouldSucceed = true;
+  await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+}
 
-          await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
-
-          expect(await screen.findByRole("heading", { name: "遊び方の説明をします" })).toBeInTheDocument();
-        });
-      });
-
-      describe("異常系", () => {
-        it("チュートリアルの完了状態の確認に失敗したとき、「状態の確認に失敗しました。もう一度お試しください」と表示される", async () => {
-          server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
-          const user = userEvent.setup();
-          renderHome();
-
-          await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
-
-          expect(
-            await screen.findByText("状態の確認に失敗しました。もう一度お試しください"),
-          ).toBeInTheDocument();
-        });
-      });
-    });
+function mockPendingTutorialStatus() {
+  let resolvePending: () => void = () => {};
+  const pending = new Promise<void>((resolve) => {
+    resolvePending = resolve;
   });
+  server.use(
+    http.get(apiUrl("/tutorial-status"), async () => {
+      await pending;
+      return HttpResponse.json({ tutorial_completed: true });
+    }),
+  );
+  return resolvePending;
+}
 
-  describe("チュートリアルの完了状態の確認が 1 回目は失敗し、2 回目はチュートリアル完了済みと確認できるとき", () => {
-    async function pressStartQuestButtonAgainAfterFailure() {
-      let shouldSucceed = false;
-      server.use(
-        http.get(apiUrl("/tutorial-status"), () =>
-          shouldSucceed ? HttpResponse.json({ tutorial_completed: true }) : HttpResponse.error(),
-        ),
-      );
+describe("[本体:チュートリアル]「ポケモンを探しに行く」の遷移先", () => {
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [{ Given: "チュートリアルが完了済みのとき", When: [PRESS_START_QUEST], Then: QUEST_SELECT_SHOWN }],
+    },
+    async () => {
+      mockTutorialStatus(true);
       const user = userEvent.setup();
       renderHome();
 
       await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
-      await screen.findByText("状態の確認に失敗しました。もう一度お試しください");
 
-      shouldSucceed = true;
+      expect(
+        await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが未完了のとき",
+          When: [PRESS_START_QUEST],
+          Then: "チュートリアル画面 (「遊び方の説明をします」の見出し) に遷移する",
+        },
+      ],
+    },
+    async () => {
+      mockTutorialStatus(false);
+      const user = userEvent.setup();
+      renderHome();
+
       await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
-    }
 
-    describe("ホーム画面で「ポケモンを探しに行く」を押して失敗の表示が出たあと、もう一度「ポケモンを探しに行く」を押すと", () => {
-      describe("部品間結合テスト", () => {
-        describe("異常系", () => {
-          it("本番のクエストの場所選択画面 (「どこに　ポケモンを　探しに行く？」の見出し) に遷移する", async () => {
-            await pressStartQuestButtonAgainAfterFailure();
+      expect(await screen.findByRole("heading", { name: "遊び方の説明をします" })).toBeInTheDocument();
+    },
+  );
 
-            expect(
-              await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-            ).toBeInTheDocument();
-          });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "チュートリアルの完了状態の確認に失敗したとき",
+          When: [PRESS_START_QUEST],
+          Then: STATUS_CHECK_FAILED_MESSAGE,
+        },
+      ],
+    },
+    async () => {
+      server.use(http.get(apiUrl("/tutorial-status"), () => HttpResponse.error()));
+      const user = userEvent.setup();
+      renderHome();
 
-          it("「状態の確認に失敗しました。もう一度お試しください」が表示されなくなる", async () => {
-            await pressStartQuestButtonAgainAfterFailure();
+      await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
 
-            await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
-            expect(
-              screen.queryByText("状態の確認に失敗しました。もう一度お試しください"),
-            ).not.toBeInTheDocument();
-          });
-        });
-      });
-    });
-  });
+      expect(
+        await screen.findByText("状態の確認に失敗しました。もう一度お試しください"),
+      ).toBeInTheDocument();
+    },
+  );
 
-  describe("チュートリアルの完了状態の確認が終わっていないとき", () => {
-    function mockPendingTutorialStatus() {
-      let resolvePending: () => void = () => {};
-      const pending = new Promise<void>((resolve) => {
-        resolvePending = resolve;
-      });
-      server.use(
-        http.get(apiUrl("/tutorial-status"), async () => {
-          await pending;
-          return HttpResponse.json({ tutorial_completed: true });
-        }),
-      );
-      return resolvePending;
-    }
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "チュートリアルの完了状態の確認が失敗するとき",
+          When: [PRESS_START_QUEST],
+          Then: STATUS_CHECK_FAILED_MESSAGE,
+        },
+        {
+          Given: "チュートリアルの完了状態の確認がチュートリアル完了済みと確認できるとき",
+          When: [PRESS_START_QUEST_AGAIN],
+          Then: QUEST_SELECT_SHOWN,
+        },
+      ],
+    },
+    async () => {
+      await pressStartQuestButtonAgainAfterFailure();
 
-    describe("ホーム画面で「ポケモンを探しに行く」を押すと", () => {
-      describe("部品間結合テスト", () => {
-        describe("正常系", () => {
-          it("ボタンの表示が「確認中...」になる", async () => {
-            const resolvePending = mockPendingTutorialStatus();
-            const user = userEvent.setup();
-            renderHome();
+      expect(
+        await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+      ).toBeInTheDocument();
+    },
+  );
 
-            await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "チュートリアルの完了状態の確認が失敗するとき",
+          When: [PRESS_START_QUEST],
+          Then: STATUS_CHECK_FAILED_MESSAGE,
+        },
+        {
+          Given: "チュートリアルの完了状態の確認がチュートリアル完了済みと確認できるとき",
+          When: [PRESS_START_QUEST_AGAIN],
+          Then: "「状態の確認に失敗しました。もう一度お試しください」が表示されなくなる",
+        },
+      ],
+    },
+    async () => {
+      await pressStartQuestButtonAgainAfterFailure();
 
-            expect(await screen.findByRole("button", { name: "確認中..." })).toBeInTheDocument();
-            resolvePending();
-            await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
-          });
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
+      expect(
+        screen.queryByText("状態の確認に失敗しました。もう一度お試しください"),
+      ).not.toBeInTheDocument();
+    },
+  );
 
-          it("「確認中...」のボタンが押せない状態になる", async () => {
-            const resolvePending = mockPendingTutorialStatus();
-            const user = userEvent.setup();
-            renderHome();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        { Given: STATUS_CHECK_PENDING, When: [PRESS_START_QUEST], Then: "ボタンの表示が「確認中...」になる" },
+      ],
+    },
+    async () => {
+      const resolvePending = mockPendingTutorialStatus();
+      const user = userEvent.setup();
+      renderHome();
 
-            await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+      await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
 
-            expect(await screen.findByRole("button", { name: "確認中..." })).toBeDisabled();
-            resolvePending();
-            await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
-          });
+      expect(await screen.findByRole("button", { name: "確認中..." })).toBeInTheDocument();
+      resolvePending();
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
+    },
+  );
 
-          it("確認の結果がチュートリアル完了済みのとき、確認が終わると、本番のクエストの場所選択画面 (「どこに　ポケモンを　探しに行く？」の見出し) に遷移する", async () => {
-            const resolvePending = mockPendingTutorialStatus();
-            const user = userEvent.setup();
-            renderHome();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: STATUS_CHECK_PENDING,
+          When: [PRESS_START_QUEST],
+          Then: "「確認中...」のボタンが押せない状態になる",
+        },
+      ],
+    },
+    async () => {
+      const resolvePending = mockPendingTutorialStatus();
+      const user = userEvent.setup();
+      renderHome();
 
-            await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
-            await screen.findByRole("button", { name: "確認中..." });
-            resolvePending();
+      await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
 
-            expect(
-              await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-            ).toBeInTheDocument();
-          });
-        });
-      });
-    });
-  });
+      expect(await screen.findByRole("button", { name: "確認中..." })).toBeDisabled();
+      resolvePending();
+      await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" });
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルの完了状態の確認が終わっておらず、確認の結果がチュートリアル完了済みのとき",
+          When: [PRESS_START_QUEST, "チュートリアルの完了状態の確認が終わる"],
+          Then: QUEST_SELECT_SHOWN,
+        },
+      ],
+    },
+    async () => {
+      const resolvePending = mockPendingTutorialStatus();
+      const user = userEvent.setup();
+      renderHome();
+
+      await user.click(screen.getByRole("button", { name: START_QUEST_BUTTON }));
+      await screen.findByRole("button", { name: "確認中..." });
+      resolvePending();
+
+      expect(
+        await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+      ).toBeInTheDocument();
+    },
+  );
 });
 
 describe("[本体:チュートリアル]ホーム画面のチュートリアルへのリンク", () => {
-  describe("ホーム画面を開くと", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("「チュートリアルを見る」のリンク先が「/tutorial」になる", async () => {
-          renderHome();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [{ When: ["ホーム画面を開く"], Then: "「チュートリアルを見る」のリンク先が「/tutorial」になる" }],
+    },
+    async () => {
+      renderHome();
 
-          expect(
-            await screen.findByRole("link", { name: "チュートリアルを見る" }),
-          ).toHaveAttribute("href", "/tutorial");
-        });
-      });
-    });
-  });
+      expect(
+        await screen.findByRole("link", { name: "チュートリアルを見る" }),
+      ).toHaveAttribute("href", "/tutorial");
+    },
+  );
 });

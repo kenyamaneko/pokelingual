@@ -1,4 +1,4 @@
-.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend test-scripts coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
+.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend test-scripts coverage coverage-backend coverage-frontend emulator-up emulator-down catalog-css mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
 
 # ローカル開発環境（Docker Compose）
 dev: dev-up
@@ -50,6 +50,10 @@ coverage-backend:
 
 coverage-frontend:
 	cd frontend && npm run test:coverage
+
+# テスト観点カタログの CSS (Tailwind) を生成する。生成スクリプトの --css に渡す
+catalog-css:
+	cd scripts && npm ci && npm run build:css
 
 # Mutation testing (StrykerJS)。純粋ロジックのみ対象のため Emulator 不要 = emulators:exec で包まない。
 mutation: mutation-backend

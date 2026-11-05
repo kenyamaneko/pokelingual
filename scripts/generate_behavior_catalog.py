@@ -1,373 +1,319 @@
 #!/usr/bin/env python3
-"""テスト実行結果の JUnit XML から、テスト観点カタログを生成する。
+"""テスト実行結果の JUnit XML から、テスト観点カタログ (HTML) を生成する。
 
-テストの命名規約 (keyandnotes-rules testing.md「テストの命名」) に従ったテスト名を、
-グループ (機能の階層) とケース (シナリオ) の階層に復元し、Markdown または HTML で
-標準出力に書き出す。複数の JUnit XML のケースを 1 つのカタログにまとめ、トップレベルの
-describe 名のタグ (区分・大機能・中機能) を上位の見出しにする。
+テスト名の先頭 `[区分:大機能(:中機能)]小機能` と、ケースの結果に載せた項目
+(種別・正常異常・Given・When・Then) を読み、小機能ごとの表にして標準出力へ書き出す。
+項目が足りないケースと、一覧にない大機能・中機能の組はエラーにする。
 """
 
 import argparse
-import html
+import json
 import re
 import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass
 from pathlib import Path
 
 # テストランナーが describe 連鎖とテスト名を連結する区切り。Vitest は " > "、Playwright は " › "
 NAME_SEPARATORS = (" > ", " › ")
 
-# skip されたテストは実行されておらず「テスト済み」と言えないため、注記を付けて区別する
-SKIPPED_NOTE = "（skip 中のため未検証）"
+TOP_LEVEL_PATTERN = re.compile(r"^\[([^:\]]+):([^:\]]+)(?::([^\]]+))?\](.+)$")
 
-# トップレベル describe 名の先頭に付ける、カタログの上位グループ見出し用タグの記法
-TOP_LEVEL_TAG_PATTERN = re.compile(r"^\s*\[([^\]]+)\]\s*")
+REGIONS = ("本体", "外部連携", "運用", "シナリオ")
 
-# タグの無いトップレベル describe をまとめる見出し名
-UNTAGGED_GROUP_LABEL = "その他"
+# 運用は大機能の下に中機能を置かない
+REGION_WITHOUT_MINOR = "運用"
 
-# タグの中で区分・大機能・中機能を区切る文字
-TAG_ITEM_SEPARATOR = ":"
+KINDS = (
+    "単体テスト",
+    "部品間結合テスト",
+    "インフラ結合テスト",
+    "サービス間結合テスト",
+    "E2Eテスト",
+    "シナリオテスト",
+    "スモークテスト",
+)
 
-# 最初の項目 (区分) に書ける値。カタログ上の並び順でもある
-TAG_DIVISIONS = ("本体", "運用", "外部連携")
+OUTCOMES = ("正常系", "異常系")
 
-# タグの項目数の下限 (区分・大機能) と上限 (区分・大機能・中機能)
-MIN_TAG_ITEMS = 2
-MAX_TAG_ITEMS = 3
+PROPERTY_KIND = "種別"
+PROPERTY_OUTCOME = "正常異常"
+PROPERTY_GIVEN = "Given"
+PROPERTY_WHEN = "When"
+PROPERTY_THEN = "Then"
 
 # テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
 DISCLAIMER = (
-    "本カタログは自動テストのテスト名から生成した「テスト済みの観点」の一覧であり、"
+    "本カタログは自動テストから生成した「テスト済みの観点」の一覧であり、"
     "仕様の全量ではない。テストの無い仕様はここに現れない。"
 )
 
 PAGE_TITLE = "pokelingual テスト観点カタログ"
 
-MARKDOWN_INDENT = "  "
+DEFAULT_FEATURES_PATH = Path(__file__).with_name("behavior_catalog_features.json")
+TEMPLATE_PATH = Path(__file__).with_name("behavior_catalog_template.html")
+DATA_PLACEHOLDER = "__DATA__"
+TITLE_PLACEHOLDER = "__TITLE__"
+CSS_PLACEHOLDER = "__CSS__"
+
+
+class CatalogError(ValueError):
+    """カタログにできないテストが見つかったことを表す。"""
 
 
 @dataclass(frozen=True)
-class BehaviorCase:
+class Step:
+    """ケースの 1 ステップ。
+
+    Args:
+        given: 前提。無ければ空文字。
+        whens: 実行順の操作。
+        then: 結果。
+    """
+
+    given: str
+    whens: tuple[str, ...]
+    then: str
+
+
+@dataclass(frozen=True)
+class CatalogCase:
     """1 件のテストケースが表す振る舞い。
 
     Args:
-        group_chain: 機能の階層を表すグループ名の連鎖 (describe の入れ子)。
-        case_name: シナリオを表すケースの名前。
+        region: 区分。
+        major: 大機能。
+        minor: 中機能。無ければ空文字。
+        feature: 小機能。
+        kind: テストの種別。skip 中のケースでは空文字のことがある。
+        outcome: 正常系か異常系か。skip 中のケースでは空文字のことがある。
+        steps: ステップ。skip 中のケースでは空。
         is_skipped: skip されて実行されていないケースかどうか。
     """
 
-    group_chain: tuple[str, ...]
-    case_name: str
+    region: str
+    major: str
+    minor: str
+    feature: str
+    kind: str
+    outcome: str
+    steps: tuple[Step, ...]
     is_skipped: bool
 
 
-@dataclass
-class GroupNode:
-    """グループ 1 階層分の入れ物。
-
-    Args:
-        subgroups: グループ名をキーとする下位グループ。
-        cases: このグループ直下のケース。
-    """
-
-    subgroups: "dict[str, GroupNode]" = field(default_factory=dict)
-    cases: list[BehaviorCase] = field(default_factory=list)
-
-
-def split_test_name(raw_name: str) -> tuple[tuple[str, ...], str]:
-    """JUnit の testcase 名をグループ連鎖とケースの名前に分割する。
+def split_test_name(raw_name: str) -> tuple[str, str]:
+    """JUnit の testcase 名を、トップレベルの describe 名とそれ以降に分ける。
 
     Args:
         raw_name: テストランナーが階層を区切り文字で連結した testcase 名。
 
     Returns:
-        (グループ連鎖, ケースの名前)。区切りが無ければグループ連鎖は空。
+        (トップレベルの describe 名, 残りの名前)。区切りが無ければ残りは空。
     """
     segments = [raw_name]
     for separator in NAME_SEPARATORS:
         segments = [part for segment in segments for part in segment.split(separator)]
-    return tuple(segments[:-1]), segments[-1]
+    return segments[0], " > ".join(segments[1:])
 
 
-def split_tag_items(tag: str) -> tuple[str, ...]:
-    """タグを区分・大機能・中機能の項目に分ける。
-
-    Args:
-        tag: ``[`` ``]`` を外したタグ。``区分:大機能`` または ``区分:大機能:中機能`` の形。
-
-    Returns:
-        タグの項目。
-
-    Raises:
-        ValueError: 項目が空のとき、項目が 2 つ未満または 3 つを超えるとき、
-            または最初の項目が 本体・運用・外部連携 のいずれでもないとき。
-    """
-    items = tuple(tag.split(TAG_ITEM_SEPARATOR))
-    if not all(items):
-        raise ValueError(f"タグの項目が空です: [{tag}]")
-    if not MIN_TAG_ITEMS <= len(items) <= MAX_TAG_ITEMS:
-        raise ValueError(
-            f"タグは区分と大機能を必須とし、項目は {MIN_TAG_ITEMS} つから {MAX_TAG_ITEMS} つまでです: [{tag}]"
-        )
-    if items[0] not in TAG_DIVISIONS:
-        raise ValueError(
-            f"タグの最初の項目は {'・'.join(TAG_DIVISIONS)} のいずれかにしてください: [{tag}]"
-        )
-    return items
-
-
-def extract_top_level_tag(chain: tuple[str, ...]) -> tuple[str, ...]:
-    """グループ連鎖の先頭 (トップレベル describe) からタグを抽出し、連鎖の先頭に挿入する。
-
-    タグが ``[区分:大機能:中機能]`` のように ``:`` で区切られているときは、項目ごとに 1 段ずつ
-    挿入する。
+def parse_top_level(top: str, where: str) -> tuple[str, str, str, str]:
+    """`[区分:大機能(:中機能)]小機能` を分解する。
 
     Args:
-        chain: split_test_name が返すグループ連鎖。
+        top: トップレベルの describe 名。
+        where: エラー表示に使う、テストの所在。
 
     Returns:
-        タグの項目 (タグが無ければ UNTAGGED_GROUP_LABEL) を先頭に追加し、トップレベル要素から
-        タグを除いた連鎖。連鎖が空ならそのまま返す。
+        (区分, 大機能, 中機能, 小機能)。中機能が無ければ空文字。
 
     Raises:
-        ValueError: タグが split_tag_items の条件を満たさないとき。
+        CatalogError: 形式に合わないとき。
     """
-    if not chain:
-        return chain
-    top, *rest = chain
-    match = TOP_LEVEL_TAG_PATTERN.match(top)
+    match = TOP_LEVEL_PATTERN.match(top)
     if match is None:
-        return (UNTAGGED_GROUP_LABEL, top, *rest)
-    return (*split_tag_items(match.group(1)), top[match.end() :], *rest)
+        raise CatalogError(f"トップレベルの名前が [区分:大機能(:中機能)]小機能 の形ではありません: {where}")
+    region, major, minor, feature = match.group(1), match.group(2), match.group(3) or "", match.group(4)
+    return region, major, minor, feature
 
 
-def parse_junit_file(path: Path) -> list[BehaviorCase]:
-    """JUnit XML を読み、全 testcase を BehaviorCase の列に変換する。
+def parse_steps(properties: list[tuple[str, str]], where: str) -> tuple[Step, ...]:
+    """結果に載った Given・When・Then の並びを、ステップに組み立てる。
+
+    ステップは「Given (任意)、When (1 つ以上)、Then」で閉じる。
+
+    Args:
+        properties: 載った順の (キー, 値)。
+        where: エラー表示に使う、テストの所在。
+
+    Returns:
+        ステップの並び。
+
+    Raises:
+        CatalogError: When か Then が無いステップがあるとき、または並びが不正なとき。
+    """
+    steps: list[Step] = []
+    given, whens, open_step = "", [], False
+    for key, value in properties:
+        if key == PROPERTY_GIVEN:
+            if open_step:
+                raise CatalogError(f"Then の前に Given が続いています: {where}")
+            given, whens, open_step = value, [], True
+        elif key == PROPERTY_WHEN:
+            if not open_step:
+                given, whens, open_step = "", [], True
+            whens.append(value)
+        elif key == PROPERTY_THEN:
+            if not whens:
+                raise CatalogError(f"When の無い Then があります: {where}")
+            steps.append(Step(given, tuple(whens), value))
+            given, whens, open_step = "", [], False
+    if open_step:
+        raise CatalogError(f"Then の無いステップがあります: {where}")
+    if not steps:
+        raise CatalogError(f"Given・When・Then が載っていません: {where}")
+    return tuple(steps)
+
+
+def load_features(path: Path) -> dict[str, dict[str, list[str]]]:
+    """大機能・中機能の一覧を読む。
+
+    Args:
+        path: 一覧の JSON のパス。
+
+    Returns:
+        区分ごとの、大機能の並びと中機能の並び。
+    """
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def validate_feature(region: str, major: str, minor: str, features: dict, where: str) -> None:
+    """区分・大機能・中機能が一覧にあることを確かめる。
+
+    Args:
+        region: 区分。
+        major: 大機能。
+        minor: 中機能。無ければ空文字。
+        features: load_features が返す一覧。
+        where: エラー表示に使う、テストの所在。
+
+    Raises:
+        CatalogError: 一覧に無い組のとき、または運用に中機能が付いているとき。
+    """
+    if region not in REGIONS:
+        raise CatalogError(f"区分「{region}」は {'・'.join(REGIONS)} のいずれでもありません: {where}")
+    allowed = features[region]
+    if major not in allowed["大機能"]:
+        raise CatalogError(f"大機能「{major}」は区分「{region}」の一覧にありません: {where}")
+    if region == REGION_WITHOUT_MINOR and minor:
+        raise CatalogError(f"区分「{region}」には中機能を付けられません: {where}")
+    if minor and minor not in allowed["中機能"]:
+        raise CatalogError(f"中機能「{minor}」は区分「{region}」の一覧にありません: {where}")
+
+
+def parse_junit_file(path: Path, features: dict) -> list[CatalogCase]:
+    """JUnit XML を読み、全 testcase を CatalogCase の列に変換する。
 
     Args:
         path: JUnit XML ファイルのパス。
+        features: load_features が返す一覧。
 
     Returns:
-        文書順の BehaviorCase のリスト。
+        文書順の CatalogCase のリスト。
 
     Raises:
-        ValueError: testcase に name 属性が無いとき。
+        CatalogError: testcase に必要な項目が無いとき、または一覧に無いとき。
     """
-    root = ET.parse(path).getroot()
     cases = []
-    for testcase in root.iter("testcase"):
+    for testcase in ET.parse(path).getroot().iter("testcase"):
         raw_name = testcase.get("name")
         if raw_name is None:
-            raise ValueError(f"testcase に name 属性がありません: {path}")
-        group_chain, case_name = split_test_name(raw_name)
+            raise CatalogError(f"testcase に name 属性がありません: {path}")
+        where = f"{path}: {raw_name}"
+        top, _ = split_test_name(raw_name)
+        region, major, minor, feature = parse_top_level(top, where)
+        validate_feature(region, major, minor, features, where)
         is_skipped = testcase.find("skipped") is not None
-        cases.append(BehaviorCase(group_chain, case_name, is_skipped))
+        properties = [(p.get("name"), p.get("value")) for p in testcase.iter("property")]
+        meta = {key: value for key, value in properties if key in (PROPERTY_KIND, PROPERTY_OUTCOME)}
+        kind, outcome = meta.get(PROPERTY_KIND, ""), meta.get(PROPERTY_OUTCOME, "")
+        if is_skipped and not properties:
+            cases.append(CatalogCase(region, major, minor, feature, kind, outcome, (), True))
+            continue
+        if kind not in KINDS:
+            raise CatalogError(f"種別「{kind}」は「テストの種別」のいずれでもありません: {where}")
+        if outcome not in OUTCOMES:
+            raise CatalogError(f"正常異常「{outcome}」は {'・'.join(OUTCOMES)} のいずれでもありません: {where}")
+        steps = parse_steps([p for p in properties if p[0] in (PROPERTY_GIVEN, PROPERTY_WHEN, PROPERTY_THEN)], where)
+        cases.append(CatalogCase(region, major, minor, feature, kind, outcome, steps, is_skipped))
     return cases
 
 
-def build_catalog(paths: list[Path]) -> GroupNode:
-    """JUnit XML 群のケースを 1 つのグループ木にまとめる。
+def sort_cases(cases: list[CatalogCase], features: dict) -> list[CatalogCase]:
+    """区分・大機能・中機能を一覧の順に並べる。同じ組の中は読み込んだ順のまま。
 
     Args:
-        paths: JUnit XML のパスのリスト。
+        cases: 読み込んだ順のケース。
+        features: load_features が返す一覧。
 
     Returns:
-        ルートの GroupNode。各ケースのトップレベル describe のタグは、区分・大機能・中機能の
-        見出しになっている。
-
-    Raises:
-        ValueError: タグが split_tag_items の条件を満たさないとき。
+        並べ替えたケース。
     """
-    cases = [case for path in paths for case in parse_junit_file(path)]
-    return build_group_tree(
-        [replace(case, group_chain=extract_top_level_tag(case.group_chain)) for case in cases]
-    )
+
+    def rank(case: CatalogCase) -> tuple[int, int, int]:
+        allowed = features[case.region]
+        minor_rank = allowed["中機能"].index(case.minor) if case.minor else len(allowed["中機能"])
+        return REGIONS.index(case.region), allowed["大機能"].index(case.major), minor_rank
+
+    return sorted(cases, key=rank)
 
 
-def build_group_tree(cases: list[BehaviorCase]) -> GroupNode:
-    """ケース列をグループ連鎖に沿った木に組み上げる。
+def build_payload(cases: list[CatalogCase], commit: str | None) -> dict:
+    """画面の描画に渡すデータを組み立てる。
 
     Args:
-        cases: 振る舞いのリスト。
+        cases: 並べ替え済みのケース。
+        commit: 生成元 commit の SHA。None なら表示しない。
 
     Returns:
-        ルートの GroupNode。同名グループは 1 つのノードに統合される。
+        JSON にできるデータ。
     """
-    root = GroupNode()
-    for case in cases:
-        node = root
-        for group_name in case.group_chain:
-            node = node.subgroups.setdefault(group_name, GroupNode())
-        node.cases.append(case)
-    return root
+    return {
+        "title": PAGE_TITLE,
+        "disclaimer": DISCLAIMER,
+        "commit": commit or "",
+        "regions": list(REGIONS),
+        "cases": [
+            {
+                "k": case.region,
+                "d": case.major,
+                "m": case.minor,
+                "s": case.feature,
+                "t": case.kind,
+                "n": case.outcome,
+                "x": case.is_skipped,
+                "steps": [{"G": step.given, "W": list(step.whens), "T": step.then} for step in case.steps],
+            }
+            for case in cases
+        ],
+    }
 
 
-def count_cases(node: GroupNode) -> int:
-    """木に含まれるケースの総数を返す。
-
-    Args:
-        node: 数え上げの起点となる GroupNode。
-
-    Returns:
-        起点以下の全ケース数。
-    """
-    return len(node.cases) + sum(count_cases(sub) for sub in node.subgroups.values())
-
-
-def tag_sort_key(tag: str) -> tuple[int, str]:
-    """区分の見出しの並び順を決めるキー。本体・運用・外部連携の順に並べ、UNTAGGED_GROUP_LABEL は最後に置く。
-
-    Args:
-        tag: 比較対象の区分名。
-
-    Returns:
-        (TAG_DIVISIONS での位置、TAG_DIVISIONS に無ければ末尾の位置, 区分名) のタプル。
-    """
-    return (TAG_DIVISIONS.index(tag) if tag in TAG_DIVISIONS else len(TAG_DIVISIONS), tag)
-
-
-def escape_text(text: str) -> str:
-    """テスト名を Markdown / HTML のどちらでもタグと誤解釈されない形にする。
-
-    Args:
-        text: テスト名などの表示テキスト。
-
-    Returns:
-        `&` `<` `>` を実体参照にしたテキスト。
-    """
-    return html.escape(text, quote=False)
-
-
-def format_case_text(case: BehaviorCase) -> str:
-    """ケース 1 件の表示テキストを組み立てる。
-
-    Args:
-        case: 表示する振る舞い。
-
-    Returns:
-        エスケープ済みケースの名前。skip 中なら未検証の注記付き。
-    """
-    text = escape_text(case.case_name)
-    if case.is_skipped:
-        text += SKIPPED_NOTE
-    return text
-
-
-def append_group_markdown(lines: list[str], node: GroupNode, depth: int) -> None:
-    """グループ内のケースと下位グループを Markdown の入れ子リストとして追記する。
-
-    Args:
-        lines: 追記先の行リスト。
-        node: 描画するグループ。
-        depth: リストの入れ子の深さ (0 起点)。
-    """
-    indent = MARKDOWN_INDENT * depth
-    for case in node.cases:
-        lines.append(f"{indent}- {format_case_text(case)}")
-    for group_name in sorted(node.subgroups):
-        subgroup = node.subgroups[group_name]
-        lines.append(f"{indent}- **{escape_text(group_name)}**")
-        append_group_markdown(lines, subgroup, depth + 1)
-
-
-def render_markdown(root: GroupNode, commit: str | None) -> str:
-    """テスト観点カタログを Markdown で描画する。
-
-    Args:
-        root: build_catalog が返したルートのグループ木。
-        commit: 生成元 commit の SHA。None なら記載しない。
-
-    Returns:
-        Markdown 文書全体。
-    """
-    lines = [f"# {PAGE_TITLE}", "", f"> {DISCLAIMER}", ""]
-    if commit is not None:
-        lines += [f"生成元 commit: `{commit}`", ""]
-    for case in root.cases:
-        lines.append(f"- {format_case_text(case)}")
-    if root.cases:
-        lines.append("")
-    for division in sorted(root.subgroups, key=tag_sort_key):
-        subgroup = root.subgroups[division]
-        lines += [f"## {escape_text(division)}（全 {count_cases(subgroup)} ケース）", ""]
-        append_group_markdown(lines, subgroup, 0)
-        lines.append("")
-    return "\n".join(lines).rstrip("\n") + "\n"
-
-
-def append_group_html(parts: list[str], node: GroupNode) -> None:
-    """グループ内のケースと下位グループを HTML として追記する。
-
-    ケースは <ul><li> で列挙し、下位グループは <details> としてケース数の注記付きで追記する。
-
-    Args:
-        parts: 追記先の HTML 断片リスト。
-        node: 描画するグループ。
-    """
-    if node.cases:
-        parts.append("<ul>")
-        for case in node.cases:
-            css_class = ' class="skipped"' if case.is_skipped else ""
-            parts.append(f"<li{css_class}>{format_case_text(case)}</li>")
-        parts.append("</ul>")
-    for group_name in sorted(node.subgroups):
-        subgroup = node.subgroups[group_name]
-        # open 属性を付けず、ページが縦に長くなりすぎないよう既定で閉じた状態にする。
-        parts.append(
-            f"<details><summary>{escape_text(group_name)}"
-            f"（全 {count_cases(subgroup)} ケース）</summary>"
-        )
-        append_group_html(parts, subgroup)
-        parts.append("</details>")
-
-
-def render_html(root: GroupNode, commit: str | None) -> str:
+def render_html(cases: list[CatalogCase], commit: str | None, css: str) -> str:
     """テスト観点カタログを単一ファイルの HTML ページとして描画する。
 
     Args:
-        root: build_catalog が返したルートのグループ木。
-        commit: 生成元 commit の SHA。None なら記載しない。
+        cases: 並べ替え済みのケース。
+        commit: 生成元 commit の SHA。None なら表示しない。
+        css: ページに埋め込む、Tailwind が生成した CSS。
 
     Returns:
         HTML 文書全体。
     """
-    parts = [
-        "<!doctype html>",
-        '<html lang="ja">',
-        "<head>",
-        '<meta charset="utf-8">',
-        '<meta name="viewport" content="width=device-width, initial-scale=1">',
-        f"<title>{PAGE_TITLE}</title>",
-        "<style>",
-        "body { font-family: sans-serif; max-width: 60rem; margin: 0 auto; padding: 1rem 1.5rem; line-height: 1.7; }",
-        "blockquote { border-left: 4px solid #c9c9c9; margin: 1rem 0; padding: 0.25rem 1rem; background: #f6f6f6; }",
-        "h2 { border-bottom: 2px solid #ddd; padding-bottom: 0.25rem; margin-top: 2.5rem; }",
-        "details { margin: 0.25rem 0 0.25rem 1rem; }",
-        "summary { cursor: pointer; font-weight: bold; }",
-        "summary:hover { color: #1a5fb4; }",
-        "li.skipped { color: #888; }",
-        "</style>",
-        "</head>",
-        "<body>",
-        f"<h1>{PAGE_TITLE}</h1>",
-        f"<blockquote>{DISCLAIMER}</blockquote>",
-    ]
-    if commit is not None:
-        parts.append(f"<p>生成元 commit: <code>{escape_text(commit)}</code></p>")
-    if root.cases:
-        parts.append("<ul>")
-        for case in root.cases:
-            css_class = ' class="skipped"' if case.is_skipped else ""
-            parts.append(f"<li{css_class}>{format_case_text(case)}</li>")
-        parts.append("</ul>")
-    for division in sorted(root.subgroups, key=tag_sort_key):
-        subgroup = root.subgroups[division]
-        parts.append(f"<h2>{escape_text(division)}（全 {count_cases(subgroup)} ケース）</h2>")
-        append_group_html(parts, subgroup)
-    parts += ["</body>", "</html>"]
-    return "\n".join(parts) + "\n"
+    payload = json.dumps(build_payload(cases, commit), ensure_ascii=False, separators=(",", ":"))
+    # script 要素の中でタグと解釈されないよう、山括弧と & を文字参照ではなく JSON のエスケープにする
+    payload = payload.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+    template = TEMPLATE_PATH.read_text(encoding="utf-8")
+    return template.replace(TITLE_PLACEHOLDER, PAGE_TITLE).replace(CSS_PLACEHOLDER, css).replace(DATA_PLACEHOLDER, payload)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -377,21 +323,19 @@ def main(argv: list[str] | None = None) -> None:
         argv: コマンドライン引数。None なら sys.argv を使う。
     """
     parser = argparse.ArgumentParser(description="JUnit XML からテスト観点カタログを生成する")
-    parser.add_argument(
-        "--junit",
-        action="append",
-        required=True,
-        type=Path,
-        metavar="PATH",
-        help="JUnit XML のパス (複数指定可。全ケースを 1 つのカタログにまとめる)",
-    )
-    parser.add_argument("--format", choices=("markdown", "html"), required=True, help="出力形式")
+    parser.add_argument("--junit", action="append", required=True, type=Path, metavar="PATH", help="JUnit XML のパス (複数指定可)")
     parser.add_argument("--commit", default=None, help="生成元 commit の SHA (省略可)")
+    parser.add_argument("--css", required=True, type=Path, help="Tailwind が生成した CSS のパス")
+    parser.add_argument("--features", default=DEFAULT_FEATURES_PATH, type=Path, help="大機能・中機能の一覧の JSON")
     args = parser.parse_args(argv)
 
-    root = build_catalog(args.junit)
-    renderer = render_markdown if args.format == "markdown" else render_html
-    sys.stdout.write(renderer(root, args.commit))
+    try:
+        features = load_features(args.features)
+        cases = [case for path in args.junit for case in parse_junit_file(path, features)]
+        css = args.css.read_text(encoding="utf-8")
+        sys.stdout.write(render_html(sort_cases(cases, features), args.commit, css))
+    except CatalogError as error:
+        sys.exit(str(error))
 
 
 if __name__ == "__main__":

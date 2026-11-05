@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, expect, beforeEach, vi } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { AuthProvider } from "../../contexts/AuthContext";
 import { LoginPage } from "../../pages/LoginPage";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { defineCase } from "../../test/defineCase";
 
 const firebase = vi.hoisted(() => ({
   auth: {},
@@ -53,45 +54,84 @@ function renderGuarded() {
   );
 }
 
+const OPEN_PROTECTED_SCREEN = "保護対象の画面を開く";
+const NOT_SIGNED_IN = "ログインしていないとき";
+
 describe("[本体:認証]ログイン必須画面の保護", () => {
-  describe("部品間結合テスト", () => {
-    describe("正常系", () => {
-      it("ログイン済みのとき、保護対象の画面が表示される", async () => {
-        firebase.initialAuthState = SIGNED_IN_USER;
-        renderGuarded();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        { Given: "ログイン済みのとき", When: [OPEN_PROTECTED_SCREEN], Then: "保護対象の画面が表示される" },
+      ],
+    },
+    async () => {
+      firebase.initialAuthState = SIGNED_IN_USER;
+      renderGuarded();
 
-        expect(await screen.findByText("保護対象の画面")).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: "メールでログイン" })).not.toBeInTheDocument();
-      });
+      expect(await screen.findByText("保護対象の画面")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "メールでログイン" })).not.toBeInTheDocument();
+    },
+  );
 
-      it("ログイン状態の確認が終わっていないとき、「認証を確認中...」の表示のままになる", () => {
-        firebase.initialAuthState = "pending";
-        renderGuarded();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログイン状態の確認が終わっていないとき",
+          When: [OPEN_PROTECTED_SCREEN],
+          Then: "「認証を確認中...」の表示のままになる",
+        },
+      ],
+    },
+    () => {
+      firebase.initialAuthState = "pending";
+      renderGuarded();
 
-        expect(screen.getByRole("status", { name: "認証を確認中..." })).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: "メールでログイン" })).not.toBeInTheDocument();
-        expect(screen.queryByText("保護対象の画面")).not.toBeInTheDocument();
-      });
-    });
+      expect(screen.getByRole("status", { name: "認証を確認中..." })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "メールでログイン" })).not.toBeInTheDocument();
+      expect(screen.queryByText("保護対象の画面")).not.toBeInTheDocument();
+    },
+  );
 
-    describe("異常系", () => {
-      it("ログインしていないとき、保護対象の画面を開くと、ログイン画面が表示される", async () => {
-        renderGuarded();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [{ Given: NOT_SIGNED_IN, When: [OPEN_PROTECTED_SCREEN], Then: "ログイン画面が表示される" }],
+    },
+    async () => {
+      renderGuarded();
 
-        expect(await screen.findByRole("button", { name: "メールでログイン" })).toBeInTheDocument();
-        expect(screen.queryByText("保護対象の画面")).not.toBeInTheDocument();
-      });
+      expect(await screen.findByRole("button", { name: "メールでログイン" })).toBeInTheDocument();
+      expect(screen.queryByText("保護対象の画面")).not.toBeInTheDocument();
+    },
+  );
 
-      it("ログインしていないとき、保護対象の画面を開いてログイン画面が表示されたあと、ログインすると、保護対象の画面が表示される", async () => {
-        const user = userEvent.setup();
-        renderGuarded();
-        await user.type(await screen.findByPlaceholderText("メールアドレス"), "dummy@example.com");
-        await user.type(screen.getByPlaceholderText("パスワード"), "dummy-pass");
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: NOT_SIGNED_IN,
+          When: [OPEN_PROTECTED_SCREEN, "メールアドレスとパスワードを入力して「メールでログイン」を押す"],
+          Then: "保護対象の画面が表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderGuarded();
+      await user.type(await screen.findByPlaceholderText("メールアドレス"), "dummy@example.com");
+      await user.type(screen.getByPlaceholderText("パスワード"), "dummy-pass");
 
-        await user.click(screen.getByRole("button", { name: "メールでログイン" }));
+      await user.click(screen.getByRole("button", { name: "メールでログイン" }));
 
-        expect(await screen.findByText("保護対象の画面")).toBeInTheDocument();
-      });
-    });
-  });
+      expect(await screen.findByText("保護対象の画面")).toBeInTheDocument();
+    },
+  );
 });

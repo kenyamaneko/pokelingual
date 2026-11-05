@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { describe, expect } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router";
 import type { User } from "firebase/auth";
 import { AuthContext } from "../contexts/AuthContext";
@@ -9,6 +9,7 @@ import { HomePage } from "./HomePage";
 import { LoginPage } from "./LoginPage";
 import { SignupPage } from "./SignupPage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
+import { defineCase } from "../test/defineCase";
 
 const START_QUEST_BUTTON = "ポケモンを探しに行く";
 
@@ -43,63 +44,129 @@ function renderAuthRoutes(initialPath: string, user: User | null = null) {
 const authenticatedUser = { uid: "alice" } as unknown as User;
 
 describe("[本体:認証]認証画面の遷移", () => {
-  describe("ログインしていないとき", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("ログイン画面で「アカウントを作る」リンクを押すと、新規登録画面の「アカウントを作成する」ボタンが表示される", async () => {
-          const user = userEvent.setup();
-          renderAuthRoutes("/login");
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログインしていないとき",
+          When: ["ログイン画面で「アカウントを作る」リンクを押す"],
+          Then: "新規登録画面の「アカウントを作成する」ボタンが表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderAuthRoutes("/login");
 
-          await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
+      await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
 
-          expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
-        });
+      expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
+    },
+  );
 
-        it("ログイン画面で「再設定する」リンクを押すと、パスワード再設定画面の「再設定メールを送る」ボタンが表示される", async () => {
-          const user = userEvent.setup();
-          renderAuthRoutes("/login");
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログインしていないとき",
+          When: ["ログイン画面で「再設定する」リンクを押す"],
+          Then: "パスワード再設定画面の「再設定メールを送る」ボタンが表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderAuthRoutes("/login");
 
-          await user.click(screen.getByRole("link", { name: "再設定する" }));
+      await user.click(screen.getByRole("link", { name: "再設定する" }));
 
-          expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
-        });
+      expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
+    },
+  );
 
-        it("新規登録画面で「ログイン」リンクを押すと、ログイン画面の「アカウントを作る」リンクが表示される", async () => {
-          const user = userEvent.setup();
-          renderAuthRoutes("/signup");
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログインしていないとき",
+          When: ["新規登録画面で「ログイン」リンクを押す"],
+          Then: "ログイン画面の「アカウントを作る」リンクが表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderAuthRoutes("/signup");
 
-          await user.click(screen.getByRole("link", { name: "ログイン" }));
+      await user.click(screen.getByRole("link", { name: "ログイン" }));
 
-          expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
-        });
+      expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+    },
+  );
 
-        it("パスワード再設定画面で「ログインに戻る」リンクを押すと、ログイン画面の「アカウントを作る」リンクが表示される", async () => {
-          const user = userEvent.setup();
-          renderAuthRoutes("/reset-password");
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログインしていないとき",
+          When: ["パスワード再設定画面で「ログインに戻る」リンクを押す"],
+          Then: "ログイン画面の「アカウントを作る」リンクが表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderAuthRoutes("/reset-password");
 
-          await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
+      await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
 
-          expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
-        });
-      });
-    });
-  });
+      expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+    },
+  );
 
-  describe("ログイン済みのとき", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("ログイン画面を開くと、ホーム画面に遷移する", async () => {
-          renderAuthRoutes("/login", authenticatedUser);
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログイン済みのとき",
+          When: ["ログイン画面を開く"],
+          Then: "ホーム画面の「ポケモンを探しに行く」ボタンが表示される",
+        },
+      ],
+    },
+    async () => {
+      renderAuthRoutes("/login", authenticatedUser);
 
-          expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
-        });
+      expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+    },
+  );
 
-        it("新規登録画面を開くと、ホーム画面に遷移する", async () => {
-          renderAuthRoutes("/signup", authenticatedUser);
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ログイン済みのとき",
+          When: ["新規登録画面を開く"],
+          Then: "ホーム画面の「ポケモンを探しに行く」ボタンが表示される",
+        },
+      ],
+    },
+    async () => {
+      renderAuthRoutes("/signup", authenticatedUser);
 
-          expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
-        });
-      });
-    });
-  });
+      expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+    },
+  );
 });

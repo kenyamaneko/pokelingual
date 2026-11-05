@@ -298,3 +298,57 @@ jobs:
       - name: Stop services
         if: always()
         run: docker compose -f docker-compose.dev.yml down
+
+  # レビューで実際に生成されたテスト観点カタログを見られるようにするため、PR の CI でも生成して成果物にする。
+  behavior-catalog:
+    name: Test Perspective Catalog
+    needs: [changes, backend-test, frontend-test, e2e-test]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Build catalog CSS
+        run: |
+          npm ci --prefix scripts
+          npm run build:css --prefix scripts
+
+      - name: Download JUnit XML
+        uses: actions/download-artifact@v8
+        with:
+          pattern: junit-*
+          path: junit-artifacts
+
+      - name: Generate catalog HTML
+        run: |
+          mkdir -p catalog
+          python scripts/generate_behavior_catalog.py \
+            --commit "${GITHUB_SHA}" \
+            --css scripts/behavior_catalog.css \
+            --junit junit-artifacts/junit-backend/junit.xml \
+            --junit junit-artifacts/junit-frontend/vitest-junit.xml \
+            --junit junit-artifacts/junit-e2e/e2e-junit.xml \
+            > catalog/index.html
+
+      - name: Upload catalog
+        uses: actions/upload-artifact@v7
+        with:
+          name: behavior-catalog
+          path: catalog/index.html
+          retention-days: 7

@@ -1,10 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect } from "vitest";
 import express from "express";
 import request from "supertest";
 import { rateLimit } from "./rate-limit.js";
 import { RateLimitError } from "../domain/errors.js";
 import type { RateLimitKind } from "../domain/errors.js";
 import type { DailyUsage, RateLimitRepository } from "../domain/ports.js";
+import { defineCase } from "../test/defineCase.js";
 
 function stubRepo(checkAndIncrement: RateLimitRepository["checkAndIncrement"]): RateLimitRepository {
   return {
@@ -36,89 +37,138 @@ function rejectOnlyFirstRequest(kind: RateLimitKind): RateLimitRepository["check
   };
 }
 
-describe("[本体:AI 呼び出し回数]日次上限の判定", () => {
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("今日の AI 呼び出し回数が日次上限以内のとき、リクエストは後続の処理に渡される", async () => {
-        const app = makeApp(async () => ({ count: 1, limit: 3 }));
+const SEND_REQUEST = "リクエストを送る";
+const REJECTED_USER_LIMIT = "リクエストは 429 で拒否され、ユーザーの日次上限に達した旨が返る";
+const REJECTED_GLOBAL_LIMIT = "リクエストは 429 で拒否され、全体の日次上限に達した旨が返る";
+const RECOVERED = "リクエストは 200 で後続の処理に渡される";
 
-        const res = await request(app).post("/api/quest/score");
+describe("[本体:AI 呼び出し回数]日次上限以内の通過", () => {
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "今日の AI 呼び出し回数が日次上限以内のとき",
+          When: [SEND_REQUEST],
+          Then: "リクエストは後続の処理に渡される",
+        },
+      ],
+    },
+    async () => {
+      const app = makeApp(async () => ({ count: 1, limit: 3 }));
 
-        expect(res.status).toBe(200);
-        expect(res.body).toEqual({ reached: true });
+      const res = await request(app).post("/api/quest/score");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ reached: true });
+    },
+  );
+});
+
+describe("[本体:AI 呼び出し回数]ユーザーごとの日次上限超過の拒否", () => {
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [{ Given: "ユーザーの日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT }],
+    },
+    async () => {
+      const app = makeApp(async () => {
+        throw new RateLimitError("user");
       });
-    });
-  });
 
-  describe("ユーザーの日次上限を超えたとき", () => {
-    describe("リクエストを送ると", () => {
-      describe("部品間結合テスト", () => {
-        describe("異常系", () => {
-          it("リクエストは 429 で拒否され、ユーザーの日次上限に達した旨が返る", async () => {
-            const app = makeApp(async () => {
-              throw new RateLimitError("user");
-            });
+      const res = await request(app).post("/api/quest/score");
 
-            const res = await request(app).post("/api/quest/score");
+      expect(res.status).toBe(429);
+      expect(res.body.error).toBe("user");
+    },
+  );
 
-            expect(res.status).toBe(429);
-            expect(res.body.error).toBe("user");
-          });
-
-          it("429 の応答に、「そろそろ　研究に　戻るぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる", async () => {
-            const app = makeApp(async () => {
-              throw new RateLimitError("user");
-            });
-
-            const res = await request(app).post("/api/quest/score");
-
-            expect(res.body.message).toBe("そろそろ　研究に　戻るぞ。また　明日　来てくれ");
-          });
-
-          it("ユーザーの日次上限に達して 429 で拒否されたあと、次のリクエスト時には日次上限以内になったとき、次のリクエストは 200 で後続の処理に渡される", async () => {
-            const app = makeApp(rejectOnlyFirstRequest("user"));
-
-            const rejected = await request(app).post("/api/quest/score");
-            expect(rejected.status).toBe(429);
-            expect(rejected.body.error).toBe("user");
-
-            const recovered = await request(app).post("/api/quest/score");
-            expect(recovered.status).toBe(200);
-            expect(recovered.body).toEqual({ reached: true });
-          });
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "ユーザーの日次上限を超えたとき",
+          When: [SEND_REQUEST],
+          Then: "429 の応答に、「そろそろ　研究に　戻るぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる",
+        },
+      ],
+    },
+    async () => {
+      const app = makeApp(async () => {
+        throw new RateLimitError("user");
       });
-    });
-  });
 
-  describe("全体の日次上限を超えたとき", () => {
-    describe("リクエストを送ると", () => {
-      describe("部品間結合テスト", () => {
-        describe("異常系", () => {
-          it("リクエストは 429 で拒否され、全体の日次上限に達した旨が返る", async () => {
-            const app = makeApp(async () => {
-              throw new RateLimitError("global");
-            });
+      const res = await request(app).post("/api/quest/score");
 
-            const res = await request(app).post("/api/quest/score");
+      expect(res.body.message).toBe("そろそろ　研究に　戻るぞ。また　明日　来てくれ");
+    },
+  );
 
-            expect(res.status).toBe(429);
-            expect(res.body.error).toBe("global");
-          });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        { Given: "ユーザーの日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT },
+        { Given: "次のリクエスト時には日次上限以内になったとき", When: ["もう一度リクエストを送る"], Then: RECOVERED },
+      ],
+    },
+    async () => {
+      const app = makeApp(rejectOnlyFirstRequest("user"));
 
-          it("全体の日次上限に達して 429 で拒否されたあと、次のリクエスト時には日次上限以内になったとき、次のリクエストは 200 で後続の処理に渡される", async () => {
-            const app = makeApp(rejectOnlyFirstRequest("global"));
+      const rejected = await request(app).post("/api/quest/score");
+      expect(rejected.status).toBe(429);
+      expect(rejected.body.error).toBe("user");
 
-            const rejected = await request(app).post("/api/quest/score");
-            expect(rejected.status).toBe(429);
-            expect(rejected.body.error).toBe("global");
+      const recovered = await request(app).post("/api/quest/score");
+      expect(recovered.status).toBe(200);
+      expect(recovered.body).toEqual({ reached: true });
+    },
+  );
+});
 
-            const recovered = await request(app).post("/api/quest/score");
-            expect(recovered.status).toBe(200);
-            expect(recovered.body).toEqual({ reached: true });
-          });
-        });
+describe("[本体:AI 呼び出し回数]全体の日次上限超過の拒否", () => {
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [{ Given: "全体の日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT }],
+    },
+    async () => {
+      const app = makeApp(async () => {
+        throw new RateLimitError("global");
       });
-    });
-  });
+
+      const res = await request(app).post("/api/quest/score");
+
+      expect(res.status).toBe(429);
+      expect(res.body.error).toBe("global");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        { Given: "全体の日次上限を超えたとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT },
+        { Given: "次のリクエスト時には日次上限以内になったとき", When: ["もう一度リクエストを送る"], Then: RECOVERED },
+      ],
+    },
+    async () => {
+      const app = makeApp(rejectOnlyFirstRequest("global"));
+
+      const rejected = await request(app).post("/api/quest/score");
+      expect(rejected.status).toBe(429);
+      expect(rejected.body.error).toBe("global");
+
+      const recovered = await request(app).post("/api/quest/score");
+      expect(recovered.status).toBe(200);
+      expect(recovered.body).toEqual({ reached: true });
+    },
+  );
 });

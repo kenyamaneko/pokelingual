@@ -1,7 +1,8 @@
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, expect, vi, beforeEach } from "vitest";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { EmailNotVerifiedError } from "../utils/authErrors";
+import { defineCase } from "../test/defineCase";
 
 const h = vi.hoisted(() => ({
   auth: {},
@@ -38,79 +39,115 @@ function renderAuth() {
   return renderHook(() => useAuth(), { wrapper: AuthProvider }).result;
 }
 
+const LOGIN = "ログインする";
+const UNVERIFIED_EMAIL = "メールの確認が済んでいないとき";
+
 describe("[本体:認証]メール本人確認", () => {
   beforeEach(() => {
     h.signInResult = null;
   });
 
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("メールアドレスとパスワードで新規登録すると、ログインしていない状態になる", async () => {
-        const auth = renderAuth();
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: ["メールアドレスとパスワードで新規登録する"],
+          Then: "ログインしていない状態になる",
+        },
+      ],
+    },
+    async () => {
+      const auth = renderAuth();
 
-        await act(async () => {
-          await auth.current.signup("dummy@example.com", "dummy-pass");
-        });
-
-        expect(auth.current.user).toBeNull();
+      await act(async () => {
+        await auth.current.signup("dummy@example.com", "dummy-pass");
       });
 
-      it("メールの確認が済んでいるとき、ログインすると、ログイン済みの状態になる", async () => {
-        h.signInResult = { emailVerified: true };
-        const auth = renderAuth();
+      expect(auth.current.user).toBeNull();
+    },
+  );
 
-        await act(async () => {
-          await auth.current.login("dummy@example.com", "dummy-pass");
-        });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [{ Given: "メールの確認が済んでいるとき", When: [LOGIN], Then: "ログイン済みの状態になる" }],
+    },
+    async () => {
+      h.signInResult = { emailVerified: true };
+      const auth = renderAuth();
 
-        expect(auth.current.user).toEqual({ emailVerified: true });
+      await act(async () => {
+        await auth.current.login("dummy@example.com", "dummy-pass");
       });
-    });
-  });
 
-  describe("メールの確認が済んでいないとき", () => {
-    beforeEach(() => {
+      expect(auth.current.user).toEqual({ emailVerified: true });
+    },
+  );
+
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "異常系",
+      steps: [{ Given: UNVERIFIED_EMAIL, When: [LOGIN], Then: "メール未確認のエラーで失敗する" }],
+    },
+    async () => {
       h.signInResult = { emailVerified: false };
-    });
+      const auth = renderAuth();
 
-    describe("ログインすると", () => {
-      describe("単体テスト", () => {
-        describe("異常系", () => {
-          it("メール未確認のエラーで失敗する", async () => {
-            const auth = renderAuth();
-
-            await act(async () => {
-              await expect(
-                auth.current.login("dummy@example.com", "dummy-pass"),
-              ).rejects.toBeInstanceOf(EmailNotVerifiedError);
-            });
-          });
-
-          it("ログインしていない状態のままになる", async () => {
-            const auth = renderAuth();
-
-            await act(async () => {
-              await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
-            });
-
-            expect(auth.current.user).toBeNull();
-          });
-
-          it("メール未確認のエラーで失敗したあと、メールの確認が済んで再度ログインすると、ログイン済みの状態になる", async () => {
-            const auth = renderAuth();
-            await act(async () => {
-              await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
-            });
-            h.signInResult = { emailVerified: true };
-
-            await act(async () => {
-              await auth.current.login("dummy@example.com", "dummy-pass");
-            });
-
-            expect(auth.current.user).toEqual({ emailVerified: true });
-          });
-        });
+      await act(async () => {
+        await expect(
+          auth.current.login("dummy@example.com", "dummy-pass"),
+        ).rejects.toBeInstanceOf(EmailNotVerifiedError);
       });
-    });
-  });
+    },
+  );
+
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "異常系",
+      steps: [{ Given: UNVERIFIED_EMAIL, When: [LOGIN], Then: "ログインしていない状態のままになる" }],
+    },
+    async () => {
+      h.signInResult = { emailVerified: false };
+      const auth = renderAuth();
+
+      await act(async () => {
+        await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
+      });
+
+      expect(auth.current.user).toBeNull();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: UNVERIFIED_EMAIL,
+          When: [LOGIN, "メールの確認が済んだあとで、もう一度ログインする"],
+          Then: "ログイン済みの状態になる",
+        },
+      ],
+    },
+    async () => {
+      h.signInResult = { emailVerified: false };
+      const auth = renderAuth();
+      await act(async () => {
+        await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
+      });
+      h.signInResult = { emailVerified: true };
+
+      await act(async () => {
+        await auth.current.login("dummy@example.com", "dummy-pass");
+      });
+
+      expect(auth.current.user).toEqual({ emailVerified: true });
+    },
+  );
 });
