@@ -12,6 +12,9 @@ coverage/
 # Test reports (JUnit XML 等)
 test-results/
 
+# テスト観点カタログの生成物 (Tailwind が生成する CSS)
+scripts/behavior_catalog.css
+
 # Stryker (mutation testing)
 .stryker-tmp/
 backend/reports/

@@ -281,6 +281,18 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Build catalog CSS
+        run: |
+          npm ci --prefix scripts
+          npm run build:css --prefix scripts
+
       - name: Download JUnit XML
         uses: actions/download-artifact@v8
         with:
@@ -292,8 +304,8 @@ jobs:
         run: |
           mkdir -p _site
           python scripts/generate_behavior_catalog.py \
-            --format html \
             --commit "${GITHUB_SHA}" \
+            --css scripts/behavior_catalog.css \
             --junit junit-artifacts/junit-backend/junit.xml \
             --junit junit-artifacts/junit-frontend/vitest-junit.xml \
             --junit junit-artifacts/junit-e2e/e2e-junit.xml \

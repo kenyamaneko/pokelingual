@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@source "./behavior_catalog_template.html";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-err: var(--err);
+  --color-err-soft: var(--err-soft);
+  --font-sans: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+}
