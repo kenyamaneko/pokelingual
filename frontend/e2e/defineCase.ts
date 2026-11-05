@@ -8,7 +8,7 @@ import {
 } from "@playwright/test";
 
 /** テストの種別。 */
-export type CaseKind = "E2Eテスト" | "シナリオテスト" | "スモークテスト";
+export type CaseKind = "部品間結合テスト" | "E2Eテスト" | "シナリオテスト" | "スモークテスト";
 
 /** ケースが正常系か異常系か。 */
 export type CaseOutcome = "正常系" | "異常系";
