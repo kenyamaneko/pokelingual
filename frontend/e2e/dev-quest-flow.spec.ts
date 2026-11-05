@@ -1,64 +1,10 @@
-import { test, expect, type Page, type Response } from "@playwright/test";
-import { loginViaUi } from "./helpers";
+import { test, expect } from "@playwright/test";
+import { loginAsTestUserWithTutorialStatus, SCORE_REVEAL_TIMEOUT_MS } from "./helpers";
 import { BUTTON, HEADING, PLACEHOLDER, TEXT } from "./labels";
 import { defineCase } from "./defineCase";
 import type { QuestLocationsResponse } from "../../shared/api-types/quest";
 
 test.skip(() => process.env.E2E_MODE !== "dev", "cloud-dev only spec");
-
-const SCORE_REVEAL_TIMEOUT_MS = 30_000;
-
-/**
- * 検証済みのテスト用ユーザーでログインする。
- * @returns ログイン後にホーム画面が取得したチュートリアル完了状態の応答。
- */
-async function loginAsTestUser(page: Page): Promise<Response> {
-  const email = process.env.E2E_EMAIL;
-  const password = process.env.E2E_PASSWORD;
-  // dev ではメール確認済みのテスト用ユーザーの資格情報が必須のため、未設定なら誤った対象を叩く前に失敗させる。
-  if (!email || !password) {
-    throw new Error("E2E_EMAIL and E2E_PASSWORD must be set for dev mode");
-  }
-
-  const tutorialStatusLoaded = page.waitForResponse(
-    (res) =>
-      res.url().includes("/api/tutorial-status") &&
-      res.request().method() === "GET",
-  );
-  await loginViaUi(page, email, password);
-  await expect(page).toHaveURL("/");
-  return tutorialStatusLoaded;
-}
-
-/**
- * ログイン済みユーザーのチュートリアル完了状態を、利用者自身の資格で API から指定の状態にし、ホーム画面を読み直す。
- * @param tutorialStatusResponse ログイン後にホーム画面が取得したチュートリアル完了状態の応答。
- * @param state 用意する状態。完了済みにするなら "complete"、未完了に戻すなら "reset"。
- */
-async function setTutorialStatusOfLoggedInUser(
-  page: Page,
-  tutorialStatusResponse: Response,
-  state: "complete" | "reset",
-) {
-  const { authorization } = await tutorialStatusResponse.request().allHeaders();
-  const res = await page.request.put(
-    `${tutorialStatusResponse.url()}/${state}`,
-    {
-      headers: { authorization },
-    },
-  );
-  expect(res.ok()).toBe(true);
-  await page.reload();
-}
-
-/**
- * 検証済みのテスト用ユーザーでログインし、チュートリアルを指定の状態にしてホーム画面を読み直す。
- * @param state 用意する状態。完了済みにするなら "complete"、未完了に戻すなら "reset"。
- */
-async function loginAsTestUserWithTutorialStatus(page: Page, state: "complete" | "reset") {
-  const tutorialStatusResponse = await loginAsTestUser(page);
-  await setTutorialStatusOfLoggedInUser(page, tutorialStatusResponse, state);
-}
 
 test.describe("[本体:クエスト]クエストの進行", () => {
   defineCase(

@@ -1,4 +1,5 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, type Response } from "@playwright/test";
+import { byEnvironment } from "./defineCase";
 import { BUTTON, PLACEHOLDER } from "./labels";
 import type { PokedexResponse } from "../../shared/api-types/pokedex";
 
@@ -28,6 +29,14 @@ export async function completeTutorialViaApi(page: Page) {
 }
 
 /**
+ * チュートリアル完了状態を未完了に戻す。local (mock) 専用。
+ * @param page APIRequestContext を共有する Playwright の Page。
+ */
+export async function resetTutorialStatus(page: Page) {
+  await page.request.put(`${LOCAL_BACKEND_URL}/api/tutorial-status/reset`);
+}
+
+/**
  * 除外ポケモンの設定を空にリセットする。local (mock) 専用。
  * dev-user の状態が実行間で残るため、テストの再実行を独立させるために使う。
  * @param page APIRequestContext を共有する Playwright の Page。
@@ -52,6 +61,112 @@ export async function countCapturesViaApi(page: Page, pokemonId: number) {
     pokemon.find((entry) => entry.pokemon_id === pokemonId)?.total_captures ?? 0
   );
 }
+
+const TUTORIAL_STATUS_PATH = "/api/tutorial-status";
+const EXCLUDED_POKEMON_PATH = "/api/settings/excluded-pokemon";
+
+/** 採点結果が表示されるまで待つ時間 (ミリ秒)。 */
+export const SCORE_REVEAL_TIMEOUT_MS = 30_000;
+
+/**
+ * 検証済みのテスト用ユーザーでログインする。
+ * @returns ログイン後にホーム画面が取得したチュートリアル完了状態の応答。
+ */
+async function loginAsTestUser(page: Page): Promise<Response> {
+  const email = process.env.E2E_EMAIL;
+  const password = process.env.E2E_PASSWORD;
+  // dev ではメール確認済みのテスト用ユーザーの資格情報が必須のため、未設定なら誤った対象を叩く前に失敗させる。
+  if (!email || !password) {
+    throw new Error("E2E_EMAIL and E2E_PASSWORD must be set for dev mode");
+  }
+
+  const tutorialStatusLoaded = page.waitForResponse(
+    (res) =>
+      res.url().includes(TUTORIAL_STATUS_PATH) &&
+      res.request().method() === "GET",
+  );
+  await loginViaUi(page, email, password);
+  await expect(page).toHaveURL("/");
+  return tutorialStatusLoaded;
+}
+
+async function resetExcludedPokemonOfLoggedInUser(
+  page: Page,
+  tutorialStatusResponse: Response,
+) {
+  const { authorization } = await tutorialStatusResponse.request().allHeaders();
+  const res = await page.request.put(
+    new URL(EXCLUDED_POKEMON_PATH, tutorialStatusResponse.url()).toString(),
+    {
+      headers: { authorization },
+      data: { pokemon_ids: [] },
+    },
+  );
+  expect(res.ok()).toBe(true);
+}
+
+/**
+ * ログイン済みユーザーのチュートリアル完了状態を、利用者自身の資格で API から指定の状態にし、ホーム画面を読み直す。
+ * @param tutorialStatusResponse ログイン後にホーム画面が取得したチュートリアル完了状態の応答。
+ * @param state 用意する状態。完了済みにするなら "complete"、未完了に戻すなら "reset"。
+ */
+async function setTutorialStatusOfLoggedInUser(
+  page: Page,
+  tutorialStatusResponse: Response,
+  state: "complete" | "reset",
+) {
+  const { authorization } = await tutorialStatusResponse.request().allHeaders();
+  const res = await page.request.put(
+    `${tutorialStatusResponse.url()}/${state}`,
+    {
+      headers: { authorization },
+    },
+  );
+  expect(res.ok()).toBe(true);
+  await page.reload();
+}
+
+/**
+ * 検証済みのテスト用ユーザーでログインし、チュートリアルを指定の状態にしてホーム画面を読み直す。dev 専用。
+ * @param state 用意する状態。完了済みにするなら "complete"、未完了に戻すなら "reset"。
+ */
+export async function loginAsTestUserWithTutorialStatus(page: Page, state: "complete" | "reset") {
+  const tutorialStatusResponse = await loginAsTestUser(page);
+  await setTutorialStatusOfLoggedInUser(page, tutorialStatusResponse, state);
+}
+
+async function prepareLocalUserWithIncompleteTutorial(page: Page) {
+  await resetTutorialStatus(page);
+  await page.goto("/");
+}
+
+async function prepareDevUserWithIncompleteTutorial(page: Page) {
+  await loginAsTestUserWithTutorialStatus(page, "reset");
+}
+
+async function prepareLocalUserWithCompletedTutorialAndNoExcludedPokemon(page: Page) {
+  await completeTutorialViaApi(page);
+  await resetExcludedPokemon(page);
+  await page.goto("/");
+}
+
+async function prepareDevUserWithCompletedTutorialAndNoExcludedPokemon(page: Page) {
+  const tutorialStatusResponse = await loginAsTestUser(page);
+  await resetExcludedPokemonOfLoggedInUser(page, tutorialStatusResponse);
+  await setTutorialStatusOfLoggedInUser(page, tutorialStatusResponse, "complete");
+}
+
+/** ログインしていて、チュートリアルが未完了で、ホーム画面を表示している状態を用意する。 */
+export const prepareLoggedInUserWithIncompleteTutorial = byEnvironment({
+  ローカル: prepareLocalUserWithIncompleteTutorial,
+  dev環境: prepareDevUserWithIncompleteTutorial,
+});
+
+/** ログインしていて、チュートリアルが完了済みで、除外ポケモンが未設定で、ホーム画面を表示している状態を用意する。 */
+export const prepareLoggedInUserWithCompletedTutorialAndNoExcludedPokemon = byEnvironment({
+  ローカル: prepareLocalUserWithCompletedTutorialAndNoExcludedPokemon,
+  dev環境: prepareDevUserWithCompletedTutorialAndNoExcludedPokemon,
+});
 
 /** mock の採点で表示されうるダメージ (%) の下限。素点の下限 20 を最終評価点に変換した値。 */
 export const MOCK_DAMAGE_PERCENT_MIN = 11;
