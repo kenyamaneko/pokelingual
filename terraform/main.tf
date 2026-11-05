@@ -310,6 +310,13 @@ resource "google_project_iam_member" "github_actions_firebase_hosting" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
+# firebase-tools が Hosting のデプロイ前に Firebase Hosting API の有効状態を Service Usage API で調べるため、デプロイ用のサービスアカウントに閲覧を許可する。
+resource "google_project_iam_member" "github_actions_service_usage_viewer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageViewer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
 # サインアップスモーク (scripts/smoke-prod-signup.sh) が作成した使い捨てユーザーの
 # emailVerified 強制更新・削除に Admin 権限を要するため、実行対象環境にのみ付与する。
 resource "google_project_iam_member" "github_actions_firebase_auth_admin" {
