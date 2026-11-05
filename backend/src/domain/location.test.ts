@@ -11,7 +11,7 @@ function fixedRandom(value: number): RandomSource {
   return { next: () => value };
 }
 
-describe("[出題] クエストの場所定義", () => {
+describe("[本体:出題]クエストの場所定義", () => {
   const allTypes: PokemonType[] = [
     "normal", "fire", "water", "electric", "grass", "ice",
     "fighting", "poison", "ground", "flying", "psychic", "bug",
@@ -24,48 +24,67 @@ describe("[出題] クエストの場所定義", () => {
     dark: "あく", steel: "はがね", fairy: "フェアリー",
   };
 
-  describe("正常系", () => {
-    it.each(allTypes.map((type) => [typeLabels[type], type] as const))(
-      "定義された場所のうち、%sタイプを持つ場所はちょうど 2 か所になる",
-      (_label, type) => {
-        const count = QUEST_LOCATIONS.filter((l) => l.types.includes(type)).length;
-        expect(count).toBe(2);
-      },
-    );
-  });
-});
-
-describe("[出題] 場所の ID による取得", () => {
-  describe("正常系", () => {
-    it("きらめく水晶の洞窟の場所 ID を指定したとき、取得した場所の名前はきらめく水晶の洞窟になる", () => {
-      expect(findLocation("crystal-cave")?.name).toBe("きらめく水晶の洞窟");
-    });
-  });
-
-  describe("異常系", () => {
-    it("どの場所にも無い ID を指定したとき、場所の取得結果は無しになる", () => {
-      expect(findLocation("no-such-place")).toBeUndefined();
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it.each(allTypes.map((type) => [typeLabels[type], type] as const))(
+        "定義された場所のうち、%sタイプを持つ場所はちょうど 2 か所になる",
+        (_label, type) => {
+          const count = QUEST_LOCATIONS.filter((l) => l.types.includes(type)).length;
+          expect(count).toBe(2);
+        },
+      );
     });
   });
 });
 
-describe("[出題] 場所の抽選", () => {
-  describe("正常系", () => {
-    it("場所の総数以下の数を指定したとき、選ばれる場所の数は指定した数になる", () => {
-      const requestedCount = 4;
-      const picked = pickRandomLocations(fixedRandom(0), requestedCount);
-      expect(picked).toHaveLength(requestedCount);
+describe("[本体:出題]場所 ID に対応する場所", () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("場所 ID を crystal-cave と指定したとき、対応する場所の名前はきらめく水晶の洞窟になる", () => {
+        expect(findLocation("crystal-cave")?.name).toBe("きらめく水晶の洞窟");
+      });
     });
 
-    it("場所の総数以下の数を指定したとき、選ばれた場所に重複は無い", () => {
-      const requestedCount = 4;
-      const picked = pickRandomLocations(fixedRandom(0), requestedCount);
-      expect(new Set(picked.map((l) => l.id)).size).toBe(requestedCount);
+    describe("異常系", () => {
+      it("どの場所にも無い場所 ID no-such-place を指定したとき、対応する場所は無しになる", () => {
+        expect(findLocation("no-such-place")).toBeUndefined();
+      });
     });
+  });
+});
 
-    it("場所の総数より多い数を指定したとき、選ばれる場所の数は場所の総数になる", () => {
-      const picked = pickRandomLocations(fixedRandom(0), 15);
-      expect(picked).toHaveLength(10);
+describe("[本体:出題]場所の抽選", () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("場所を 4 か所指定したとき、選ばれる場所の数は 4 か所になる", () => {
+        const picked = pickRandomLocations(fixedRandom(0), 4);
+        expect(picked).toHaveLength(4);
+      });
+
+      it("場所を 4 か所指定したとき、選ばれた場所に重複は無い", () => {
+        const picked = pickRandomLocations(fixedRandom(0), 4);
+        expect(new Set(picked.map((l) => l.id)).size).toBe(4);
+      });
+
+      it("場所を 0 か所指定したとき、選ばれる場所の数は 0 か所になる", () => {
+        const picked = pickRandomLocations(fixedRandom(0), 0);
+        expect(picked).toHaveLength(0);
+      });
+
+      it("場所を 1 か所指定したとき、選ばれる場所の数は 1 か所になる", () => {
+        const picked = pickRandomLocations(fixedRandom(0), 1);
+        expect(picked).toHaveLength(1);
+      });
+
+      it("定義された場所の総数と同じ 10 か所を指定したとき、選ばれる場所の数は 10 か所になる", () => {
+        const picked = pickRandomLocations(fixedRandom(0), 10);
+        expect(picked).toHaveLength(10);
+      });
+
+      it("定義された場所の総数 10 か所より 1 か所多い 11 か所を指定したとき、選ばれる場所の数は 10 か所になる", () => {
+        const picked = pickRandomLocations(fixedRandom(0), 11);
+        expect(picked).toHaveLength(10);
+      });
     });
   });
 });

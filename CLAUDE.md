@@ -11,7 +11,7 @@
 
 ファイル編集 (Edit / Write) の前に、対象ファイルのパスから言語を判定し、共通ルール (keyandnotes-rules) と pokelingual 固有 overlay の両方を Read して以降の判断に適用する。共通と pokelingual 固有が衝突する場合は pokelingual を優先する (共通 principles「[base] ルールの階層と優先順位」)。
 
-- `backend/**/*.ts` / `frontend/**/*.ts` / `frontend/**/*.tsx` → `../keyandnotes-rules/rules/lang/typescript.md` + `rules/lang/typescript.md`
+- `backend/**/*.ts` / `frontend/**/*.ts` / `frontend/**/*.tsx` → `../keyandnotes-rules/rules/lang/typescript.md`
 - `terraform/**/*.tf` → `../keyandnotes-rules/rules/lang/iac.md`
 - `scripts/**/*.py` → `../keyandnotes-rules/rules/lang/python.md`
 - テストコードを書くとき → `../keyandnotes-rules/rules/testing.md` + `rules/testing.md`

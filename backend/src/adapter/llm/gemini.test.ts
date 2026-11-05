@@ -15,30 +15,28 @@ function makeClient(text: string): GeminiClient {
   return makeClientWithCandidates([{ content: { parts: [{ text }] } }]);
 }
 
-describe("[AI 呼び出し] AI 応答からのテキスト取り出し", () => {
-  describe("AI にテキストの生成を依頼する", () => {
-    describe("正常系", () => {
-      it.each([
-        ["```json", '```json\n{"score":70}\n```', '{"score":70}'],
-        ["```", "```\nplain text\n```", "plain text"],
-      ])(
-        "AI 応答が %s で始まるコードブロックで囲まれているとき、得られるテキストは囲みを除いた本文になる",
-        async (_opening, input, expected) => {
-          expect(await makeClient(input).generateText("p")).toBe(expected);
-        },
-      );
+describe("[外部連携:AI 呼び出し]AI 応答からのテキスト取り出し", () => {
+  describe("AI にテキストの生成を依頼すると", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it('AI 応答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき、得られるテキストは {"score":70} になる', async () => {
+          expect(await makeClient('```json\n{"score":70}\n```').generateText("p")).toBe('{"score":70}');
+        });
 
-      it("AI 応答がコードブロックで囲まれていないとき、得られるテキストは AI 応答の本文そのものになる", async () => {
-        expect(await makeClient('{"score":70}').generateText("p")).toBe('{"score":70}');
+        it("AI 応答が「```」で始まり「```」で終わるコードブロックで囲まれた「plain text」のとき、得られるテキストは「plain text」になる", async () => {
+          expect(await makeClient("```\nplain text\n```").generateText("p")).toBe("plain text");
+        });
+
+        it('AI 応答が {"score":70} でコードブロックで囲まれていないとき、得られるテキストは {"score":70} になる', async () => {
+          expect(await makeClient('{"score":70}').generateText("p")).toBe('{"score":70}');
+        });
+
+        it("AI 応答の末尾にだけ「```」がある「text```」のとき、得られるテキストは「text」になる", async () => {
+          expect(await makeClient("text```").generateText("p")).toBe("text");
+        });
       });
 
-      it("AI 応答の末尾にだけ ``` があるとき、得られるテキストは末尾の ``` を除いた本文になる", async () => {
-        expect(await makeClient("text```").generateText("p")).toBe("text");
-      });
-    });
-
-    describe("異常系", () => {
-      describe("AI 応答から生成されたテキストを取り出せないとき", () => {
+      describe("異常系", () => {
         it.each([
           ["応答の candidates が空である", []],
           ["応答の candidates に content が無い", [{}]],

@@ -12,6 +12,13 @@ function withScore(score: number): ScoreResponse {
   return { score, review: "", description_ja: "" };
 }
 
+function renderScoreDisplayAfter(score: number, elapsedMs: number) {
+  render(<ScoreDisplay score={withScore(score)} isActive={true} />);
+  act(() => {
+    vi.advanceTimersByTime(elapsedMs);
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
 });
@@ -20,124 +27,120 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("[クエスト] 採点スコアの演出", () => {
-  describe("正常系", () => {
-    describe("メーターの減少が始まった直後のとき", () => {
-      it("メーターが 100% を示す", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "100");
-      });
+describe("[本体:採点]採点スコアの演出", () => {
+  describe("HP の減少が始まった直後のとき", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("HP バーが 100% を示す", () => {
+          renderScoreDisplayAfter(30, 0);
+          expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "100");
+        });
 
-      it("HP が 100% と表示される", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        expect(screen.getByText("100%")).toBeInTheDocument();
-      });
-
-      it("HP バーの色が緑になる", () => {
-        render(<ScoreDisplay score={withScore(85)} isActive={true} />);
-        expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "green");
+        it("HP の数値が 100% と表示される", () => {
+          renderScoreDisplayAfter(30, 0);
+          expect(screen.getByText("100%")).toBeInTheDocument();
+        });
       });
     });
+  });
 
-    describe("スコアが 30 のとき", () => {
-      it("メーターの減少の中間時点では、メーターが 85% を示す", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS / 2);
+  describe("スコアが 30 のとき", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("HP の減少にかかる時間の半分が経った時点では、HP バーが 85% を示す", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS / 2);
+          expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "85");
         });
-        expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "85");
-      });
 
-      it("メーターの減少の中間時点では、HP が 85% と表示される", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS / 2);
+        it("HP の減少にかかる時間の半分が経った時点では、HP の数値が 85% と表示される", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS / 2);
+          expect(screen.getByText("85%")).toBeInTheDocument();
         });
-        expect(screen.getByText("85%")).toBeInTheDocument();
-      });
 
-      it("メーターの減少が終わった時点では、メーターが 70% を示す", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+        it("HP の減少が終わった時点では、HP バーが 70% を示す", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
+          expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "70");
         });
-        expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "70");
-      });
 
-      it("メーターの減少が終わった時点では、HP が 70% と表示される", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+        it("HP の減少が終わった時点では、HP の数値が 70% と表示される", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
+          expect(screen.getByText("70%")).toBeInTheDocument();
         });
-        expect(screen.getByText("70%")).toBeInTheDocument();
-      });
 
-      it("メーターの減少が終わった時点では、ダメージ数値がまだ表示されていない", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+        it("HP の減少が終わった時点では、ダメージ数値がまだ表示されていない", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
+          expect(screen.queryByTestId("damage-value")).not.toBeInTheDocument();
         });
-        expect(screen.queryByTestId("damage-value")).not.toBeInTheDocument();
-      });
 
-      it("メーターの減少が終わった時点では、「効果は　いまひとつのようだ」がまだ表示されていない", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+        it("HP の減少が終わった時点では、こうか表示「効果は　いまひとつのようだ」がまだ表示されていない", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
+          expect(screen.queryByText(spec("効果は　いまひとつのようだ"))).not.toBeInTheDocument();
         });
-        expect(screen.queryByText(spec("効果は　いまひとつのようだ"))).not.toBeInTheDocument();
-      });
 
-      it("メーターの減少が終わって少し経つと、ダメージが 30% と表示される", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
+        it("HP の減少が終わってからダメージ数値を出すまでの間が経つと、ダメージ数値が 30% と表示される", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
+          expect(screen.getByText("30%")).toBeInTheDocument();
         });
-        expect(screen.getByText("30%")).toBeInTheDocument();
-      });
 
-      it("メーターの減少が終わって少し経つと、「効果は　いまひとつのようだ」と表示される", () => {
-        render(<ScoreDisplay score={withScore(30)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
+        it("HP の減少が終わってからこうか表示を出すまでの間が経つと、こうか表示「効果は　いまひとつのようだ」が表示される", () => {
+          renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
+          expect(screen.getByText(spec("効果は　いまひとつのようだ"))).toBeInTheDocument();
         });
-        expect(screen.getByText(spec("効果は　いまひとつのようだ"))).toBeInTheDocument();
       });
     });
+  });
 
-    describe("スコアが 85 のとき", () => {
-      it("メーターの減少の途中で HP の表示値が 50% 以下になった時点では、HP バーの色が黄になる", () => {
-        render(<ScoreDisplay score={withScore(85)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS * 0.6);
+  describe("スコアが 85 のとき", () => {
+    describe("単体テスト", () => {
+      describe("正常系", () => {
+        it("HP の減少にかかる時間の 6 割が経った時点では、HP バーが 49% を示す", () => {
+          renderScoreDisplayAfter(85, METER_ANIMATION_DURATION_MS * 0.6);
+          expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "49");
         });
-        expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "49");
-        expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "yellow");
-      });
 
-      it("メーターの減少が終わって残り HP が 15% のとき、HP バーの色が赤になる", () => {
-        render(<ScoreDisplay score={withScore(85)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
+        it("HP の減少が終わった時点では、HP バーが 15% を示す", () => {
+          renderScoreDisplayAfter(85, METER_ANIMATION_DURATION_MS);
+          expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "15");
         });
-        expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "15");
-        expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "red");
       });
     });
+  });
 
-    describe("メーターの減少が終わった時点", () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
       it.each([
-        ["残り HP が 51% のとき、HP バーの色は緑になる", 49, "green"],
-        ["残り HP が 50% のとき、HP バーの色は黄になる", 50, "yellow"],
-        ["残り HP が 21% のとき、HP バーの色は黄になる", 79, "yellow"],
-        ["残り HP が 20% のとき、HP バーの色は赤になる", 80, "red"],
-      ] as const)("%s", (_name, score, band) => {
-        render(<ScoreDisplay score={withScore(score)} isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(METER_ANIMATION_DURATION_MS);
-        });
-        expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", band);
-      });
+        { score: 85, timing: "HP の減少が始まった直後", elapsedRatio: 0, remainingHp: 100 },
+        { score: 49, timing: "HP の減少が終わった時点", elapsedRatio: 1, remainingHp: 51 },
+      ])(
+        "スコアが $score で、$timing で残り HP が $remainingHp% のとき、HP バーの色は緑になる",
+        ({ score, elapsedRatio }) => {
+          renderScoreDisplayAfter(score, METER_ANIMATION_DURATION_MS * elapsedRatio);
+          expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "green");
+        },
+      );
+
+      it.each([
+        { score: 85, timing: "HP の減少にかかる時間の 6 割が経った時点", elapsedRatio: 0.6, remainingHp: 49 },
+        { score: 50, timing: "HP の減少が終わった時点", elapsedRatio: 1, remainingHp: 50 },
+        { score: 79, timing: "HP の減少が終わった時点", elapsedRatio: 1, remainingHp: 21 },
+      ])(
+        "スコアが $score で、$timing で残り HP が $remainingHp% のとき、HP バーの色は黄になる",
+        ({ score, elapsedRatio }) => {
+          renderScoreDisplayAfter(score, METER_ANIMATION_DURATION_MS * elapsedRatio);
+          expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "yellow");
+        },
+      );
+
+      it.each([
+        { score: 85, timing: "HP の減少が終わった時点", elapsedRatio: 1, remainingHp: 15 },
+        { score: 80, timing: "HP の減少が終わった時点", elapsedRatio: 1, remainingHp: 20 },
+      ])(
+        "スコアが $score で、$timing で残り HP が $remainingHp% のとき、HP バーの色は赤になる",
+        ({ score, elapsedRatio }) => {
+          renderScoreDisplayAfter(score, METER_ANIMATION_DURATION_MS * elapsedRatio);
+          expect(screen.getByTestId("hp-bar")).toHaveAttribute("data-hp-band", "red");
+        },
+      );
     });
   });
 });

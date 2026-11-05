@@ -4,9 +4,13 @@ import { describe, it, expect } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router";
 import type { User } from "firebase/auth";
 import { AuthContext } from "../contexts/AuthContext";
+import { TutorialProvider } from "../contexts/TutorialContext";
+import { HomePage } from "./HomePage";
 import { LoginPage } from "./LoginPage";
 import { SignupPage } from "./SignupPage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
+
+const START_QUEST_BUTTON = "ポケモンを探しに行く";
 
 const unauthenticated = {
   user: null as User | null,
@@ -22,73 +26,79 @@ const unauthenticated = {
 function renderAuthRoutes(initialPath: string, user: User | null = null) {
   return render(
     <AuthContext.Provider value={{ ...unauthenticated, user }}>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path="/" element={<div data-testid="home-page" />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-        </Routes>
-      </MemoryRouter>
+      <TutorialProvider>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Routes>
+        </MemoryRouter>
+      </TutorialProvider>
     </AuthContext.Provider>,
   );
 }
 
 const authenticatedUser = { uid: "alice" } as unknown as User;
 
-describe("[認証] 認証画面の遷移", () => {
-  describe("正常系", () => {
-    describe("ログインしていないとき", () => {
-      it("ログイン画面の「アカウントを作る」リンクを押すと、新規登録画面が表示される", async () => {
-        const user = userEvent.setup();
-        renderAuthRoutes("/login");
+describe("[本体:認証]認証画面の遷移", () => {
+  describe("ログインしていないとき", () => {
+    describe("部品間結合テスト", () => {
+      describe("正常系", () => {
+        it("ログイン画面で「アカウントを作る」リンクを押すと、新規登録画面の「アカウントを作成する」ボタンが表示される", async () => {
+          const user = userEvent.setup();
+          renderAuthRoutes("/login");
 
-        await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
+          await user.click(screen.getByRole("link", { name: "アカウントを作る" }));
 
-        expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
-      });
+          expect(screen.getByRole("button", { name: "アカウントを作成する" })).toBeInTheDocument();
+        });
 
-      it("ログイン画面の「再設定する」リンクを押すと、パスワード再設定画面が表示される", async () => {
-        const user = userEvent.setup();
-        renderAuthRoutes("/login");
+        it("ログイン画面で「再設定する」リンクを押すと、パスワード再設定画面の「再設定メールを送る」ボタンが表示される", async () => {
+          const user = userEvent.setup();
+          renderAuthRoutes("/login");
 
-        await user.click(screen.getByRole("link", { name: "再設定する" }));
+          await user.click(screen.getByRole("link", { name: "再設定する" }));
 
-        expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
-      });
+          expect(screen.getByRole("button", { name: "再設定メールを送る" })).toBeInTheDocument();
+        });
 
-      it("新規登録画面の「ログイン」リンクを押すと、ログイン画面が表示される", async () => {
-        const user = userEvent.setup();
-        renderAuthRoutes("/signup");
+        it("新規登録画面で「ログイン」リンクを押すと、ログイン画面の「アカウントを作る」リンクが表示される", async () => {
+          const user = userEvent.setup();
+          renderAuthRoutes("/signup");
 
-        await user.click(screen.getByRole("link", { name: "ログイン" }));
+          await user.click(screen.getByRole("link", { name: "ログイン" }));
 
-        expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
-      });
+          expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+        });
 
-      it("パスワード再設定画面の「ログインに戻る」リンクを押すと、ログイン画面が表示される", async () => {
-        const user = userEvent.setup();
-        renderAuthRoutes("/reset-password");
+        it("パスワード再設定画面で「ログインに戻る」リンクを押すと、ログイン画面の「アカウントを作る」リンクが表示される", async () => {
+          const user = userEvent.setup();
+          renderAuthRoutes("/reset-password");
 
-        await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
+          await user.click(screen.getByRole("link", { name: "ログインに戻る" }));
 
-        expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+          expect(screen.getByRole("link", { name: "アカウントを作る" })).toBeInTheDocument();
+        });
       });
     });
   });
 
-  describe("異常系", () => {
-    describe("ログイン済みのとき", () => {
-      it("ログイン画面を開くと、ホーム画面に遷移する", async () => {
-        renderAuthRoutes("/login", authenticatedUser);
+  describe("ログイン済みのとき", () => {
+    describe("部品間結合テスト", () => {
+      describe("正常系", () => {
+        it("ログイン画面を開くと、ホーム画面に遷移する", async () => {
+          renderAuthRoutes("/login", authenticatedUser);
 
-        expect(await screen.findByTestId("home-page")).toBeInTheDocument();
-      });
+          expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+        });
 
-      it("新規登録画面を開くと、ホーム画面に遷移する", async () => {
-        renderAuthRoutes("/signup", authenticatedUser);
+        it("新規登録画面を開くと、ホーム画面に遷移する", async () => {
+          renderAuthRoutes("/signup", authenticatedUser);
 
-        expect(await screen.findByTestId("home-page")).toBeInTheDocument();
+          expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+        });
       });
     });
   });

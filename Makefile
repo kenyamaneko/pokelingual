@@ -1,4 +1,4 @@
-.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
+.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend test-scripts coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
 
 # ローカル開発環境（Docker Compose）
 dev: dev-up
@@ -26,23 +26,27 @@ emulator-up:
 	cd backend && $(EMULATOR_ENV) npx firebase emulators:start --only firestore --project pokelingual-test
 
 # テスト
-test: test-backend test-frontend
+test: test-backend test-frontend test-scripts
 
 # backend テストは Firestore Emulator を必須化している。
 # firebase emulators:exec が Emulator 起動 → FIRESTORE_EMULATOR_HOST を自動注入 → 終了時に停止まで面倒を見る。
-# 結合テスト (test:integration) は Valkey コンテナを testcontainers で起動するため Docker が必要。
+# 結合テスト (test:integration) は Valkey コンテナを testcontainers で起動するため Docker が必要で、Firestore Emulator も使う。
 test-backend:
-	cd backend && npm run lint && npx tsc --noEmit && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm test" && npm run test:integration
+	cd backend && npm run lint && npx tsc --noEmit && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm test && npm run test:integration"
 
 test-frontend:
 	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
+
+# テスト観点カタログ生成器のテスト。pytest が入った Python 3 が要る。
+test-scripts:
+	python3 -m pytest scripts
 
 # カバレッジ計測
 coverage: coverage-backend coverage-frontend
 
 # backend テストと同じく Firestore Emulator を必須とするため emulators:exec で包む。
 coverage-backend:
-	cd backend && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage" && npm run test:integration
+	cd backend && $(EMULATOR_ENV) npx firebase emulators:exec --only firestore --project pokelingual-test "npm run test:coverage && npm run test:integration"
 
 coverage-frontend:
 	cd frontend && npm run test:coverage

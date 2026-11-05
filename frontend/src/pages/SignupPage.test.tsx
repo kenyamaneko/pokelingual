@@ -1,33 +1,52 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router";
-import type { User } from "firebase/auth";
-import { AuthContext } from "../contexts/AuthContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import { SignupPage } from "./SignupPage";
 import { spec } from "../test/labels";
 
-/**
- * Firebase 認証は外部との境界のため、AuthContext ごとモックする。
- * @param signup 認証境界となる signup 実装 (成功/失敗を差し込む)。
- * @returns レンダリング結果。
- */
-function renderPage(signup: (email: string, password: string) => Promise<void>) {
-  const auth = {
-    user: null as User | null,
-    loading: false,
-    login: async () => {},
-    signup,
-    loginWithGoogle: async () => {},
-    resetPassword: async () => {},
-    logout: async () => {},
-  };
+const firebase = vi.hoisted(() => ({
+  auth: {},
+  accountCreationRequests: [] as { email: string; password: string }[],
+  accountCreationErrors: [] as unknown[],
+  notifyAuthState: null as ((user: unknown) => void) | null,
+}));
+
+vi.mock("../lib/firebase", () => ({ requireAuth: () => firebase.auth }));
+vi.mock("firebase/auth", () => ({
+  GoogleAuthProvider: class {},
+  onAuthStateChanged: (_auth: unknown, notify: (user: unknown) => void) => {
+    firebase.notifyAuthState = notify;
+    notify(null);
+    return () => {};
+  },
+  createUserWithEmailAndPassword: async (_auth: unknown, email: string, password: string) => {
+    const error = firebase.accountCreationErrors.shift();
+    if (error) throw error;
+    firebase.accountCreationRequests.push({ email, password });
+    const user = { emailVerified: false };
+    firebase.notifyAuthState?.(user);
+    return { user };
+  },
+  sendEmailVerification: async () => {},
+  signOut: async () => {
+    firebase.notifyAuthState?.(null);
+  },
+}));
+
+beforeEach(() => {
+  firebase.accountCreationRequests.length = 0;
+  firebase.accountCreationErrors.length = 0;
+});
+
+function renderPage() {
   return render(
-    <AuthContext.Provider value={auth}>
+    <AuthProvider>
       <MemoryRouter>
         <SignupPage />
       </MemoryRouter>
-    </AuthContext.Provider>,
+    </AuthProvider>,
   );
 }
 
@@ -48,61 +67,116 @@ async function submitSignup(
   await user.click(screen.getByRole("button", { name: "アカウントを作成する" }));
 }
 
-describe("[認証] メールアドレスでの新規登録", () => {
-  describe("正常系", () => {
-    it("パスワードと「パスワード（確認）」が一致しているとき、「アカウントを作成する」を押すと、入力したメールアドレスとパスワードで登録が依頼される", async () => {
-      const user = userEvent.setup();
-      const signup = vi.fn().mockResolvedValue(undefined);
-      renderPage(signup);
+describe("[本体:認証]メールアドレスでの新規登録", () => {
+  describe("メールアドレスが「dummy@example.com」、パスワードと「パスワード（確認）」がどちらも「dummy-pass-1」で、登録に成功するとき", () => {
+    describe("新規登録画面で、メールアドレス・パスワード・「パスワード（確認）」を入力して「アカウントを作成する」を押すと", () => {
+      describe("部品間結合テスト", () => {
+        describe("正常系", () => {
+          it("Firebase Auth に「dummy@example.com」と「dummy-pass-1」でアカウントの作成が依頼される", async () => {
+            const user = userEvent.setup();
+            renderPage();
 
-      await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
 
-      expect(signup).toHaveBeenCalledWith("dummy@example.com", "dummy-pass-1");
-      expect(screen.queryByTestId("signup-error")).not.toBeInTheDocument();
-    });
+            expect(firebase.accountCreationRequests).toEqual([
+              { email: "dummy@example.com", password: "dummy-pass-1" },
+            ]);
+          });
 
-    it("登録に成功したとき、「確認メールを送りました」の案内画面が表示される", async () => {
-      const user = userEvent.setup();
-      renderPage(vi.fn().mockResolvedValue(undefined));
+          it("「確認メールを送りました」の案内画面が表示される", async () => {
+            const user = userEvent.setup();
+            renderPage();
 
-      await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
 
-      expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
+            expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
+          });
+
+          it("エラーメッセージが表示されない", async () => {
+            const user = userEvent.setup();
+            renderPage();
+
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+
+            await screen.findByText("確認メールを送りました");
+            expect(screen.queryByTestId("signup-error")).not.toBeInTheDocument();
+          });
+        });
+      });
     });
   });
 
-  describe("異常系", () => {
-    describe("パスワードと「パスワード（確認）」が一致しないまま「アカウントを作成する」を押したとき", () => {
-      it("「パスワードが一致しません」と表示される", async () => {
-        const user = userEvent.setup();
-        renderPage(vi.fn().mockResolvedValue(undefined));
+  describe("すでに登録されているメールアドレスのとき", () => {
+    describe("新規登録画面で、メールアドレス・パスワード・「パスワード（確認）」を入力して「アカウントを作成する」を押すと", () => {
+      describe("部品間結合テスト", () => {
+        describe("異常系", () => {
+          it("「既に登録されています」を含むメッセージが表示される", async () => {
+            const user = userEvent.setup();
+            firebase.accountCreationErrors.push({ code: "auth/email-already-in-use" });
+            renderPage();
 
-        await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
 
-        expect(await screen.findByTestId("signup-error")).toHaveTextContent(
-          spec("パスワードが一致しません"),
-        );
-      });
+            expect(await screen.findByText(/既に登録されています/)).toBeInTheDocument();
+          });
 
-      it("登録が依頼されない", async () => {
-        const user = userEvent.setup();
-        const signup = vi.fn().mockResolvedValue(undefined);
-        renderPage(signup);
+          it("別のメールアドレス「other@example.com」に入力し直してもう一度「アカウントを作成する」を押すと、「確認メールを送りました」の案内画面が表示される", async () => {
+            const user = userEvent.setup();
+            firebase.accountCreationErrors.push({ code: "auth/email-already-in-use" });
+            renderPage();
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+            await screen.findByText(/既に登録されています/);
 
-        await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
+            await user.clear(screen.getByPlaceholderText("メールアドレス"));
+            await user.type(screen.getByPlaceholderText("メールアドレス"), "other@example.com");
+            await user.click(screen.getByRole("button", { name: "アカウントを作成する" }));
 
-        await screen.findByTestId("signup-error");
-        expect(signup).not.toHaveBeenCalled();
+            expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
+          });
+        });
       });
     });
+  });
 
-    it("すでに登録されているメールアドレスで「アカウントを作成する」を押すと、「既に登録されています」を含むメッセージが表示される", async () => {
-      const user = userEvent.setup();
-      renderPage(vi.fn().mockRejectedValue({ code: "auth/email-already-in-use" }));
+  describe("パスワードと「パスワード（確認）」が一致しないとき", () => {
+    describe("新規登録画面で、メールアドレス・パスワード・「パスワード（確認）」を入力して「アカウントを作成する」を押すと", () => {
+      describe("部品間結合テスト", () => {
+        describe("異常系", () => {
+          it("「パスワードが一致しません」と表示される", async () => {
+            const user = userEvent.setup();
+            renderPage();
 
-      await submitSignup(user, "dummy-pass-1", "dummy-pass-1");
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
 
-      expect(await screen.findByText(/既に登録されています/)).toBeInTheDocument();
+            expect(await screen.findByTestId("signup-error")).toHaveTextContent(
+              spec("パスワードが一致しません"),
+            );
+          });
+
+          it("Firebase Auth にアカウントの作成が依頼されない", async () => {
+            const user = userEvent.setup();
+            renderPage();
+
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
+
+            await screen.findByTestId("signup-error");
+            expect(firebase.accountCreationRequests).toEqual([]);
+          });
+
+          it("「パスワード（確認）」を「パスワード」と同じ「dummy-pass-1」に入力し直してもう一度「アカウントを作成する」を押すと、「確認メールを送りました」の案内画面が表示される", async () => {
+            const user = userEvent.setup();
+            renderPage();
+            await submitSignup(user, "dummy-pass-1", "dummy-pass-2");
+            await screen.findByTestId("signup-error");
+
+            await user.clear(screen.getByPlaceholderText("パスワード（確認）"));
+            await user.type(screen.getByPlaceholderText("パスワード（確認）"), "dummy-pass-1");
+            await user.click(screen.getByRole("button", { name: "アカウントを作成する" }));
+
+            expect(await screen.findByText("確認メールを送りました")).toBeInTheDocument();
+          });
+        });
+      });
     });
   });
 });

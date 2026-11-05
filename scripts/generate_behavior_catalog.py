@@ -2,7 +2,7 @@
 """テスト実行結果の JUnit XML から、テスト観点カタログを生成する。
 
 テストの命名規約 (keyandnotes-rules testing.md「テストの命名」) に従ったテスト名を、
-グループ (テスト対象の要素) とケース (シナリオ) の階層に復元し、Markdown または HTML で
+グループ (機能の階層) とケース (シナリオ) の階層に復元し、Markdown または HTML で
 標準出力に書き出す。セクションは「外から見た振る舞い」「内部の挙動」のカテゴリに属し、
 1 つの JUnit XML をテストファイルのパスで複数セクションに振り分けることもできる。
 """
@@ -27,6 +27,16 @@ TOP_LEVEL_TAG_PATTERN = re.compile(r"^\s*\[([^\]]+)\]\s*")
 # タグの無いトップレベル describe をまとめる見出し名
 UNTAGGED_GROUP_LABEL = "その他"
 
+# タグの中で区分・大機能・中機能を区切る文字
+TAG_ITEM_SEPARATOR = ":"
+
+# タグが ``:`` 区切りのとき、最初の項目 (区分) に書ける値
+TAG_DIVISIONS = frozenset({"本体", "運用", "外部連携"})
+
+# タグの項目数の下限 (区分・大機能) と上限 (区分・大機能・中機能)
+MIN_TAG_ITEMS = 2
+MAX_TAG_ITEMS = 3
+
 # テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
 DISCLAIMER = (
     "本カタログは自動テストのテスト名から生成した「テスト済みの観点」の一覧であり、"
@@ -43,8 +53,8 @@ class BehaviorCase:
     """1 件のテストケースが表す振る舞い。
 
     Args:
-        group_chain: テスト対象の要素を表すグループ名の連鎖 (describe の入れ子)。
-        case_name: シナリオを表すケース名。
+        group_chain: 機能の階層を表すグループ名の連鎖 (describe の入れ子)。
+        case_name: シナリオを表すケースの名前。
         is_skipped: skip されて実行されていないケースかどうか。
         source_file: テストランナーが記録した由来テストファイルのパス。
     """
@@ -87,13 +97,13 @@ class SectionSpec:
 
 
 def split_test_name(raw_name: str) -> tuple[tuple[str, ...], str]:
-    """JUnit の testcase 名をグループ連鎖とケース名に分割する。
+    """JUnit の testcase 名をグループ連鎖とケースの名前に分割する。
 
     Args:
         raw_name: テストランナーが階層を区切り文字で連結した testcase 名。
 
     Returns:
-        (グループ連鎖, ケース名)。区切りが無ければグループ連鎖は空。
+        (グループ連鎖, ケースの名前)。区切りが無ければグループ連鎖は空。
     """
     segments = [raw_name]
     for separator in NAME_SEPARATORS:
@@ -101,15 +111,48 @@ def split_test_name(raw_name: str) -> tuple[tuple[str, ...], str]:
     return tuple(segments[:-1]), segments[-1]
 
 
+def split_tag_items(tag: str) -> tuple[str, ...]:
+    """タグを区分・大機能・中機能の項目に分ける。
+
+    Args:
+        tag: ``[`` ``]`` を外したタグ。``区分:大機能`` または ``区分:大機能:中機能`` の形。
+
+    Returns:
+        タグの項目。
+
+    Raises:
+        ValueError: 項目が空のとき、項目が 2 つ未満または 3 つを超えるとき、
+            または最初の項目が 本体・運用・外部連携 のいずれでもないとき。
+    """
+    items = tuple(tag.split(TAG_ITEM_SEPARATOR))
+    if not all(items):
+        raise ValueError(f"タグの項目が空です: [{tag}]")
+    if not MIN_TAG_ITEMS <= len(items) <= MAX_TAG_ITEMS:
+        raise ValueError(
+            f"タグは区分と大機能を必須とし、項目は {MIN_TAG_ITEMS} つから {MAX_TAG_ITEMS} つまでです: [{tag}]"
+        )
+    if items[0] not in TAG_DIVISIONS:
+        raise ValueError(
+            f"タグの最初の項目は {'・'.join(sorted(TAG_DIVISIONS))} のいずれかにしてください: [{tag}]"
+        )
+    return items
+
+
 def extract_top_level_tag(chain: tuple[str, ...]) -> tuple[str, ...]:
     """グループ連鎖の先頭 (トップレベル describe) からタグを抽出し、連鎖の先頭に挿入する。
+
+    タグが ``[区分:大機能:中機能]`` のように ``:`` で区切られているときは、項目ごとに 1 段ずつ
+    挿入する。
 
     Args:
         chain: split_test_name が返すグループ連鎖。
 
     Returns:
-        タグ (無ければ UNTAGGED_GROUP_LABEL) を先頭に追加し、トップレベル要素からタグを
-        除いた連鎖。連鎖が空ならそのまま返す。
+        タグの項目 (タグが無ければ UNTAGGED_GROUP_LABEL) を先頭に追加し、トップレベル要素から
+        タグを除いた連鎖。連鎖が空ならそのまま返す。
+
+    Raises:
+        ValueError: タグが split_tag_items の条件を満たさないとき。
     """
     if not chain:
         return chain
@@ -117,7 +160,7 @@ def extract_top_level_tag(chain: tuple[str, ...]) -> tuple[str, ...]:
     match = TOP_LEVEL_TAG_PATTERN.match(top)
     if match is None:
         return (UNTAGGED_GROUP_LABEL, top, *rest)
-    return (match.group(1), top[match.end() :], *rest)
+    return (*split_tag_items(match.group(1)), top[match.end() :], *rest)
 
 
 def has_top_level_tag(chain: tuple[str, ...]) -> bool:
@@ -303,7 +346,7 @@ def format_case_text(case: BehaviorCase) -> str:
         case: 表示する振る舞い。
 
     Returns:
-        エスケープ済みケース名。skip 中なら未検証の注記付き。
+        エスケープ済みケースの名前。skip 中なら未検証の注記付き。
     """
     text = escape_text(case.case_name)
     if case.is_skipped:

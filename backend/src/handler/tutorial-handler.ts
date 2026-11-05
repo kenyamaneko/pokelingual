@@ -40,4 +40,20 @@ export class TutorialHandler {
       handleError(res, err, req.path);
     }
   };
+
+  /**
+   * PUT /tutorial-status/reset — チュートリアル完了フラグを未完了に戻す。
+   * 実環境の E2E がチュートリアル未完了の状態を毎回用意できるようにするため、利用者自身の資格で呼べる。
+   * @param req Express リクエスト。
+   * @param res Express レスポンス。
+   */
+  reset = async (req: Request, res: Response) => {
+    const userId = res.locals.userId as string;
+    try {
+      await this.userRepo.resetTutorialCompleted(userId);
+      res.json({ status: "ok" });
+    } catch (err) {
+      handleError(res, err, req.path);
+    }
+  };
 }

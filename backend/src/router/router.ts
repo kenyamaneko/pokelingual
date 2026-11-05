@@ -73,6 +73,7 @@ export function setupRoutes(
 
   router.get("/tutorial-status", tutorialHandler.getStatus);
   router.put("/tutorial-status/complete", tutorialHandler.markCompleted);
+  router.put("/tutorial-status/reset", tutorialHandler.reset);
 
   return router;
 }

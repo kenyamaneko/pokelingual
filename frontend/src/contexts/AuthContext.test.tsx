@@ -38,58 +38,78 @@ function renderAuth() {
   return renderHook(() => useAuth(), { wrapper: AuthProvider }).result;
 }
 
-describe("[認証] メール本人確認", () => {
+describe("[本体:認証]メール本人確認", () => {
   beforeEach(() => {
     h.signInResult = null;
   });
 
-  describe("正常系", () => {
-    it("メールアドレスとパスワードで新規登録すると、ログインしていない状態になる", async () => {
-      const auth = renderAuth();
-
-      await act(async () => {
-        await auth.current.signup("dummy@example.com", "dummy-pass");
-      });
-
-      expect(auth.current.user).toBeNull();
-    });
-
-    it("メールの確認が済んでいるとき、ログインすると、ログイン済みの状態になる", async () => {
-      h.signInResult = { emailVerified: true };
-      const auth = renderAuth();
-
-      await act(async () => {
-        await auth.current.login("dummy@example.com", "dummy-pass");
-      });
-
-      expect(auth.current.user).not.toBeNull();
-    });
-  });
-
-  describe("異常系", () => {
-    describe("メールの確認が済んでいないとき", () => {
-      beforeEach(() => {
-        h.signInResult = { emailVerified: false };
-      });
-
-      it("ログインすると、メール未確認のエラーで失敗する", async () => {
+  describe("単体テスト", () => {
+    describe("正常系", () => {
+      it("メールアドレスとパスワードで新規登録すると、ログインしていない状態になる", async () => {
         const auth = renderAuth();
 
         await act(async () => {
-          await expect(
-            auth.current.login("dummy@example.com", "dummy-pass"),
-          ).rejects.toBeInstanceOf(EmailNotVerifiedError);
-        });
-      });
-
-      it("ログインすると、ログインしていない状態のままになる", async () => {
-        const auth = renderAuth();
-
-        await act(async () => {
-          await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
+          await auth.current.signup("dummy@example.com", "dummy-pass");
         });
 
         expect(auth.current.user).toBeNull();
+      });
+
+      it("メールの確認が済んでいるとき、ログインすると、ログイン済みの状態になる", async () => {
+        h.signInResult = { emailVerified: true };
+        const auth = renderAuth();
+
+        await act(async () => {
+          await auth.current.login("dummy@example.com", "dummy-pass");
+        });
+
+        expect(auth.current.user).toEqual({ emailVerified: true });
+      });
+    });
+  });
+
+  describe("メールの確認が済んでいないとき", () => {
+    beforeEach(() => {
+      h.signInResult = { emailVerified: false };
+    });
+
+    describe("ログインすると", () => {
+      describe("単体テスト", () => {
+        describe("異常系", () => {
+          it("メール未確認のエラーで失敗する", async () => {
+            const auth = renderAuth();
+
+            await act(async () => {
+              await expect(
+                auth.current.login("dummy@example.com", "dummy-pass"),
+              ).rejects.toBeInstanceOf(EmailNotVerifiedError);
+            });
+          });
+
+          it("ログインしていない状態のままになる", async () => {
+            const auth = renderAuth();
+
+            await act(async () => {
+              await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
+            });
+
+            expect(auth.current.user).toBeNull();
+          });
+
+          it("メール未確認のエラーで失敗したあと、メールの確認が済んで再度ログインすると、ログイン済みの状態になる", async () => {
+            const auth = renderAuth();
+            await act(async () => {
+              await auth.current.login("dummy@example.com", "dummy-pass").catch(() => {});
+            });
+            h.signInResult = { emailVerified: true };
+
+            await act(async () => {
+              await auth.current.login("dummy@example.com", "dummy-pass");
+            });
+
+            expect(auth.current.user).toEqual({ emailVerified: true });
+          });
+        });
       });
     });
   });

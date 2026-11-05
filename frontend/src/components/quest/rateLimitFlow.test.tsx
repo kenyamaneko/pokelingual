@@ -19,8 +19,8 @@ const RATE_LIMIT_MESSAGE = "きょうの　じょうげんに　たっしまし�
 const USAGE_AT_LIMIT: DailyUsage = { count: DAILY_LIMIT, limit: DAILY_LIMIT };
 
 /**
- * 採点の送信に利用上限の拒否を返し、利用状況は与えた応答列を呼び出し順に返す HTTP 境界を設定する。
- * @param usageResponses 利用状況の取得で呼び出し順に返す応答。
+ * 採点の送信に日次上限の拒否を返し、AI 呼び出し回数は与えた応答列を呼び出し順に返す HTTP 境界を設定する。
+ * @param usageResponses AI 呼び出し回数の取得で呼び出し順に返す応答。
  */
 function setupRateLimited(usageResponses: DailyUsage[]): void {
   server.use(
@@ -31,49 +31,57 @@ function setupRateLimited(usageResponses: DailyUsage[]): void {
   );
 }
 
-describe("[レート制限・利用回数] 利用上限の表示", () => {
-  describe("異常系", () => {
-    describe("採点の送信で利用上限に達したとき", () => {
-      it("自分の利用上限のとき、利用上限モーダルに「博士は忙しそうにしている」と表示される", async () => {
-        setupRateLimited([USAGE_AT_LIMIT]);
-        renderWithProviders(<QuestPage />, { user: fakeUser, withRouter: true });
+describe("[本体:AI 呼び出し回数]日次上限の表示", () => {
+  describe("ユーザーの AI 呼び出し回数が日次上限の 30 回に達しているとき", () => {
+    describe("翻訳を送信すると", () => {
+      describe("部品間結合テスト", () => {
+        describe("異常系", () => {
+          it("日次上限モーダルのタイトルに「博士は忙しそうにしている」が表示される", async () => {
+            setupRateLimited([USAGE_AT_LIMIT]);
+            renderWithProviders(<QuestPage />, { user: fakeUser, withRouter: true });
 
-        await submitTranslationForScoring();
+            await submitTranslationForScoring();
 
-        expect(await screen.findByText(spec("博士は忙しそうにしている"))).toBeInTheDocument();
-      });
+            expect(await screen.findByText(spec("博士は忙しそうにしている"))).toBeInTheDocument();
+          });
 
-      it("利用上限モーダルに、サーバーから返されたメッセージが表示される", async () => {
-        setupRateLimited([USAGE_AT_LIMIT]);
-        renderWithProviders(<QuestPage />, { user: fakeUser, withRouter: true });
+          it("バックエンドが日次上限を知らせるメッセージ「きょうの　じょうげんに　たっしました」を返したとき、日次上限モーダルに「きょうの　じょうげんに　たっしました」と表示される", async () => {
+            setupRateLimited([USAGE_AT_LIMIT]);
+            renderWithProviders(<QuestPage />, { user: fakeUser, withRouter: true });
 
-        await submitTranslationForScoring();
+            await submitTranslationForScoring();
 
-        expect(await screen.findByText(spec(RATE_LIMIT_MESSAGE))).toBeInTheDocument();
+            expect(await screen.findByText(spec(RATE_LIMIT_MESSAGE))).toBeInTheDocument();
+          });
+        });
       });
     });
+  });
 
-    it("ヘッダーに「残り 1/30」と表示されているとき、採点の送信で利用上限に達すると、ヘッダーの表示が「残り 0/30」に変わる", async () => {
-      setupRateLimited([{ count: DAILY_LIMIT - 1, limit: DAILY_LIMIT }, USAGE_AT_LIMIT]);
-      // ヘッダーは現在のページの位置を使うため、Router を被せる
-      renderWithProviders(
-        <>
-          <Header />
-          <QuestPage />
-        </>,
-        { user: fakeUser, withRouter: true },
-      );
-      expect(await screen.findByText("残り 1/30")).toBeInTheDocument();
+  describe("部品間結合テスト", () => {
+    describe("異常系", () => {
+      it("ヘッダーに「残り 1/30」と表示されているとき、翻訳を送信して日次上限に達すると、ヘッダーに「残り 0/30」と表示される", async () => {
+        setupRateLimited([{ count: DAILY_LIMIT - 1, limit: DAILY_LIMIT }, USAGE_AT_LIMIT]);
+        // ヘッダーは現在のページの位置を使うため、Router を被せる
+        renderWithProviders(
+          <>
+            <Header />
+            <QuestPage />
+          </>,
+          { user: fakeUser, withRouter: true },
+        );
+        expect(await screen.findByText("残り 1/30")).toBeInTheDocument();
 
-      await submitTranslationForScoring();
+        await submitTranslationForScoring();
 
-      expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
+        expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
+      });
     });
   });
 });
 
 /**
- * 採点の送信を利用上限に到達させ、利用上限モーダルが表示された状態まで進める。
+ * 採点の送信を日次上限に到達させ、日次上限モーダルが表示された状態まで進める。
  */
 async function showRateLimitModal(): Promise<void> {
   setupRateLimited([USAGE_AT_LIMIT]);
@@ -82,29 +90,31 @@ async function showRateLimitModal(): Promise<void> {
   await screen.findByText(spec("博士は忙しそうにしている"));
 }
 
-describe("[レート制限・利用回数] 利用上限モーダルの閉じ方", () => {
-  describe("異常系", () => {
-    describe("利用上限モーダルが表示されているとき", () => {
-      it("「閉じる」ボタンを押すと、利用上限モーダルが画面から消える", async () => {
-        const user = userEvent.setup();
-        await showRateLimitModal();
+describe("[本体:AI 呼び出し回数]日次上限モーダルの閉じ方", () => {
+  describe("ユーザーの AI 呼び出し回数が日次上限の 30 回に達して、日次上限モーダルが表示されているとき", () => {
+    describe("部品間結合テスト", () => {
+      describe("異常系", () => {
+        it("「閉じる」ボタンを押すと、日次上限モーダルが画面から消える", async () => {
+          const user = userEvent.setup();
+          await showRateLimitModal();
 
-        await user.click(screen.getByRole("button", { name: "閉じる" }));
+          await user.click(screen.getByRole("button", { name: "閉じる" }));
 
-        await waitFor(() =>
-          expect(screen.queryByText(spec("博士は忙しそうにしている"))).not.toBeInTheDocument(),
-        );
-      });
+          await waitFor(() =>
+            expect(screen.queryByText(spec("博士は忙しそうにしている"))).not.toBeInTheDocument(),
+          );
+        });
 
-      it("モーダルの外側をクリックすると、利用上限モーダルが画面から消える", async () => {
-        const user = userEvent.setup();
-        await showRateLimitModal();
+        it("モーダルの外側をクリックすると、日次上限モーダルが画面から消える", async () => {
+          const user = userEvent.setup();
+          await showRateLimitModal();
 
-        await user.click(screen.getByTestId("rate-limit-backdrop"));
+          await user.click(screen.getByTestId("rate-limit-backdrop"));
 
-        await waitFor(() =>
-          expect(screen.queryByText(spec("博士は忙しそうにしている"))).not.toBeInTheDocument(),
-        );
+          await waitFor(() =>
+            expect(screen.queryByText(spec("博士は忙しそうにしている"))).not.toBeInTheDocument(),
+          );
+        });
       });
     });
   });

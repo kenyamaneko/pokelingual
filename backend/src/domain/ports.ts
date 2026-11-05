@@ -43,6 +43,7 @@ export interface UserSettingsRepository {
 export interface UserRepository {
   getUser(userId: string): Promise<User>;
   markTutorialCompleted(userId: string): Promise<void>;
+  resetTutorialCompleted(userId: string): Promise<void>;
 }
 
 /** 日次レート制限カウンタを管理するリポジトリ。Firestore 版とインメモリ版がある。 */

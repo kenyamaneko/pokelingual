@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { GenericContainer, type StartedTestContainer } from "testcontainers";
 import { Redis } from "ioredis";
 import express from "express";
@@ -13,25 +13,29 @@ import { SettingsHandler } from "../../handler/settings-handler.js";
 import { UsageHandler } from "../../handler/usage-handler.js";
 import { TutorialHandler } from "../../handler/tutorial-handler.js";
 import { createTutorialQuestHandler } from "../../composition/tutorial-quest.js";
+import { UserPokemonRepo } from "../repository/user-pokemon-repo.js";
+import { UserSettingsRepo } from "../repository/user-settings-repo.js";
+import { UserRepo } from "../repository/user-repo.js";
+import { RateLimitRepo } from "../repository/rate-limit-repo.js";
+import {
+  requireFirestoreEmulator,
+  clearFirestoreEmulator,
+} from "../repository/firestore-emulator-helper.js";
 import { setupRoutes } from "../../router/router.js";
 import { devAuth } from "../../middleware/auth-mock.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import { makePokemon, makePokemonClient } from "../../testing/pokemon-fixtures.js";
 import { DEFAULT_QUEST_TUNING } from "../../testing/quest-tuning-fixture.js";
 import { DEFAULT_MAX_EXCLUDED_POKEMON_COUNT } from "../../testing/settings-fixture.js";
-import type {
-  LLMClient,
-  QuestSessionStore,
-  RandomSource,
-  RateLimitRepository,
-  UserPokemonRepository,
-  UserRepository,
-  UserSettingsRepository,
-} from "../../domain/ports.js";
+import type { LLMClient, QuestSessionStore, RandomSource } from "../../domain/ports.js";
 import type { QuestSession } from "../../domain/quest.js";
 
 const VALKEY_IMAGE = "valkey/valkey:8-alpine";
 const VALKEY_PORT = 6379;
+const USER_RATE_LIMIT = 30;
+const GLOBAL_RATE_LIMIT = 1500;
+
+const db = requireFirestoreEmulator();
 
 let container: StartedTestContainer;
 let redisURL: string;
@@ -75,26 +79,10 @@ function buildAppInstance(sessionStore: QuestSessionStore, tutorialSessionStore:
   };
   const servablePokemonIDs = new Set(Array.from({ length: 100 }, (_, i) => i + 1));
   const random: RandomSource = { next: () => 0 };
-  const userPokemonRepo: UserPokemonRepository = {
-    upsertEncounter: async () => {},
-    getPokedex: async () => [],
-    getPokemon: async () => {
-      throw new Error("not used in this test");
-    },
-  };
-  const settingsRepo: UserSettingsRepository = {
-    getSettings: async () => ({ excluded_pokemon_ids: null, enabled_generations: null }),
-    updateExcludedPokemon: async () => {},
-    updateEnabledGenerations: async () => {},
-  };
-  const userRepo: UserRepository = {
-    getUser: async () => ({ tutorial_completed: false }),
-    markTutorialCompleted: async () => {},
-  };
-  const rateLimitRepo: RateLimitRepository = {
-    checkAndIncrement: async () => ({ count: 1, limit: 30 }),
-    getUserUsage: async () => ({ count: 1, limit: 30 }),
-  };
+  const userPokemonRepo = new UserPokemonRepo(db);
+  const settingsRepo = new UserSettingsRepo(db);
+  const userRepo = new UserRepo(db);
+  const rateLimitRepo = new RateLimitRepo(db, USER_RATE_LIMIT, GLOBAL_RATE_LIMIT);
 
   const questService = new QuestService(
     pokemonClient,
@@ -139,7 +127,6 @@ function connectRedis(): Redis {
 }
 
 function buildTwoInstances(keyPrefix: string) {
-  // プロセス内の参照共有ではなく Valkey 経由でセッションが引き継がれることを確かめるため、Cloud Run の別プロセスを模して、インスタンスごとに Redis クライアントとセッションストアを別オブジェクトにする。
   const clientA = connectRedis();
   const clientB = connectRedis();
   return {
@@ -168,11 +155,10 @@ async function playQuestToCaptureAlternatingInstances(keyPrefix: string) {
 
   const skip = await request(instanceB).post("/api/quest/skip-guess").send({});
   expect(skip.status).toBe(200);
-  expect(skip.body).toEqual({ ball_type: "poke" });
 
   const capture = await request(instanceA).post("/api/quest/capture").send({});
   expect(capture.status).toBe(200);
-  return capture;
+  return { skip, capture };
 }
 
 async function getCurrentQuestOnOtherInstanceAfterScore(keyPrefix: string) {
@@ -186,63 +172,76 @@ async function getCurrentQuestOnOtherInstanceAfterScore(keyPrefix: string) {
   return current;
 }
 
-describe("[クエストセッション] セッションの保存・取得・削除", () => {
-  describe("正常系", () => {
-    it("セッションを一度も保存していないユーザーのセッションを取得すると、セッションは見つからない", async () => {
-      const store = new RedisQuestSessionStore(connectRedis(), "test:missing:", 60);
+describe("[本体:クエストセッション]セッションの保存・取得・削除", () => {
+  describe("インフラ結合テスト", () => {
+    describe("正常系", () => {
+      it("セッションを一度も保存していないユーザーがいるとき、そのユーザーのセッションを取得すると、セッションは見つからない", async () => {
+        const store = new RedisQuestSessionStore(connectRedis(), "test:missing:", 60);
 
-      expect(await store.get("nobody")).toBeNull();
-    });
+        expect(await store.get("nobody")).toBeNull();
+      });
 
-    it("有効期限を設定してセッションを保存すると、保存直後の残り有効期間は 0 秒より大きく、設定した有効期限以下になる", async () => {
-      const client = connectRedis();
-      const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
+      it("有効期間を 60 秒に設定してセッションを保存すると、保存直後の残り有効期間は 0 秒より大きく、60 秒以下になる", async () => {
+        const client = connectRedis();
+        const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
 
-      await store.set("alice", makeSession());
-      const ttl = await client.ttl("test:ttl:alice");
+        await store.set("alice", makeSession());
+        const ttl = await client.ttl("test:ttl:alice");
 
-      expect(ttl).toBeGreaterThan(0);
-      expect(ttl).toBeLessThanOrEqual(60);
-    });
+        expect(ttl).toBeGreaterThan(0);
+        expect(ttl).toBeLessThanOrEqual(60);
+      });
 
-    it("セッションを保存したユーザーのセッションを削除した後に取得すると、セッションは見つからない", async () => {
-      const store = new RedisQuestSessionStore(connectRedis(), "test:delete:", 60);
-      await store.set("alice", makeSession());
+      it("セッションを保存したユーザーのセッションを削除した後に取得すると、セッションは見つからない", async () => {
+        const store = new RedisQuestSessionStore(connectRedis(), "test:delete:", 60);
+        await store.set("alice", makeSession());
 
-      await store.delete("alice");
+        await store.delete("alice");
 
-      expect(await store.get("alice")).toBeNull();
+        expect(await store.get("alice")).toBeNull();
+      });
     });
   });
 });
 
-describe("[クエストセッション] インスタンス間でのセッションの引き継ぎ", () => {
-  describe("正常系", () => {
-    describe("出題から捕獲までの各操作のリクエストが、2 つのインスタンスに交互に届くとき", () => {
-      it("名前当てをスキップすると、捕獲結果のボールはモンスターボールになる", async () => {
-        const capture = await playQuestToCaptureAlternatingInstances("test:handoff:ball:");
+describe("[本体:クエストセッション]インスタンス間でのセッションの引き継ぎ", () => {
+  beforeEach(clearFirestoreEmulator);
 
-        expect(capture.body).toMatchObject({ ball_type: "poke" });
-      });
+  describe("インスタンス A への出題、インスタンス B への訳文「はやい」の採点、インスタンス A への不正解になる名前当ての回答、インスタンス B への名前当てのスキップ、インスタンス A への捕獲の各リクエストが、2 つのインスタンスに交互に届くとき", () => {
+    describe("インフラ結合テスト", () => {
+      describe("正常系", () => {
+        it("名前当てをスキップすると、名前当てのスキップの応答のボールも捕獲結果のボールもモンスターボールになる", async () => {
+          const { skip, capture } = await playQuestToCaptureAlternatingInstances("test:handoff:ball:");
 
-      it("捕獲結果のポケモンは、出題されたポケモンになる", async () => {
-        const capture = await playQuestToCaptureAlternatingInstances("test:handoff:pokemon:");
+          expect(skip.body).toEqual({ ball_type: "poke" });
+          expect(capture.body).toMatchObject({ ball_type: "poke" });
+        });
 
-        expect(capture.body).toMatchObject({ pokemon_id: 1 });
+        it("捕獲結果のポケモンは、出題された図鑑番号 1 のポケモンになる", async () => {
+          const { capture } = await playQuestToCaptureAlternatingInstances("test:handoff:pokemon:");
+
+          expect(capture.body).toMatchObject({ pokemon_id: 1 });
+        });
       });
     });
+  });
 
-    describe("採点した後に、採点とは別のインスタンスで現在のクエストを取得するとき", () => {
-      it("現在のクエストは、名前当ての段階として得られる", async () => {
-        const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:phase:");
+  describe("インスタンス A で出題され、訳文「はやい」を採点した後のとき", () => {
+    describe("採点とは別のインスタンス B で現在のクエストを取得すると", () => {
+      describe("インフラ結合テスト", () => {
+        describe("正常系", () => {
+          it("現在のクエストは、名前当ての段階として得られる", async () => {
+            const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:phase:");
 
-        expect(current.body).toMatchObject({ phase: "guessing" });
-      });
+            expect(current.body).toMatchObject({ phase: "guessing" });
+          });
 
-      it("現在のクエストは、採点時に入力した訳文とともに得られる", async () => {
-        const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:translation:");
+          it("現在のクエストの入力済みの訳文は「はやい」になる", async () => {
+            const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:translation:");
 
-        expect(current.body).toMatchObject({ user_translation: "はやい" });
+            expect(current.body).toMatchObject({ user_translation: "はやい" });
+          });
+        });
       });
     });
   });
