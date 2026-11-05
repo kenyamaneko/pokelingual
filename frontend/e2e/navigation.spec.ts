@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { completeTutorialViaApi } from "./helpers";
 import { LINK, BUTTON } from "./labels";
+import { defineCase } from "./defineCase";
 import type { DailyUsage } from "../../shared/api-types/usage";
 import type { TutorialStatusResponse } from "../../shared/api-types/tutorial";
 
@@ -9,6 +10,11 @@ test.skip(() => process.env.E2E_MODE === "dev", "mock-only spec");
 const VIEWPORT_HEIGHT = 800;
 const WIDE_VIEWPORT_WIDTH = 1024;
 const NARROW_VIEWPORT_WIDTH = 375;
+
+async function openHomeWithViewportWidth(page: Page, width: number) {
+  await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
+  await page.goto("/");
+}
 
 async function mockCompletedTutorialAndUsage(page: Page) {
   const tutorialStatus: TutorialStatusResponse = { tutorial_completed: true };
@@ -19,172 +25,258 @@ async function mockCompletedTutorialAndUsage(page: Page) {
   await page.route("**/api/usage", (route) => route.fulfill({ json: usage }));
 }
 
-test.describe("[本体:ホーム画面]リンクによる画面遷移", () => {
-  test.describe("チュートリアルが完了済みのとき", () => {
-    test.beforeEach(async ({ page }) => {
-      await completeTutorialViaApi(page);
-    });
+const TUTORIAL_COMPLETED_AT_HOME = "チュートリアルが完了済みで、ホーム画面を表示しているとき";
 
-    test.describe("E2Eテスト", () => {
-      test.describe("正常系", () => {
-        test("「ポケモンを探しに行く」を押すと、クエスト画面に遷移する", async ({
-          page,
-        }) => {
-          await page.goto("/");
-
-          await page.getByRole("button", { name: BUTTON.startQuest }).click();
-          await expect(page).toHaveURL("/quest");
-        });
-
-        test("「図鑑を見る」を押すと、図鑑画面に遷移する", async ({ page }) => {
-          await page.goto("/");
-
-          await page.getByRole("link", { name: LINK.viewPokedex }).click();
-          await expect(page).toHaveURL("/pokedex");
-        });
-      });
-    });
+test.describe("[本体:共通画面]リンクによる画面遷移", () => {
+  test.beforeEach(async ({ page }) => {
+    await completeTutorialViaApi(page);
   });
+
+  defineCase(
+    {
+      種別: "E2Eテスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: TUTORIAL_COMPLETED_AT_HOME,
+          When: ["「ポケモンを探しに行く」を押す"],
+          Then: "クエスト画面に遷移する",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await page.goto("/");
+
+      await page.getByRole("button", { name: BUTTON.startQuest }).click();
+      await expect(page).toHaveURL("/quest");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "E2Eテスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: TUTORIAL_COMPLETED_AT_HOME,
+          When: ["「図鑑を見る」を押す"],
+          Then: "図鑑画面に遷移する",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await page.goto("/");
+
+      await page.getByRole("link", { name: LINK.viewPokedex }).click();
+      await expect(page).toHaveURL("/pokedex");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "E2Eテスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: TUTORIAL_COMPLETED_AT_HOME,
+          When: ["ヘッダーの「ぼうけん」を押す"],
+          Then: "クエスト画面に遷移する",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await page.goto("/");
+
+      await page
+        .getByRole("link", { name: LINK.navQuest, exact: true })
+        .click();
+      await expect(page).toHaveURL("/quest");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "E2Eテスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: TUTORIAL_COMPLETED_AT_HOME,
+          When: ["ヘッダーの「ずかん」を押す"],
+          Then: "図鑑画面に遷移する",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await page.goto("/");
+
+      await page
+        .getByRole("link", { name: LINK.navPokedex, exact: true })
+        .click();
+      await expect(page).toHaveURL("/pokedex");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "E2Eテスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: TUTORIAL_COMPLETED_AT_HOME,
+          When: ["ヘッダーの「せってい」を押す"],
+          Then: "設定画面に遷移する",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await page.goto("/");
+
+      await page
+        .getByRole("link", { name: LINK.settings, exact: true })
+        .click();
+      await expect(page).toHaveURL("/settings");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "E2Eテスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが完了済みで、ホーム画面を表示していて、画面幅が狭いとき",
+          When: ["ヘッダーのメニューボタンを押す", "「ぼうけん」を押す"],
+          Then: "クエスト画面に遷移する",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await page.goto("/");
+      await page.setViewportSize({
+        width: NARROW_VIEWPORT_WIDTH,
+        height: VIEWPORT_HEIGHT,
+      });
+
+      await page.getByRole("button", { name: BUTTON.menu }).click();
+      await page
+        .getByRole("link", { name: LINK.navQuest, exact: true })
+        .click();
+      await expect(page).toHaveURL("/quest");
+    },
+  );
+
+  for (const { screen, path } of [
+    { screen: "クエスト画面", path: "/quest" },
+    { screen: "図鑑画面", path: "/pokedex" },
+  ]) {
+    defineCase(
+      {
+        種別: "E2Eテスト",
+        正常異常: "正常系",
+        steps: [
+          {
+            Given: `チュートリアルが完了済みで、${screen}を表示しているとき`,
+            When: ["ヘッダーのロゴ「Pokelingual」を押す"],
+            Then: "ホーム画面に遷移する",
+          },
+        ],
+      },
+      async ({ page }) => {
+        await page.goto(path);
+
+        await page.getByRole("link", { name: LINK.logo }).click();
+        await expect(page).toHaveURL("/");
+      },
+    );
+  }
 });
 
-test.describe("[本体:ヘッダー]リンクによる画面遷移", () => {
-  test.describe("チュートリアルが完了済みのとき", () => {
-    test.beforeEach(async ({ page }) => {
-      await completeTutorialViaApi(page);
-    });
-
-    test.describe("ホーム画面を表示しているとき", () => {
-      test.beforeEach(async ({ page }) => {
-        await page.goto("/");
-      });
-
-      test.describe("E2Eテスト", () => {
-        test.describe("正常系", () => {
-          test("「ぼうけん」を押すと、クエスト画面に遷移する", async ({
-            page,
-          }) => {
-            await page
-              .getByRole("link", { name: LINK.navQuest, exact: true })
-              .click();
-            await expect(page).toHaveURL("/quest");
-          });
-
-          test("「ずかん」を押すと、図鑑画面に遷移する", async ({ page }) => {
-            await page
-              .getByRole("link", { name: LINK.navPokedex, exact: true })
-              .click();
-            await expect(page).toHaveURL("/pokedex");
-          });
-
-          test("「せってい」を押すと、設定画面に遷移する", async ({ page }) => {
-            await page
-              .getByRole("link", { name: LINK.settings, exact: true })
-              .click();
-            await expect(page).toHaveURL("/settings");
-          });
-
-          test("画面幅が狭いとき、メニューボタンを押してから「ぼうけん」を押すと、クエスト画面に遷移する", async ({
-            page,
-          }) => {
-            await page.setViewportSize({
-              width: NARROW_VIEWPORT_WIDTH,
-              height: VIEWPORT_HEIGHT,
-            });
-
-            await page.getByRole("button", { name: BUTTON.menu }).click();
-            await page
-              .getByRole("link", { name: LINK.navQuest, exact: true })
-              .click();
-            await expect(page).toHaveURL("/quest");
-          });
-        });
-      });
-    });
-
-    test.describe("ヘッダーのロゴ「Pokelingual」を押すと", () => {
-      test.describe("E2Eテスト", () => {
-        test.describe("正常系", () => {
-          const screens = [
-            { screen: "クエスト画面", path: "/quest" },
-            { screen: "図鑑画面", path: "/pokedex" },
-          ];
-
-          for (const { screen, path } of screens) {
-            test(`${screen}を表示しているとき、ホーム画面に遷移する`, async ({
-              page,
-            }) => {
-              await page.goto(path);
-
-              await page.getByRole("link", { name: LINK.logo }).click();
-              await expect(page).toHaveURL("/");
-            });
-          }
-        });
-      });
-    });
+test.describe("[本体:共通画面]画面幅に応じたヘッダーの表示", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockCompletedTutorialAndUsage(page);
   });
-});
 
-test.describe("[本体:ヘッダー]画面幅に応じたヘッダーの表示", () => {
-  test.describe("チュートリアルが完了済みのとき", () => {
-    test.beforeEach(async ({ page }) => {
-      await mockCompletedTutorialAndUsage(page);
-    });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが完了済みで、画面幅が広いとき",
+          When: ["ホーム画面のヘッダーを表示する"],
+          Then: "「ぼうけん」のリンクが表示される",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await openHomeWithViewportWidth(page, WIDE_VIEWPORT_WIDTH);
 
-    test.describe("画面幅が広いとき", () => {
-      test.beforeEach(async ({ page }) => {
-        await page.setViewportSize({
-          width: WIDE_VIEWPORT_WIDTH,
-          height: VIEWPORT_HEIGHT,
-        });
-        await page.goto("/");
-      });
+      await expect(
+        page.getByRole("link", { name: LINK.navQuest, exact: true }),
+      ).toBeVisible();
+    },
+  );
 
-      test.describe("ヘッダーを表示すると", () => {
-        test.describe("部品間結合テスト", () => {
-          test.describe("正常系", () => {
-            test("「ぼうけん」のリンクが表示される", async ({ page }) => {
-              await expect(
-                page.getByRole("link", { name: LINK.navQuest, exact: true }),
-              ).toBeVisible();
-            });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが完了済みで、画面幅が広いとき",
+          When: ["ホーム画面のヘッダーを表示する"],
+          Then: "メニューボタンは表示されない",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await openHomeWithViewportWidth(page, WIDE_VIEWPORT_WIDTH);
 
-            test("メニューボタンは表示されない", async ({ page }) => {
-              await expect(
-                page.getByRole("button", { name: BUTTON.menu }),
-              ).not.toBeVisible();
-            });
-          });
-        });
-      });
-    });
+      await expect(
+        page.getByRole("button", { name: BUTTON.menu }),
+      ).not.toBeVisible();
+    },
+  );
 
-    test.describe("画面幅が狭いとき", () => {
-      test.beforeEach(async ({ page }) => {
-        await page.setViewportSize({
-          width: NARROW_VIEWPORT_WIDTH,
-          height: VIEWPORT_HEIGHT,
-        });
-        await page.goto("/");
-      });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが完了済みで、画面幅が狭いとき",
+          When: ["ホーム画面のヘッダーを表示する"],
+          Then: "メニューボタンが表示される",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await openHomeWithViewportWidth(page, NARROW_VIEWPORT_WIDTH);
 
-      test.describe("ヘッダーを表示すると", () => {
-        test.describe("部品間結合テスト", () => {
-          test.describe("正常系", () => {
-            test("メニューボタンが表示される", async ({ page }) => {
-              await expect(
-                page.getByRole("button", { name: BUTTON.menu }),
-              ).toBeVisible();
-            });
+      await expect(
+        page.getByRole("button", { name: BUTTON.menu }),
+      ).toBeVisible();
+    },
+  );
 
-            test("「ぼうけん」のリンクは表示されない", async ({ page }) => {
-              await expect(
-                page.getByRole("link", { name: LINK.navQuest, exact: true }),
-              ).not.toBeVisible();
-            });
-          });
-        });
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが完了済みで、画面幅が狭いとき",
+          When: ["ホーム画面のヘッダーを表示する"],
+          Then: "「ぼうけん」のリンクは表示されない",
+        },
+      ],
+    },
+    async ({ page }) => {
+      await openHomeWithViewportWidth(page, NARROW_VIEWPORT_WIDTH);
+
+      await expect(
+        page.getByRole("link", { name: LINK.navQuest, exact: true }),
+      ).not.toBeVisible();
+    },
+  );
 });

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, vi } from "vitest";
 import { useState } from "react";
 import { MemoryRouter, Routes, Route } from "react-router";
 import type { User } from "firebase/auth";
@@ -9,6 +9,7 @@ import { TutorialProvider } from "../contexts/TutorialContext";
 import { HomePage } from "./HomePage";
 import { LoginPage } from "./LoginPage";
 import { spec } from "../test/labels";
+import { defineCase } from "../test/defineCase";
 import { EmailNotVerifiedError } from "../utils/authErrors";
 
 const START_QUEST_BUTTON = "ポケモンを探しに行く";
@@ -68,183 +69,248 @@ async function submitLogin(
 
 const CORRECT_PASSWORD = "dummy-password";
 
+const SUBMIT_LOGIN = "ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押す";
+const RETRY_LOGIN = "もう一度「メールでログイン」を押す";
+const UNVERIFIED_ACCOUNT = "メールアドレスが未確認のアカウントのとき";
+const WRONG_CREDENTIALS = "メールアドレスまたはパスワードが間違っているとき";
+const HOME_SHOWN = "ホーム画面が表示される";
+const UNVERIFIED_MESSAGE = "「メールが未確認です」を含む確認を促すメッセージが表示される";
+const WRONG_CREDENTIALS_MESSAGE = "「メールアドレスまたはパスワードが間違っています」と表示される";
+
 describe("[本体:認証]メールアドレスでのログイン", () => {
-  describe("ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押すと", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("正しいメールアドレスとパスワードのとき、ホーム画面が表示される", async () => {
-          const user = userEvent.setup();
-          renderLogin(vi.fn().mockResolvedValue(undefined));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [{ Given: "正しいメールアドレスとパスワードのとき", When: [SUBMIT_LOGIN], Then: HOME_SHOWN }],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderLogin(vi.fn().mockResolvedValue(undefined));
 
-          await submitLogin(user, "dummy@example.com", CORRECT_PASSWORD);
+      await submitLogin(user, "dummy@example.com", CORRECT_PASSWORD);
 
-          expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
-        });
-      });
+      expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+    },
+  );
 
-      describe("異常系", () => {
-        it.each([
-          [
-            "メールアドレスが未確認のアカウントのとき",
-            new EmailNotVerifiedError(),
-            CORRECT_PASSWORD,
-            /メールが未確認です/,
-          ],
-          [
-            "メールアドレスまたはパスワードが間違っているとき",
-            new Error("auth error"),
-            "wrong-password",
-            spec("メールアドレスまたはパスワードが間違っています"),
-          ],
-        ] as const)(
-          "%s、ホーム画面が表示されない",
-          async (_given, loginError, password, errorMessage) => {
-            const user = userEvent.setup();
-            renderLogin(vi.fn().mockRejectedValue(loginError));
+  for (const { given, loginError, password, errorMessage } of [
+    {
+      given: UNVERIFIED_ACCOUNT,
+      loginError: new EmailNotVerifiedError(),
+      password: CORRECT_PASSWORD,
+      errorMessage: /メールが未確認です/,
+    },
+    {
+      given: WRONG_CREDENTIALS,
+      loginError: new Error("auth error"),
+      password: "wrong-password",
+      errorMessage: spec("メールアドレスまたはパスワードが間違っています"),
+    },
+  ]) {
+    defineCase(
+      {
+        種別: "部品間結合テスト",
+        正常異常: "異常系",
+        steps: [{ Given: given, When: [SUBMIT_LOGIN], Then: "ホーム画面が表示されない" }],
+      },
+      async () => {
+        const user = userEvent.setup();
+        renderLogin(vi.fn().mockRejectedValue(loginError));
 
-            await submitLogin(user, "dummy@example.com", password);
+        await submitLogin(user, "dummy@example.com", password);
 
-            await screen.findByText(errorMessage);
-            expect(screen.queryByRole("button", { name: START_QUEST_BUTTON })).not.toBeInTheDocument();
-          },
-        );
-      });
-    });
-  });
+        await screen.findByText(errorMessage);
+        expect(screen.queryByRole("button", { name: START_QUEST_BUTTON })).not.toBeInTheDocument();
+      },
+    );
+  }
 
-  describe("メールアドレスが未確認のアカウントのとき", () => {
-    describe("ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押すと", () => {
-      describe("部品間結合テスト", () => {
-        describe("異常系", () => {
-          it("「メールが未確認です」を含む確認を促すメッセージが表示される", async () => {
-            const user = userEvent.setup();
-            renderLogin(vi.fn().mockRejectedValue(new EmailNotVerifiedError()));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [{ Given: UNVERIFIED_ACCOUNT, When: [SUBMIT_LOGIN], Then: UNVERIFIED_MESSAGE }],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderLogin(vi.fn().mockRejectedValue(new EmailNotVerifiedError()));
 
-            await submitLogin(user, "dummy@example.com", CORRECT_PASSWORD);
+      await submitLogin(user, "dummy@example.com", CORRECT_PASSWORD);
 
-            expect(await screen.findByText(/メールが未確認です/)).toBeInTheDocument();
-          });
+      expect(await screen.findByText(/メールが未確認です/)).toBeInTheDocument();
+    },
+  );
 
-          it("メールアドレスの確認が済んだあとにもう一度「メールでログイン」を押すと、ホーム画面が表示される", async () => {
-            const user = userEvent.setup();
-            renderLogin(
-              vi
-                .fn()
-                .mockRejectedValueOnce(new EmailNotVerifiedError())
-                .mockResolvedValue(undefined),
-            );
-            await submitLogin(user, "dummy@example.com", CORRECT_PASSWORD);
-            await screen.findByText(/メールが未確認です/);
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        { Given: UNVERIFIED_ACCOUNT, When: [SUBMIT_LOGIN], Then: UNVERIFIED_MESSAGE },
+        { Given: "メールアドレスの確認が済んだとき", When: [RETRY_LOGIN], Then: HOME_SHOWN },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderLogin(
+        vi
+          .fn()
+          .mockRejectedValueOnce(new EmailNotVerifiedError())
+          .mockResolvedValue(undefined),
+      );
+      await submitLogin(user, "dummy@example.com", CORRECT_PASSWORD);
+      await screen.findByText(/メールが未確認です/);
 
-            await user.click(screen.getByRole("button", { name: "メールでログイン" }));
+      await user.click(screen.getByRole("button", { name: "メールでログイン" }));
 
-            expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
-          });
-        });
-      });
-    });
-  });
+      expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+    },
+  );
 
-  describe("メールアドレスまたはパスワードが間違っているとき", () => {
-    describe("ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押すと", () => {
-      describe("部品間結合テスト", () => {
-        describe("異常系", () => {
-          it("「メールアドレスまたはパスワードが間違っています」と表示される", async () => {
-            const user = userEvent.setup();
-            renderLogin(vi.fn().mockRejectedValue(new Error("auth error")));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [{ Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: WRONG_CREDENTIALS_MESSAGE }],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderLogin(vi.fn().mockRejectedValue(new Error("auth error")));
 
-            await submitLogin(user, "dummy@example.com", "wrong-password");
+      await submitLogin(user, "dummy@example.com", "wrong-password");
 
-            expect(
-              await screen.findByText(spec("メールアドレスまたはパスワードが間違っています")),
-            ).toBeInTheDocument();
-          });
+      expect(
+        await screen.findByText(spec("メールアドレスまたはパスワードが間違っています")),
+      ).toBeInTheDocument();
+    },
+  );
 
-          it("「メールでログイン」ボタンがもう一度押せる状態のままになる", async () => {
-            const user = userEvent.setup();
-            renderLogin(vi.fn().mockRejectedValue(new Error("auth error")));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [{ Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: "「メールでログイン」ボタンがもう一度押せる状態のままになる" }],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderLogin(vi.fn().mockRejectedValue(new Error("auth error")));
 
-            await submitLogin(user, "dummy@example.com", "wrong-password");
+      await submitLogin(user, "dummy@example.com", "wrong-password");
 
-            await screen.findByText(spec("メールアドレスまたはパスワードが間違っています"));
-            expect(screen.getByRole("button", { name: "メールでログイン" })).toBeEnabled();
-          });
+      await screen.findByText(spec("メールアドレスまたはパスワードが間違っています"));
+      expect(screen.getByRole("button", { name: "メールでログイン" })).toBeEnabled();
+    },
+  );
 
-          it("正しいパスワードに入力し直してもう一度「メールでログイン」を押すと、ホーム画面が表示される", async () => {
-            const user = userEvent.setup();
-            renderLogin(
-              vi.fn().mockRejectedValueOnce(new Error("auth error")).mockResolvedValue(undefined),
-            );
-            await submitLogin(user, "dummy@example.com", "wrong-password");
-            await screen.findByText(spec("メールアドレスまたはパスワードが間違っています"));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        { Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: WRONG_CREDENTIALS_MESSAGE },
+        { When: ["正しいパスワードに入力し直す", RETRY_LOGIN], Then: HOME_SHOWN },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderLogin(
+        vi.fn().mockRejectedValueOnce(new Error("auth error")).mockResolvedValue(undefined),
+      );
+      await submitLogin(user, "dummy@example.com", "wrong-password");
+      await screen.findByText(spec("メールアドレスまたはパスワードが間違っています"));
 
-            await user.clear(screen.getByPlaceholderText("パスワード"));
-            await user.type(screen.getByPlaceholderText("パスワード"), CORRECT_PASSWORD);
-            await user.click(screen.getByRole("button", { name: "メールでログイン" }));
+      await user.clear(screen.getByPlaceholderText("パスワード"));
+      await user.type(screen.getByPlaceholderText("パスワード"), CORRECT_PASSWORD);
+      await user.click(screen.getByRole("button", { name: "メールでログイン" }));
 
-            expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
-          });
-        });
-      });
-    });
-  });
+      expect(await screen.findByRole("button", { name: START_QUEST_BUTTON })).toBeInTheDocument();
+    },
+  );
 });
 
 describe("[本体:サイト情報]ログイン画面の問い合わせ", () => {
-  describe("部品間結合テスト", () => {
-    describe("正常系", () => {
-      it("ログイン画面を開くと、「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く", () => {
-        renderLogin(vi.fn());
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: ["ログイン画面を開く"],
+          Then: "「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く",
+        },
+      ],
+    },
+    () => {
+      renderLogin(vi.fn());
 
-        const contact = screen.getByRole("link", { name: "問い合わせ" });
-        expect(contact).toHaveAttribute("href", "https://forms.gle/mUhMjSMf8TPJc3CC9");
-        expect(contact).toHaveAttribute("target", "_blank");
-      });
-    });
-  });
+      const contact = screen.getByRole("link", { name: "問い合わせ" });
+      expect(contact).toHaveAttribute("href", "https://forms.gle/mUhMjSMf8TPJc3CC9");
+      expect(contact).toHaveAttribute("target", "_blank");
+    },
+  );
 });
 
+async function renderLoginWithTermsModalOpen() {
+  const user = userEvent.setup();
+  renderLogin(vi.fn());
+  await user.click(screen.getByRole("button", { name: "利用規約" }));
+  return user;
+}
+
 describe("[本体:サイト情報]ログイン画面の利用規約", () => {
-  describe("部品間結合テスト", () => {
-    describe("正常系", () => {
-      it("ログイン画面で「利用規約」を押すと、利用規約モーダルが表示される", async () => {
-        const user = userEvent.setup();
-        renderLogin(vi.fn());
-
-        await user.click(screen.getByRole("button", { name: "利用規約" }));
-
-        expect(screen.getByRole("dialog")).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe("利用規約モーダルが開いているとき", () => {
-    async function renderLoginWithTermsModalOpen() {
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [{ When: ["ログイン画面で「利用規約」を押す"], Then: "利用規約モーダルが表示される" }],
+    },
+    async () => {
       const user = userEvent.setup();
       renderLogin(vi.fn());
+
       await user.click(screen.getByRole("button", { name: "利用規約" }));
-      return user;
-    }
 
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("「閉じる」を押すと、モーダルが閉じてログイン画面が表示される", async () => {
-          const user = await renderLoginWithTermsModalOpen();
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    },
+  );
 
-          await user.click(screen.getByRole("button", { name: "閉じる" }));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "利用規約モーダルが開いているとき",
+          When: ["「閉じる」を押す"],
+          Then: "モーダルが閉じてログイン画面が表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = await renderLoginWithTermsModalOpen();
 
-          expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-          expect(screen.getByRole("button", { name: "メールでログイン" })).toBeInTheDocument();
-        });
+      await user.click(screen.getByRole("button", { name: "閉じる" }));
 
-        it("モーダルの外側をクリックすると、モーダルが閉じる", async () => {
-          const user = await renderLoginWithTermsModalOpen();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "メールでログイン" })).toBeInTheDocument();
+    },
+  );
 
-          await user.click(screen.getByTestId("terms-modal-backdrop"));
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        { Given: "利用規約モーダルが開いているとき", When: ["モーダルの外側をクリックする"], Then: "モーダルが閉じる" },
+      ],
+    },
+    async () => {
+      const user = await renderLoginWithTermsModalOpen();
 
-          expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-        });
-      });
-    });
-  });
+      await user.click(screen.getByTestId("terms-modal-backdrop"));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    },
+  );
 });

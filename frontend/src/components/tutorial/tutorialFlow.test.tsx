@@ -1,11 +1,12 @@
 import { screen, waitFor, render } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { describe, expect } from "vitest";
 import type { User } from "firebase/auth";
 import App from "../../App";
 import { TutorialPage } from "../../pages/TutorialPage";
 import { renderWithProviders } from "../../test/render";
 import { spec } from "../../test/labels";
+import { defineCase } from "../../test/defineCase";
 
 const fakeUser = { uid: "trainer-test" } as unknown as User;
 
@@ -75,236 +76,400 @@ async function completeTutorial(): Promise<UserEvent> {
   return user;
 }
 
+const OPEN_TUTORIAL = "チュートリアルを開く";
+const PRESS_INTRO_DISMISS = "遊び方の説明モーダルの「はじめる」を押す";
+const INTRO_CLOSED = "遊び方の説明モーダルを閉じたとき";
+const SUBMIT_TRANSLATION = "翻訳「電気タイプのねずみポケモン」を送信する";
+const NAME_STEP_STARTED = "英文当てステップを終えてポケモン名当てステップが始まったとき";
+const PRESS_PROCEED = "「次へ進む」を押す";
+const SHAKE_GUIDE_BUBBLE = "案内の吹き出しが揺れる";
+
 describe("[本体:チュートリアル]遊び方の説明", () => {
-  describe("部品間結合テスト", () => {
-    describe("正常系", () => {
-      it("チュートリアルを開くと、遊び方の説明モーダルに「遊び方の説明をします」と「吹き出しの指示に従って文字を入力してみてね」が表示される", async () => {
-        renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: [OPEN_TUTORIAL],
+          Then: "遊び方の説明モーダルに「遊び方の説明をします」と「吹き出しの指示に従って文字を入力してみてね」が表示される",
+        },
+      ],
+    },
+    async () => {
+      renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-        await screen.findByRole("dialog");
-        expect(screen.getByText("遊び方の説明をします")).toBeInTheDocument();
-        expect(screen.getByText("吹き出しの指示に従って文字を入力してみてね")).toBeInTheDocument();
-      });
+      await screen.findByRole("dialog");
+      expect(screen.getByText("遊び方の説明をします")).toBeInTheDocument();
+      expect(screen.getByText("吹き出しの指示に従って文字を入力してみてね")).toBeInTheDocument();
+    },
+  );
 
-      it("遊び方の説明モーダルの「はじめる」を押すと、遊び方の説明モーダルが画面から消える", async () => {
-        const user = userEvent.setup();
-        renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "遊び方の説明モーダルが表示されているとき",
+          When: ["「はじめる」を押す"],
+          Then: "遊び方の説明モーダルが画面から消える",
+        },
+      ],
+    },
+    async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<TutorialPage />, { user: fakeUser, withRouter: true });
 
-        await user.click(await screen.findByRole("button", { name: INTRO_DISMISS_BUTTON }));
+      await user.click(await screen.findByRole("button", { name: INTRO_DISMISS_BUTTON }));
 
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      });
-    });
-  });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe("[本体:チュートリアル]英文当てステップ", () => {
-  describe("遊び方の説明モーダルを閉じたとき", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("英文「It is an Electric-type Mouse Pokémon.」が表示される", async () => {
-          await renderTutorialPastIntro();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS],
+          Then: "英文「It is an Electric-type Mouse Pokémon.」が表示される",
+        },
+      ],
+    },
+    async () => {
+      await renderTutorialPastIntro();
 
-          // タイプライター演出で全文表示まで実時間がかかるため、既定の待機時間 (1000ms) を延長する。
-          expect(
-            await screen.findByText(/It is an Electric-type Mouse Pokémon\./, {}, { timeout: 3000 }),
-          ).toBeInTheDocument();
-        });
+      // タイプライター演出で全文表示まで実時間がかかるため、既定の待機時間 (1000ms) を延長する。
+      expect(
+        await screen.findByText(/It is an Electric-type Mouse Pokémon\./, {}, { timeout: 3000 }),
+      ).toBeInTheDocument();
+    },
+  );
 
-        it("吹き出しにタイトル「この英文を訳してみよう」と案内文「「電気タイプのねずみポケモン」と入力してみてね」が表示される", async () => {
-          await renderTutorialPastIntro();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS],
+          Then: "吹き出しにタイトル「この英文を訳してみよう」と案内文「「電気タイプのねずみポケモン」と入力してみてね」が表示される",
+        },
+      ],
+    },
+    async () => {
+      await renderTutorialPastIntro();
 
-          await waitFor(() => {
-            expect(screen.getByText(spec("「電気タイプのねずみポケモン」と入力してみてね"))).toBeVisible();
-          });
-          expect(screen.getByText("この英文を訳してみよう")).toBeInTheDocument();
-        });
-
-        it("「電気」と「ねずみ」を両方含む翻訳「電気タイプのねずみポケモン」を送信すると、最終評価点が上限の 99% と表示される", async () => {
-          const user = await renderTutorialPastIntro();
-
-          await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
-
-          expect(await screen.findByText("99%", {}, { timeout: 3000 })).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText(spec("「電気タイプのねずみポケモン」と入力してみてね"))).toBeVisible();
       });
-    });
+      expect(screen.getByText("この英文を訳してみよう")).toBeInTheDocument();
+    },
+  );
 
-    describe("「電気」を含まない翻訳「ねずみポケモン」を入力したとき", () => {
-      describe("翻訳を送信すると", () => {
-        describe("部品間結合テスト", () => {
-          describe("異常系", () => {
-            it("採点結果画面に進まず、翻訳の入力欄が表示されたままになる", async () => {
-              const user = await renderTutorialPastIntro();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: INTRO_CLOSED,
+          When: ["「電気」と「ねずみ」を両方含む翻訳「電気タイプのねずみポケモン」を送信する"],
+          Then: "最終評価点が上限の 99% と表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = await renderTutorialPastIntro();
 
-              await fillAndSubmitTranslation(user, "ねずみポケモン");
+      await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
 
-              expect(screen.getByRole("textbox")).toBeInTheDocument();
-              expect(screen.queryByTestId("damage-value")).not.toBeInTheDocument();
-            });
+      expect(await screen.findByText("99%", {}, { timeout: 3000 })).toBeInTheDocument();
+    },
+  );
 
-            it("案内の吹き出しが揺れる", async () => {
-              const user = await renderTutorialPastIntro();
-              await waitFor(() => expect(screen.getByRole("note")).toBeVisible());
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "遊び方の説明モーダルを閉じ、「電気」を含まない翻訳「ねずみポケモン」を入力したとき",
+          When: ["翻訳を送信する"],
+          Then: "採点結果画面に進まず、翻訳の入力欄が表示されたままになる",
+        },
+      ],
+    },
+    async () => {
+      const user = await renderTutorialPastIntro();
 
-              await fillAndSubmitTranslation(user, "ねずみポケモン");
+      await fillAndSubmitTranslation(user, "ねずみポケモン");
 
-              await waitFor(() =>
-                expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid"),
-              );
-            });
-          });
-        });
-      });
-    });
-  });
+      expect(screen.getByRole("textbox")).toBeInTheDocument();
+      expect(screen.queryByTestId("damage-value")).not.toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "遊び方の説明モーダルを閉じ、「電気」を含まない翻訳「ねずみポケモン」を入力したとき",
+          When: ["翻訳を送信する"],
+          Then: SHAKE_GUIDE_BUBBLE,
+        },
+      ],
+    },
+    async () => {
+      const user = await renderTutorialPastIntro();
+      await waitFor(() => expect(screen.getByRole("note")).toBeVisible());
+
+      await fillAndSubmitTranslation(user, "ねずみポケモン");
+
+      await waitFor(() =>
+        expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid"),
+      );
+    },
+  );
 });
 
 describe("[本体:チュートリアル]ポケモン名当てステップ", () => {
-  describe("英文当てステップを終えてポケモン名当てステップが始まったとき", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("吹き出しにタイトル「このポケモンの名前を当てよう」と案内文「「ピカチュウ」または「pikachu」と入力してみてね」が表示される", async () => {
-          await proceedToNameStep();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION],
+          Then: "ポケモン名当てステップの吹き出しにタイトル「このポケモンの名前を当てよう」と案内文「「ピカチュウ」または「pikachu」と入力してみてね」が表示される",
+        },
+      ],
+    },
+    async () => {
+      await proceedToNameStep();
 
-          await waitFor(() => {
-            expect(screen.getByText(spec("「ピカチュウ」または「pikachu」と入力してみてね"))).toBeVisible();
-          });
-          expect(screen.getByText("このポケモンの名前を当てよう")).toBeInTheDocument();
-        });
-
-        it("「ヒントを見る」ボタンが表示されない", async () => {
-          await proceedToNameStep();
-
-          expect(screen.queryByRole("button", { name: HINT_BUTTON })).not.toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText(spec("「ピカチュウ」または「pikachu」と入力してみてね"))).toBeVisible();
       });
-    });
+      expect(screen.getByText("このポケモンの名前を当てよう")).toBeInTheDocument();
+    },
+  );
 
-    describe("名前を送信して正解し、「次へ進む」を押すと", () => {
-      describe("部品間結合テスト", () => {
-        describe("正常系", () => {
-          it("英語名「pikachu」で正解していると、捕獲待機画面で「ハイパーボールを　使う」ボタンが表示される", async () => {
-            const user = await proceedToNameStep();
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION],
+          Then: "ポケモン名当てステップに「ヒントを見る」ボタンが表示されない",
+        },
+      ],
+    },
+    async () => {
+      await proceedToNameStep();
 
-            await fillAndSubmitName(user, "pikachu");
-            await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
+      expect(screen.queryByRole("button", { name: HINT_BUTTON })).not.toBeInTheDocument();
+    },
+  );
 
-            expect(
-              await screen.findByRole("button", { name: ULTRA_BALL_USE_BUTTON }),
-            ).toBeInTheDocument();
-          });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: NAME_STEP_STARTED,
+          When: ["英語名「pikachu」を送信する", PRESS_PROCEED],
+          Then: "捕獲待機画面で「ハイパーボールを　使う」ボタンが表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = await proceedToNameStep();
 
-          it("日本語名「ピカチュウ」で正解していると、捕獲待機画面で「スーパーボールを　使う」ボタンが表示される", async () => {
-            const user = await proceedToNameStep();
+      await fillAndSubmitName(user, "pikachu");
+      await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
 
-            await fillAndSubmitName(user, "ピカチュウ");
-            await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
+      expect(
+        await screen.findByRole("button", { name: ULTRA_BALL_USE_BUTTON }),
+      ).toBeInTheDocument();
+    },
+  );
 
-            expect(
-              await screen.findByRole("button", { name: GREAT_BALL_USE_BUTTON }),
-            ).toBeInTheDocument();
-          });
-        });
-      });
-    });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: NAME_STEP_STARTED,
+          When: ["日本語名「ピカチュウ」を送信する", PRESS_PROCEED],
+          Then: "捕獲待機画面で「スーパーボールを　使う」ボタンが表示される",
+        },
+      ],
+    },
+    async () => {
+      const user = await proceedToNameStep();
 
-    describe("ピカチュウ以外の名前「raichu」を入力したとき", () => {
-      describe("名前を送信すると", () => {
-        describe("部品間結合テスト", () => {
-          describe("異常系", () => {
-            it("捕獲待機画面に進まず、名前の入力欄が表示されたままになる", async () => {
-              const user = await proceedToNameStep();
+      await fillAndSubmitName(user, "ピカチュウ");
+      await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
 
-              await fillAndSubmitName(user, "raichu");
+      expect(
+        await screen.findByRole("button", { name: GREAT_BALL_USE_BUTTON }),
+      ).toBeInTheDocument();
+    },
+  );
 
-              expect(screen.getByPlaceholderText(NAME_PLACEHOLDER)).toBeInTheDocument();
-              expect(screen.queryByRole("button", { name: NAME_PROCEED_BUTTON })).not.toBeInTheDocument();
-            });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "英文当てステップを終えてポケモン名当てステップが始まり、ピカチュウ以外の名前「raichu」を入力したとき",
+          When: ["名前を送信する"],
+          Then: "捕獲待機画面に進まず、名前の入力欄が表示されたままになる",
+        },
+      ],
+    },
+    async () => {
+      const user = await proceedToNameStep();
 
-            it("案内の吹き出しが揺れる", async () => {
-              const user = await proceedToNameStep();
-              await waitFor(() => expect(screen.getByRole("note")).toBeVisible());
+      await fillAndSubmitName(user, "raichu");
 
-              await fillAndSubmitName(user, "raichu");
+      expect(screen.getByPlaceholderText(NAME_PLACEHOLDER)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: NAME_PROCEED_BUTTON })).not.toBeInTheDocument();
+    },
+  );
 
-              await waitFor(() =>
-                expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid"),
-              );
-            });
-          });
-        });
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "英文当てステップを終えてポケモン名当てステップが始まり、ピカチュウ以外の名前「raichu」を入力したとき",
+          When: ["名前を送信する"],
+          Then: SHAKE_GUIDE_BUBBLE,
+        },
+      ],
+    },
+    async () => {
+      const user = await proceedToNameStep();
+      await waitFor(() => expect(screen.getByRole("note")).toBeVisible());
+
+      await fillAndSubmitName(user, "raichu");
+
+      await waitFor(() =>
+        expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid"),
+      );
+    },
+  );
 });
 
 describe("[本体:チュートリアル]捕獲ステップと完了", () => {
-  describe("ポケモン名当てで正解して「次へ進む」を押し、捕獲待機画面が表示されているとき", () => {
-    describe("ボールを使うボタンを押すと", () => {
-      describe("部品間結合テスト", () => {
-        describe("正常系", () => {
-          it.each([
-            ["英語名", "pikachu", ULTRA_BALL_USE_BUTTON],
-            ["日本語名", "ピカチュウ", GREAT_BALL_USE_BUTTON],
-          ])(
-            "%s「%s」で正解したとき、捕獲成功の演出が表示される",
-            async (_language, input, useButton) => {
-              const user = await proceedToNameStep();
-              await fillAndSubmitName(user, input);
-              await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
-              await user.click(await screen.findByRole("button", { name: useButton }));
-
-              expect(
-                await screen.findByTestId("capture-effect-fx", {}, { timeout: 3000 }),
-              ).toHaveAttribute("data-state", "success");
-            },
-          );
-        });
-      });
-    });
-  });
-
-  describe("部品間結合テスト", () => {
-    describe("正常系", () => {
-      it("英語名「pikachu」で正解し、ハイパーボールを使って捕獲に成功すると、結果画面に完了案内の吹き出し「これでチュートリアルは完了だよ。ポケモンを探しに行こう！」が表示される", async () => {
-        await completeTutorial();
-
-        expect(
-          await screen.findByText(
-            "これでチュートリアルは完了だよ。ポケモンを探しに行こう！",
-            {},
-            { timeout: 4000 },
-          ),
-        ).toBeInTheDocument();
-      });
-
-      it("チュートリアルが未完了のホーム画面で「ポケモンを探しに行く」を押してチュートリアルを最後まで終え、「やったー！　ピカチュウを　捕まえたぞ！」と表示されたあと「メニューに戻る」を押し、再びホーム画面で「ポケモンを探しに行く」を押すと、見出し「どこに　ポケモンを　探しに行く？」の場所選択画面が表示される", async () => {
-        window.history.pushState({}, "", "/");
-        const user = userEvent.setup();
-        render(<App />);
-
-        await user.click(await screen.findByRole("button", { name: START_QUEST_BUTTON }));
-        await user.click(await screen.findByRole("button", { name: INTRO_DISMISS_BUTTON }));
-        await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
-        await fillAndSubmitName(user, "pikachu");
+  for (const { language, input, useButton } of [
+    { language: "英語名", input: "pikachu", useButton: ULTRA_BALL_USE_BUTTON },
+    { language: "日本語名", input: "ピカチュウ", useButton: GREAT_BALL_USE_BUTTON },
+  ]) {
+    defineCase(
+      {
+        種別: "部品間結合テスト",
+        正常異常: "正常系",
+        steps: [
+          {
+            Given: `ポケモン名当てで${language}「${input}」で正解して「次へ進む」を押し、捕獲待機画面が表示されているとき`,
+            When: [`「${useButton}」を押す`],
+            Then: "捕獲成功の演出が表示される",
+          },
+        ],
+      },
+      async () => {
+        const user = await proceedToNameStep();
+        await fillAndSubmitName(user, input);
         await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
-        await user.click(await screen.findByRole("button", { name: ULTRA_BALL_USE_BUTTON }));
-        expect(
-          await screen.findByText(
-            spec("やったー！　ピカチュウを　捕まえたぞ！"),
-            {},
-            { timeout: 4000 },
-          ),
-        ).toBeInTheDocument();
-
-        await user.click(screen.getByRole("button", { name: BACK_TO_MENU_BUTTON }));
-        await user.click(await screen.findByRole("button", { name: START_QUEST_BUTTON }));
+        await user.click(await screen.findByRole("button", { name: useButton }));
 
         expect(
-          await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
-        ).toBeInTheDocument();
-      });
-    });
-  });
+          await screen.findByTestId("capture-effect-fx", {}, { timeout: 3000 }),
+        ).toHaveAttribute("data-state", "success");
+      },
+    );
+  }
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ポケモン名当てで英語名「pikachu」で正解して「次へ進む」を押し、捕獲待機画面が表示されているとき",
+          When: [`「${ULTRA_BALL_USE_BUTTON}」を押す`],
+          Then: "捕獲に成功し、結果画面に完了案内の吹き出し「これでチュートリアルは完了だよ。ポケモンを探しに行こう！」が表示される",
+        },
+      ],
+    },
+    async () => {
+      await completeTutorial();
+
+      expect(
+        await screen.findByText(
+          "これでチュートリアルは完了だよ。ポケモンを探しに行こう！",
+          {},
+          { timeout: 4000 },
+        ),
+      ).toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "チュートリアルが未完了のホーム画面が表示されているとき",
+          When: [
+            "「ポケモンを探しに行く」を押してチュートリアルを最後まで終える",
+            "「メニューに戻る」を押す",
+            "再びホーム画面で「ポケモンを探しに行く」を押す",
+          ],
+          Then: "見出し「どこに　ポケモンを　探しに行く？」の場所選択画面が表示される",
+        },
+      ],
+    },
+    async () => {
+      window.history.pushState({}, "", "/");
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(await screen.findByRole("button", { name: START_QUEST_BUTTON }));
+      await user.click(await screen.findByRole("button", { name: INTRO_DISMISS_BUTTON }));
+      await fillAndSubmitTranslation(user, "電気タイプのねずみポケモン");
+      await fillAndSubmitName(user, "pikachu");
+      await user.click(await screen.findByRole("button", { name: NAME_PROCEED_BUTTON }));
+      await user.click(await screen.findByRole("button", { name: ULTRA_BALL_USE_BUTTON }));
+      expect(
+        await screen.findByText(
+          spec("やったー！　ピカチュウを　捕まえたぞ！"),
+          {},
+          { timeout: 4000 },
+        ),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: BACK_TO_MENU_BUTTON }));
+      await user.click(await screen.findByRole("button", { name: START_QUEST_BUTTON }));
+
+      expect(
+        await screen.findByRole("heading", { name: "どこに　ポケモンを　探しに行く？" }),
+      ).toBeInTheDocument();
+    },
+  );
 });

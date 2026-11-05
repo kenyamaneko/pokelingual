@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect } from "vitest";
 import { SnapshotPokemonClient, loadPokemonSnapshot } from "./snapshot.js";
 import type { PokemonRecord } from "../../domain/pokemon.js";
 import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
+import { defineCase } from "../../test/defineCase.js";
 
 const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
   1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
@@ -26,77 +27,161 @@ function record(id: number, types: PokemonType[]): PokemonRecord {
 }
 
 describe("[本体:ポケモンデータ]スナップショットからのポケモン取得", () => {
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("スナップショットに図鑑番号 25 のポケモンがあるとき、図鑑番号 25 を指定すると、ポケモンの名前が「ピカチュウ」になる", async () => {
-        const client = new SnapshotPokemonClient([record(25, ["electric"])]);
-        expect((await client.getPokemonByID(25)).name_ja).toBe("ピカチュウ");
-      });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "スナップショットに図鑑番号 25 のポケモンがあるとき",
+          When: ["図鑑番号 25 を指定してポケモンを取得する"],
+          Then: "ポケモンの名前が「ピカチュウ」になる",
+        },
+      ],
+    },
+    async () => {
+      const client = new SnapshotPokemonClient([record(25, ["electric"])]);
+      expect((await client.getPokemonByID(25)).name_ja).toBe("ピカチュウ");
+    },
+  );
 
-      it("スナップショットに図鑑番号 25 のポケモンがあるとき、図鑑番号 25 を指定すると、画像の URL は https:// で始まり /25.png で終わる", async () => {
-        const client = new SnapshotPokemonClient([record(25, ["electric"])]);
-        const url = (await client.getPokemonByID(25)).sprite_url;
-        expect(url).toMatch(/^https:\/\/.+\/25\.png$/);
-      });
-    });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "スナップショットに図鑑番号 25 のポケモンがあるとき",
+          When: ["図鑑番号 25 を指定してポケモンを取得する"],
+          Then: "画像の URL は https:// で始まり /25.png で終わる",
+        },
+      ],
+    },
+    async () => {
+      const client = new SnapshotPokemonClient([record(25, ["electric"])]);
+      const url = (await client.getPokemonByID(25)).sprite_url;
+      expect(url).toMatch(/^https:\/\/.+\/25\.png$/);
+    },
+  );
 
-    describe("異常系", () => {
-      it("スナップショットに図鑑番号 25 のポケモンだけがあるとき、図鑑番号 999 を指定すると、スナップショットに無いことを示すエラーになる", async () => {
-        const client = new SnapshotPokemonClient([record(25, ["electric"])]);
-        await expect(client.getPokemonByID(999)).rejects.toThrow(/not found in snapshot/);
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: "スナップショットに図鑑番号 25 のポケモンだけがあるとき",
+          When: ["図鑑番号 999 を指定してポケモンを取得する"],
+          Then: "スナップショットに無いことを示すエラーになる",
+        },
+      ],
+    },
+    async () => {
+      const client = new SnapshotPokemonClient([record(25, ["electric"])]);
+      await expect(client.getPokemonByID(999)).rejects.toThrow(/not found in snapshot/);
+    },
+  );
 });
 
 describe("[本体:ポケモンデータ]出題可能な図鑑番号", () => {
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("スナップショットに図鑑番号 25、1、4 の順でポケモンがあるとき、出題可能な図鑑番号を取得すると、1、4、25 の昇順で得られる", () => {
-        const client = new SnapshotPokemonClient([record(25, []), record(1, []), record(4, [])]);
-        expect(client.getServableIDs()).toEqual([1, 4, 25]);
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "スナップショットに図鑑番号 25、1、4 の順でポケモンがあるとき",
+          When: ["出題可能な図鑑番号を取得する"],
+          Then: "1、4、25 の昇順で得られる",
+        },
+      ],
+    },
+    () => {
+      const client = new SnapshotPokemonClient([record(25, []), record(1, []), record(4, [])]);
+      expect(client.getServableIDs()).toEqual([1, 4, 25]);
+    },
+  );
 });
 
 describe("[本体:ポケモンデータ]タイプ別の図鑑番号", () => {
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("くさ・どくタイプの 1 番、ほのおタイプの 4 番、でんきタイプの 25 番のポケモンがあるとき、ほのおタイプを指定すると、図鑑番号は 4 だけが得られる", async () => {
-        const client = new SnapshotPokemonClient([
-          record(1, ["grass", "poison"]),
-          record(4, ["fire"]),
-          record(25, ["electric"]),
-        ]);
-        expect(await client.getIDsByType("fire")).toEqual([4]);
-      });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "くさ・どくタイプの 1 番、ほのおタイプの 4 番、でんきタイプの 25 番のポケモンがあるとき",
+          When: ["ほのおタイプを指定して図鑑番号を取得する"],
+          Then: "図鑑番号は 4 だけが得られる",
+        },
+      ],
+    },
+    async () => {
+      const client = new SnapshotPokemonClient([
+        record(1, ["grass", "poison"]),
+        record(4, ["fire"]),
+        record(25, ["electric"]),
+      ]);
+      expect(await client.getIDsByType("fire")).toEqual([4]);
+    },
+  );
 
-      it("ほのおタイプのポケモンだけがあるとき、みずタイプを指定すると、図鑑番号は 1 件も得られない", async () => {
-        const client = new SnapshotPokemonClient([record(4, ["fire"])]);
-        expect(await client.getIDsByType("water")).toEqual([]);
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "ほのおタイプのポケモンだけがあるとき",
+          When: ["みずタイプを指定して図鑑番号を取得する"],
+          Then: "図鑑番号は 1 件も得られない",
+        },
+      ],
+    },
+    async () => {
+      const client = new SnapshotPokemonClient([record(4, ["fire"])]);
+      expect(await client.getIDsByType("water")).toEqual([]);
+    },
+  );
 });
 
 describe("[本体:ポケモンデータ]スナップショットの読み込み", () => {
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("図鑑番号 25 と 1 のポケモンが記録されたスナップショットを読み込むと、図鑑番号 25、1 のポケモンが記録された順に得られる", async () => {
-        const records = await loadPokemonSnapshot(async () =>
-          JSON.stringify([record(25, ["electric"]), record(1, ["grass"])]),
-        );
-        expect(records.map((r) => r.id)).toEqual([25, 1]);
-      });
-    });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "図鑑番号 25 と 1 のポケモンが記録されたスナップショットがあるとき",
+          When: ["スナップショットを読み込む"],
+          Then: "図鑑番号 25、1 のポケモンが記録された順に得られる",
+        },
+      ],
+    },
+    async () => {
+      const records = await loadPokemonSnapshot(async () =>
+        JSON.stringify([record(25, ["electric"]), record(1, ["grass"])]),
+      );
+      expect(records.map((r) => r.id)).toEqual([25, 1]);
+    },
+  );
 
-    describe("異常系", () => {
-      it('スナップショットの内容が一覧ではなく {"id":1} だけのとき、読み込むと、一覧であることを求めるエラーになる', async () => {
-        await expect(loadPokemonSnapshot(async () => JSON.stringify({ id: 1 }))).rejects.toThrow(
-          /must be a JSON array/,
-        );
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          Given: 'スナップショットの内容が一覧ではなく {"id":1} だけのとき',
+          When: ["スナップショットを読み込む"],
+          Then: "一覧であることを求めるエラーになる",
+        },
+      ],
+    },
+    async () => {
+      await expect(loadPokemonSnapshot(async () => JSON.stringify({ id: 1 }))).rejects.toThrow(
+        /must be a JSON array/,
+      );
+    },
+  );
 });

@@ -1,6 +1,7 @@
 import { render, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { TypewriterText, CHAR_INTERVAL_MS } from "./TypewriterText";
+import { defineCase } from "../../test/defineCase";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -10,43 +11,88 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+const THREE_CHAR_TEXT_STARTED = "3 文字の文章「ABC」の演出が始まったとき";
+const ONE_CHAR_INTERVAL_PASSES = "1 文字分の時間が経つ";
+
 describe("[本体:クエスト]文章のタイプライター演出", () => {
-  describe("単体テスト", () => {
-    describe("正常系", () => {
-      it("文章「ABC」の演出が始まる前のとき、文字が表示されない", () => {
-        const { container } = render(<TypewriterText text="ABC" isActive={false} />);
-        expect(container.textContent).toBe("");
-      });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "文章「ABC」の演出が始まる前のとき",
+          When: ["文章を描画する"],
+          Then: "文字が表示されない",
+        },
+      ],
+    },
+    () => {
+      const { container } = render(<TypewriterText text="ABC" isActive={false} />);
+      expect(container.textContent).toBe("");
+    },
+  );
 
-      it("表示する文章が空のとき、演出が始まって 1 文字分の時間が経っても、何も表示されない", () => {
-        const { container } = render(<TypewriterText text="" isActive={true} />);
-        act(() => {
-          vi.advanceTimersByTime(CHAR_INTERVAL_MS);
-        });
-        expect(container.textContent).toBe("");
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "表示する文章が空のとき",
+          When: ["演出を始める", ONE_CHAR_INTERVAL_PASSES],
+          Then: "何も表示されない",
+        },
+      ],
+    },
+    () => {
+      const { container } = render(<TypewriterText text="" isActive={true} />);
+      act(() => {
+        vi.advanceTimersByTime(CHAR_INTERVAL_MS);
       });
-    });
-  });
+      expect(container.textContent).toBe("");
+    },
+  );
 
-  describe("3 文字の文章「ABC」の演出が始まったとき", () => {
-    describe("単体テスト", () => {
-      describe("正常系", () => {
-        it("1 文字分の時間が経つと、先頭の 1 文字「A」が表示される", () => {
-          const { container } = render(<TypewriterText text="ABC" isActive={true} />);
-          act(() => {
-            vi.advanceTimersByTime(CHAR_INTERVAL_MS);
-          });
-          expect(container.textContent).toBe("A");
-        });
-
-        it("3 文字分の時間が経つと、3 文字が「ABC」と全文表示される", () => {
-          const { container } = render(<TypewriterText text="ABC" isActive={true} />);
-          act(() => {
-            vi.advanceTimersByTime(CHAR_INTERVAL_MS * 3);
-          });
-          expect(container.textContent).toBe("ABC");
-        });
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: THREE_CHAR_TEXT_STARTED,
+          When: [ONE_CHAR_INTERVAL_PASSES],
+          Then: "先頭の 1 文字「A」が表示される",
+        },
+      ],
+    },
+    () => {
+      const { container } = render(<TypewriterText text="ABC" isActive={true} />);
+      act(() => {
+        vi.advanceTimersByTime(CHAR_INTERVAL_MS);
       });
-    });
-  });
+      expect(container.textContent).toBe("A");
+    },
+  );
+
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: THREE_CHAR_TEXT_STARTED,
+          When: ["3 文字分の時間が経つ"],
+          Then: "3 文字が「ABC」と全文表示される",
+        },
+      ],
+    },
+    () => {
+      const { container } = render(<TypewriterText text="ABC" isActive={true} />);
+      act(() => {
+        vi.advanceTimersByTime(CHAR_INTERVAL_MS * 3);
+      });
+      expect(container.textContent).toBe("ABC");
+    },
+  );
 });

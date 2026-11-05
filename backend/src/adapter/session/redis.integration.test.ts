@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import { describe, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { GenericContainer, type StartedTestContainer } from "testcontainers";
 import { Redis } from "ioredis";
 import express from "express";
@@ -29,6 +29,7 @@ import { DEFAULT_QUEST_TUNING } from "../../testing/quest-tuning-fixture.js";
 import { DEFAULT_MAX_EXCLUDED_POKEMON_COUNT } from "../../testing/settings-fixture.js";
 import type { LLMClient, QuestSessionStore, RandomSource } from "../../domain/ports.js";
 import type { QuestSession } from "../../domain/quest.js";
+import { defineCase } from "../../test/defineCase.js";
 
 const VALKEY_IMAGE = "valkey/valkey:8-alpine";
 const VALKEY_PORT = 6379;
@@ -172,77 +173,156 @@ async function getCurrentQuestOnOtherInstanceAfterScore(keyPrefix: string) {
   return current;
 }
 
-describe("[本体:クエストセッション]セッションの保存・取得・削除", () => {
-  describe("インフラ結合テスト", () => {
-    describe("正常系", () => {
-      it("セッションを一度も保存していないユーザーがいるとき、そのユーザーのセッションを取得すると、セッションは見つからない", async () => {
-        const store = new RedisQuestSessionStore(connectRedis(), "test:missing:", 60);
+describe("[本体:クエスト]セッションの保存・取得・削除", () => {
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "セッションを一度も保存していないユーザーがいるとき",
+          When: ["そのユーザーのセッションを取得する"],
+          Then: "セッションは見つからない",
+        },
+      ],
+    },
+    async () => {
+      const store = new RedisQuestSessionStore(connectRedis(), "test:missing:", 60);
 
-        expect(await store.get("nobody")).toBeNull();
-      });
+      expect(await store.get("nobody")).toBeNull();
+    },
+  );
 
-      it("有効期間を 60 秒に設定してセッションを保存すると、保存直後の残り有効期間は 0 秒より大きく、60 秒以下になる", async () => {
-        const client = connectRedis();
-        const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "セッションの有効期間を 60 秒に設定したとき",
+          When: ["セッションを保存する"],
+          Then: "保存直後の残り有効期間は 0 秒より大きく、60 秒以下になる",
+        },
+      ],
+    },
+    async () => {
+      const client = connectRedis();
+      const store = new RedisQuestSessionStore(client, "test:ttl:", 60);
 
-        await store.set("alice", makeSession());
-        const ttl = await client.ttl("test:ttl:alice");
+      await store.set("alice", makeSession());
+      const ttl = await client.ttl("test:ttl:alice");
 
-        expect(ttl).toBeGreaterThan(0);
-        expect(ttl).toBeLessThanOrEqual(60);
-      });
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThanOrEqual(60);
+    },
+  );
 
-      it("セッションを保存したユーザーのセッションを削除した後に取得すると、セッションは見つからない", async () => {
-        const store = new RedisQuestSessionStore(connectRedis(), "test:delete:", 60);
-        await store.set("alice", makeSession());
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "セッションを保存したユーザーがいるとき",
+          When: ["そのユーザーのセッションを削除する", "そのユーザーのセッションを取得する"],
+          Then: "セッションは見つからない",
+        },
+      ],
+    },
+    async () => {
+      const store = new RedisQuestSessionStore(connectRedis(), "test:delete:", 60);
+      await store.set("alice", makeSession());
 
-        await store.delete("alice");
+      await store.delete("alice");
 
-        expect(await store.get("alice")).toBeNull();
-      });
-    });
-  });
+      expect(await store.get("alice")).toBeNull();
+    },
+  );
 });
 
-describe("[本体:クエストセッション]インスタンス間でのセッションの引き継ぎ", () => {
+const ALTERNATING_INSTANCES_OPERATIONS = [
+  "インスタンス A に出題を要求する",
+  "インスタンス B に訳文「はやい」の採点を要求する",
+  "インスタンス A に不正解になる名前当ての回答を送る",
+  "インスタンス B に名前当てのスキップを要求する",
+  "インスタンス A に捕獲を要求する",
+] as const;
+
+describe("[本体:クエスト]インスタンス間でのセッションの引き継ぎ", () => {
   beforeEach(clearFirestoreEmulator);
 
-  describe("インスタンス A への出題、インスタンス B への訳文「はやい」の採点、インスタンス A への不正解になる名前当ての回答、インスタンス B への名前当てのスキップ、インスタンス A への捕獲の各リクエストが、2 つのインスタンスに交互に届くとき", () => {
-    describe("インフラ結合テスト", () => {
-      describe("正常系", () => {
-        it("名前当てをスキップすると、名前当てのスキップの応答のボールも捕獲結果のボールもモンスターボールになる", async () => {
-          const { skip, capture } = await playQuestToCaptureAlternatingInstances("test:handoff:ball:");
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: ALTERNATING_INSTANCES_OPERATIONS,
+          Then: "名前当てのスキップの応答のボールも捕獲結果のボールもモンスターボールになる",
+        },
+      ],
+    },
+    async () => {
+      const { skip, capture } = await playQuestToCaptureAlternatingInstances("test:handoff:ball:");
 
-          expect(skip.body).toEqual({ ball_type: "poke" });
-          expect(capture.body).toMatchObject({ ball_type: "poke" });
-        });
+      expect(skip.body).toEqual({ ball_type: "poke" });
+      expect(capture.body).toMatchObject({ ball_type: "poke" });
+    },
+  );
 
-        it("捕獲結果のポケモンは、出題された図鑑番号 1 のポケモンになる", async () => {
-          const { capture } = await playQuestToCaptureAlternatingInstances("test:handoff:pokemon:");
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: ALTERNATING_INSTANCES_OPERATIONS,
+          Then: "捕獲結果のポケモンは、出題された図鑑番号 1 のポケモンになる",
+        },
+      ],
+    },
+    async () => {
+      const { capture } = await playQuestToCaptureAlternatingInstances("test:handoff:pokemon:");
 
-          expect(capture.body).toMatchObject({ pokemon_id: 1 });
-        });
-      });
-    });
-  });
+      expect(capture.body).toMatchObject({ pokemon_id: 1 });
+    },
+  );
 
-  describe("インスタンス A で出題され、訳文「はやい」を採点した後のとき", () => {
-    describe("採点とは別のインスタンス B で現在のクエストを取得すると", () => {
-      describe("インフラ結合テスト", () => {
-        describe("正常系", () => {
-          it("現在のクエストは、名前当ての段階として得られる", async () => {
-            const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:phase:");
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "インスタンス A で出題され、訳文「はやい」を採点した後のとき",
+          When: ["採点とは別のインスタンス B で現在のクエストを取得する"],
+          Then: "現在のクエストは、名前当ての段階として得られる",
+        },
+      ],
+    },
+    async () => {
+      const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:phase:");
 
-            expect(current.body).toMatchObject({ phase: "guessing" });
-          });
+      expect(current.body).toMatchObject({ phase: "guessing" });
+    },
+  );
 
-          it("現在のクエストの入力済みの訳文は「はやい」になる", async () => {
-            const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:translation:");
+  defineCase(
+    {
+      種別: "インフラ結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "インスタンス A で出題され、訳文「はやい」を採点した後のとき",
+          When: ["採点とは別のインスタンス B で現在のクエストを取得する"],
+          Then: "現在のクエストの入力済みの訳文は「はやい」になる",
+        },
+      ],
+    },
+    async () => {
+      const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:translation:");
 
-            expect(current.body).toMatchObject({ user_translation: "はやい" });
-          });
-        });
-      });
-    });
-  });
+      expect(current.body).toMatchObject({ user_translation: "はやい" });
+    },
+  );
 });

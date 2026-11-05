@@ -1,5 +1,5 @@
 import { render, screen, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { AnswerReveal } from "./AnswerReveal";
 import { METER_ANIMATION_DURATION_MS } from "./ScoreDisplay";
 import { CHAR_INTERVAL_MS } from "./TypewriterText";
@@ -9,6 +9,7 @@ import {
   triggerIntersection,
 } from "../../test/intersectionObserverMock";
 import type { ScoreResponse } from "../../../../shared/api-types/quest";
+import { defineCase } from "../../test/defineCase";
 
 const DESCRIPTION_EN = "A wild creature roams.";
 const USER_TRANSLATION = "やくぶん";
@@ -59,122 +60,268 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+const SHOW_RESULT_SCREEN = "採点結果画面を表示する";
+const ALL_FIELDS_IN_VIEW = "すべての欄が画面内に入っているとき";
+const WAIT_FOR_TRANSLATION_FADE_IN = "「英語版の図鑑の説明」のフェードインが終わるまで待つ";
+const WAIT_FOR_DESCRIPTION_COMPLETE = "「解答例」を全文表示し終えるまで待つ";
+const WAIT_ONE_CHAR = "1 文字分の時間を待つ";
+
 describe("[本体:採点]採点結果画面の段階的開示", () => {
-  describe("「英語版の図鑑の説明」の欄がまだ画面内に入っていないとき", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("「英語版の図鑑の説明」のフェードイン 2 回分の時間が経っても、「英語版の図鑑の説明」は表示されない", () => {
-          setIntersectionAutoTrigger(false);
-          renderAnswerReveal();
-          advance(FADE_DURATION_MS * 2);
-          expect(screen.getByTestId("quest-text-reveal")).toHaveAttribute("data-state", "hidden");
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "「英語版の図鑑の説明」の欄がまだ画面内に入っていないとき",
+          When: [SHOW_RESULT_SCREEN, "「英語版の図鑑の説明」のフェードイン 2 回分の時間を待つ"],
+          Then: "「英語版の図鑑の説明」は表示されない",
+        },
+      ],
+    },
+    () => {
+      setIntersectionAutoTrigger(false);
+      renderAnswerReveal();
+      advance(FADE_DURATION_MS * 2);
+      expect(screen.getByTestId("quest-text-reveal")).toHaveAttribute("data-state", "hidden");
+    },
+  );
 
-        it("欄が画面内に入ると、「英語版の図鑑の説明」が表示される", () => {
-          setIntersectionAutoTrigger(false);
-          renderAnswerReveal();
-          const questTextEl = screen.getByTestId("quest-text-reveal");
-          act(() => {
-            triggerIntersection(questTextEl, true);
-          });
-          expect(questTextEl).toHaveAttribute("data-state", "revealed");
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "「英語版の図鑑の説明」の欄がまだ画面内に入っていないとき",
+          When: [SHOW_RESULT_SCREEN, "「英語版の図鑑の説明」の欄を画面内に入れる"],
+          Then: "「英語版の図鑑の説明」が表示される",
+        },
+      ],
+    },
+    () => {
+      setIntersectionAutoTrigger(false);
+      renderAnswerReveal();
+      const questTextEl = screen.getByTestId("quest-text-reveal");
+      act(() => {
+        triggerIntersection(questTextEl, true);
       });
-    });
-  });
+      expect(questTextEl).toHaveAttribute("data-state", "revealed");
+    },
+  );
 
-  describe("すべての欄が画面内に入っているとき", () => {
-    describe("部品間結合テスト", () => {
-      describe("正常系", () => {
-        it("「英語版の図鑑の説明」のフェードインが終わる直前のとき、「君の翻訳」は表示されない", () => {
-          renderAnswerReveal();
-          advance(FADE_DURATION_MS - 1);
-          expect(screen.getByTestId("translation-reveal")).toHaveAttribute("data-state", "hidden");
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, "「英語版の図鑑の説明」のフェードインが終わる直前まで待つ"],
+          Then: "「君の翻訳」は表示されない",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advance(FADE_DURATION_MS - 1);
+      expect(screen.getByTestId("translation-reveal")).toHaveAttribute("data-state", "hidden");
+    },
+  );
 
-        it("「英語版の図鑑の説明」のフェードインが終わったとき、「君の翻訳」が表示される", () => {
-          renderAnswerReveal();
-          advance(FADE_DURATION_MS);
-          expect(screen.getByTestId("translation-reveal")).toHaveAttribute("data-state", "revealed");
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN],
+          Then: "「君の翻訳」が表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advance(FADE_DURATION_MS);
+      expect(screen.getByTestId("translation-reveal")).toHaveAttribute("data-state", "revealed");
+    },
+  );
 
-        it("「君の翻訳」のフェードインが終わる直前のとき、「解答例」の欄には文字が 1 文字も表示されていない", () => {
-          renderAnswerReveal();
-          advance(FADE_DURATION_MS);
-          advance(FADE_DURATION_MS - 1);
-          expect(screen.getByTestId("description-text")).toHaveTextContent("「」");
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN, "「君の翻訳」のフェードインが終わる直前まで待つ"],
+          Then: "「解答例」の欄には文字が 1 文字も表示されていない",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advance(FADE_DURATION_MS);
+      advance(FADE_DURATION_MS - 1);
+      expect(screen.getByTestId("description-text")).toHaveTextContent("「」");
+    },
+  );
 
-        it("「博士からのコメント」の先頭の 1 文字「い」まで表示された時点で、まだ表示が終わっていないとき、HP は 100% と表示される", () => {
-          renderAnswerReveal();
-          advanceToReviewStage();
-          advance(CHAR_INTERVAL_MS);
-          expect(screen.getByText("100%")).toBeInTheDocument();
-        });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, "「博士からのコメント」の先頭の 1 文字「い」が表示されるまで待つ"],
+          Then: "「博士からのコメント」の表示が終わっていない間、HP は 100% と表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToReviewStage();
+      advance(CHAR_INTERVAL_MS);
+      expect(screen.getByText("100%")).toBeInTheDocument();
+    },
+  );
 
-        it("スコアが 85 で「博士からのコメント」を全文表示し終えた後、HP バーの減少が終わると、HP が 15% と表示される", () => {
-          renderAnswerReveal();
-          advanceToMeterStage();
-          advance(METER_ANIMATION_DURATION_MS);
-          expect(screen.getByText("15%")).toBeInTheDocument();
-        });
-      });
-    });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: "スコアが 85 で、すべての欄が画面内に入っているとき",
+          When: [SHOW_RESULT_SCREEN, "「博士からのコメント」を全文表示し終えるまで待つ", "HP バーの減少が終わるまで待つ"],
+          Then: "HP が 15% と表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToMeterStage();
+      advance(METER_ANIMATION_DURATION_MS);
+      expect(screen.getByText("15%")).toBeInTheDocument();
+    },
+  );
 
-    describe("「君の翻訳」のフェードインが終わったとき", () => {
-      describe("部品間結合テスト", () => {
-        describe("正常系", () => {
-          it("1 文字分の時間が経つと、「解答例」の先頭の 1 文字「テ」が表示される", () => {
-            renderAnswerReveal();
-            advanceToDescriptionStage();
-            advance(CHAR_INTERVAL_MS);
-            expect(screen.getByTestId("description-text")).toHaveTextContent("「テ」");
-          });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN, WAIT_ONE_CHAR],
+          Then: "「解答例」の先頭の 1 文字「テ」が表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToDescriptionStage();
+      advance(CHAR_INTERVAL_MS);
+      expect(screen.getByTestId("description-text")).toHaveTextContent("「テ」");
+    },
+  );
 
-          it("「解答例」の文字数 (9 文字) 分の時間が経つと、「解答例」が「テストの せつめい」と全文表示される", () => {
-            renderAnswerReveal();
-            advanceToDescriptionStage();
-            advance(CHAR_INTERVAL_MS * DESCRIPTION_JA.length);
-            expect(screen.getByTestId("description-text")).toHaveTextContent("「テストの せつめい」");
-          });
-        });
-      });
-    });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN, "「解答例」の文字数 (9 文字) 分の時間を待つ"],
+          Then: "「解答例」が「テストの せつめい」と全文表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToDescriptionStage();
+      advance(CHAR_INTERVAL_MS * DESCRIPTION_JA.length);
+      expect(screen.getByTestId("description-text")).toHaveTextContent("「テストの せつめい」");
+    },
+  );
 
-    describe("「解答例」を全文表示し終えたとき", () => {
-      describe("部品間結合テスト", () => {
-        describe("正常系", () => {
-          it("1 文字分の時間が経つ前は、「博士からのコメント」に文字が 1 文字も表示されていない", () => {
-            renderAnswerReveal();
-            advanceToReviewStage();
-            advance(CHAR_INTERVAL_MS - 1);
-            expect(screen.getByTestId("review-text")).toBeEmptyDOMElement();
-          });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, "1 文字分の時間が経つ直前まで待つ"],
+          Then: "「博士からのコメント」には文字が 1 文字も表示されていない",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToReviewStage();
+      advance(CHAR_INTERVAL_MS - 1);
+      expect(screen.getByTestId("review-text")).toBeEmptyDOMElement();
+    },
+  );
 
-          it("1 文字分の時間が経つと、「博士からのコメント」の先頭の 1 文字「い」が表示される", () => {
-            renderAnswerReveal();
-            advanceToReviewStage();
-            advance(CHAR_INTERVAL_MS);
-            expect(screen.getByTestId("review-text")).toHaveTextContent("い");
-          });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_ONE_CHAR],
+          Then: "「博士からのコメント」の先頭の 1 文字「い」が表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToReviewStage();
+      advance(CHAR_INTERVAL_MS);
+      expect(screen.getByTestId("review-text")).toHaveTextContent("い");
+    },
+  );
 
-          it("「博士からのコメント」の文字数 (3 文字) 分の時間が経つと、「博士からのコメント」が「いいね」と全文表示される", () => {
-            renderAnswerReveal();
-            advanceToReviewStage();
-            advance(CHAR_INTERVAL_MS * REVIEW.length);
-            expect(screen.getByTestId("review-text")).toHaveTextContent("いいね");
-          });
-        });
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          Given: ALL_FIELDS_IN_VIEW,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, "「博士からのコメント」の文字数 (3 文字) 分の時間を待つ"],
+          Then: "「博士からのコメント」が「いいね」と全文表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      advanceToReviewStage();
+      advance(CHAR_INTERVAL_MS * REVIEW.length);
+      expect(screen.getByTestId("review-text")).toHaveTextContent("いいね");
+    },
+  );
 
-  describe("部品間結合テスト", () => {
-    describe("正常系", () => {
-      it("採点結果画面を表示すると、見出し「英語版の図鑑の説明」が表示される", () => {
-        renderAnswerReveal();
-        expect(screen.getByText("英語版の図鑑の説明")).toBeInTheDocument();
-      });
-    });
-  });
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "正常系",
+      steps: [
+        {
+          When: [SHOW_RESULT_SCREEN],
+          Then: "見出し「英語版の図鑑の説明」が表示される",
+        },
+      ],
+    },
+    () => {
+      renderAnswerReveal();
+      expect(screen.getByText("英語版の図鑑の説明")).toBeInTheDocument();
+    },
+  );
 });
