@@ -8,7 +8,7 @@ const db = requireFirestoreEmulator();
 const GET_EXCLUDED_POKEMON = "保存された除外ポケモンを確かめるために、あるユーザーの設定の取得を依頼する";
 const GET_ENABLED_GENERATIONS = "保存された出題世代を確かめるために、あるユーザーの設定の取得を依頼する";
 
-describe("[本体:設定]除外ポケモンの保存", () => {
+describe("[共通:設定]除外ポケモンの保存", () => {
   beforeEach(clearFirestoreEmulator);
 
   for (const { situation, otherUserExcludedIDLists } of [
@@ -107,7 +107,7 @@ describe("[本体:設定]除外ポケモンの保存", () => {
   );
 });
 
-describe("[本体:設定]出題世代の保存", () => {
+describe("[共通:設定]出題世代の保存", () => {
   beforeEach(clearFirestoreEmulator);
 
   defineCase(

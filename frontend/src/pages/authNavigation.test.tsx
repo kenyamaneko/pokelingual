@@ -43,7 +43,7 @@ function renderAuthRoutes(initialPath: string, user: User | null = null) {
 
 const authenticatedUser = { uid: "alice" } as unknown as User;
 
-describe("[本体:認証]認証画面の遷移", () => {
+describe("[共通:認証]認証画面の遷移", () => {
   defineCase(
     {
       種別: "部品間結合テスト",

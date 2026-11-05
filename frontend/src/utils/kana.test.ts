@@ -5,7 +5,7 @@ import { defineCase } from "../test/defineCase";
 const CONVERT_TO_KATAKANA =
   "設定画面のポケモン名の検索欄に入力された文字列のうち、ひらがなの部分をカタカナに変換する";
 
-describe("[本体:設定]ひらがなのカタカナ変換", () => {
+describe("[共通:設定]ひらがなのカタカナ変換", () => {
   defineCase(
     {
       種別: "単体テスト",

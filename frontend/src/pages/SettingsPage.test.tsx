@@ -117,7 +117,7 @@ const SHOW_CONTACT = "設定画面を開いて、問い合わせのリンクを�
 const SHOW_GITHUB_REPOSITORY = "設定画面を開いて、GitHub リポジトリのリンクと案内を表示する";
 const INTEGRATION = "部品間結合テスト";
 
-describe("[本体:認証]ログアウト", () => {
+describe("[共通:認証]ログアウト", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -140,7 +140,7 @@ describe("[本体:認証]ログアウト", () => {
   );
 });
 
-describe("[本体:設定]設定の読み込み", () => {
+describe("[共通:設定]設定の読み込み", () => {
   defineCase(
     {
       種別: INTEGRATION,
@@ -229,7 +229,7 @@ async function searchAndSelectExcludedGolbat() {
   await user.click(await screen.findByRole("button", { name: /ゴルバット/ }));
 }
 
-describe("[本体:設定]除外ポケモン設定", () => {
+describe("[共通:設定]除外ポケモン設定", () => {
   beforeEach(() => {
     lastSavedIDs = null;
   });
@@ -576,7 +576,7 @@ function mockOnlyFifthGenerationSelected() {
   mockUpdateGenerationsSuccess();
 }
 
-describe("[本体:設定]出題する世代", () => {
+describe("[共通:設定]出題する世代", () => {
   beforeEach(() => {
     lastSavedGenerations = null;
   });
@@ -811,7 +811,7 @@ describe("[本体:設定]出題する世代", () => {
   );
 });
 
-describe("[本体:サイト情報]設定画面の問い合わせ", () => {
+describe("[共通:サイト情報]設定画面の問い合わせ", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -837,7 +837,7 @@ describe("[本体:サイト情報]設定画面の問い合わせ", () => {
   );
 });
 
-describe("[本体:サイト情報]設定画面の GitHub リポジトリ", () => {
+describe("[共通:サイト情報]設定画面の GitHub リポジトリ", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });
@@ -891,7 +891,7 @@ async function renderSettingsWithTermsModalOpen() {
   return user;
 }
 
-describe("[本体:サイト情報]設定画面の利用規約", () => {
+describe("[共通:サイト情報]設定画面の利用規約", () => {
   beforeEach(() => {
     mockGetSettings([]);
   });

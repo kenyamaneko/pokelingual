@@ -3,7 +3,7 @@ import { describe, expect, vi } from "vitest";
 import { TermsModal } from "./TermsModal";
 import { defineCase } from "../../test/defineCase";
 
-describe("[本体:サイト情報]利用規約モーダル", () => {
+describe("[共通:サイト情報]利用規約モーダル", () => {
   defineCase(
     {
       種別: "単体テスト",

@@ -42,7 +42,7 @@ function renderAuth() {
 const LOGIN = "ログイン画面で、メール本人確認が済んでいるかを確かめるために、メールアドレスとパスワードを入力してログインする";
 const UNVERIFIED_EMAIL = "メールの確認が済んでいないとき";
 
-describe("[本体:認証]メール本人確認", () => {
+describe("[共通:認証]メール本人確認", () => {
   beforeEach(() => {
     h.signInResult = null;
   });

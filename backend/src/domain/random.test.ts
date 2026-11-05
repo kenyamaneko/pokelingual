@@ -15,7 +15,7 @@ function drawFromPool(count: number): string {
 
 const DRAW_3 = drawFromPool(3);
 
-describe("[本体:クエスト]プールからの重複無し抽選", () => {
+describe("[共通:機能共通]プールからの重複無し抽選", () => {
   defineCase(
     {
       種別: "単体テスト",

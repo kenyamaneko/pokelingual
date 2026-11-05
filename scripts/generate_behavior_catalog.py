@@ -19,7 +19,7 @@ NAME_SEPARATORS = (" > ", " › ")
 
 TOP_LEVEL_PATTERN = re.compile(r"^\[([^:\]]+):([^:\]]+)(?::([^\]]+))?\](.+)$")
 
-REGIONS = ("本体", "外部連携", "運用", "シナリオ")
+REGIONS = ("本体", "共通", "運用", "外部連携", "シナリオ")
 
 # 運用は大機能の下に中機能を置かない
 REGION_WITHOUT_MINOR = "運用"

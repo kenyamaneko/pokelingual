@@ -77,7 +77,7 @@ const HOME_SHOWN = "ホーム画面が表示される";
 const UNVERIFIED_MESSAGE = "「メールが未確認です」を含む確認を促すメッセージが表示される";
 const WRONG_CREDENTIALS_MESSAGE = "「メールアドレスまたはパスワードが間違っています」と表示される";
 
-describe("[本体:認証]メールアドレスでのログイン", () => {
+describe("[共通:認証]メールアドレスでのログイン", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
@@ -229,7 +229,7 @@ describe("[本体:認証]メールアドレスでのログイン", () => {
   );
 });
 
-describe("[本体:サイト情報]ログイン画面の問い合わせ", () => {
+describe("[共通:サイト情報]ログイン画面の問い合わせ", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
@@ -258,7 +258,7 @@ async function renderLoginWithTermsModalOpen() {
   return user;
 }
 
-describe("[本体:サイト情報]ログイン画面の利用規約", () => {
+describe("[共通:サイト情報]ログイン画面の利用規約", () => {
   defineCase(
     {
       種別: "部品間結合テスト",

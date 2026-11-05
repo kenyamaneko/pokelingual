@@ -25,7 +25,7 @@ const SEND_REQUEST_WITH_BEARER_TOKEN =
 const SEND_REQUEST = "ログイン後の画面から、API リクエストの認証を受けるために、API にリクエストを送る";
 const VERIFIED_TOKEN = "トークンがメール確認済みのとき";
 
-describe("[本体:認証]API リクエストの認証", () => {
+describe("[共通:認証]API リクエストの認証", () => {
   defineCase(
     {
       種別: "単体テスト",

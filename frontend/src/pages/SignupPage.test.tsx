@@ -79,7 +79,7 @@ const VERIFICATION_NOTICE_SHOWN = "「確認メールを送りました」の案
 const ALREADY_REGISTERED_MESSAGE = "「既に登録されています」を含むメッセージが表示される";
 const PASSWORD_MISMATCH_MESSAGE = "「パスワードが一致しません」と表示される";
 
-describe("[本体:認証]メールアドレスでの新規登録", () => {
+describe("[共通:認証]メールアドレスでの新規登録", () => {
   defineCase(
     {
       種別: "部品間結合テスト",

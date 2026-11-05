@@ -9,7 +9,7 @@ const allTypes: PokemonType[] = [
   "rock", "ghost", "dragon", "dark", "steel", "fairy",
 ];
 
-describe("[本体:ポケモンデータ]タイプの表示色", () => {
+describe("[共通:機能共通]タイプの表示色", () => {
   for (const type of allTypes) {
     defineCase(
       {
@@ -30,7 +30,7 @@ describe("[本体:ポケモンデータ]タイプの表示色", () => {
   }
 });
 
-describe("[本体:ポケモンデータ]タイプの表示名", () => {
+describe("[共通:機能共通]タイプの表示名", () => {
   for (const type of allTypes) {
     defineCase(
       {

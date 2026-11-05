@@ -4,7 +4,7 @@ import { describe, expect } from "vitest";
 import App from "./App";
 import { defineCase } from "./test/defineCase";
 
-describe("[本体:共通画面]404 画面の表示", () => {
+describe("[共通:画面共通]404 画面の表示", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
