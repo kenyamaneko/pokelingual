@@ -77,7 +77,7 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
         },
         {
           When: [
-            "クエスト画面の翻訳の入力欄に「これはテストの翻訳です」と入力する",
+            "クエスト画面の翻訳の入力欄に「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」と入力する",
             "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
           ],
           Then: {
@@ -113,7 +113,7 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
       await selectLocation(page, locationsLoaded);
       await expect(page.getByTestId("quest-description")).toContainText(QUEST_DESCRIPTION);
 
-      await page.getByPlaceholder(PLACEHOLDER.translation).fill("これはテストの翻訳です");
+      await page.getByPlaceholder(PLACEHOLDER.translation).fill("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
       await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
       await expect(page.getByTestId("damage-value")).toHaveText(/^\d+%$/, {
         timeout: SCORE_REVEAL_TIMEOUT_MS,

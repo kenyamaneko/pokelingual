@@ -16,7 +16,7 @@ async function showScoreAfterSubmittingTranslation(page: Page) {
   await page.getByRole("button", { name: BUTTON.selectPowerPlant }).click();
   await page.getByTestId("quest-description").waitFor();
 
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳です");
+  await page.getByPlaceholder(PLACEHOLDER.translation).fill("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
   await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
   await expect(page.getByText(TEXT.damage)).toBeVisible();
 }
@@ -56,7 +56,7 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
           Then: "英文「It raises its tail to check its surroundings. The tail is sometimes struck by lightning in this pose.」が表示される",
         },
         {
-          When: ["クエスト画面の翻訳の入力欄に「テスト翻訳です」と入力する", PRESS_SUBMIT_TRANSLATION],
+          When: ["クエスト画面の翻訳の入力欄に「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」と入力する", PRESS_SUBMIT_TRANSLATION],
           Then: "ダメージが、モックの採点が取りうる範囲内の値で表示され、博士からのコメントに「モック講評だぞ」が表示される",
         },
         {
@@ -85,7 +85,7 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
 
       await page
         .getByPlaceholder(PLACEHOLDER.translation)
-        .fill("テスト翻訳です");
+        .fill("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
       await page
         .getByRole("button", { name: BUTTON.submitTranslation })
         .click();
@@ -134,21 +134,21 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]クエ�
         {
           Given: SCORE_SHOWN_FOR_PIKACHU,
           When: [
-            "クエスト画面の名前当ての入力欄に「wrongone」と入力する",
+            "クエスト画面の名前当ての入力欄に「Bulbasaur」と入力する",
             PRESS_DECIDE_NAME,
           ],
           Then: "「もう一度やってみよう」と表示される",
         },
         {
           When: [
-            "クエスト画面の名前当ての入力欄に「wrongtwo」と入力する",
+            "クエスト画面の名前当ての入力欄に「Charmander」と入力する",
             PRESS_DECIDE_NAME,
           ],
           Then: "「ラストチャンス」と表示される",
         },
         {
           When: [
-            "クエスト画面の名前当ての入力欄に「wrongthree」と入力する",
+            "クエスト画面の名前当ての入力欄に「Squirtle」と入力する",
             PRESS_DECIDE_NAME,
           ],
           Then: "「残念」と表示される",
@@ -160,15 +160,15 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]クエ�
     async ({ page }) => {
       const nameInput = page.getByPlaceholder(PLACEHOLDER.nameGuess);
 
-      await nameInput.fill("wrongone");
+      await nameInput.fill("Bulbasaur");
       await page.getByRole("button", { name: BUTTON.decideName }).click();
       await expect(page.getByText(/もう一度やってみよう/)).toBeVisible();
 
-      await nameInput.fill("wrongtwo");
+      await nameInput.fill("Charmander");
       await page.getByRole("button", { name: BUTTON.decideName }).click();
       await expect(page.getByText(/ラストチャンス/)).toBeVisible();
 
-      await nameInput.fill("wrongthree");
+      await nameInput.fill("Squirtle");
       await page.getByRole("button", { name: BUTTON.decideName }).click();
       await expect(page.getByText(TEXT.wrongFinal)).toBeVisible();
 
