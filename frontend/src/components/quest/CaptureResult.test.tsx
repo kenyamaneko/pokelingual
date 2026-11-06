@@ -39,7 +39,7 @@ function renderCaptureResult(result: CaptureResponse) {
   });
 }
 
-const SHOW_RESULT = "クエスト画面で、捕獲結果画面を表示する";
+const SHOW_RESULT = "捕獲結果画面を開く";
 const NOT_SPECIAL_CAPTURED = "捕獲に成功し、伝説でも幻でもなく";
 const MEWTWO_CAPTURED = "捕獲に成功し、種族値が 680 のミュウツーで";
 
@@ -160,7 +160,7 @@ describe("[本体:捕獲]捕獲結果画面", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "捕獲に失敗しているとき",
+          Given: "捕獲に失敗していて、出題ポケモンが「ピカチュウ」のとき",
           When: [SHOW_RESULT],
           Then: "「野生の　ピカチュウは　逃げ出した！」と表示される",
         },
@@ -188,7 +188,7 @@ describe("[本体:捕獲]捕獲結果画面", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: ["捕獲結果画面で「メニューに戻る」を押す"], Then: "ホーム画面が表示される" }],
+      steps: [{ When: ["捕獲結果画面で、「メニューに戻る」ボタンを押す"], Then: "ホーム画面が表示される" }],
     },
     async () => {
       const user = userEvent.setup();

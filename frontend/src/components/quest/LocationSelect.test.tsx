@@ -10,7 +10,7 @@ const locations: QuestLocation[] = [
   { id: "place-b", name: "テスト洞窟", description: "くらい洞窟", types: ["rock"] },
 ];
 
-const SHOW_LOCATION_SELECT = "クエストの場所選択画面で、選べる場所を表示する";
+const OPEN_LOCATION_SELECT = "場所選択画面を開く";
 
 describe("[本体:クエスト]場所選択画面", () => {
   defineCase(
@@ -19,9 +19,9 @@ describe("[本体:クエスト]場所選択画面", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "場所「テスト草原」(説明「みどりの草原」) が選べるとき",
-          When: [SHOW_LOCATION_SELECT],
-          Then: "場所の説明「みどりの草原」が表示される",
+          Given: "説明が「みどりの草原」の場所「テスト草原」が選べるとき",
+          When: [OPEN_LOCATION_SELECT],
+          Then: "場所選択画面に説明「みどりの草原」が表示される",
         },
       ],
     },
@@ -39,7 +39,7 @@ describe("[本体:クエスト]場所選択画面", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: `${given}のとき`, When: [SHOW_LOCATION_SELECT], Then: "場所の名前「テスト草原」が表示される" }],
+        steps: [{ Given: `${given}のとき`, When: [OPEN_LOCATION_SELECT], Then: "場所選択画面に場所の名前「テスト草原」が表示される" }],
       },
       () => {
         render(<LocationSelect locations={selectable} onSelect={() => {}} />);
@@ -52,7 +52,7 @@ describe("[本体:クエスト]場所選択画面", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "選べる場所が 0 件のとき", When: [SHOW_LOCATION_SELECT], Then: "「行き先を　探しています」と表示される" }],
+      steps: [{ Given: "選べる場所が 0 件のとき", When: [OPEN_LOCATION_SELECT], Then: "場所選択画面に「行き先を　探しています」と表示される" }],
     },
     () => {
       render(<LocationSelect locations={[]} onSelect={() => {}} />);

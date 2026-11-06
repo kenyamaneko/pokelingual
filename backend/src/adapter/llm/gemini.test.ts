@@ -16,25 +16,27 @@ function makeClient(text: string): GeminiClient {
   return makeClientWithCandidates([{ content: { parts: [{ text }] } }]);
 }
 
-const REQUEST_TEXT_GENERATION = "クエストの翻訳を採点するために、AI にテキストの生成を依頼して、AI 応答からテキストを取り出す";
+const GENERATE_TEXT = "AI でテキストを生成する";
 
 describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
-  defineCase(
+  for (const { given, response } of [
     {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: 'AI 応答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき',
-          When: [REQUEST_TEXT_GENERATION],
-          Then: '得られるテキストは {"score":70} になる',
-        },
-      ],
+      given: 'AI 応答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき',
+      response: '```json\n{"score":70}\n```',
     },
-    async () => {
-      expect(await makeClient('```json\n{"score":70}\n```').generateText("p")).toBe('{"score":70}');
-    },
-  );
+    { given: 'AI 応答が {"score":70} でコードブロックで囲まれていないとき', response: '{"score":70}' },
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        steps: [{ Given: given, When: [GENERATE_TEXT], Then: '生成したテキストは {"score":70} になる' }],
+      },
+      async () => {
+        expect(await makeClient(response).generateText("p")).toBe('{"score":70}');
+      },
+    );
+  }
 
   defineCase(
     {
@@ -43,8 +45,8 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
       steps: [
         {
           Given: "AI 応答が「```」で始まり「```」で終わるコードブロックで囲まれた「plain text」のとき",
-          When: [REQUEST_TEXT_GENERATION],
-          Then: "得られるテキストは「plain text」になる",
+          When: [GENERATE_TEXT],
+          Then: "生成したテキストは「plain text」になる",
         },
       ],
     },
@@ -59,26 +61,9 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: 'AI 応答が {"score":70} でコードブロックで囲まれていないとき',
-          When: [REQUEST_TEXT_GENERATION],
-          Then: '得られるテキストは {"score":70} になる',
-        },
-      ],
-    },
-    async () => {
-      expect(await makeClient('{"score":70}').generateText("p")).toBe('{"score":70}');
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
           Given: "AI 応答の末尾にだけ「```」がある「text```」のとき",
-          When: [REQUEST_TEXT_GENERATION],
-          Then: "得られるテキストは「text」になる",
+          When: [GENERATE_TEXT],
+          Then: "生成したテキストは「text」になる",
         },
       ],
     },
@@ -87,19 +72,19 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
     },
   );
 
-  for (const { situation, candidates } of [
-    { situation: "応答の candidates が空である", candidates: [] },
-    { situation: "応答の candidates に content が無い", candidates: [{}] },
-    { situation: "応答の content に parts が無い", candidates: [{ content: {} }] },
-    { situation: "応答の parts が空である", candidates: [{ content: { parts: [] } }] },
-    { situation: "応答の parts のテキストが空文字である", candidates: [{ content: { parts: [{ text: "" }] } }] },
+  for (const { given, candidates } of [
+    { given: "AI の回答が空であるとき", candidates: [] },
+    { given: "AI の回答に本文が無いとき", candidates: [{}] },
+    { given: "AI の回答に本文が無いとき", candidates: [{ content: {} }] },
+    { given: "AI の回答に本文が無いとき", candidates: [{ content: { parts: [] } }] },
+    { given: "AI の回答の本文が空文字であるとき", candidates: [{ content: { parts: [{ text: "" }] } }] },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
         steps: [
-          { Given: `${situation}とき`, When: [REQUEST_TEXT_GENERATION], Then: "AI 応答が空であることを示すエラーになる" },
+          { Given: given, When: [GENERATE_TEXT], Then: "AI 応答が空であることを示すエラーになる" },
         ],
       },
       async () => {

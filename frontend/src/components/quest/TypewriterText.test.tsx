@@ -11,8 +11,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const THREE_CHAR_TEXT_STARTED = "3 文字の文章「ABC」の演出が始まっているとき";
-const ONE_CHAR_INTERVAL_PASSES = "クエスト画面の文章のタイプライター演出で、1 文字分の時間が経つ";
+const TEXT_ABC = "表示する文章が「ABC」のとき";
+const START_TYPEWRITER = "文章のタイプライター演出を始める";
 
 describe("[本体:クエスト]文章のタイプライター演出", () => {
   defineCase(
@@ -21,9 +21,9 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "文章「ABC」の演出が始まる前のとき",
-          When: ["クエスト画面に、タイプライター演出の文章を配置する"],
-          Then: "文字が表示されない",
+          Given: TEXT_ABC,
+          When: ["文章のタイプライター演出を表示する"],
+          Then: "演出を始めるまでは、文字が表示されない",
         },
       ],
     },
@@ -40,7 +40,7 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       steps: [
         {
           Given: "表示する文章が空のとき",
-          When: ["クエスト画面で、文章のタイプライター演出を始める", ONE_CHAR_INTERVAL_PASSES],
+          When: [START_TYPEWRITER, "文章の表示が終わるまで待つ"],
           Then: "何も表示されない",
         },
       ],
@@ -60,8 +60,8 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: THREE_CHAR_TEXT_STARTED,
-          When: [ONE_CHAR_INTERVAL_PASSES],
+          Given: TEXT_ABC,
+          When: [START_TYPEWRITER, "先頭の 1 文字の表示が終わるまで待つ"],
           Then: "先頭の 1 文字「A」が表示される",
         },
       ],
@@ -81,9 +81,9 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: THREE_CHAR_TEXT_STARTED,
-          When: ["クエスト画面の文章のタイプライター演出で、3 文字分の時間が経つ"],
-          Then: "3 文字が「ABC」と全文表示される",
+          Given: TEXT_ABC,
+          When: [START_TYPEWRITER, "文章の表示が終わるまで待つ"],
+          Then: "「ABC」が全文表示される",
         },
       ],
     },

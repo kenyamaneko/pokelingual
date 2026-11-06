@@ -28,12 +28,14 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const DISPLAY_SCORE = "クエスト画面で、採点スコアの演出を表示する";
-const WAIT_UNTIL_HP_DECREASE_ENDS = "クエスト画面の採点スコアの演出で、HP の減少が終わるまで待つ";
-const WAIT_UNTIL_HALF_OF_HP_DECREASE = "クエスト画面の採点スコアの演出で、HP の減少にかかる時間の半分が経つまで待つ";
-const WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE = "クエスト画面の採点スコアの演出で、HP の減少にかかる時間の 6 割が経つまで待つ";
-const WAIT_UNTIL_DAMAGE_REVEAL = "クエスト画面の採点スコアの演出で、HP の減少が終わってからダメージ数値を出すまでの間が経つまで待つ";
-const WAIT_UNTIL_EFFECT_REVEAL = "クエスト画面の採点スコアの演出で、HP の減少が終わってからこうか表示を出すまでの間が経つまで待つ";
+const DISPLAY_SCORE = "採点スコアの演出を始める";
+const WAIT_UNTIL_HP_DECREASE_ENDS = "HP の減少が終わるまで待つ";
+const WAIT_UNTIL_HP_BAR_SHOWS_85 = "HP バーが 85% を示すまで待つ";
+const WAIT_UNTIL_HP_NUMBER_SHOWS_85 = "HP の数値が 85% と表示されるまで待つ";
+const WAIT_UNTIL_HP_BAR_SHOWS_49 = "HP バーが 49% を示すまで待つ";
+const WAIT_UNTIL_HP_NUMBER_SHOWS_49 = "HP の数値が 49% と表示されるまで待つ";
+const WAIT_UNTIL_DAMAGE_REVEAL = "ダメージ数値が出るまで待つ";
+const WAIT_UNTIL_EFFECT_REVEAL = "こうか表示が出るまで待つ";
 
 type HpBandRow = {
   score: number;
@@ -71,7 +73,7 @@ describe("[本体:採点]採点スコアの演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HALF_OF_HP_DECREASE], Then: "HP バーが 85% を示す" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_NUMBER_SHOWS_85], Then: "HP バーが 85% を示す" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS / 2);
@@ -83,7 +85,7 @@ describe("[本体:採点]採点スコアの演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HALF_OF_HP_DECREASE], Then: "HP の数値が 85% と表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_BAR_SHOWS_85], Then: "HP の数値が 85% と表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS / 2);
@@ -143,7 +145,7 @@ describe("[本体:採点]採点スコアの演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_DAMAGE_REVEAL], Then: "ダメージ数値が 30% と表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_EFFECT_REVEAL], Then: "ダメージ数値が 30% と表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
@@ -155,7 +157,7 @@ describe("[本体:採点]採点スコアの演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_EFFECT_REVEAL], Then: "こうか表示「効果は　いまひとつのようだ」が表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_DAMAGE_REVEAL], Then: "こうか表示「効果は　いまひとつのようだ」が表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
@@ -167,7 +169,7 @@ describe("[本体:採点]採点スコアの演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "スコアが 85 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE], Then: "HP バーが 49% を示す" }],
+      steps: [{ Given: "スコアが 85 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_NUMBER_SHOWS_49], Then: "HP バーが 49% を示す" }],
     },
     () => {
       renderScoreDisplayAfter(85, METER_ANIMATION_DURATION_MS * 0.6);
@@ -205,7 +207,7 @@ describe("[本体:採点]採点スコアの演出", () => {
   }
 
   for (const { score, operations, elapsedRatio, remainingHp } of [
-    { score: 85, operations: [DISPLAY_SCORE, WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE], elapsedRatio: 0.6, remainingHp: 49 },
+    { score: 85, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_BAR_SHOWS_49], elapsedRatio: 0.6, remainingHp: 49 },
     { score: 50, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 50 },
     { score: 79, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 21 },
   ] satisfies HpBandRow[]) {

@@ -81,10 +81,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const OPEN_POKEDEX = "図鑑の一覧を表示するために、図鑑画面を開く";
-const SELECT_BULBASAUR_CARD = "図鑑画面のポケモンの詳細を表示するために、一覧の「フシギダネ」のカードを選ぶ";
-const CLOSE_DETAIL_MODAL = "図鑑画面のポケモンの詳細モーダルで、「閉じる」を押す";
+const OPEN_POKEDEX = "図鑑画面を開く";
+const SELECT_BULBASAUR_CARD = "図鑑画面の一覧で、「フシギダネ」のカードを選ぶ";
+const CLOSE_DETAIL_MODAL = "図鑑画面の詳細モーダルで、「閉じる」ボタンを押す";
 const BULBASAUR_IN_POKEDEX = "図鑑に「フシギダネ」があり";
+const POKEDEX_UNAVAILABLE = "図鑑の一覧を読み込めないとき";
 const DESCRIPTION_TEXT = "「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」";
 const POKEDEX_LOAD_FAILED = "「図鑑の読み込みに失敗しました」と表示される";
 const DETAIL_LOAD_FAILED = "「ポケモンの詳細の読み込みに失敗しました」と表示される";
@@ -137,7 +138,7 @@ describe("[本体:図鑑]図鑑の一覧表示", () => {
         {
           Given: ONE_CAPTURED_ONE_ENCOUNTERED,
           When: [OPEN_POKEDEX],
-          Then: "「フシギダネ」と「ヒトカゲ」のカードが一覧に表示される",
+          Then: "図鑑画面の一覧に、「フシギダネ」と「ヒトカゲ」のカードが表示される",
         },
       ],
     },
@@ -255,7 +256,7 @@ describe("[本体:図鑑]図鑑の一覧表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: "図鑑の一覧の取得に失敗するとき", When: [OPEN_POKEDEX], Then: POKEDEX_LOAD_FAILED }],
+      steps: [{ Given: POKEDEX_UNAVAILABLE, When: [OPEN_POKEDEX], Then: POKEDEX_LOAD_FAILED }],
     },
     async () => {
       // エラー経路の診断ログは検証対象外のため、テスト出力を汚さないよう沈黙させる
@@ -276,9 +277,9 @@ describe("[本体:図鑑]図鑑の一覧表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "図鑑の一覧の取得に失敗するとき",
+          Given: POKEDEX_UNAVAILABLE,
           When: [OPEN_POKEDEX],
-          Then: "ポケモンのカードが一覧に表示されない",
+          Then: "図鑑画面の一覧に、ポケモンのカードが表示されない",
         },
       ],
     },
@@ -363,7 +364,7 @@ describe("[本体:図鑑]ポケモンの詳細表示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${BULBASAUR_IN_POKEDEX}、その詳細モーダルが開いているとき`,
+          Given: `${BULBASAUR_IN_POKEDEX}、その詳細モーダルが開いていて、詳細の日本語の説明文が${DESCRIPTION_TEXT}のとき`,
           When: [CLOSE_DETAIL_MODAL],
           Then: `詳細モーダルの説明文${DESCRIPTION_TEXT}が表示されなくなる`,
         },
@@ -388,7 +389,7 @@ describe("[本体:図鑑]ポケモンの詳細表示", () => {
         {
           Given: `${BULBASAUR_IN_POKEDEX}、その詳細モーダルが開いているとき`,
           When: [CLOSE_DETAIL_MODAL],
-          Then: "一覧の「フシギダネ」のカードが表示される",
+          Then: "図鑑画面の一覧に、「フシギダネ」のカードが表示される",
         },
       ],
     },
@@ -405,7 +406,7 @@ describe("[本体:図鑑]ポケモンの詳細表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: `${BULBASAUR_IN_POKEDEX}、その詳細の取得に失敗するとき`,
+          Given: `${BULBASAUR_IN_POKEDEX}、その詳細を読み込めないとき`,
           When: [SELECT_BULBASAUR_CARD],
           Then: DETAIL_LOAD_FAILED,
         },
@@ -434,9 +435,9 @@ describe("[本体:図鑑]ポケモンの詳細表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: `${BULBASAUR_IN_POKEDEX}、その詳細の取得に失敗するとき`,
+          Given: `${BULBASAUR_IN_POKEDEX}、その詳細を読み込めないとき`,
           When: [SELECT_BULBASAUR_CARD],
-          Then: "詳細モーダルの「閉じる」ボタンが表示されない",
+          Then: "詳細モーダルに、「閉じる」ボタンが表示されない",
         },
       ],
     },

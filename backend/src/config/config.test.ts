@@ -67,7 +67,7 @@ function setRealModeEnv(): void {
   setRealRequiredEnv();
 }
 
-const LOAD_CONFIG = "バックエンドの起動時に、環境変数から起動設定を読み込む";
+const LOAD_CONFIG = "起動設定を読み込む";
 const TUNING_SET = "チューニングパラメーターの環境変数がすべて設定されていて";
 const MOCK_MODE = `${TUNING_SET}、APP_MODE が mock で`;
 const REAL_MODE = `${TUNING_SET}、APP_MODE が real で、チューニングパラメーター以外の必須の環境変数がすべて設定されていて`;
@@ -235,19 +235,6 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
-    },
-    () => {
-      setMockModeEnv();
-      process.env.BALL_CAPTURE_BONUS_POKE = "0";
-      expect(loadConfig().ballCaptureBonus.poke).toBe(0);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
       steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0 になる" }],
     },
     () => {
@@ -275,7 +262,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       {
         種別: "単体テスト",
         正常異常: "異常系",
-        steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が ${value} のとき`, When: [LOAD_CONFIG], Then: "PER_USER_DAILY_LIMIT が 1 以上の整数でないという起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が ${value} のとき`, When: [LOAD_CONFIG], Then: "PER_USER_DAILY_LIMIT が 1 以上の整数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
@@ -294,7 +281,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       {
         種別: "単体テスト",
         正常異常: "異常系",
-        steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "MASTER_BALL_MIN_SCORE が 0 以上 99 以下の整数でないという起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "MASTER_BALL_MIN_SCORE が 0 以上 99 以下の整数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
@@ -326,7 +313,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       {
         種別: "単体テスト",
         正常異常: "異常系",
-        steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_ENCOUNTER_RATE が 0 以上 1 以下の数でないという起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_ENCOUNTER_RATE が 0 以上 1 以下の数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
@@ -482,18 +469,23 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、BALL_CAPTURE_BONUS_POKE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
-    },
-    () => {
-      setRealModeEnv();
-      process.env.BALL_CAPTURE_BONUS_POKE = "0";
-      expect(loadConfig().ballCaptureBonus.poke).toBe(0);
-    },
-  );
+  for (const { given, setModeEnv } of [
+    { given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が下限の 0 のとき`, setModeEnv: setMockModeEnv },
+    { given: `${REAL_MODE}、BALL_CAPTURE_BONUS_POKE が 0 のとき`, setModeEnv: setRealModeEnv },
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        steps: [{ Given: given, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
+      },
+      () => {
+        setModeEnv();
+        process.env.BALL_CAPTURE_BONUS_POKE = "0";
+        expect(loadConfig().ballCaptureBonus.poke).toBe(0);
+      },
+    );
+  }
 
   defineCase(
     {
@@ -575,7 +567,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
 
   for (const { label, value } of [
     { label: "空文字", value: "" },
-    { label: "空白のみ (半角スペース 3 文字)", value: "   " },
+    { label: "半角スペース 3 文字", value: "   " },
   ]) {
     defineCase(
       {

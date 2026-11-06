@@ -76,14 +76,29 @@ async function completeTutorial(): Promise<UserEvent> {
   return user;
 }
 
-const OPEN_TUTORIAL = "遊び方の説明を表示するために、チュートリアル画面を開く";
-const PRESS_INTRO_DISMISS = "チュートリアル画面の遊び方の説明モーダルで、「はじめる」を押す";
-const SUBMIT_TRANSLATION = "チュートリアル画面の英文当てステップで、翻訳「電気タイプのねずみポケモン」を送信する";
-const TRANSLATION_WITHOUT_ELECTRIC = "英文当てステップに入力する翻訳が、「電気」を含まない「ねずみポケモン」であるとき";
-const SUBMIT_TRANSLATION_ANY = "チュートリアル画面の英文当てステップで、翻訳を送信する";
-const NAME_OTHER_THAN_PIKACHU = "ポケモン名当てステップに入力する名前が、ピカチュウ以外の「raichu」であるとき";
-const SUBMIT_NAME_ANY = "チュートリアル画面のポケモン名当てステップで、名前を送信する";
-const PRESS_PROCEED = "チュートリアル画面のポケモン名当てステップで、「次へ進む」を押す";
+const OPEN_TUTORIAL = "チュートリアル画面を開く";
+const PRESS_INTRO_DISMISS = "チュートリアル画面の遊び方の説明モーダルで、「はじめる」ボタンを押す";
+const submitTranslation = (translation: string) =>
+  [
+    `チュートリアル画面の英文当てステップの翻訳の入力欄に「${translation}」と入力する`,
+    "チュートリアル画面の英文当てステップで、「この翻訳に決めた！」ボタンを押す",
+  ] as const;
+const SUBMIT_TRANSLATION = submitTranslation("電気タイプのねずみポケモン");
+const SUBMIT_TRANSLATION_WITHOUT_ELECTRIC = submitTranslation("ねずみポケモン");
+const ELECTRIC_AND_MOUSE_CORRECT_GIVEN = "「電気」と「ねずみ」を両方含む翻訳が正解になるとき";
+const submitName = (name: string) =>
+  [
+    `チュートリアル画面のポケモン名当てステップの名前の入力欄に「${name}」と入力する`,
+    "チュートリアル画面のポケモン名当てステップで、「君に　決めた！」ボタンを押す",
+  ] as const;
+const SUBMIT_NAME_PIKACHU = submitName("pikachu");
+const SUBMIT_NAME_PIKACHU_JA = submitName("ピカチュウ");
+const SUBMIT_NAME_RAICHU = submitName("raichu");
+const PIKACHU_NAME_CORRECT_GIVEN = "「ピカチュウ」または「pikachu」が正解になるとき";
+const POKEMON_NAMES_GIVEN = "出題されたポケモンの英語名が「pikachu」、日本語名が「ピカチュウ」のとき";
+const PRESS_START_QUEST = "ホーム画面で、「ポケモンを探しに行く」ボタンを押す";
+const PRESS_PROCEED = "チュートリアル画面のポケモン名当てステップで、「次へ進む」ボタンを押す";
+const pressBall = (useButton: string) => `チュートリアル画面の捕獲ステップで、「${useButton}」ボタンを押す`;
 const SHAKE_GUIDE_BUBBLE = "案内の吹き出しが揺れる";
 
 describe("[本体:チュートリアル]遊び方の説明", () => {
@@ -179,11 +194,8 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: [
-            OPEN_TUTORIAL,
-            PRESS_INTRO_DISMISS,
-            "チュートリアル画面の英文当てステップで、「電気」と「ねずみ」を両方含む翻訳「電気タイプのねずみポケモン」を送信する",
-          ],
+          Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
           Then: "最終評価点が上限の 99% と表示される",
         },
       ],
@@ -203,8 +215,8 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: TRANSLATION_WITHOUT_ELECTRIC,
-          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION_ANY],
+          Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION_WITHOUT_ELECTRIC],
           Then: "採点結果画面に進まず、翻訳の入力欄が表示されたままになる",
         },
       ],
@@ -225,8 +237,8 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: TRANSLATION_WITHOUT_ELECTRIC,
-          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION_ANY],
+          Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION_WITHOUT_ELECTRIC],
           Then: SHAKE_GUIDE_BUBBLE,
         },
       ],
@@ -251,7 +263,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "正常系",
       steps: [
         {
-          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION],
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
           Then: "ポケモン名当てステップの吹き出しにタイトル「このポケモンの名前を当てよう」と案内文「「ピカチュウ」または「pikachu」と入力してみてね」が表示される",
         },
       ],
@@ -272,8 +284,8 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "正常系",
       steps: [
         {
-          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION],
-          Then: "ポケモン名当てステップに「ヒントを見る」ボタンが表示されない",
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
+          Then: "ポケモン名当てステップに「ヒントを見る（チャンスを1回使う）」ボタンが表示されない",
         },
       ],
     },
@@ -290,14 +302,15 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "正常系",
       steps: [
         {
+          Given: POKEMON_NAMES_GIVEN,
           When: [
             OPEN_TUTORIAL,
             PRESS_INTRO_DISMISS,
-            SUBMIT_TRANSLATION,
-            "チュートリアル画面のポケモン名当てステップで、英語名「pikachu」を送信する",
+            ...SUBMIT_TRANSLATION,
+            ...SUBMIT_NAME_PIKACHU,
             PRESS_PROCEED,
           ],
-          Then: "捕獲待機画面で「ハイパーボールを　使う」ボタンが表示される",
+          Then: "捕獲待機画面に「ハイパーボールを　使う」ボタンが表示される",
         },
       ],
     },
@@ -319,14 +332,15 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "正常系",
       steps: [
         {
+          Given: POKEMON_NAMES_GIVEN,
           When: [
             OPEN_TUTORIAL,
             PRESS_INTRO_DISMISS,
-            SUBMIT_TRANSLATION,
-            "チュートリアル画面のポケモン名当てステップで、日本語名「ピカチュウ」を送信する",
+            ...SUBMIT_TRANSLATION,
+            ...SUBMIT_NAME_PIKACHU_JA,
             PRESS_PROCEED,
           ],
-          Then: "捕獲待機画面で「スーパーボールを　使う」ボタンが表示される",
+          Then: "捕獲待機画面に「スーパーボールを　使う」ボタンが表示される",
         },
       ],
     },
@@ -348,8 +362,8 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "異常系",
       steps: [
         {
-          Given: NAME_OTHER_THAN_PIKACHU,
-          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION, SUBMIT_NAME_ANY],
+          Given: PIKACHU_NAME_CORRECT_GIVEN,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION, ...SUBMIT_NAME_RAICHU],
           Then: "捕獲待機画面に進まず、名前の入力欄が表示されたままになる",
         },
       ],
@@ -370,8 +384,8 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "異常系",
       steps: [
         {
-          Given: NAME_OTHER_THAN_PIKACHU,
-          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, SUBMIT_TRANSLATION, SUBMIT_NAME_ANY],
+          Given: PIKACHU_NAME_CORRECT_GIVEN,
+          When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION, ...SUBMIT_NAME_RAICHU],
           Then: SHAKE_GUIDE_BUBBLE,
         },
       ],
@@ -390,9 +404,9 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
 });
 
 describe("[本体:チュートリアル]捕獲ステップと完了", () => {
-  for (const { language, input, useButton } of [
-    { language: "英語名", input: "pikachu", useButton: ULTRA_BALL_USE_BUTTON },
-    { language: "日本語名", input: "ピカチュウ", useButton: GREAT_BALL_USE_BUTTON },
+  for (const { input, submitNameOperations, useButton } of [
+    { input: "pikachu", submitNameOperations: SUBMIT_NAME_PIKACHU, useButton: ULTRA_BALL_USE_BUTTON },
+    { input: "ピカチュウ", submitNameOperations: SUBMIT_NAME_PIKACHU_JA, useButton: GREAT_BALL_USE_BUTTON },
   ]) {
     defineCase(
       {
@@ -403,10 +417,10 @@ describe("[本体:チュートリアル]捕獲ステップと完了", () => {
             When: [
               OPEN_TUTORIAL,
               PRESS_INTRO_DISMISS,
-              SUBMIT_TRANSLATION,
-              `チュートリアル画面のポケモン名当てステップで、正解の${language}「${input}」を送信する`,
+              ...SUBMIT_TRANSLATION,
+              ...submitNameOperations,
               PRESS_PROCEED,
-              `チュートリアル画面の捕獲ステップで、「${useButton}」を押す`,
+              pressBall(useButton),
             ],
             Then: "捕獲成功の演出が表示される",
           },
@@ -434,10 +448,10 @@ describe("[本体:チュートリアル]捕獲ステップと完了", () => {
           When: [
             OPEN_TUTORIAL,
             PRESS_INTRO_DISMISS,
-            SUBMIT_TRANSLATION,
-            "チュートリアル画面のポケモン名当てステップで、正解の英語名「pikachu」を送信する",
+            ...SUBMIT_TRANSLATION,
+            ...SUBMIT_NAME_PIKACHU,
             PRESS_PROCEED,
-            `チュートリアル画面の捕獲ステップで、「${ULTRA_BALL_USE_BUTTON}」を押す`,
+            pressBall(ULTRA_BALL_USE_BUTTON),
           ],
           Then: "捕獲に成功し、結果画面に完了案内の吹き出し「これでチュートリアルは完了だよ。ポケモンを探しに行こう！」が表示される",
         },
@@ -464,9 +478,14 @@ describe("[本体:チュートリアル]捕獲ステップと完了", () => {
         {
           Given: "チュートリアルが未完了のホーム画面が表示されているとき",
           When: [
-            "ホーム画面で「ポケモンを探しに行く」を押して、チュートリアル画面のチュートリアルを最後まで終える",
-            "チュートリアル画面の結果画面で、「メニューに戻る」を押す",
-            "場所選択画面を開くために、ホーム画面で再び「ポケモンを探しに行く」を押す",
+            PRESS_START_QUEST,
+            PRESS_INTRO_DISMISS,
+            ...SUBMIT_TRANSLATION,
+            ...SUBMIT_NAME_PIKACHU,
+            PRESS_PROCEED,
+            pressBall(ULTRA_BALL_USE_BUTTON),
+            "チュートリアル画面の結果画面で、「メニューに戻る」ボタンを押す",
+            PRESS_START_QUEST,
           ],
           Then: "見出し「どこに　ポケモンを　探しに行く？」の場所選択画面が表示される",
         },

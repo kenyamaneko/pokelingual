@@ -139,16 +139,22 @@ function makeApp(o: AppOverrides = {}) {
   return app;
 }
 
-const REQUEST_QUEST = "クエスト画面で、クエストの出題を依頼する";
-const REQUEST_SCORING = "クエスト画面で、翻訳の採点を依頼する";
-const REQUEST_HINT = "クエスト画面の名前当てで、ヒントの取得を依頼する";
-const REQUEST_POKEDEX_DETAIL = "図鑑画面で、図鑑詳細の取得を依頼する";
-const REQUEST_EXCLUDED_POKEMON_UPDATE = "設定画面で、除外ポケモンの更新を依頼する";
-const REQUEST_GENERATIONS_UPDATE = "設定画面で、出題世代の更新を依頼する";
-const REQUEST_SETTINGS = "設定画面を開くために、設定の取得を依頼する";
-const REQUEST_TUTORIAL_STATUS = "ホーム画面の「ポケモンを探しに行く」の遷移先を決めるために、チュートリアルの完了状態の取得を依頼する";
-const REQUEST_TUTORIAL_CAPTURE = "チュートリアル画面で、捕獲を依頼する";
-const REQUEST_POKEDEX = "図鑑画面で、図鑑の取得を依頼する";
+const CALL_QUEST = "クエストの出題 API を呼び出す";
+const CALL_SCORING = "翻訳の採点 API に、訳文「訳」を指定して呼び出す";
+const CALL_HINT = "名前当てのヒントの取得 API を呼び出す";
+const CALL_CURRENT_QUEST = "進行中のクエストの取得 API を呼び出す";
+const CALL_SETTINGS = "設定の取得 API を呼び出す";
+const CALL_TUTORIAL_STATUS = "チュートリアルの完了状態の取得 API を呼び出す";
+const CALL_TUTORIAL_QUEST = "チュートリアルのクエストの出題 API を呼び出す";
+const CALL_TUTORIAL_SCORING = "チュートリアルの翻訳の採点 API に、訳文「でたらめ」を指定して呼び出す";
+const CALL_TUTORIAL_CAPTURE = "チュートリアルの捕獲 API を呼び出す";
+const CALL_POKEDEX = "図鑑一覧の取得 API を呼び出す";
+const NO_QUEST_SESSION = "クエストセッションが無いとき";
+const EXTERNAL_SERVICE_UNAVAILABLE_ERROR = "API の応答は、外部サービスが利用できないことを示す 502 のエラーになる";
+const NOT_FOUND_ERROR = "API の応答は、対象が見つからないことを示す 404 のエラーになる";
+const INTERNAL_ERROR = "API の応答は、サーバー内部のエラーを示す 500 のエラーになる";
+const USER_DAILY_LIMIT = "ユーザーの日次上限に達しているとき";
+const GLOBAL_DAILY_LIMIT = "全体の日次上限に達しているとき";
 const TUTORIAL_QUEST_ANSWERED =
   "チュートリアルのクエストで、出題と、訳文「電気タイプのねずみポケモン」の採点と、日本語名「ピカチュウ」の回答が済んでいるとき";
 const TUTORIAL_QUEST_STARTED = "チュートリアルのクエストが出題されているとき";
@@ -160,15 +166,15 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: "出題されるポケモンがフシギダネ (図鑑番号 1) だけで、AI の採点が判定値 0.7 を返し、捕獲の抽選が必ず成功するとき",
+          Given: "出題されるポケモンがフシギダネだけで、AI による訳文の採点が 0.7 で、捕獲の抽選が必ず成功するとき",
           When: [
-            REQUEST_QUEST,
-            "クエスト画面で、訳文「はやい」の採点を依頼する",
-            "クエスト画面の名前当てで、スキップを依頼する",
-            "クエスト画面で、捕獲を依頼する",
-            REQUEST_POKEDEX,
+            CALL_QUEST,
+            "翻訳の採点 API に、訳文「はやい」を指定して呼び出す",
+            "名前当てのスキップ API を呼び出す",
+            "捕獲 API を呼び出す",
+            CALL_POKEDEX,
           ],
-          Then: "各操作が成功し、出題の英文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、最終評価点は 66、スキップで手に入るボールと捕獲に使われるボールはモンスターボールになり、捕獲に成功して、図鑑に図鑑番号 1 のポケモンが捕獲済みとして現れ、捕獲数は 1 になる",
+          Then: "各 API の応答が成功し、出題の英文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、最終評価点は 66、スキップで手に入るボールと捕獲に使われるボールはモンスターボールになり、捕獲に成功して、図鑑一覧にフシギダネが捕獲済みとして現れ、捕獲数は 1 になる",
         },
       ],
     },
@@ -206,11 +212,11 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
 describe("[本体:クエスト]クエストの出題", () => {
   for (const { given, overrides } of [
     {
-      given: "ポケモン情報の取得が失敗するとき",
+      given: "ポケモンデータが利用できないとき",
       overrides: { pokemonError: new Error("pokemon data unavailable") },
     },
     {
-      given: "クエストセッションの保存が失敗するとき",
+      given: "クエストセッションの保存先が利用できないとき",
       overrides: { sessionStoreError: new Error("redis unavailable") },
     },
   ]) {
@@ -221,8 +227,8 @@ describe("[本体:クエスト]クエストの出題", () => {
         steps: [
           {
             Given: given,
-            When: [REQUEST_QUEST],
-            Then: "502 になり、外部サービスが利用できない旨が返る",
+            When: [CALL_QUEST],
+            Then: EXTERNAL_SERVICE_UNAVAILABLE_ERROR,
           },
         ],
       },
@@ -241,9 +247,9 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザー設定の取得が想定外のエラーで失敗するとき",
-          When: [REQUEST_QUEST],
-          Then: "500 になり、サーバー内部のエラーである旨が返る",
+          Given: "ユーザー設定が利用できないとき",
+          When: [CALL_QUEST],
+          Then: INTERNAL_ERROR,
         },
       ],
     },
@@ -263,8 +269,8 @@ describe("[本体:クエスト]場所の候補提示", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["クエスト画面の場所選択で、場所の候補の取得を依頼する"],
-          Then: "場所の候補は 4 か所返る",
+          When: ["場所の候補の取得 API を呼び出す"],
+          Then: "応答の場所の候補は 4 か所になる",
         },
       ],
     },
@@ -281,8 +287,8 @@ describe("[本体:クエスト]場所の候補提示", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["クエスト画面の場所選択で、場所の候補の取得を依頼する"],
-          Then: "候補の先頭の場所に ID・名前・説明・タイプが含まれる",
+          When: ["場所の候補の取得 API を呼び出す"],
+          Then: "応答の先頭の場所の候補に ID・名前・説明・タイプが含まれる",
         },
       ],
     },
@@ -306,9 +312,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "クエストセッションが無いとき",
-          When: [REQUEST_SCORING],
-          Then: "404 になり、対象が見つからない旨が返る",
+          Given: NO_QUEST_SESSION,
+          When: [CALL_SCORING],
+          Then: NOT_FOUND_ERROR,
         },
       ],
     },
@@ -325,9 +331,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "クエストが出題されている状態で、AI の呼び出しが失敗するとき",
-          When: [REQUEST_SCORING],
-          Then: "502 になり、外部サービスが利用できない旨が返る",
+          Given: "クエストが出題されていて、AI が利用できないとき",
+          When: [CALL_SCORING],
+          Then: EXTERNAL_SERVICE_UNAVAILABLE_ERROR,
         },
       ],
     },
@@ -346,9 +352,8 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "訳文が無いとき",
-          When: [REQUEST_SCORING],
-          Then: "400 になり、訳文が必須である旨が返る",
+          When: ["翻訳の採点 API に、訳文を指定せずに呼び出す"],
+          Then: "API の応答は、訳文が必須であることを示す 400 のエラーになる",
         },
       ],
     },
@@ -367,9 +372,9 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの日次上限に達しているとき",
-          When: [REQUEST_SCORING],
-          Then: "429 になり、ユーザーの日次上限に達した旨が返る",
+          Given: USER_DAILY_LIMIT,
+          When: [CALL_SCORING],
+          Then: "API の応答は、ユーザーの日次上限に達したことを示す 429 のエラーになる",
         },
       ],
     },
@@ -387,9 +392,9 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの日次上限に達しているとき",
-          When: [REQUEST_SCORING],
-          Then: "429 の応答に、「そろそろ　研究に　戻るぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる",
+          Given: USER_DAILY_LIMIT,
+          When: [CALL_SCORING],
+          Then: "応答のメッセージは「そろそろ　研究に　戻るぞ。また　明日　来てくれ」になる",
         },
       ],
     },
@@ -406,9 +411,9 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "全体の日次上限に達しているとき",
-          When: [REQUEST_SCORING],
-          Then: "429 になり、全体の日次上限に達した旨が返る",
+          Given: GLOBAL_DAILY_LIMIT,
+          When: [CALL_SCORING],
+          Then: "API の応答は、全体の日次上限に達したことを示す 429 のエラーになる",
         },
       ],
     },
@@ -426,9 +431,9 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "全体の日次上限に達しているとき",
-          When: [REQUEST_SCORING],
-          Then: "429 の応答に、「今日は　たくさんの　トレーナーが　来ているぞ。また　明日　来てくれ」というユーザー向けメッセージが含まれる",
+          Given: GLOBAL_DAILY_LIMIT,
+          When: [CALL_SCORING],
+          Then: "応答のメッセージは「今日は　たくさんの　トレーナーが　来ているぞ。また　明日　来てくれ」になる",
         },
       ],
     },
@@ -448,8 +453,8 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       steps: [
         {
           Given: "今日の AI 呼び出し回数が 3 回のとき",
-          When: ["ヘッダーの残り回数の表示のために、AI 呼び出し回数の取得を依頼する"],
-          Then: "今日の AI 呼び出し回数は 3 回で返る",
+          When: ["AI 呼び出し回数の取得 API を呼び出す"],
+          Then: "応答の今日の AI 呼び出し回数は 3 回になる",
         },
       ],
     },
@@ -467,8 +472,8 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       steps: [
         {
           Given: "日次上限が 30 回のとき",
-          When: ["ヘッダーの残り回数の表示のために、AI 呼び出し回数の取得を依頼する"],
-          Then: "日次上限は 30 回で返る",
+          When: ["AI 呼び出し回数の取得 API を呼び出す"],
+          Then: "応答の日次上限は 30 回になる",
         },
       ],
     },
@@ -488,8 +493,8 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
       steps: [
         {
           Given: "クエストが出題され、訳文「はやい」の採点が終わっているとき",
-          When: ["クエスト画面の再読み込み時に、進行中のクエストの取得を依頼する"],
-          Then: "名前当ての段階であることが返る",
+          When: [CALL_CURRENT_QUEST],
+          Then: "応答の段階は名前当てになる",
         },
       ],
     },
@@ -511,8 +516,8 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
       steps: [
         {
           Given: "クエストが出題され、訳文「はやい」の採点が終わっているとき",
-          When: ["クエスト画面の再読み込み時に、進行中のクエストの取得を依頼する"],
-          Then: "採点で送った訳文「はやい」が返る",
+          When: [CALL_CURRENT_QUEST],
+          Then: "応答の訳文は「はやい」になる",
         },
       ],
     },
@@ -533,9 +538,9 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "クエストセッションが無いとき",
-          When: ["クエスト画面の再読み込み時に、進行中のクエストの取得を依頼する"],
-          Then: "404 になり、対象が見つからない旨が返る",
+          Given: NO_QUEST_SESSION,
+          When: [CALL_CURRENT_QUEST],
+          Then: NOT_FOUND_ERROR,
         },
       ],
     },
@@ -554,9 +559,8 @@ describe("[本体:名前当て]名前当ての回答", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "回答が無いとき",
-          When: ["クエスト画面の名前当てで、回答の送信を依頼する"],
-          Then: "400 になり、回答が必須である旨が返る",
+          When: ["名前当ての回答 API に、回答を指定せずに呼び出す"],
+          Then: "API の応答は、回答が必須であることを示す 400 のエラーになる",
         },
       ],
     },
@@ -576,8 +580,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: "クエストが出題されていて、出題ポケモンがフシギダネのとき",
-          When: [REQUEST_HINT],
-          Then: "出題ポケモンのタイプ (くさ・どく) が返る",
+          When: [CALL_HINT],
+          Then: "応答の出題ポケモンのタイプは grass と poison になる",
         },
       ],
     },
@@ -597,8 +601,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: "クエストが出題されているとき",
-          When: [REQUEST_HINT],
-          Then: "残り挑戦回数は 2 回になる",
+          When: [CALL_HINT],
+          Then: "応答の残り挑戦回数は 2 回になる",
         },
       ],
     },
@@ -618,8 +622,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: "名前当てに 2 回不正解になっていて、残り挑戦回数が 1 回のとき",
-          When: [REQUEST_HINT],
-          Then: "500 になり、サーバー内部のエラーである旨が返る",
+          When: [CALL_HINT],
+          Then: INTERNAL_ERROR,
         },
       ],
     },
@@ -642,9 +646,8 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "図鑑番号が「abc」(数値でない) のとき",
-          When: [REQUEST_POKEDEX_DETAIL],
-          Then: "400 になり、図鑑番号が不正である旨が返る",
+          When: ["図鑑詳細の取得 API に、図鑑番号「abc」を指定して呼び出す"],
+          Then: "API の応答は、図鑑番号が不正であることを示す 400 のエラーになる",
         },
       ],
     },
@@ -661,9 +664,9 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "図鑑に記録済みのポケモンについて、ポケモン情報の取得が失敗するとき",
-          When: [REQUEST_POKEDEX_DETAIL],
-          Then: "502 になり、外部サービスが利用できない旨が返る",
+          Given: "図鑑番号 1 の記録があり、ポケモンデータが利用できないとき",
+          When: ["図鑑詳細の取得 API に、図鑑番号 1 を指定して呼び出す"],
+          Then: EXTERNAL_SERVICE_UNAVAILABLE_ERROR,
         },
       ],
     },
@@ -696,9 +699,9 @@ describe("[共通:設定]除外ポケモンの更新", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "除外ポケモンの指定が図鑑番号 7・3・3 で、重複した番号と順不同の番号が含まれているとき",
-          When: [REQUEST_EXCLUDED_POKEMON_UPDATE, REQUEST_SETTINGS],
-          Then: "除外ポケモンは重複が除かれ、昇順の図鑑番号 3・7 になり、出題世代は世代 1〜8 のままになる",
+          Given: "出題世代を設定していないとき",
+          When: ["除外ポケモンの更新 API に、図鑑番号 7・3・3 を指定して呼び出す", CALL_SETTINGS],
+          Then: "設定の取得 API の応答の除外ポケモンは重複が除かれ、昇順の図鑑番号 3・7 になり、出題世代は世代 1〜8 のままになる",
         },
       ],
     },
@@ -719,9 +722,8 @@ describe("[共通:設定]除外ポケモンの更新", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "除外ポケモンが配列でないとき",
-          When: [REQUEST_EXCLUDED_POKEMON_UPDATE],
-          Then: "400 になり、配列でなければならない旨が返る",
+          When: ["除外ポケモンの更新 API に、文字列「1」を指定して呼び出す"],
+          Then: "API の応答は、除外する図鑑番号は一覧で指定する必要があることを示す 400 のエラーになる",
         },
       ],
     },
@@ -738,9 +740,9 @@ describe("[共通:設定]除外ポケモンの更新", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "除外ポケモンの数が上限を 1 つ超えるとき",
-          When: [REQUEST_EXCLUDED_POKEMON_UPDATE],
-          Then: "400 になり、上限を超えている旨が返る",
+          Given: "出題可能な図鑑番号が 1 から 100 で、除外ポケモンの件数の上限が 30 件のとき",
+          When: ["除外ポケモンの更新 API に、図鑑番号 1 から 31 の 31 件を指定して呼び出す"],
+          Then: "API の応答は、除外ポケモンの件数が上限を超えていることを示す 400 のエラーになる",
         },
       ],
     },
@@ -752,19 +754,16 @@ describe("[共通:設定]除外ポケモンの更新", () => {
     },
   );
 
-  for (const { given, id } of [
-    { given: "除外ポケモンの指定に含まれる番号が、出題可能な図鑑番号の最小値の 1 つ手前の番号のとき", id: 0 },
-    { given: "除外ポケモンの指定に含まれる番号が、出題可能な図鑑番号の最大値の 1 つ先の番号のとき", id: 101 },
-  ]) {
+  for (const id of [0, 101]) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
         steps: [
           {
-            Given: given,
-            When: [REQUEST_EXCLUDED_POKEMON_UPDATE],
-            Then: "400 になり、その番号が図鑑に無い旨が返る",
+            Given: "出題可能な図鑑番号が 1 から 100 で、除外ポケモンの件数の上限が 30 件のとき",
+            When: [`除外ポケモンの更新 API に、図鑑番号 ${id} を指定して呼び出す`],
+            Then: "API の応答は、指定した図鑑番号が図鑑に無いことを示す 400 のエラーになる",
           },
         ],
       },
@@ -784,9 +783,9 @@ describe("[共通:設定]出題世代の更新", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "出題世代の指定が世代 3・1・1 で、重複した世代と順不同の世代が含まれているとき",
-          When: [REQUEST_GENERATIONS_UPDATE, REQUEST_SETTINGS],
-          Then: "出題世代は重複が除かれ、昇順の世代 1・3 になり、除外ポケモンは 0 件のままになる",
+          Given: "除外ポケモンを設定していないとき",
+          When: ["出題世代の更新 API に、世代 3・1・1 を指定して呼び出す", CALL_SETTINGS],
+          Then: "設定の取得 API の応答の出題世代は重複が除かれ、昇順の世代 1・3 になり、除外ポケモンは 0 件のままになる",
         },
       ],
     },
@@ -807,9 +806,8 @@ describe("[共通:設定]出題世代の更新", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "世代を 1 つも選ばないとき",
-          When: [REQUEST_GENERATIONS_UPDATE],
-          Then: "400 になり、1 つ以上の世代の選択が必要な旨が返る",
+          When: ["出題世代の更新 API に、世代を 1 つも指定せずに呼び出す"],
+          Then: "API の応答は、1 つ以上の世代の選択が必要なことを示す 400 のエラーになる",
         },
       ],
     },
@@ -826,9 +824,9 @@ describe("[共通:設定]出題世代の更新", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "第 1〜8 世代に無い世代番号 99 を含むとき",
-          When: [REQUEST_GENERATIONS_UPDATE],
-          Then: "400 になり、存在しない世代である旨が返る",
+          Given: "出題できる世代が第 1〜8 世代のとき",
+          When: ["出題世代の更新 API に、世代 99 を指定して呼び出す"],
+          Then: "API の応答は、世代 99 が存在しないことを示す 400 のエラーになる",
         },
       ],
     },
@@ -848,8 +846,8 @@ describe("[本体:チュートリアル]チュートリアル完了状態の取�
       steps: [
         {
           Given: "チュートリアルが未完了のとき",
-          When: [REQUEST_TUTORIAL_STATUS],
-          Then: "未完了として返る",
+          When: [CALL_TUTORIAL_STATUS],
+          Then: "応答は未完了になる",
         },
       ],
     },
@@ -866,8 +864,8 @@ describe("[本体:チュートリアル]チュートリアル完了状態の取�
       正常異常: "正常系",
       steps: [
         {
-          When: ["チュートリアル画面で、チュートリアルの完了の記録を依頼する", REQUEST_TUTORIAL_STATUS],
-          Then: "完了済みとして返る",
+          When: ["チュートリアルの完了の記録 API を呼び出す", CALL_TUTORIAL_STATUS],
+          Then: "応答は完了済みになる",
         },
       ],
     },
@@ -888,11 +886,11 @@ describe("[本体:チュートリアル]チュートリアル完了状態の取�
       steps: [
         {
           When: [
-            "チュートリアル画面で、チュートリアルの完了の記録を依頼する",
-            "チュートリアルの完了状態を未完了に戻すよう依頼する",
-            REQUEST_TUTORIAL_STATUS,
+            "チュートリアルの完了の記録 API を呼び出す",
+            "チュートリアルの完了状態のリセット API を呼び出す",
+            CALL_TUTORIAL_STATUS,
           ],
-          Then: "未完了として返る",
+          Then: "応答は未完了になる",
         },
       ],
     },
@@ -923,8 +921,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       正常異常: "正常系",
       steps: [
         {
-          When: ["チュートリアル画面で、チュートリアルのクエストの出題を依頼する"],
-          Then: "出題ポケモンは図鑑番号 25 のピカチュウになる",
+          When: [CALL_TUTORIAL_QUEST],
+          Then: "応答の出題ポケモンは図鑑番号 25 のピカチュウになる",
         },
       ],
     },
@@ -941,8 +939,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       正常異常: "正常系",
       steps: [
         {
-          When: ["チュートリアル画面で、チュートリアルのクエストの出題を依頼する"],
-          Then: "英文は「It is an Electric-type Mouse Pokémon.」になる",
+          When: [CALL_TUTORIAL_QUEST],
+          Then: "応答の英文は「It is an Electric-type Mouse Pokémon.」になる",
         },
       ],
     },
@@ -953,47 +951,29 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
     },
   );
 
-  defineCase(
+  for (const { 正常異常, given, overrides } of [
+    { 正常異常: "正常系" as const, given: TUTORIAL_QUEST_STARTED, overrides: {} },
     {
-      種別: "部品間結合テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: TUTORIAL_QUEST_STARTED,
-          When: ["チュートリアル画面で、訳文「でたらめ」の採点を依頼する"],
-          Then: "最終評価点は 99 になる",
-        },
-      ],
+      正常異常: "異常系" as const,
+      given: "ユーザーの日次上限に達していて、チュートリアルのクエストが出題されているとき",
+      overrides: { rateLimitKind: "user" as const },
     },
-    async () => {
-      const app = makeApp();
-      await request(app).get("/api/tutorial/quest/new");
-      const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
-      expect(res.status).toBe(200);
-      expect(res.body.score).toBe(99);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "異常系",
-      steps: [
-        {
-          Given: "ユーザーの日次上限に達していて、チュートリアルのクエストが出題されているとき",
-          When: ["チュートリアル画面で、訳文「でたらめ」の採点を依頼する"],
-          Then: "最終評価点は 99 になる",
-        },
-      ],
-    },
-    async () => {
-      const app = makeApp({ rateLimitKind: "user" });
-      await request(app).get("/api/tutorial/quest/new");
-      const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
-      expect(res.status).toBe(200);
-      expect(res.body.score).toBe(99);
-    },
-  );
+  ]) {
+    defineCase(
+      {
+        種別: "部品間結合テスト",
+        正常異常,
+        steps: [{ Given: given, When: [CALL_TUTORIAL_SCORING], Then: "応答の最終評価点は 99 になる" }],
+      },
+      async () => {
+        const app = makeApp(overrides);
+        await request(app).get("/api/tutorial/quest/new");
+        const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
+        expect(res.status).toBe(200);
+        expect(res.body.score).toBe(99);
+      },
+    );
+  }
 
   defineCase(
     {
@@ -1002,8 +982,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       steps: [
         {
           Given: TUTORIAL_QUEST_STARTED,
-          When: ["チュートリアル画面の名前当てで、英語名「pikachu」の回答の送信を依頼する"],
-          Then: "正解になり、ハイパーボールが手に入る",
+          When: ["チュートリアルの名前当ての回答 API に、英語名「pikachu」を指定して呼び出す"],
+          Then: "応答は正解を示し、手に入るボールはハイパーボールになる",
         },
       ],
     },
@@ -1023,8 +1003,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       steps: [
         {
           Given: TUTORIAL_QUEST_STARTED,
-          When: ["チュートリアル画面の名前当てで、日本語名「ピカチュウ」の回答の送信を依頼する"],
-          Then: "正解になり、スーパーボールが手に入る",
+          When: ["チュートリアルの名前当ての回答 API に、日本語名「ピカチュウ」を指定して呼び出す"],
+          Then: "応答は正解を示し、手に入るボールはスーパーボールになる",
         },
       ],
     },
@@ -1044,8 +1024,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       steps: [
         {
           Given: TUTORIAL_QUEST_ANSWERED,
-          When: [REQUEST_TUTORIAL_CAPTURE],
-          Then: "必ず捕獲に成功する",
+          When: [CALL_TUTORIAL_CAPTURE],
+          Then: "応答は捕獲に成功したことを示す",
         },
       ],
     },
@@ -1065,8 +1045,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       steps: [
         {
           Given: TUTORIAL_QUEST_ANSWERED,
-          When: [REQUEST_TUTORIAL_CAPTURE, REQUEST_POKEDEX],
-          Then: "ポケモンの一覧は空になる",
+          When: [CALL_TUTORIAL_CAPTURE, CALL_POKEDEX],
+          Then: "図鑑一覧の取得 API の応答のポケモンの一覧は空になる",
         },
       ],
     },
@@ -1087,8 +1067,8 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       steps: [
         {
           Given: TUTORIAL_QUEST_ANSWERED,
-          When: [REQUEST_TUTORIAL_CAPTURE, REQUEST_POKEDEX],
-          Then: "捕獲数は 0 になる",
+          When: [CALL_TUTORIAL_CAPTURE, CALL_POKEDEX],
+          Then: "図鑑一覧の取得 API の応答の捕獲数は 0 になる",
         },
       ],
     },

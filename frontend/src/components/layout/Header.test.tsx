@@ -26,18 +26,23 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const SHOW_ENVIRONMENT = "ログイン後の画面を開いて、ヘッダーに実行環境を表示する";
-const SHOW_REMAINING_COUNT = "ログイン後の画面を開いて、ヘッダーに AI 呼び出しの残り回数を表示する";
-const SHOW_HEADER_ON_SCREEN = "画面を開いて、ヘッダーを表示する";
-const SHOW_HAMBURGER_MENU = "ログイン後の画面を開いて、ヘッダーのハンバーガーメニューを表示する";
-const SUBMIT_TRANSLATION_FOR_SCORING = "クエスト画面で、場所「テスト草原」を選び、翻訳を入力して「この翻訳に決めた！」を押し、AI に採点を依頼する";
+const OPEN_LOGGED_IN_SCREEN = "ログイン後の画面を開く";
+const OPEN_LOGIN_SCREEN = "ログイン画面を開く";
+const OPEN_QUEST_SCREEN = "クエスト画面を開く";
+const PRESS_HAMBURGER_MENU_BUTTON = "ログイン後の画面のヘッダーで、「メニュー」ボタンを押す";
+const PRESS_HAMBURGER_MENU_QUEST_LINK = "ログイン後の画面のヘッダーのハンバーガーメニューで、「ぼうけん」リンクを押す";
+const SUBMIT_TRANSLATION_FOR_SCORING = [
+  "場所選択画面で「テスト草原」を選ぶ",
+  "クエスト画面の翻訳の入力欄に「この ポケモンは はやい」と入力する",
+  "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
+] as const;
 
 describe("[共通:画面共通]実行環境の表示", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が local のとき", When: [SHOW_ENVIRONMENT], Then: "「LOCAL」と表示される" }],
+      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が local のとき", When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「LOCAL」と表示される" }],
     },
     async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "local");
@@ -53,7 +58,7 @@ describe("[共通:画面共通]実行環境の表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が dev のとき", When: [SHOW_ENVIRONMENT], Then: "「DEV」と表示される" }],
+      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が dev のとき", When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「DEV」と表示される" }],
     },
     async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "dev");
@@ -65,54 +70,34 @@ describe("[共通:画面共通]実行環境の表示", () => {
     },
   );
 
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: "ログインしていて、VITE_ENVIRONMENT が prod のとき",
-          When: [SHOW_ENVIRONMENT],
-          Then: "「LOCAL」も「DEV」も表示されない",
-        },
-      ],
-    },
-    async () => {
-      vi.stubEnv("VITE_ENVIRONMENT", "prod");
-      mockUsage({ count: 0, limit: 30 });
+  const environmentBadgeHiddenScenarios: {
+    given: string;
+    outcome: "正常系" | "異常系";
+    environment: string | undefined;
+  }[] = [
+    { given: "ログインしていて、VITE_ENVIRONMENT が prod のとき", outcome: "正常系", environment: "prod" },
+    { given: "ログインしていて、VITE_ENVIRONMENT が未設定のとき", outcome: "異常系", environment: undefined },
+  ];
+  for (const { given, outcome, environment } of environmentBadgeHiddenScenarios) {
+    defineCase(
+      {
+        種別: "部品間結合テスト",
+        正常異常: outcome,
+        steps: [{ Given: given, When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「LOCAL」も「DEV」も表示されない" }],
+      },
+      async () => {
+        vi.stubEnv("VITE_ENVIRONMENT", environment);
+        mockUsage({ count: 0, limit: 30 });
 
-      renderHeader();
+        renderHeader();
 
-      // 描画の完了を待ってから不在を確かめるため、残り回数の表示が出るのを待つ
-      await screen.findByText("残り 30/30");
-      expect(screen.queryByText("LOCAL")).not.toBeInTheDocument();
-      expect(screen.queryByText("DEV")).not.toBeInTheDocument();
-    },
-  );
-
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "異常系",
-      steps: [
-        {
-          Given: "ログインしていて、VITE_ENVIRONMENT が未設定のとき",
-          When: [SHOW_ENVIRONMENT],
-          Then: "「LOCAL」も「DEV」も表示されない",
-        },
-      ],
-    },
-    async () => {
-      vi.stubEnv("VITE_ENVIRONMENT", undefined);
-      mockUsage({ count: 0, limit: 30 });
-
-      renderHeader();
-
-      await screen.findByText("残り 30/30");
-      expect(screen.queryByText("LOCAL")).not.toBeInTheDocument();
-      expect(screen.queryByText("DEV")).not.toBeInTheDocument();
-    },
-  );
+        // 描画の完了を待ってから不在を確かめるため、残り回数の表示が出るのを待つ
+        await screen.findByText("残り 30/30");
+        expect(screen.queryByText("LOCAL")).not.toBeInTheDocument();
+        expect(screen.queryByText("DEV")).not.toBeInTheDocument();
+      },
+    );
+  }
 });
 
 describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
@@ -122,9 +107,9 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ログインしていて、今日の AI 呼び出し回数の日次上限が 30 回で、今日の AI 呼び出し回数が 29 回のとき",
-          When: [SHOW_REMAINING_COUNT],
-          Then: "「残り 1/30」と表示される",
+          Given: "ログインしていて、今日の AI 呼び出し回数が 29 回で、日次上限が 30 回のとき",
+          When: [OPEN_LOGGED_IN_SCREEN],
+          Then: "ヘッダーに「残り 1/30」と表示される",
         },
       ],
     },
@@ -137,47 +122,26 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
     },
   );
 
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: "ログインしていて、今日の AI 呼び出し回数の日次上限が 30 回で、今日の AI 呼び出し回数が 30 回のとき",
-          When: [SHOW_REMAINING_COUNT],
-          Then: "「残り 0/30」と表示される",
-        },
-      ],
-    },
-    async () => {
-      mockUsage({ count: 30, limit: 30 });
+  const usageExhaustedScenarios: { given: string; outcome: "正常系" | "異常系"; count: number }[] = [
+    { given: "ログインしていて、今日の AI 呼び出し回数が 30 回で、日次上限が 30 回のとき", outcome: "正常系", count: 30 },
+    { given: "ログインしていて、今日の AI 呼び出し回数が 31 回で、日次上限が 30 回のとき", outcome: "異常系", count: 31 },
+  ];
+  for (const { given, outcome, count } of usageExhaustedScenarios) {
+    defineCase(
+      {
+        種別: "部品間結合テスト",
+        正常異常: outcome,
+        steps: [{ Given: given, When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「残り 0/30」と表示される" }],
+      },
+      async () => {
+        mockUsage({ count, limit: 30 });
 
-      renderHeader();
+        renderHeader();
 
-      expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
-    },
-  );
-
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "異常系",
-      steps: [
-        {
-          Given: "ログインしていて、今日の AI 呼び出し回数の日次上限が 30 回で、今日の AI 呼び出し回数が 31 回のとき",
-          When: [SHOW_REMAINING_COUNT],
-          Then: "「残り 0/30」と表示される",
-        },
-      ],
-    },
-    async () => {
-      mockUsage({ count: 31, limit: 30 });
-
-      renderHeader();
-
-      expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
-    },
-  );
+        expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
+      },
+    );
+  }
 
   defineCase(
     {
@@ -185,9 +149,9 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ログインしていて、今日の AI 呼び出し回数の取得に失敗するとき",
-          When: [SHOW_REMAINING_COUNT],
-          Then: "残り回数が表示されない",
+          Given: "ログインしていて、今日の AI 呼び出し回数を取得できないとき",
+          When: [OPEN_LOGGED_IN_SCREEN],
+          Then: "ヘッダーに残り回数が表示されない",
         },
       ],
     },
@@ -211,10 +175,9 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given:
-            "ログインしていて、バックエンドが最初の AI 呼び出し回数の取得に失敗し、翻訳の送信に日次上限の 429 を返し、次の取得で AI 呼び出し回数 30 回、日次上限 30 回を返すとき",
-          When: ["クエスト画面を開いて、ヘッダーに AI 呼び出しの残り回数を表示する", SUBMIT_TRANSLATION_FOR_SCORING],
-          Then: "「残り 0/30」と表示される",
+          Given: "ログインしていて、最初は今日の AI 呼び出し回数を取得できず、その後は今日の AI 呼び出し回数が 30 回で、日次上限が 30 回のとき",
+          When: [OPEN_QUEST_SCREEN, ...SUBMIT_TRANSLATION_FOR_SCORING],
+          Then: "ヘッダーに「残り 0/30」と表示される",
         },
       ],
     },
@@ -248,12 +211,12 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
   );
 });
 
-describe("[共通:画面共通]表示の条件", () => {
+describe("[共通:画面共通]ヘッダーの表示条件", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: "ログインしていないとき", When: [SHOW_HEADER_ON_SCREEN], Then: "ヘッダーが表示されない" }],
+      steps: [{ Given: "ログインしていないとき", When: [OPEN_LOGIN_SCREEN], Then: "ヘッダーが表示されない" }],
     },
     () => {
       renderHeader(null);
@@ -268,7 +231,7 @@ describe("[共通:画面共通]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしているとき", When: [SHOW_HAMBURGER_MENU], Then: "メニューが閉じている" }],
+      steps: [{ Given: "ログインしているとき", When: [OPEN_LOGGED_IN_SCREEN], Then: "ハンバーガーメニューが閉じている" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
@@ -285,7 +248,7 @@ describe("[共通:画面共通]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしているとき", When: [SHOW_HAMBURGER_MENU, "ヘッダーのハンバーガーメニューのボタン「メニュー」を押す"], Then: "メニューが開く" }],
+      steps: [{ Given: "ログインしているとき", When: [OPEN_LOGGED_IN_SCREEN, PRESS_HAMBURGER_MENU_BUTTON], Then: "ハンバーガーメニューが開く" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
@@ -305,7 +268,7 @@ describe("[共通:画面共通]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、メニューが開いているとき", When: ["ヘッダーのハンバーガーメニューで「ぼうけん」のリンクを押す"], Then: "メニューが閉じる" }],
+      steps: [{ Given: "ログインしていて、ハンバーガーメニューが開いているとき", When: [PRESS_HAMBURGER_MENU_QUEST_LINK], Then: "ハンバーガーメニューが閉じる" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });

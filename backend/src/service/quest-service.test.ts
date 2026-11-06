@@ -118,8 +118,7 @@ async function missThreeTimes(service: QuestService) {
   return service.guessName(USER_ID, "wrong3");
 }
 
-const CAPTURE_RATE_PURPOSE = "捕獲待機画面でボールを使うために、";
-const CALCULATE_CAPTURE_RATE = `${CAPTURE_RATE_PURPOSE}捕獲確率を計算する`;
+const CALCULATE_CAPTURE_RATE = "捕獲確率を計算する";
 
 describe("[本体:捕獲]捕獲確率の計算", () => {
   // ボール補正は設定値に依存しない純関数の引数のため、本番の設定値とは独立したテスト固有の値を使う
@@ -152,8 +151,8 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
         {
           Given: "ボール補正がなく、種族値合計が300のとき",
           When: [
-            `${CAPTURE_RATE_PURPOSE}最終評価点が90の捕獲確率を計算する`,
-            `${CAPTURE_RATE_PURPOSE}最終評価点が30の捕獲確率を計算する`,
+            "最終評価点が90の捕獲確率を計算する",
+            "最終評価点が30の捕獲確率を計算する",
           ],
           Then: "最終評価点が90の捕獲確率は、最終評価点が30の捕獲確率より高くなる",
         },
@@ -174,8 +173,8 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
         {
           Given: "ボール補正がなく、最終評価点が50のとき",
           When: [
-            `${CAPTURE_RATE_PURPOSE}種族値合計が300の捕獲確率を計算する`,
-            `${CAPTURE_RATE_PURPOSE}種族値合計が680の捕獲確率を計算する`,
+            "種族値合計が300の捕獲確率を計算する",
+            "種族値合計が680の捕獲確率を計算する",
           ],
           Then: "種族値合計が300の捕獲確率は、種族値合計が680の捕獲確率より高くなる",
         },
@@ -230,8 +229,8 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
         {
           Given: "最終評価点が0で種族値合計が680のとき",
           When: [
-            `${CAPTURE_RATE_PURPOSE}ボール補正が大きい場合の捕獲確率を計算する`,
-            `${CAPTURE_RATE_PURPOSE}ボール補正がない場合の捕獲確率を計算する`,
+            "ボール補正が大きい場合の捕獲確率を計算する",
+            "ボール補正がない場合の捕獲確率を計算する",
           ],
           Then: "ボール補正が大きい場合の捕獲確率は、ボール補正がない場合より高くなる",
         },
@@ -252,9 +251,9 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
         {
           Given: "最終評価点が20で種族値合計が500のとき",
           When: [
-            `${CAPTURE_RATE_PURPOSE}ボール補正がない場合の捕獲確率を計算する`,
-            `${CAPTURE_RATE_PURPOSE}ボール補正が小さい場合の捕獲確率を計算する`,
-            `${CAPTURE_RATE_PURPOSE}ボール補正が大きい場合の捕獲確率を計算する`,
+            "ボール補正がない場合の捕獲確率を計算する",
+            "ボール補正が小さい場合の捕獲確率を計算する",
+            "ボール補正が大きい場合の捕獲確率を計算する",
           ],
           Then: "捕獲確率は、ボール補正がない場合、小さい場合、大きい場合の順に高くなる",
         },
@@ -270,8 +269,8 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
   );
 });
 
-const MASK_ENGLISH_DESCRIPTION = "クエスト画面に表示する英語説明文の、ポケモン名を伏せ字にする";
-const MASK_JAPANESE_DESCRIPTION = "名前当て画面に表示する日本語説明文の、ポケモン名を伏せ字にする";
+const MASK_ENGLISH_DESCRIPTION = "英語説明文のポケモン名を伏せ字にする";
+const MASK_JAPANESE_DESCRIPTION = "日本語説明文のポケモン名を伏せ字にする";
 
 describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", () => {
   defineCase(
@@ -450,42 +449,38 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
     },
   );
 
-  defineCase(
+  for (const { 正常異常, given, pokemonName } of [
     {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: "ポケモン名が「ピカチュウ」で、説明文が「あいうえお」でポケモン名を含まないとき",
-          When: [MASK_JAPANESE_DESCRIPTION],
-          Then: "伏せ字にした説明文は「あいうえお」のままになる",
-        },
-      ],
+      正常異常: "正常系" as const,
+      given: "ポケモン名が「ピカチュウ」で、説明文が「あいうえお」でポケモン名を含まないとき",
+      pokemonName: "ピカチュウ",
     },
-    () => {
-      expect(maskPokemonNameJA("あいうえお", "ピカチュウ")).toBe("あいうえお");
-    },
-  );
-
-  defineCase(
     {
-      種別: "単体テスト",
-      正常異常: "異常系",
-      steps: [
-        {
-          Given: "ポケモン名が空文字で、説明文が「あいうえお」のとき",
-          When: [MASK_JAPANESE_DESCRIPTION],
-          Then: "伏せ字にした説明文は「あいうえお」のままになる",
-        },
-      ],
+      正常異常: "異常系" as const,
+      given: "ポケモン名が空文字で、説明文が「あいうえお」のとき",
+      pokemonName: "",
     },
-    () => {
-      expect(maskPokemonNameJA("あいうえお", "")).toBe("あいうえお");
-    },
-  );
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常,
+        steps: [
+          {
+            Given: given,
+            When: [MASK_JAPANESE_DESCRIPTION],
+            Then: "伏せ字にした説明文は「あいうえお」のままになる",
+          },
+        ],
+      },
+      () => {
+        expect(maskPokemonNameJA("あいうえお", pokemonName)).toBe("あいうえお");
+      },
+    );
+  }
 });
 
-const COMPUTE_RAW_SCORE = "名前当て画面に採点結果を表示するために、意味単位の判定値から素点を算出する";
+const COMPUTE_RAW_SCORE = "意味単位の判定値から素点を算出する";
 
 describe("[本体:採点]意味単位の判定値からの素点算出", () => {
   defineCase(
@@ -556,19 +551,21 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
   }
 });
 
-const CONVERT_TO_FINAL_SCORE = "名前当て画面に採点結果を表示するために、素点を最終評価点に変換する";
+const CONVERT_TO_FINAL_SCORE = "素点を最終評価点に変換する";
 
 describe("[本体:採点]素点から最終評価点への変換", () => {
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [{ Given: "素点が0のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は0になる" }],
-    },
-    () => {
-      expect(translateToFinalScore(0)).toBe(0);
-    },
-  );
+  for (const rawScore of [0, 10]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        steps: [{ Given: `素点が${rawScore}のとき`, When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は0になる" }],
+      },
+      () => {
+        expect(translateToFinalScore(rawScore)).toBe(0);
+      },
+    );
+  }
 
   defineCase(
     {
@@ -578,17 +575,6 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
     },
     () => {
       expect(translateToFinalScore(100)).toBe(99);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [{ Given: "素点が10のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は0になる" }],
-    },
-    () => {
-      expect(translateToFinalScore(10)).toBe(0);
     },
   );
 
@@ -615,11 +601,11 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
   );
 });
 
-const START_QUEST = "クエスト画面を開くために、クエストの出題を依頼する";
+const START_QUEST = "クエストを出題する";
 
 describe("[本体:クエスト]クエストの出題", () => {
   const LOCATION_ID = "ruined-powerplant";
-  const LOCATION_GIVEN = "場所「廃墟の発電所」(でんき・はがね・どくタイプ) を選んでいて、";
+  const LOCATION_GIVEN = "でんき・はがね・どくタイプの場所「廃墟の発電所」を選んでいて、";
 
   defineCase(
     {
@@ -629,7 +615,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "英語説明文が「Bulbasaur is green.」のポケモンのとき",
           When: [START_QUEST],
-          Then: "出題結果の英語説明文は「This Pokémon is green.」になる",
+          Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon is green.」になる",
         },
       ],
     },
@@ -650,7 +636,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "図鑑番号1のポケモンだけがいるとき",
           When: [START_QUEST],
-          Then: "出題結果の図鑑番号は1になる",
+          Then: "出題されたポケモンの図鑑番号は1になる",
         },
       ],
     },
@@ -669,7 +655,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "伝説ポケモンでないポケモンのとき",
           When: [START_QUEST],
-          Then: "出題結果は伝説ポケモンではないと示される",
+          Then: "出題されたポケモンは伝説ポケモンではない",
         },
       ],
     },
@@ -688,7 +674,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "図鑑番号5と6のポケモンがいて、図鑑番号5を除外しているとき",
           When: [START_QUEST],
-          Then: "出題結果の図鑑番号は6になる",
+          Then: "出題されたポケモンの図鑑番号は6になる",
         },
       ],
     },
@@ -710,7 +696,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "第1世代だけを選択していて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき",
           When: [START_QUEST],
-          Then: "出題結果の図鑑番号は100になる",
+          Then: "出題されたポケモンの図鑑番号は100になる",
         },
       ],
     },
@@ -732,7 +718,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "第1世代と第3世代を選択していて、第3世代の図鑑番号300のポケモンがいるとき",
           When: [START_QUEST],
-          Then: "出題結果の図鑑番号は300になる",
+          Then: "出題されたポケモンの図鑑番号は300になる",
         },
       ],
     },
@@ -754,7 +740,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "出題世代を設定していなくて、第5世代の図鑑番号500のポケモンがいるとき",
           When: [START_QUEST],
-          Then: "出題結果の図鑑番号は500になる",
+          Then: "出題されたポケモンの図鑑番号は500になる",
         },
       ],
     },
@@ -772,7 +758,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: [START_QUEST], Then: "出題結果の名前当ての最大挑戦回数は3回になる" }],
+      steps: [{ When: [START_QUEST], Then: "名前当ての最大挑戦回数は3回になる" }],
     },
     async () => {
       const service = makeService();
@@ -794,7 +780,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     {
       given:
-        "バージョン別の説明文が「Alpha Bulbasaur runs.」(1件目) と「Beta text.」(2件目) の2件あり、抽選で1件目が選ばれるとき",
+        "バージョン別の説明文が、1件目「Alpha Bulbasaur runs.」、2件目「Beta text.」の2件あり、抽選で1件目が選ばれるとき",
       flavorTexts: [
         {
           version_names: ["X"],
@@ -817,7 +803,7 @@ describe("[本体:クエスト]クエストの出題", () => {
           {
             Given: given,
             When: [START_QUEST],
-            Then: "出題結果の英語説明文は「Alpha this Pokémon runs.」になる",
+            Then: "英語説明文は、ポケモン名を伏せ字にした「Alpha this Pokémon runs.」になる",
           },
         ],
       },
@@ -839,7 +825,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "図鑑番号1のポケモンだけが出題対象で、図鑑番号1から10を除外しているとき",
           When: [START_QUEST],
-          Then: "出題できるポケモンがいないエラーになる",
+          Then: "出題できるポケモンがいないことを示すエラーになる",
         },
       ],
     },
@@ -864,7 +850,7 @@ describe("[本体:クエスト]クエストの出題", () => {
           {
             Given: `英語説明文が「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」のポケモンで、${given}`,
             When: [START_QUEST],
-            Then: "出題結果の英語説明文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」になる",
+            Then: "英語説明文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」になる",
           },
         ],
       },
@@ -911,7 +897,7 @@ describe("[本体:クエスト]クエストの出題", () => {
           {
             Given: `${LOCATION_GIVEN}${given}`,
             When: [START_QUEST],
-            Then: "出題結果の図鑑番号は100になる",
+            Then: "出題されたポケモンの図鑑番号は100になる",
           },
         ],
       },
@@ -931,7 +917,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: `${LOCATION_GIVEN}幻・伝説の抽選に当たっていて、でんきタイプの図鑑番号100とエスパータイプの図鑑番号150の伝説ポケモンがいるとき`,
           When: [START_QUEST],
-          Then: "出題結果の図鑑番号は150になる",
+          Then: "出題されたポケモンの図鑑番号は150になる",
         },
       ],
     },
@@ -946,7 +932,7 @@ describe("[本体:クエスト]クエストの出題", () => {
   );
 });
 
-const SCORE_TRANSLATION = "クエスト画面で、訳文の採点を依頼する";
+const SCORE_TRANSLATION = "訳文を採点する";
 
 describe("[本体:採点]翻訳の採点", () => {
   defineCase(
@@ -955,9 +941,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "AI が意味単位1件の判定値0.7を返すとき",
+          Given: "AI の採点結果が意味単位1件の判定値0.7のとき",
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の最終評価点は66になる",
+          Then: "最終評価点は66になる",
         },
       ],
     },
@@ -976,9 +962,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "AI が判定値1.0、0.6、0.2の3件を返すとき",
+          Given: "AI の採点結果が判定値1.0、0.6、0.2の3件のとき",
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の最終評価点は55になる",
+          Then: "最終評価点は55になる",
         },
       ],
     },
@@ -997,9 +983,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "AI が講評「よい」を返すとき",
+          Given: "AI の採点結果が講評「よい」のとき",
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の講評は「よい」になる",
+          Then: "講評は「よい」になる",
         },
       ],
     },
@@ -1020,7 +1006,7 @@ describe("[本体:採点]翻訳の採点", () => {
         {
           Given: "日本語説明文が「フシギダネは 緑色だ。」でポケモン名がフシギダネのとき",
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の日本語説明文は「この ポケモンは 緑色だ。」になる",
+          Then: "日本語説明文は、ポケモン名を伏せ字にした「この ポケモンは 緑色だ。」になる",
         },
       ],
     },
@@ -1070,9 +1056,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "クエストセッションの保存先がエラー「boom」で読み込みに失敗するとき",
+          Given: "クエストセッションの保存先が、エラー「boom」で利用できないとき",
           When: [SCORE_TRANSLATION],
-          Then: "保存先が返したエラー「boom」を原因とする外部サービス (クエストセッションの保存先) のエラーになる",
+          Then: "エラー「boom」を原因とする、クエストセッションの保存先が利用できないことを示すエラーになる",
         },
       ],
     },
@@ -1103,8 +1089,8 @@ describe("[本体:採点]翻訳の採点", () => {
         steps: [
           {
             Given: given,
-            When: ["ユーザー「bob」がクエスト画面で、訳文の採点を依頼する"],
-            Then: "クエストセッションが見つからないエラーになる",
+            When: ["ユーザー「bob」の訳文を採点する"],
+            Then: "クエストセッションが見つからないことを示すエラーになる",
           },
         ],
       },
@@ -1127,11 +1113,11 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
 
   for (const { given, llmText } of [
     {
-      given: "AI が2回続けて、JSON ではない「ごめん、わからない」を返すとき",
+      given: "AI の採点結果が2回続けて、JSON ではない「ごめん、わからない」のとき",
       llmText: "ごめん、わからない",
     },
     {
-      given: 'AI が2回続けて、JSON が途中で切れている ({"units": [0.7], "rev) を返すとき',
+      given: 'AI の採点結果が2回続けて、途中で切れた JSON「{"units": [0.7], "rev」のとき',
       llmText: '{"units": [0.7], "rev',
     },
   ]) {
@@ -1143,7 +1129,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
           {
             Given: given,
             When: [SCORE_TRANSLATION],
-            Then: "AI の応答が JSON として読めないことを原因とする外部サービス (AI) のエラーになる",
+            Then: "AI の採点結果が JSON として読めないことを原因とする、AI の採点が失敗したことを示すエラーになる",
           },
         ],
       },
@@ -1158,15 +1144,15 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
 
   for (const { given, llmText } of [
     {
-      given: "AI が2回続けて、判定値の項目がなく講評だけ「r」がある応答を返すとき",
+      given: "AI の採点結果が2回続けて、判定値の項目がなく講評だけ「r」があるとき",
       llmText: JSON.stringify({ review: "r" }),
     },
     {
-      given: "AI が2回続けて、判定値が一覧ではなく1つの数値0.7になっている応答を返すとき",
+      given: "AI の採点結果が2回続けて、判定値が一覧ではなく1つの数値0.7になっているとき",
       llmText: JSON.stringify({ units: 0.7, review: "r" }),
     },
     {
-      given: "AI が2回続けて、判定値が0件の応答を返すとき",
+      given: "AI の採点結果が2回続けて、判定値が0件のとき",
       llmText: JSON.stringify({ units: [], review: "r" }),
     },
   ]) {
@@ -1178,7 +1164,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
           {
             Given: given,
             When: [SCORE_TRANSLATION],
-            Then: "判定値が無いことを原因とする外部サービス (AI) のエラーになる",
+            Then: "判定値が無いことを原因とする、AI の採点が失敗したことを示すエラーになる",
           },
         ],
       },
@@ -1197,9 +1183,9 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "AI が2回続けて、判定値に数値でない値「a」を含む応答を返すとき",
+          Given: "AI の採点結果が2回続けて、判定値に数値でない値「a」を含むとき",
           When: [SCORE_TRANSLATION],
-          Then: "範囲外の判定値「a」を原因とする外部サービス (AI) のエラーになる",
+          Then: "範囲外の判定値「a」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
       ],
     },
@@ -1223,9 +1209,9 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "AI が2回続けて、0.0から1.0の範囲外の判定値 -0.1 を含む応答を返すとき",
+          Given: "AI の採点結果が2回続けて、0.0から1.0の範囲外の判定値「-0.1」を含むとき",
           When: [SCORE_TRANSLATION],
-          Then: "範囲外の判定値「-0.1」を原因とする外部サービス (AI) のエラーになる",
+          Then: "範囲外の判定値「-0.1」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
       ],
     },
@@ -1249,9 +1235,9 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "AI が2回続けて、0.0から1.0の範囲外の判定値 1.1 を含む応答を返すとき",
+          Given: "AI の採点結果が2回続けて、0.0から1.0の範囲外の判定値「1.1」を含むとき",
           When: [SCORE_TRANSLATION],
-          Then: "範囲外の判定値「1.1」を原因とする外部サービス (AI) のエラーになる",
+          Then: "範囲外の判定値「1.1」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
       ],
     },
@@ -1271,11 +1257,11 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
 
   for (const { given, llmText } of [
     {
-      given: "AI が2回続けて、講評の項目がなく判定値 0.7 の1件だけがある応答を返すとき",
+      given: "AI の採点結果が2回続けて、講評の項目がなく判定値0.7の1件だけがあるとき",
       llmText: JSON.stringify({ units: [0.7] }),
     },
     {
-      given: "AI が2回続けて、講評が空文字の応答を返すとき",
+      given: "AI の採点結果が2回続けて、講評が空文字のとき",
       llmText: JSON.stringify({ units: [0.7], review: "" }),
     },
   ]) {
@@ -1287,7 +1273,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
           {
             Given: given,
             When: [SCORE_TRANSLATION],
-            Then: "講評が空であることを原因とする外部サービス (AI) のエラーになる",
+            Then: "講評が空であることを原因とする、AI の採点が失敗したことを示すエラーになる",
           },
         ],
       },
@@ -1301,7 +1287,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
   }
 
   const RETRIED_THEN_VALID_GIVEN =
-    "AI の最初の応答が JSON ではなく、2回目の応答が判定値0.7の1件と講評「よい」の正しい形式のとき";
+    "AI の採点結果が、1回目は JSON ではなく、2回目は判定値0.7の1件と講評「よい」の正しい形式のとき";
   const retriedThenValidTexts = ["ごめん、わからない", JSON.stringify({ units: [0.7], review: "よい" })];
 
   defineCase(
@@ -1312,7 +1298,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
         {
           Given: RETRIED_THEN_VALID_GIVEN,
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の最終評価点は66になる",
+          Then: "最終評価点は66になる",
         },
       ],
     },
@@ -1331,7 +1317,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
         {
           Given: RETRIED_THEN_VALID_GIVEN,
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の講評は「よい」になる",
+          Then: "講評は「よい」になる",
         },
       ],
     },
@@ -1348,9 +1334,9 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "AI が意味単位1件の判定値0.0を返すとき",
+          Given: "AI の採点結果が意味単位1件の判定値0.0のとき",
           When: [SCORE_TRANSLATION],
-          Then: "採点結果の最終評価点は0になる",
+          Then: "最終評価点は0になる",
         },
       ],
     },
@@ -1365,16 +1351,21 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
 });
 
 const ASKED_BULBASAUR = "英語名「Bulbasaur」、日本語名「フシギダネ」のポケモンを出題済みのとき";
-const LEGENDARY_SCORED_70 = "伝説ポケモンの「Bulbasaur」を最終評価点70で採点済みのとき";
-const MISS_THREE_TIMES = "名前当て画面で、誤った名前で3回続けて答える";
-const ANSWER_BULBASAUR = "名前当て画面で、英語名「bulbasaur」で答える";
-const BALL_ULTRA = "判定結果のボールはハイパーボールになる";
-const BALL_MASTER = "判定結果のボールはマスターボールになる";
-const RESULT_CORRECT = "判定結果は正解になる";
-const RESULT_INCORRECT = "判定結果は不正解になる";
-const RESULT_FUZZY = "判定結果は、あいまい一致による正解になる";
-const RESULT_LANGUAGE_EN = "判定結果で、正解した名前の言語は英語になる";
-const RESULT_LANGUAGE_JA = "判定結果で、正解した名前の言語は日本語になる";
+const LEGENDARY_SCORED_70_BASE = "英語名「Bulbasaur」の伝説ポケモンを最終評価点70で採点済み";
+const LEGENDARY_SCORED_70 = `${LEGENDARY_SCORED_70_BASE}のとき`;
+const MISS_THREE_TIMES = [
+  "名前当てで「wrong1」と答える",
+  "名前当てで「wrong2」と答える",
+  "名前当てで「wrong3」と答える",
+] as const;
+const ANSWER_BULBASAUR = "名前当てで「bulbasaur」と答える";
+const BALL_ULTRA = "ボールはハイパーボールになる";
+const BALL_MASTER = "ボールはマスターボールになる";
+const RESULT_CORRECT = "判定は正解になる";
+const RESULT_INCORRECT = "判定は不正解になる";
+const RESULT_FUZZY = "判定は、あいまい一致による正解になる";
+const RESULT_LANGUAGE_EN = "正解した名前の言語は英語になる";
+const RESULT_LANGUAGE_JA = "正解した名前の言語は日本語になる";
 
 describe("[本体:名前当て]名前当ての判定", () => {
   const ABRA_POKEMONS = [makePokemon({ name_en: "Abra", name_ja: "ケーシィ" })];
@@ -1399,7 +1390,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   ];
   const ANSWER_BULBASAUR_START_CASES: { given: string; start: () => Promise<QuestService> }[] = [
     {
-      given: "伝説ポケモンの「Bulbasaur」を最終評価点69で採点済みのとき",
+      given: "英語名「Bulbasaur」の伝説ポケモンを最終評価点69で採点済みのとき",
       start: () =>
         startScoredQuest({
           pokemons: [makePokemon({ is_legendary: true })],
@@ -1407,7 +1398,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
         }),
     },
     {
-      given: "伝説でも幻でもないポケモンの「Bulbasaur」を最終評価点70で採点済みのとき",
+      given: "英語名「Bulbasaur」の、伝説でも幻でもないポケモンを最終評価点70で採点済みのとき",
       start: () => startScoredQuest({ llmText: AI_RESPONSE_FINAL_SCORE_70 }),
     },
   ];
@@ -1425,7 +1416,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     return service.guessName(USER_ID, "wrong2");
   }
 
-  const SPACED_LOWERCASE_ENGLISH_NAME = "名前当て画面で、前に空白が2つ、後ろに空白が1つある小文字「bulbasaur」で答える";
+  const SPACED_LOWERCASE_ENGLISH_NAME = "名前当てで、前に空白が2つ、後ろに空白が1つある「bulbasaur」と答える";
 
   defineCase(
     {
@@ -1470,7 +1461,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: ASKED_BULBASAUR, When: ["名前当て画面で、日本語名「フシギダネ」で答える"], Then: RESULT_CORRECT }],
+      steps: [{ Given: ASKED_BULBASAUR, When: ["名前当てで「フシギダネ」と答える"], Then: RESULT_CORRECT }],
     },
     async () => {
       const service = await startQuest();
@@ -1486,8 +1477,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
       steps: [
         {
           Given: ASKED_BULBASAUR,
-          When: ["名前当て画面で、日本語名「フシギダネ」で答える"],
-          Then: "判定結果のボールはスーパーボールになる",
+          When: ["名前当てで「フシギダネ」と答える"],
+          Then: "ボールはスーパーボールになる",
         },
       ],
     },
@@ -1502,7 +1493,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: ASKED_BULBASAUR, When: ["名前当て画面で、日本語名「フシギダネ」で答える"], Then: RESULT_LANGUAGE_JA }],
+      steps: [{ Given: ASKED_BULBASAUR, When: ["名前当てで「フシギダネ」と答える"], Then: RESULT_LANGUAGE_JA }],
     },
     async () => {
       const service = await startQuest();
@@ -1512,8 +1503,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 
   const FUZZY_BULBASAUR_GIVEN =
-    "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みのとき";
-  const WITHIN_FUZZY_DISTANCE_SPELLING = "名前当て画面で、綴りがあいまい一致の許容距離ちょうどずれた「bulbasaxx」で答える";
+    "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みで、「bulbasaxx」の綴りが英語名からあいまい一致の許容距離ちょうど違うとき";
+  const WITHIN_FUZZY_DISTANCE_SPELLING = "名前当てで「bulbasaxx」と答える";
 
   defineCase(
     {
@@ -1561,8 +1552,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
       steps: [
         {
           Given: ASKED_BULBASAUR,
-          When: ["名前当て画面で、1回目に「wrong」で答える"],
-          Then: "判定結果の残り挑戦回数は2回になる",
+          When: ["名前当てで「wrong」と答える"],
+          Then: "残り挑戦回数は2回になる",
         },
       ],
     },
@@ -1577,7 +1568,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: ASKED_BULBASAUR, When: [MISS_THREE_TIMES], Then: "判定結果の残り挑戦回数は0回になる" }],
+      steps: [{ Given: ASKED_BULBASAUR, When: MISS_THREE_TIMES, Then: "残り挑戦回数は0回になる" }],
     },
     async () => {
       const service = await startQuest();
@@ -1587,8 +1578,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 
   const ABRA_GIVEN =
-    "英語名「Abra」、日本語名「ケーシィ」で、英語名の文字数があいまい一致の最小文字数ちょうどのポケモンを出題済みのとき";
-  const ONE_CHARACTER_OFF_SPELLING = "名前当て画面で、綴りが許容距離以内の1文字ずれた「abrx」で答える";
+    "英語名「Abra」、日本語名「ケーシィ」で、英語名の文字数があいまい一致の最小文字数ちょうどのポケモンを出題済みで、「abrx」の綴りが英語名からあいまい一致の許容距離以内で1文字違うとき";
+  const ONE_CHARACTER_OFF_SPELLING = "名前当てで「abrx」と答える";
 
   defineCase(
     {
@@ -1618,20 +1609,22 @@ describe("[本体:名前当て]名前当ての判定", () => {
 
   for (const { given, when, pokemons, guess } of [
     {
-      given: "英語名があいまい一致の最小文字数以上のポケモン「Bulbasaur」を出題済みのとき",
-      when: "名前当て画面で、あいまい一致の許容距離を超えてずれた綴り「bulbasxxx」で答える",
+      given:
+        "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みで、「bulbasxxx」の綴りが英語名からあいまい一致の許容距離を超えて違うとき",
+      when: "名前当てで「bulbasxxx」と答える",
       pokemons: [makePokemon()],
       guess: "bulbasxxx",
     },
     {
-      given: "英語名があいまい一致の最小文字数に満たないポケモン「Mew」(日本語名「ミュウ」) を出題済みのとき",
-      when: "名前当て画面で、1文字ずれた綴り「mex」で答える",
+      given:
+        "英語名「Mew」、日本語名「ミュウ」で、英語名があいまい一致の最小文字数に満たないポケモンを出題済みで、「mex」の綴りが英語名と1文字違うとき",
+      when: "名前当てで「mex」と答える",
       pokemons: [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })],
       guess: "mex",
     },
     {
-      given: "英語名「Bulbasaur」のポケモンを出題済みのとき",
-      when: "名前当て画面で、大きく異なる綴り「wrong」で答える",
+      given: ASKED_BULBASAUR,
+      when: "名前当てで「wrong」と答える",
       pokemons: [makePokemon()],
       guess: "wrong",
     },
@@ -1651,7 +1644,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   }
 
   const ANSWER_AGAIN_GIVEN = "英語名「Bulbasaur」で正解済みのとき";
-  const ANSWER_WHATEVER = "名前当て画面で、別の名前「whatever」で答える";
+  const ANSWER_WHATEVER = "名前当てで「whatever」と答える";
 
   defineCase(
     {
@@ -1673,7 +1666,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
         {
           Given: ANSWER_AGAIN_GIVEN,
           When: [ANSWER_WHATEVER],
-          Then: "判定結果のボールは確定済みのハイパーボールのままになる",
+          Then: "ボールは確定済みのハイパーボールのままになる",
         },
       ],
     },
@@ -1687,7 +1680,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
-      steps: [{ Given: ANSWER_AGAIN_GIVEN, When: [ANSWER_WHATEVER], Then: "判定結果の残り挑戦回数は0回になる" }],
+      steps: [{ Given: ANSWER_AGAIN_GIVEN, When: [ANSWER_WHATEVER], Then: "残り挑戦回数は0回になる" }],
     },
     async () => {
       const res = await answerAgainAfterCorrect();
@@ -1734,13 +1727,14 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
   );
 
-  const FUZZY_ENGLISH_NAME = "名前当て画面で、英語名とあいまい一致する「bulbasaxx」で答える";
+  const FUZZY_ENGLISH_NAME = "名前当てで「bulbasaxx」と答える";
+  const LEGENDARY_FUZZY_GIVEN = `${LEGENDARY_SCORED_70_BASE}で、「bulbasaxx」の綴りが英語名からあいまい一致の許容距離ちょうど違うとき`;
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: RESULT_CORRECT }],
+      steps: [{ Given: LEGENDARY_FUZZY_GIVEN, When: [FUZZY_ENGLISH_NAME], Then: RESULT_CORRECT }],
     },
     async () => {
       const service = await startScoredQuest(LEGENDARY_SCORED_OPTIONS);
@@ -1753,7 +1747,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: BALL_MASTER }],
+      steps: [{ Given: LEGENDARY_FUZZY_GIVEN, When: [FUZZY_ENGLISH_NAME], Then: BALL_MASTER }],
     },
     async () => {
       const service = await startScoredQuest(LEGENDARY_SCORED_OPTIONS);
@@ -1766,7 +1760,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: RESULT_FUZZY }],
+      steps: [{ Given: LEGENDARY_FUZZY_GIVEN, When: [FUZZY_ENGLISH_NAME], Then: RESULT_FUZZY }],
     },
     async () => {
       const service = await startScoredQuest(LEGENDARY_SCORED_OPTIONS);
@@ -1775,8 +1769,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
   );
 
-  const MYTHICAL_SCORED_70 = "幻ポケモンの「Bulbasaur」(日本語名「フシギダネ」) を最終評価点70で採点済みのとき";
-  const ANSWER_JAPANESE_NAME = "名前当て画面で、日本語名「フシギダネ」で答える";
+  const MYTHICAL_SCORED_70 = "英語名「Bulbasaur」、日本語名「フシギダネ」の幻ポケモンを最終評価点70で採点済みのとき";
+  const ANSWER_JAPANESE_NAME = "名前当てで「フシギダネ」と答える";
 
   defineCase(
     {
@@ -1822,7 +1816,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [MISS_THREE_TIMES], Then: RESULT_INCORRECT }],
+        steps: [{ Given: given, When: MISS_THREE_TIMES, Then: RESULT_INCORRECT }],
       },
       async () => {
         const res = await missThreeTimes(await start());
@@ -1836,7 +1830,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [MISS_THREE_TIMES], Then: "判定結果のボールはモンスターボールになる" }],
+        steps: [{ Given: given, When: MISS_THREE_TIMES, Then: "ボールはモンスターボールになる" }],
       },
       async () => {
         const res = await missThreeTimes(await start());
@@ -1874,7 +1868,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   }
 
   const HINT_THEN_MISS_GIVEN = "名前当てを1回外していて、ヒントを1回要求済みで、残り挑戦回数が1回のとき";
-  const MISS_AGAIN = "名前当て画面で、もう一度誤った名前で答える";
+  const MISS_AGAIN = "名前当てで「wrong2」と答える";
 
   defineCase(
     {
@@ -1893,7 +1887,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
-        { Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: "判定結果のボールはモンスターボールになる" },
+        { Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: "ボールはモンスターボールになる" },
       ],
     },
     async () => {
@@ -1906,7 +1900,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: "判定結果の残り挑戦回数は0回になる" }],
+      steps: [{ Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: "残り挑戦回数は0回になる" }],
     },
     async () => {
       const res = await missAgainAfterHint();
@@ -1915,8 +1909,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 });
 
-const REQUEST_HINT = "名前当て画面で、ヒントを要求する";
-const REQUEST_SECOND_HINT = "名前当て画面で、2回目のヒントを要求する";
+const REQUEST_HINT = "名前当てのヒントを要求する";
 
 describe("[本体:名前当て]名前当てのヒント", () => {
   async function requestSecondHint(levelUpMoves: string[] | undefined) {
@@ -1928,7 +1921,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     return service.requestHint(USER_ID);
   }
 
-  const FIRST_HINT_GIVEN = "タイプが「くさ」「どく」のポケモンを出題済みで、まだ名前当てをしていないとき";
+  const FIRST_HINT_GIVEN = "タイプが「くさ」「どく」のポケモンを出題済みで、まだ名前当てをしておらず、ヒントを1回も要求していないとき";
 
   defineCase(
     {
@@ -1937,8 +1930,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: FIRST_HINT_GIVEN,
-          When: ["名前当て画面で、1回目のヒントを要求する"],
-          Then: "要求結果として、出題ポケモンのタイプ (くさ・どく) が開示される",
+          When: [REQUEST_HINT],
+          Then: "ヒントとして、タイプ「くさ」「どく」が開示される",
         },
       ],
     },
@@ -1961,8 +1954,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: FIRST_HINT_GIVEN,
-          When: ["名前当て画面で、1回目のヒントを要求する"],
-          Then: "要求結果の残り挑戦回数は2回になる",
+          When: [REQUEST_HINT],
+          Then: "残り挑戦回数は2回になる",
         },
       ],
     },
@@ -1980,7 +1973,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
 
   for (const { given, levelUpMoves } of [
     {
-      given: "レベルアップで覚える技が3つあるポケモン (「たいあたり」「なきごえ」「つるのムチ」)",
+      given: "レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」のポケモン",
       levelUpMoves: ["たいあたり", "なきごえ", "つるのムチ"],
     },
     { given: "レベルアップで覚える技の情報が未設定のポケモン", levelUpMoves: undefined },
@@ -1992,9 +1985,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
         正常異常: "正常系",
         steps: [
           {
-            Given: `1回目のヒントを要求済みで、${given}のとき`,
-            When: [REQUEST_SECOND_HINT],
-            Then: "要求結果の残り挑戦回数は1回になる",
+            Given: `ヒントを1回要求済みで、${given}のとき`,
+            When: [REQUEST_HINT],
+            Then: "残り挑戦回数は1回になる",
           },
         ],
       },
@@ -2014,9 +2007,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "1回目のヒントを要求済みで、レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」のポケモンのとき",
-          When: [REQUEST_SECOND_HINT],
-          Then: "要求結果として、「たいあたり」「なきごえ」「つるのムチ」の3つの技が開示される",
+          Given: "ヒントを1回要求済みで、レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」のポケモンのとき",
+          When: [REQUEST_HINT],
+          Then: "ヒントとして、技「たいあたり」「なきごえ」「つるのムチ」が開示される",
         },
       ],
     },
@@ -2039,9 +2032,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
         正常異常: "正常系",
         steps: [
           {
-            Given: `1回目のヒントを要求済みで、レベルアップで覚える技の情報が${state}のポケモンのとき`,
-            When: [REQUEST_SECOND_HINT],
-            Then: "要求結果で開示される技は0件になる",
+            Given: `ヒントを1回要求済みで、レベルアップで覚える技の情報が${state}のポケモンのとき`,
+            When: [REQUEST_HINT],
+            Then: "開示される技は0件になる",
           },
         ],
       },
@@ -2062,9 +2055,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given:
-            "レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」「やどりぎのタネ」の4つのポケモンで、出会うたびの技の抽選結果が異なるとき",
-          When: ["名前当て画面で、それぞれの出会いの2回目のヒントを要求する"],
-          Then: "要求結果で開示される技は、2回の出会いで互いに異なる",
+            "レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」「やどりぎのタネ」の4つのポケモンで、2回の出題で技の抽選結果が異なるとき",
+          When: [START_QUEST, REQUEST_HINT, REQUEST_HINT, START_QUEST, REQUEST_HINT, REQUEST_HINT],
+          Then: "2回の出題のそれぞれで開示される技は、互いに異なる",
         },
       ],
     },
@@ -2092,7 +2085,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
         {
           Given: "名前当てを1回外していて、残り挑戦回数が2回のとき",
           When: [REQUEST_HINT],
-          Then: "要求結果の残り挑戦回数は1回になる",
+          Then: "残り挑戦回数は1回になる",
         },
       ],
     },
@@ -2127,7 +2120,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
           {
             Given: given,
             When: [REQUEST_HINT],
-            Then: "名前当てが済んでいるか、ヒントを使い切っているため要求できないエラーになる",
+            Then: "名前当てが済んでいるか、ヒントを使い切っているため要求できないことを示すエラーになる",
           },
         ],
       },
@@ -2147,7 +2140,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
         {
           Given: "名前当てを2回外していて、残り挑戦回数が1回のとき",
           When: [REQUEST_HINT],
-          Then: "残り挑戦回数が足りないエラーになる",
+          Then: "残り挑戦回数が足りないことを示すエラーになる",
         },
       ],
     },
@@ -2167,7 +2160,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
         {
           Given: "進行中のクエストセッションがないとき",
           When: [REQUEST_HINT],
-          Then: "クエストセッションが見つからないエラーになる",
+          Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],
     },
@@ -2178,7 +2171,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
   );
 });
 
-const SKIP_GUESS = "名前当て画面で、名前当てをスキップする";
+const SKIP_GUESS = "名前当てをスキップする";
 
 describe("[本体:名前当て]名前当てのスキップ", () => {
   for (const { given, start } of [
@@ -2196,7 +2189,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [SKIP_GUESS], Then: "スキップ結果のボールはモンスターボールになる" }],
+        steps: [{ Given: given, When: [SKIP_GUESS], Then: "ボールはモンスターボールになる" }],
       },
       async () => {
         const service = await start();
@@ -2215,7 +2208,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
         {
           Given: "進行中のクエストセッションがないとき",
           When: [SKIP_GUESS],
-          Then: "クエストセッションが見つからないエラーになる",
+          Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],
     },
@@ -2233,7 +2226,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
         {
           Given: "英語名で正解済みで、ハイパーボールが確定済みのとき",
           When: [SKIP_GUESS],
-          Then: "スキップ結果のボールは確定済みのハイパーボールのままになる",
+          Then: "ボールは確定済みのハイパーボールのままになる",
         },
       ],
     },
@@ -2254,7 +2247,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
         {
           Given: "日本語名で正解済みで、スーパーボールが確定済みのとき",
           When: [SKIP_GUESS],
-          Then: "スキップ結果のボールは確定済みのスーパーボールのままになる",
+          Then: "ボールは確定済みのスーパーボールのままになる",
         },
       ],
     },
@@ -2268,7 +2261,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
   );
 });
 
-const ATTEMPT_CAPTURE = "捕獲待機画面で、ボールを使って捕獲する";
+const ATTEMPT_CAPTURE = "ボールを使って捕獲する";
 
 describe("[本体:捕獲]捕獲の実行", () => {
   const MASTER_BALL_CAPTURE_OPTIONS: ServiceOverrides = {
@@ -2298,28 +2291,9 @@ describe("[本体:捕獲]捕獲の実行", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given:
-            "図鑑番号1、英語名「Bulbasaur」、種族値合計318のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みで、乱数が捕獲確率を下回るとき",
-          When: [ATTEMPT_CAPTURE],
-          Then: "捕獲結果は成功になる",
-        },
-      ],
-    },
-    async () => {
-      const res = await captureAfterSkip();
-      expect(res.captured).toBe(true);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
           Given: POKE_BALL_CAPTURE_GIVEN,
           When: [ATTEMPT_CAPTURE],
-          Then: "捕獲結果のポケモンは、出題されたポケモン (図鑑番号1、英語名 Bulbasaur) になる",
+          Then: "捕獲したポケモンは、図鑑番号1、英語名「Bulbasaur」のポケモンになる",
         },
       ],
     },
@@ -2337,7 +2311,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
         {
           Given: POKE_BALL_CAPTURE_GIVEN,
           When: [ATTEMPT_CAPTURE],
-          Then: "捕獲結果の捕獲確率は0より大きくなる",
+          Then: "捕獲確率は0より大きくなる",
         },
       ],
     },
@@ -2361,7 +2335,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [ATTEMPT_CAPTURE], Then: "捕獲結果のボールはモンスターボールになる" }],
+        steps: [{ Given: given, When: [ATTEMPT_CAPTURE], Then: "ボールはモンスターボールになる" }],
       },
       async () => {
         const service = await startQuest();
@@ -2380,7 +2354,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
         {
           Given: "英語名で正解済みで、ハイパーボールが確定済みで、名前当てをスキップ済みのとき",
           When: [ATTEMPT_CAPTURE],
-          Then: "捕獲結果のボールはハイパーボールになる",
+          Then: "ボールはハイパーボールになる",
         },
       ],
     },
@@ -2400,7 +2374,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
         {
           Given: "日本語名で正解済みで、スーパーボールが確定済みで、名前当てをスキップ済みのとき",
           When: [ATTEMPT_CAPTURE],
-          Then: "捕獲結果のボールはスーパーボールになる",
+          Then: "ボールはスーパーボールになる",
         },
       ],
     },
@@ -2419,9 +2393,9 @@ describe("[本体:捕獲]捕獲の実行", () => {
       steps: [
         {
           Given:
-            "種族値合計が680のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みで、乱数が0.5のとき",
+            "種族値合計が680のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みで、捕獲の抽選に外れるとき",
           When: [ATTEMPT_CAPTURE],
-          Then: "捕獲結果は失敗になる",
+          Then: "捕獲に失敗する",
         },
       ],
     },
@@ -2437,25 +2411,34 @@ describe("[本体:捕獲]捕獲の実行", () => {
   );
 
   const MASTER_BALL_CAPTURE_GIVEN =
-    "種族値合計が680の伝説ポケモンを最終評価点70で採点済みで、英語名で正解済みで、マスターボールが確定済みで、乱数が最大に近い値(0.9999)のとき";
+    "種族値合計が680の伝説ポケモンを最終評価点70で採点済みで、英語名で正解済みで、マスターボールが確定済みで、捕獲の抽選に外れるとき";
+
+  for (const { given, capture } of [
+    {
+      given:
+        "図鑑番号1、英語名「Bulbasaur」、種族値合計318のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みで、捕獲の抽選に当たるとき",
+      capture: () => captureAfterSkip(),
+    },
+    { given: MASTER_BALL_CAPTURE_GIVEN, capture: () => captureAfterCorrectGuess() },
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        steps: [{ Given: given, When: [ATTEMPT_CAPTURE], Then: "捕獲に成功する" }],
+      },
+      async () => {
+        const res = await capture();
+        expect(res.captured).toBe(true);
+      },
+    );
+  }
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲結果は成功になる" }],
-    },
-    async () => {
-      const res = await captureAfterCorrectGuess();
-      expect(res).toMatchObject({ captured: true });
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [{ Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲結果の捕獲確率は1.0になる" }],
+      steps: [{ Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲確率は1.0になる" }],
     },
     async () => {
       const res = await captureAfterCorrectGuess();
@@ -2468,7 +2451,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
-        { Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲結果のボールはマスターボールになる" },
+        { Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "ボールはマスターボールになる" },
       ],
     },
     async () => {
@@ -2485,7 +2468,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
         {
           Given: "名前当てにもスキップにも応答していないとき",
           When: [ATTEMPT_CAPTURE],
-          Then: "ボールが未確定のエラーになる",
+          Then: "ボールが未確定であることを示すエラーになる",
         },
       ],
     },
@@ -2502,8 +2485,8 @@ describe("[本体:捕獲]捕獲の実行", () => {
       steps: [
         {
           Given: "名前当てをスキップ済みで、捕獲が1回済んでいるとき",
-          When: ["捕獲待機画面で、もう一度ボールを使って捕獲する"],
-          Then: "クエストセッションが見つからないエラーになる",
+          When: [ATTEMPT_CAPTURE],
+          Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],
     },
@@ -2516,7 +2499,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
   );
 });
 
-const RESUME_QUEST = "リロードしたクエスト画面で、進行中のクエストを再開する";
+const RESUME_QUEST = "進行中のクエストを再開する";
 
 describe("[本体:クエスト]再開するクエストの段階と状態", () => {
   const MEWTWO_OPTIONS: ServiceOverrides = {
@@ -2548,14 +2531,14 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
   }
 
   const MEWTWO_BEFORE_SCORING_GIVEN =
-    "図鑑番号150の伝説ポケモン (英語名「Mewtwo」、英語説明文「Mewtwo is powerful.」) を出題済みで、採点前のとき";
+    "英語名「Mewtwo」、英語説明文「Mewtwo is powerful.」の、図鑑番号150の伝説ポケモンを出題済みで、採点前のとき";
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
-        { Given: MEWTWO_BEFORE_SCORING_GIVEN, When: [RESUME_QUEST], Then: "再開結果の段階は訳文入力になる" },
+        { Given: MEWTWO_BEFORE_SCORING_GIVEN, When: [RESUME_QUEST], Then: "段階は訳文入力になる" },
       ],
     },
     async () => {
@@ -2576,7 +2559,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: MEWTWO_BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果のクエストは図鑑番号150のポケモンになる",
+          Then: "出題されたポケモンの図鑑番号は150になる",
         },
       ],
     },
@@ -2595,7 +2578,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: MEWTWO_BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果のクエストの英語説明文は、ポケモン名を伏せ字にした「This Pokémon is powerful.」になる",
+          Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon is powerful.」になる",
         },
       ],
     },
@@ -2616,7 +2599,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: MEWTWO_BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果のクエストは伝説ポケモンと示される",
+          Then: "出題されたポケモンは伝説ポケモンである",
         },
       ],
     },
@@ -2635,7 +2618,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: MEWTWO_BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果のクエストは幻ポケモンではないと示される",
+          Then: "出題されたポケモンは幻ポケモンではない",
         },
       ],
     },
@@ -2654,7 +2637,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: MEWTWO_BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果のクエストの名前当ての最大挑戦回数は3回になる",
+          Then: "名前当ての最大挑戦回数は3回になる",
         },
       ],
     },
@@ -2681,7 +2664,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
           {
             Given: `${SCORED_UNGUESSED_GIVEN}${hintStatus}`,
             When: [RESUME_QUEST],
-            Then: "再開結果の段階は名前当てになる",
+            Then: "段階は名前当てになる",
           },
         ],
       },
@@ -2698,9 +2681,9 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: `${SCORED_UNGUESSED_GIVEN}AI が採点で意味単位1件の判定値0.7を返しているとき`,
+          Given: `${SCORED_UNGUESSED_GIVEN}AI の採点結果が意味単位1件の判定値0.7のとき`,
           When: [RESUME_QUEST],
-          Then: "再開結果の最終評価点は66になる",
+          Then: "最終評価点は66になる",
         },
       ],
     },
@@ -2721,9 +2704,9 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: `${SCORED_UNGUESSED_GIVEN}AI が採点で講評「よい 翻訳だ。」を返しているとき`,
+          Given: `${SCORED_UNGUESSED_GIVEN}AI の採点結果が講評「よい 翻訳だ。」のとき`,
           When: [RESUME_QUEST],
-          Then: "再開結果の講評は「よい 翻訳だ。」になる",
+          Then: "講評は「よい 翻訳だ。」になる",
         },
       ],
     },
@@ -2746,7 +2729,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: `${SCORED_UNGUESSED_GIVEN}日本語説明文が「フシギダネは 緑色だ。」でポケモン名がフシギダネのとき`,
           When: [RESUME_QUEST],
-          Then: "再開結果の日本語説明文は、ポケモン名を伏せ字にした「この ポケモンは 緑色だ。」になる",
+          Then: "日本語説明文は、ポケモン名を伏せ字にした「この ポケモンは 緑色だ。」になる",
         },
       ],
     },
@@ -2768,7 +2751,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: `${SCORED_UNGUESSED_GIVEN}採点した訳文が「みどり」のとき`,
           When: [RESUME_QUEST],
-          Then: "再開結果のユーザーの訳文は「みどり」になる",
+          Then: "訳文は「みどり」になる",
         },
       ],
     },
@@ -2792,7 +2775,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
           {
             Given: `${SCORED_UNGUESSED_GIVEN}${hintStatus}`,
             When: [RESUME_QUEST],
-            Then: "再開結果の開示済みのヒントとして、出題ポケモンのタイプ (くさ・どく) が示される",
+            Then: "開示済みのヒントとして、タイプ「くさ」「どく」が示される",
           },
         ],
       },
@@ -2815,7 +2798,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: NO_HINT_REQUESTED_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果の残り挑戦回数は3回になる",
+          Then: "残り挑戦回数は3回になる",
         },
       ],
     },
@@ -2833,7 +2816,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: NO_HINT_REQUESTED_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果の開示済みのヒントは無しになる",
+          Then: "開示済みのヒントは無しになる",
         },
       ],
     },
@@ -2851,7 +2834,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: `${SCORED_UNGUESSED_GIVEN}ヒントを1回要求済みのとき`,
           When: [RESUME_QUEST],
-          Then: "再開結果の開示済みのヒントの残り挑戦回数は2回になる",
+          Then: "開示済みのヒントの残り挑戦回数は2回になる",
         },
       ],
     },
@@ -2871,7 +2854,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: TWO_HINTS_REQUESTED_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果の開示済みのヒントとして、技「たいあたり」が示される",
+          Then: "開示済みのヒントとして、技「たいあたり」が示される",
         },
       ],
     },
@@ -2889,7 +2872,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: TWO_HINTS_REQUESTED_GIVEN,
           When: [RESUME_QUEST],
-          Then: "再開結果の開示済みのヒントの残り挑戦回数は1回になる",
+          Then: "開示済みのヒントの残り挑戦回数は1回になる",
         },
       ],
     },
@@ -2925,7 +2908,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [RESUME_QUEST], Then: "再開結果の段階は捕獲待機になる" }],
+        steps: [{ Given: given, When: [RESUME_QUEST], Then: "段階は捕獲待機になる" }],
       },
       async () => {
         const service = await startQuest();
@@ -2955,7 +2938,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [RESUME_QUEST], Then: "再開結果の確定済みのボールはハイパーボールになる" }],
+        steps: [{ Given: given, When: [RESUME_QUEST], Then: "確定済みのボールはハイパーボールになる" }],
       },
       async () => {
         const service = await startQuest();
@@ -2974,7 +2957,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: "採点済みで、名前当てをスキップ済みで、モンスターボールが確定済みのとき",
           When: [RESUME_QUEST],
-          Then: "再開結果の確定済みのボールはモンスターボールになる",
+          Then: "確定済みのボールはモンスターボールになる",
         },
       ],
     },
@@ -2994,7 +2977,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: "進行中のクエストセッションがないとき",
           When: [RESUME_QUEST],
-          Then: "クエストセッションが見つからないエラーになる",
+          Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],
     },

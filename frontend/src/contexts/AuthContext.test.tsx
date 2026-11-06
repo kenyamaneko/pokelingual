@@ -39,8 +39,9 @@ function renderAuth() {
   return renderHook(() => useAuth(), { wrapper: AuthProvider }).result;
 }
 
-const LOGIN = "ログイン画面で、メール本人確認が済んでいるかを確かめるために、メールアドレスとパスワードを入力してログインする";
-const UNVERIFIED_EMAIL = "メールの確認が済んでいないとき";
+const LOGIN = "ログインする";
+const CONFIRM_EMAIL = "メールアドレスの確認を済ませる";
+const UNVERIFIED_EMAIL = "メールアドレスの確認が済んでいないとき";
 
 describe("[共通:認証]メール本人確認", () => {
   beforeEach(() => {
@@ -53,7 +54,7 @@ describe("[共通:認証]メール本人確認", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["新規登録画面で、メール本人確認のために、メールアドレスとパスワードを入力して新規登録する"],
+          When: ["新規登録する"],
           Then: "ログインしていない状態になる",
         },
       ],
@@ -73,7 +74,7 @@ describe("[共通:認証]メール本人確認", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "メールの確認が済んでいるとき", When: [LOGIN], Then: "ログイン済みの状態になる" }],
+      steps: [{ Given: "メールアドレスの確認が済んでいるとき", When: [LOGIN], Then: "ログイン済みの状態になる" }],
     },
     async () => {
       h.signInResult = { emailVerified: true };
@@ -91,7 +92,7 @@ describe("[共通:認証]メール本人確認", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
-      steps: [{ Given: UNVERIFIED_EMAIL, When: [LOGIN], Then: "メール未確認のエラーで失敗する" }],
+      steps: [{ Given: UNVERIFIED_EMAIL, When: [LOGIN], Then: "メールアドレスの確認が済んでいないことを示すエラーになる" }],
     },
     async () => {
       h.signInResult = { emailVerified: false };
@@ -130,7 +131,7 @@ describe("[共通:認証]メール本人確認", () => {
       steps: [
         {
           Given: UNVERIFIED_EMAIL,
-          When: [LOGIN, "メールの確認を済ませたうえで、ログイン画面でもう一度、メール本人確認のためにメールアドレスとパスワードを入力してログインする"],
+          When: [LOGIN, CONFIRM_EMAIL, LOGIN],
           Then: "ログイン済みの状態になる",
         },
       ],

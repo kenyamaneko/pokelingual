@@ -10,7 +10,7 @@ function fixedRandom(value: number): RandomSource {
 const POOL_OF_FOUR = "プールが 4 件のとき";
 
 function drawFromPool(count: number): string {
-  return `クエスト画面のポケモン名当てのヒントに出す技を、プールから ${count} 件抽選する`;
+  return `プールから ${count} 件抽選する`;
 }
 
 const DRAW_3 = drawFromPool(3);
@@ -40,19 +40,29 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     },
   );
 
-  for (const count of [4, 5]) {
-    defineCase(
-      {
-        種別: "単体テスト",
-        正常異常: "正常系",
-        steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(count)], Then: "選ばれる件数は 4 件になる" }],
-      },
-      () => {
-        const picked = pickRandomSample(["a", "b", "c", "d"], count, fixedRandom(0));
-        expect(picked).toHaveLength(4);
-      },
-    );
-  }
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "正常系",
+      steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(4)], Then: "選ばれる件数は 4 件になる" }],
+    },
+    () => {
+      const picked = pickRandomSample(["a", "b", "c", "d"], 4, fixedRandom(0));
+      expect(picked).toHaveLength(4);
+    },
+  );
+
+  defineCase(
+    {
+      種別: "単体テスト",
+      正常異常: "異常系",
+      steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(5)], Then: "選ばれる件数は 4 件になる" }],
+    },
+    () => {
+      const picked = pickRandomSample(["a", "b", "c", "d"], 5, fixedRandom(0));
+      expect(picked).toHaveLength(4);
+    },
+  );
 
   defineCase(
     {
@@ -68,7 +78,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
   defineCase(
     {
       種別: "単体テスト",
-      正常異常: "正常系",
+      正常異常: "異常系",
       steps: [{ Given: "プールが 2 件のとき", When: [drawFromPool(5)], Then: "選ばれる件数は 2 件になる" }],
     },
     () => {

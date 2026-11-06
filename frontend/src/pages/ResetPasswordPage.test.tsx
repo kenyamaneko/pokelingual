@@ -41,9 +41,11 @@ function renderPage() {
   );
 }
 
-const SUBMIT_RESET_EMAIL = "パスワード再設定画面で、メールアドレスを入力して「再設定メールを送る」を押す";
-const SEND_FAILED = "再設定メールの送信に失敗したとき";
-const SEND_SUCCEEDED = "再設定メールの送信に成功したとき";
+const ENTER_EMAIL = "パスワード再設定画面の再設定メールの送信で、メールアドレス欄に「alice@example.com」と入力する";
+const PRESS_RESET_EMAIL = "パスワード再設定画面の再設定メールの送信で、「再設定メールを送る」ボタンを押す";
+const SUBMIT_RESET_EMAIL = [ENTER_EMAIL, PRESS_RESET_EMAIL] as const;
+const SEND_UNAVAILABLE = "再設定メールを送信できないとき";
+const SEND_AVAILABLE = "再設定メールを送信できるとき";
 const COMPLETION_MESSAGE = "「メールを送信しました」を含む完了メッセージが表示される";
 const FAILURE_MESSAGE = "「メールの送信に失敗しました」を含むエラーメッセージが表示される";
 
@@ -54,8 +56,7 @@ describe("[共通:認証]パスワードの再設定", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "メールアドレスが「alice@example.com」のとき",
-          When: [SUBMIT_RESET_EMAIL],
+          When: SUBMIT_RESET_EMAIL,
           Then: "Firebase Auth に「alice@example.com」宛の再設定メールの送信が依頼される",
         },
       ],
@@ -75,7 +76,7 @@ describe("[共通:認証]パスワードの再設定", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: SEND_SUCCEEDED, When: [SUBMIT_RESET_EMAIL], Then: COMPLETION_MESSAGE }],
+      steps: [{ Given: SEND_AVAILABLE, When: SUBMIT_RESET_EMAIL, Then: COMPLETION_MESSAGE }],
     },
     async () => {
       const user = userEvent.setup();
@@ -93,7 +94,7 @@ describe("[共通:認証]パスワードの再設定", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: SEND_SUCCEEDED, When: [SUBMIT_RESET_EMAIL], Then: "メールアドレスの入力フォームが表示されなくなる" },
+        { Given: SEND_AVAILABLE, When: SUBMIT_RESET_EMAIL, Then: "メールアドレスの入力フォームが表示されなくなる" },
       ],
     },
     async () => {
@@ -111,7 +112,7 @@ describe("[共通:認証]パスワードの再設定", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: FAILURE_MESSAGE }],
+      steps: [{ Given: SEND_UNAVAILABLE, When: SUBMIT_RESET_EMAIL, Then: FAILURE_MESSAGE }],
     },
     async () => {
       const user = userEvent.setup();
@@ -130,7 +131,7 @@ describe("[共通:認証]パスワードの再設定", () => {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: "メールアドレスの入力フォームが表示されたままになる" },
+        { Given: SEND_UNAVAILABLE, When: SUBMIT_RESET_EMAIL, Then: "メールアドレスの入力フォームが表示されたままになる" },
       ],
     },
     async () => {
@@ -150,10 +151,10 @@ describe("[共通:認証]パスワードの再設定", () => {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: FAILURE_MESSAGE },
+        { Given: SEND_UNAVAILABLE, When: SUBMIT_RESET_EMAIL, Then: FAILURE_MESSAGE },
         {
-          Given: "再設定メールを送信できるとき",
-          When: ["パスワード再設定画面で、もう一度「再設定メールを送る」を押す"],
+          Given: SEND_AVAILABLE,
+          When: [PRESS_RESET_EMAIL],
           Then: COMPLETION_MESSAGE,
         },
       ],

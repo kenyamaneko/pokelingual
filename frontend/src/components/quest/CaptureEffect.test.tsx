@@ -34,12 +34,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const SHOW_EFFECT = "クエスト画面で、捕獲演出を表示する";
-const WAIT_FOR_SHAKE = "クエスト画面の捕獲演出で、ボールの揺れの再生が終わるまで待つ";
-const WAIT_FOR_EFFECT =
-  "クエスト画面の捕獲演出で、ボールの揺れと、捕獲の成否を示すエフェクトの再生が終わるまで待つ";
-const WAIT_FOR_WHITEOUT =
-  "クエスト画面の捕獲演出で、ボールの揺れ、捕獲の成否を示すエフェクト、白フェードの再生が終わるまで待つ";
+const SHOW_EFFECT = "捕獲演出を始める";
+const WAIT_FOR_SHAKE = "ボールの揺れの再生が終わるまで待つ";
+const WAIT_FOR_EFFECT = "ボールの揺れと、捕獲の成否を示すエフェクトの再生が終わるまで待つ";
+const WAIT_FOR_WHITEOUT = "ボールの揺れ、捕獲の成否を示すエフェクト、白フェードの再生が終わるまで待つ";
 
 describe("[本体:捕獲]捕獲演出", () => {
   defineCase(
@@ -48,9 +46,8 @@ describe("[本体:捕獲]捕獲演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ボールの揺れの再生中のとき",
           When: [SHOW_EFFECT],
-          Then: "捕獲の成否を示すエフェクトは表示されない",
+          Then: "ボールの揺れの再生中は、捕獲の成否を示すエフェクトは表示されない",
         },
       ],
     },

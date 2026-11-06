@@ -6,7 +6,7 @@ import {
 } from "./generation.js";
 import { defineCase } from "../test/defineCase.js";
 
-const FIND_IDS = "クエスト画面で出題するポケモンを選ぶために、選択世代に含まれる図鑑番号を求める";
+const FIND_IDS = "選択世代に含まれる図鑑番号を求める";
 const GENERATIONS_2_AND_4 = "第2世代と第4世代が選択されているとき";
 
 describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
@@ -32,7 +32,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: `第${generation}世代のみが選択されているとき`, When: [FIND_IDS], Then: `図鑑番号 ${id} を含む` }],
+        steps: [{ Given: `第${generation}世代のみが選択されているとき`, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
       },
       () => {
         expect(generationsToPokemonIDs([generation]).has(id)).toBe(true);
@@ -62,7 +62,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: `第${generation}世代のみが選択されているとき`, When: [FIND_IDS], Then: `図鑑番号 ${id} を含まない` }],
+        steps: [{ Given: `第${generation}世代のみが選択されているとき`, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` }],
       },
       () => {
         expect(generationsToPokemonIDs([generation]).has(id)).toBe(false);
@@ -97,7 +97,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: `図鑑番号 ${id} を含む` }],
+        steps: [{ Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
       },
       () => {
         expect(generationsToPokemonIDs([2, 4]).has(id)).toBe(true);
@@ -111,7 +111,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         steps: [
-          { Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: `選択していない第3世代の図鑑番号 ${id} を含まない` },
+          { Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` },
         ],
       },
       () => {
@@ -132,7 +132,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
   );
 });
 
-const BUILD_POOL = "クエスト画面で出題するポケモンを選ぶために、出題プールを作る";
+const BUILD_POOL = "出題プールを作る";
 const GENERATION_1_WITH_EXCLUSIONS = "第1世代が選択され、図鑑番号 5 と 10 が除外されているとき";
 
 describe("[本体:クエスト]出題プールの図鑑番号", () => {
@@ -185,23 +185,30 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
     },
   );
 
-  defineCase(
+  for (const { 正常異常, given, excluded } of [
     {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: "第1世代が選択され、除外された図鑑番号が 0 件のとき",
-          When: [BUILD_POOL],
-          Then: "出題プールは 151 件になる",
-        },
-      ],
+      正常異常: "正常系" as const,
+      given: "第1世代が選択され、除外された図鑑番号が 0 件のとき",
+      excluded: [] as number[],
     },
-    () => {
-      const pool = buildQuestPoolIDs([1], new Set());
-      expect(pool.size).toBe(151);
+    {
+      正常異常: "異常系" as const,
+      given: "第1世代が選択され、第1世代の外にある図鑑番号 200 が除外されているとき",
+      excluded: [200],
     },
-  );
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常,
+        steps: [{ Given: given, When: [BUILD_POOL], Then: "出題プールは 151 件になる" }],
+      },
+      () => {
+        const pool = buildQuestPoolIDs([1], new Set(excluded));
+        expect(pool.size).toBe(151);
+      },
+    );
+  }
 
   defineCase(
     {
@@ -218,24 +225,6 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
     () => {
       const pool = buildQuestPoolIDs([1], new Set([5]));
       expect(pool.size).toBe(150);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: "第1世代が選択され、第1世代の外にある図鑑番号 200 が除外されているとき",
-          When: [BUILD_POOL],
-          Then: "出題プールは 151 件になる",
-        },
-      ],
-    },
-    () => {
-      const pool = buildQuestPoolIDs([1], new Set([200]));
-      expect(pool.size).toBe(151);
     },
   );
 
@@ -259,7 +248,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
   );
 });
 
-const VALIDATE_GENERATIONS = "設定画面の「出題する世代」の変更を保存するために、出題世代設定を検証する";
+const VALIDATE_GENERATIONS = "出題世代設定を検証する";
 
 describe("[共通:設定]出題世代設定の検証", () => {
   defineCase(
@@ -268,9 +257,9 @@ describe("[共通:設定]出題世代設定の検証", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "順不同で重複した世代 (第3世代・第1世代・第1世代) が指定されているとき",
+          Given: "世代の指定が、順不同で重複した第3世代・第1世代・第1世代のとき",
           When: [VALIDATE_GENERATIONS],
-          Then: "重複が除かれ第1世代・第3世代の昇順で受理される",
+          Then: "検証後の出題世代は第1世代・第3世代の昇順になる",
         },
       ],
     },
@@ -287,7 +276,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [VALIDATE_GENERATIONS], Then: "受理される" }],
+        steps: [{ Given: given, When: [VALIDATE_GENERATIONS], Then: "検証の結果は受理になる" }],
       },
       () => {
         expect(validateEnabledGenerations([generation]).ok).toBe(true);
@@ -303,7 +292,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
         {
           Given: "世代の一覧が空のとき",
           When: [VALIDATE_GENERATIONS],
-          Then: "最低 1 世代が必要という理由で検証に失敗する",
+          Then: "1 つ以上の世代の選択が必要なことを示すエラーになる",
         },
       ],
     },
@@ -317,7 +306,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
 
   for (const { given, raw } of [
     { given: "世代の指定が一覧でなく文字列 x のとき", raw: "x" },
-    { given: "世代の指定がリクエストの本文に無いとき", raw: undefined },
+    { given: "世代の指定が無いとき", raw: undefined },
   ]) {
     defineCase(
       {
@@ -327,7 +316,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
           {
             Given: given,
             When: [VALIDATE_GENERATIONS],
-            Then: "世代は一覧で指定する必要があるという理由で検証に失敗する",
+            Then: "世代は一覧で指定する必要があることを示すエラーになる",
           },
         ],
       },
@@ -348,7 +337,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
         {
           Given: "世代に最小の 1 を下回る 0 が指定されているとき",
           When: [VALIDATE_GENERATIONS],
-          Then: "未知の世代 0 という理由で検証に失敗する",
+          Then: "世代 0 が存在しないことを示すエラーになる",
         },
       ],
     },
@@ -368,7 +357,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
         {
           Given: "世代に最大の 8 を上回る 9 が指定されているとき",
           When: [VALIDATE_GENERATIONS],
-          Then: "未知の世代 9 という理由で検証に失敗する",
+          Then: "世代 9 が存在しないことを示すエラーになる",
         },
       ],
     },
@@ -388,7 +377,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
         {
           Given: "世代に整数でない 1.5 が指定されているとき",
           When: [VALIDATE_GENERATIONS],
-          Then: "未知の世代 1.5 という理由で検証に失敗する",
+          Then: "世代 1.5 が存在しないことを示すエラーになる",
         },
       ],
     },

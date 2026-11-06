@@ -17,9 +17,9 @@ function moveEntry(
   };
 }
 
-const DETERMINE_CANDIDATES = "ポケモンデータのスナップショット生成で、ポケモンの技のデータから、レベルアップで覚える技の候補を決定する";
-const DETERMINE_MOVE_NAME = "ポケモンデータのスナップショット生成で、技の名称の一覧から、技の日本語名を決定する";
-const CREATE_NAME_LIST = "ポケモンデータのスナップショット生成で、技の候補の日本語名の一覧を作成する";
+const DETERMINE_CANDIDATES = "レベルアップで覚える技の候補を決定する";
+const DETERMINE_MOVE_NAME = "技の日本語名を決定する";
+const CREATE_NAME_LIST = "技の候補の日本語名の一覧を作成する";
 
 describe("[外部連携:ポケモンデータ提供元]レベルアップで覚える技の候補の決定", () => {
   defineCase(
@@ -28,9 +28,9 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       正常異常: "正常系",
       steps: [
         {
-          Given: "ソード・シールドでレベルアップで覚える技が vine-whip (技の番号 22・Lv.7)・tackle (33・Lv.1)・growl (45・Lv.1) の 3 つあるとき",
+          Given: "ソード・シールドで、vine-whip を Lv.7、tackle を Lv.1、growl を Lv.1 のレベルアップで覚えるとき",
           When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は、tackle (技の番号 33)・growl (45)・vine-whip (22) の 3 件になる (並びは問わない)",
+          Then: "技の候補は、順不同で、tackle・growl・vine-whip の 3 件になる",
         },
       ],
     },
@@ -58,9 +58,9 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       正常異常: "正常系",
       steps: [
         {
-          Given: "ソード・シールドでレベルアップで覚える技が sketch (技の番号 166・Lv.1) の 1 つだけのとき",
+          Given: "ソード・シールドで、sketch だけを Lv.1 のレベルアップで覚えるとき",
           When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は sketch (技の番号 166) の 1 件だけになる",
+          Then: "技の候補は、sketch の 1 件だけになる",
         },
       ],
     },
@@ -76,9 +76,9 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       正常異常: "正常系",
       steps: [
         {
-          Given: "ソード・シールドにレベルアップで覚える技のデータが無く、X・Y に tackle (技の番号 33・Lv.1) と growl (45・Lv.1) があるとき",
+          Given: "ソード・シールドにレベルアップで覚える技のデータが無く、X・Y で、tackle と growl を Lv.1 のレベルアップで覚えるとき",
           When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は tackle (33) と growl (45) の 2 件になる (並びは問わない)",
+          Then: "技の候補は、順不同で、tackle・growl の 2 件になる",
         },
       ],
     },
@@ -104,9 +104,9 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       正常異常: "正常系",
       steps: [
         {
-          Given: "ソード・シールドで double-edge (技の番号 38) を Lv.10 と Lv.30 の 2 つのレベルで覚えるとき",
+          Given: "ソード・シールドで、double-edge を Lv.10 と Lv.30 のレベルアップで覚えるとき",
           When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は double-edge (技の番号 38) の 1 件だけになる",
+          Then: "技の候補は、double-edge の 1 件だけになる",
         },
       ],
     },
@@ -123,7 +123,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
 
   for (const { given, moves } of [
     {
-      given: "ソード・シールドで、タマゴ技 (egg-move・技の番号 99) のようにレベルアップ以外の方法でしか覚えない技だけがあるとき",
+      given: "ソード・シールドで、レベルアップ以外の方法でしか覚えない技として、タマゴ技 egg-move だけがあるとき",
       moves: [moveEntry("egg-move", 99, [{ versionGroup: "sword-shield", level: 0, learnMethod: "egg" }])],
     },
     { given: "技のデータが 1 件も無いとき", moves: [] },
@@ -189,7 +189,7 @@ const moveNamesJA = new Map([
 ]);
 
 const MOVE_NAMES_RESOLVED_GIVEN =
-  "日本語名を調べ終えている技が、tackle (たいあたり)・growl (なきごえ)・vine-whip (つるのムチ)・leech-seed (やどりぎのタネ) の 4 つで";
+  "日本語名を調べ終えている技が、tackle はたいあたり・growl はなきごえ・vine-whip はつるのムチ・leech-seed はやどりぎのタネの 4 つで";
 
 describe("[外部連携:ポケモンデータ提供元]技の候補の日本語名の一覧の作成", () => {
   defineCase(
@@ -243,9 +243,9 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       正常異常: "異常系",
       steps: [
         {
-          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補に、日本語名を調べ終えていない技 (unknown-move) があるとき`,
+          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補に、日本語名を調べ終えていない技 unknown-move があるとき`,
           When: [CREATE_NAME_LIST],
-          Then: "日本語名が解決されていないことを示すエラーになる",
+          Then: "日本語名を調べ終えていない技があることを示すエラーになる",
         },
       ],
     },

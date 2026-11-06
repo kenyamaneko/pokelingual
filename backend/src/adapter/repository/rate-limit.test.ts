@@ -6,12 +6,13 @@ import { defineCase } from "../../test/defineCase.js";
 const db = requireFirestoreEmulator();
 
 const USER_LIMIT_5 = "ユーザーの日次上限が 5 回に設定されているとき";
-const RECORD_5_TIMES = "クエスト画面の翻訳の採点で、AI 呼び出し回数を 5 回続けて記録する";
 const USER_LIMIT_REACHED = "ユーザーの日次上限に達しているとき";
-const SAME_USER_RECORDS = "クエスト画面の翻訳の採点で、同じユーザーの AI 呼び出し回数を記録する";
+const RECORD_USAGE = "AI 呼び出し回数を記録する";
+const RECORD_5_TIMES = [RECORD_USAGE, RECORD_USAGE, RECORD_USAGE, RECORD_USAGE, RECORD_USAGE] as const;
+const RECORD_3_TIMES = [RECORD_USAGE, RECORD_USAGE, RECORD_USAGE] as const;
 const USER_LIMIT_ERROR = "ユーザーの日次上限に達したことを示すエラーになる";
 const GLOBAL_LIMIT_ERROR = "全体の日次上限に達したことを示すエラーになる";
-const GET_USAGE = "ヘッダの「今日の残り回数」を表示するために、そのユーザーの AI 呼び出し回数を取得する";
+const GET_USAGE = "AI 呼び出し回数を取得する";
 const NEWCOMER = "今日まだ記録の無いユーザーがいるとき";
 
 describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得", () => {
@@ -24,7 +25,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       steps: [
         {
           Given: USER_LIMIT_5,
-          When: [RECORD_5_TIMES],
+          When: RECORD_5_TIMES,
           Then: "記録のたびに今日の AI 呼び出し回数が 1 から 5 まで 1 ずつ増える",
         },
       ],
@@ -43,7 +44,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       種別: "インフラ結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: USER_LIMIT_5, When: [RECORD_5_TIMES], Then: "記録のたびに得られる日次上限が 5 回になる" },
+        { Given: USER_LIMIT_5, When: RECORD_5_TIMES, Then: "記録のたびに日次上限が 5 回になる" },
       ],
     },
     async () => {
@@ -62,7 +63,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       steps: [
         {
           Given: "あるユーザーがユーザーの日次上限に達しているとき",
-          When: ["クエスト画面の翻訳の採点で、別のユーザーの AI 呼び出し回数を記録する"],
+          When: ["別のユーザーの AI 呼び出し回数を記録する"],
           Then: "別のユーザーの今日の AI 呼び出し回数が 1 になる",
         },
       ],
@@ -102,7 +103,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
         {
           Given: `ユーザーの日次上限が 30 回に設定されていて、${NEWCOMER}`,
           When: [GET_USAGE],
-          Then: "得られる日次上限が 30 回になる",
+          Then: "日次上限が 30 回になる",
         },
       ],
     },
@@ -119,10 +120,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "正常系",
       steps: [
         {
-          When: [
-            "クエスト画面の翻訳の採点で、同じユーザーの AI 呼び出し回数を 3 回記録する",
-            "ヘッダの「今日の残り回数」を表示するために、同じユーザーの AI 呼び出し回数を取得する",
-          ],
+          When: [...RECORD_3_TIMES, GET_USAGE],
           Then: "今日の AI 呼び出し回数が 3 になる",
         },
       ],
@@ -141,7 +139,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     {
       種別: "インフラ結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: USER_LIMIT_REACHED, When: [SAME_USER_RECORDS], Then: USER_LIMIT_ERROR }],
+      steps: [{ Given: USER_LIMIT_REACHED, When: [RECORD_USAGE], Then: USER_LIMIT_ERROR }],
     },
     async () => {
       const repo = new RateLimitRepo(db, 2, 1000);
@@ -160,8 +158,8 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "異常系",
       steps: [
         {
-          Given: "全体の日次上限に達しているとき",
-          When: ["クエスト画面の翻訳の採点で、まだ記録していないユーザーの AI 呼び出し回数を記録する"],
+          Given: "全体の日次上限に達していて、まだ記録していないユーザーがいるとき",
+          When: ["そのユーザーの AI 呼び出し回数を記録する"],
           Then: GLOBAL_LIMIT_ERROR,
         },
       ],
@@ -184,7 +182,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       steps: [
         {
           Given: "ユーザーの日次上限に余裕があり全体の日次上限に達しているとき",
-          When: [SAME_USER_RECORDS],
+          When: [RECORD_USAGE],
           Then: GLOBAL_LIMIT_ERROR,
         },
       ],
@@ -225,7 +223,7 @@ describe("[本体:AI 呼び出し回数]日次上限のリセット", () => {
       {
         種別: "インフラ結合テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: ["クエスト画面の翻訳の採点で、AI 呼び出し回数を記録する"], Then: "今日の AI 呼び出し回数が 1 になる" }],
+        steps: [{ Given: given, When: [RECORD_USAGE], Then: "今日の AI 呼び出し回数が 1 になる" }],
       },
       async () => {
         const repo = new RateLimitRepo(db, userLimit, globalLimit);
@@ -250,8 +248,8 @@ describe("[本体:AI 呼び出し回数]日次上限のリセット", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "JST 2026-05-28 23:59 にユーザーの日次上限まで記録が済んでいるとき",
-          When: ["クエスト画面の翻訳の採点で、同じ JST 23:59 に AI 呼び出し回数をもう一度記録する"],
+          Given: "JST 2026-05-28 23:59 にユーザーの日次上限まで記録が済んでいて、現在時刻が JST 2026-05-28 23:59 のとき",
+          When: [RECORD_USAGE],
           Then: USER_LIMIT_ERROR,
         },
       ],

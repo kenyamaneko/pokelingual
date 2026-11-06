@@ -55,11 +55,12 @@ function renderHome() {
   );
 }
 
-const PRESS_START_QUEST = "ホーム画面で「ポケモンを探しに行く」を押す";
-const PRESS_START_QUEST_AGAIN = "ホーム画面で、もう一度「ポケモンを探しに行く」を押す";
-const QUEST_SELECT_SHOWN = "本番のクエストの場所選択画面 (「どこに　ポケモンを　探しに行く？」の見出し) に遷移する";
+const PRESS_START_QUEST = "ホーム画面のクエストの開始で、「ポケモンを探しに行く」ボタンを押す";
+const TUTORIAL_COMPLETED = "チュートリアルが完了済みのとき";
+const QUEST_SELECT_SHOWN = "場所選択画面に遷移し、見出し「どこに　ポケモンを　探しに行く？」が表示される";
 const STATUS_CHECK_FAILED_MESSAGE = "「状態の確認に失敗しました。もう一度お試しください」と表示される";
-const STATUS_CHECK_PENDING = "チュートリアルの完了状態の確認が終わっていないとき";
+const STATUS_CHECK_UNAVAILABLE = "チュートリアルの完了状態を確認できないとき";
+const STATUS_CHECK_SLOW = "チュートリアルの完了状態の確認に時間がかかっているとき";
 
 async function pressStartQuestButtonAgainAfterFailure() {
   let shouldSucceed = false;
@@ -97,7 +98,7 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "チュートリアルが完了済みのとき", When: [PRESS_START_QUEST], Then: QUEST_SELECT_SHOWN }],
+      steps: [{ Given: TUTORIAL_COMPLETED, When: [PRESS_START_QUEST], Then: QUEST_SELECT_SHOWN }],
     },
     async () => {
       mockTutorialStatus(true);
@@ -120,7 +121,7 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
         {
           Given: "チュートリアルが未完了のとき",
           When: [PRESS_START_QUEST],
-          Then: "チュートリアル画面 (「遊び方の説明をします」の見出し) に遷移する",
+          Then: "チュートリアル画面に遷移し、見出し「遊び方の説明をします」が表示される",
         },
       ],
     },
@@ -141,7 +142,7 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       正常異常: "異常系",
       steps: [
         {
-          Given: "チュートリアルの完了状態の確認に失敗するとき",
+          Given: STATUS_CHECK_UNAVAILABLE,
           When: [PRESS_START_QUEST],
           Then: STATUS_CHECK_FAILED_MESSAGE,
         },
@@ -166,13 +167,13 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       正常異常: "異常系",
       steps: [
         {
-          Given: "チュートリアルの完了状態の確認が失敗するとき",
+          Given: STATUS_CHECK_UNAVAILABLE,
           When: [PRESS_START_QUEST],
           Then: STATUS_CHECK_FAILED_MESSAGE,
         },
         {
-          Given: "チュートリアルの完了状態の確認がチュートリアル完了済みと確認できるとき",
-          When: [PRESS_START_QUEST_AGAIN],
+          Given: TUTORIAL_COMPLETED,
+          When: [PRESS_START_QUEST],
           Then: QUEST_SELECT_SHOWN,
         },
       ],
@@ -192,14 +193,14 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       正常異常: "異常系",
       steps: [
         {
-          Given: "チュートリアルの完了状態の確認が失敗するとき",
+          Given: STATUS_CHECK_UNAVAILABLE,
           When: [PRESS_START_QUEST],
           Then: STATUS_CHECK_FAILED_MESSAGE,
         },
         {
-          Given: "チュートリアルの完了状態の確認がチュートリアル完了済みと確認できるとき",
-          When: [PRESS_START_QUEST_AGAIN],
-          Then: "「状態の確認に失敗しました。もう一度お試しください」が表示されなくなる",
+          Given: TUTORIAL_COMPLETED,
+          When: [PRESS_START_QUEST],
+          Then: "「状態の確認に失敗しました。もう一度お試しください」と表示されなくなる",
         },
       ],
     },
@@ -218,7 +219,7 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       種別: "部品間結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: STATUS_CHECK_PENDING, When: [PRESS_START_QUEST], Then: "ボタンの表示が「確認中...」になる" },
+        { Given: STATUS_CHECK_SLOW, When: [PRESS_START_QUEST], Then: "ボタンの表示が「確認中...」になる" },
       ],
     },
     async () => {
@@ -240,9 +241,9 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       正常異常: "正常系",
       steps: [
         {
-          Given: STATUS_CHECK_PENDING,
+          Given: STATUS_CHECK_SLOW,
           When: [PRESS_START_QUEST],
-          Then: "「確認中...」のボタンが押せない状態になる",
+          Then: "「確認中...」ボタンが押せない状態になる",
         },
       ],
     },
@@ -265,8 +266,8 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       正常異常: "正常系",
       steps: [
         {
-          Given: "チュートリアルの完了状態の確認が終わっておらず、確認の結果がチュートリアル完了済みのとき",
-          When: [PRESS_START_QUEST, "ホーム画面の「ポケモンを探しに行く」で、チュートリアルの完了状態の確認が終わるのを待つ"],
+          Given: "チュートリアルの完了状態の確認に時間がかかっていて、チュートリアルが完了済みのとき",
+          When: [PRESS_START_QUEST, "ホーム画面のクエストの開始で、ボタンの表示が「確認中...」でなくなるまで待つ"],
           Then: QUEST_SELECT_SHOWN,
         },
       ],
@@ -292,7 +293,7 @@ describe("[本体:チュートリアル]ホーム画面のチュートリアル�
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ When: ["ホーム画面のチュートリアルへのリンクを見るために、ホーム画面を開く"], Then: "「チュートリアルを見る」のリンク先が「/tutorial」になる" }],
+      steps: [{ When: ["ホーム画面を開く"], Then: "ホーム画面の「チュートリアルを見る」のリンク先が「/tutorial」になる" }],
     },
     async () => {
       renderHome();

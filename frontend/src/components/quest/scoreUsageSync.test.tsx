@@ -13,6 +13,13 @@ import {
 } from "../../test/scoringFlow";
 import { defineCase } from "../../test/defineCase";
 
+const OPEN_QUEST_SCREEN = "クエスト画面を開く";
+const SUBMIT_TRANSLATION_FOR_SCORING = [
+  "場所選択画面で「テスト草原」を選ぶ",
+  "クエスト画面の翻訳の入力欄に「この ポケモンは はやい」と入力する",
+  "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
+] as const;
+
 describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
   defineCase(
     {
@@ -20,8 +27,8 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ヘッダーに「残り 25/30」と表示されていて、バックエンドが採点に成功するとき",
-          When: ["クエスト画面で、場所「テスト草原」を選び、翻訳を入力して「この翻訳に決めた！」を押し、AI に採点を依頼する"],
+          Given: "ヘッダーに「残り 25/30」と表示されているとき",
+          When: [OPEN_QUEST_SCREEN, ...SUBMIT_TRANSLATION_FOR_SCORING],
           Then: "ヘッダーに「残り 24/30」と表示される",
         },
       ],

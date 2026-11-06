@@ -7,7 +7,7 @@ function entry(version: string, language: string, text: string): FlavorTextSourc
   return { version, language, text };
 }
 
-const BUILD_PAIRS = "図鑑画面のポケモン詳細とクエスト画面の出題のために、英日説明文ペアの一覧を構築する";
+const BUILD_PAIRS = "英日説明文ペアの一覧を構築する";
 
 describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの構築", () => {
   defineCase(
@@ -119,7 +119,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
 
   for (const { given, entries } of [
     {
-      given: "図鑑に表示しないバージョン (red) の英語の説明文「Old.」と日本語の説明文「古い。」だけがあるとき",
+      given: "図鑑に表示しないバージョン red の英語の説明文「Old.」と日本語の説明文「古い。」だけがあるとき",
       entries: [entry("red", "en", "Old."), entry("red", "ja", "古い。")],
     },
     { given: "バージョン X に日本語の説明文「速い。」だけがあるとき", entries: [entry("x", "ja", "速い。")] },

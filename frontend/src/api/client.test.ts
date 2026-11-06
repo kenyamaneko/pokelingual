@@ -43,12 +43,13 @@ async function requestWithLimitError(kind: string): Promise<RateLimitDetail> {
   return (handler.mock.calls[0][0] as CustomEvent<RateLimitDetail>).detail;
 }
 
-const SEND_REQUEST = "クエスト画面の AI 呼び出しを伴う操作で、バックエンドへリクエストを送る";
-const SEND_REQUEST_AGAIN = "クエスト画面の AI 呼び出しを伴う操作で、もう一度バックエンドへリクエストを送る";
-const NOTHING_NOTIFIED = "日次上限の通知を受け取る側には何も届かない";
-const INVALID_KIND_429 = "バックエンドが 429 を返し、上限の種類が「invalid」でユーザーでも全体でもないとき";
-const USER_KIND_429 = "バックエンドが 429 を返し、上限の種類がユーザーのとき";
-const USER_LIMIT_NOTIFIED = "日次上限の通知を受け取る側に、ユーザーの日次上限であることが届く";
+const CALL_BACKEND_API = "バックエンドの API を呼び出す";
+const NOTHING_NOTIFIED = "日次上限の通知は発行されない";
+const INVALID_KIND_LIMIT = "日次上限に達していて、上限の種類が「invalid」でユーザーでも全体でもないとき";
+const USER_LIMIT_REACHED = "ユーザーの日次上限に達しているとき";
+const USER_LIMIT_NOTIFIED = "日次上限の通知の種類がユーザーになる";
+const USER_LIMIT_WITHOUT_MESSAGE = "ユーザーの日次上限に達していて、メッセージが無いとき";
+const USER_LIMIT_WITH_EMPTY_MESSAGE = "ユーザーの日次上限に達していて、メッセージが空文字のとき";
 
 describe("[共通:認証]バックエンド呼び出しへの認証トークンの付与", () => {
   defineCase(
@@ -58,8 +59,8 @@ describe("[共通:認証]バックエンド呼び出しへの認証トークン�
       steps: [
         {
           Given: "VITE_APP_MODE が mock のとき",
-          When: ["ログイン後の画面の操作で、バックエンドへリクエストを送る"],
-          Then: "リクエストの Authorization ヘッダーが「Bearer dev-token」になる",
+          When: [CALL_BACKEND_API],
+          Then: "送信するリクエストの Authorization ヘッダーが「Bearer dev-token」になる",
         },
       ],
     },
@@ -88,7 +89,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: USER_KIND_429, When: [SEND_REQUEST], Then: USER_LIMIT_NOTIFIED }],
+      steps: [{ Given: USER_LIMIT_REACHED, When: [CALL_BACKEND_API], Then: USER_LIMIT_NOTIFIED }],
     },
     async () => {
       const detail = await requestWithLimitError("user");
@@ -103,9 +104,9 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "バックエンドが 429 を返し、上限の種類が全体のとき",
-          When: [SEND_REQUEST],
-          Then: "日次上限の通知を受け取る側に、全体の日次上限であることが届く",
+          Given: "全体の日次上限に達しているとき",
+          When: [CALL_BACKEND_API],
+          Then: "日次上限の通知の種類が全体になる",
         },
       ],
     },
@@ -126,9 +127,9 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
         正常異常: "異常系",
         steps: [
           {
-            Given: `バックエンドが 429 を返し、上限の種類が${label}で、応答のメッセージが「上限に たっしました」のとき`,
-            When: [SEND_REQUEST],
-            Then: "日次上限の通知を受け取る側に、メッセージ「上限に たっしました」が届く",
+            Given: `${label}の日次上限に達していて、メッセージが「上限に たっしました」のとき`,
+            When: [CALL_BACKEND_API],
+            Then: "日次上限の通知のメッセージが「上限に たっしました」になる",
           },
         ],
       },
@@ -141,24 +142,24 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
   }
 
   for (const { given, status, body } of [
-    { given: INVALID_KIND_429, status: 429, body: { error: "invalid", message: "x" } },
+    { given: INVALID_KIND_LIMIT, status: 429, body: { error: "invalid", message: "x" } },
     {
-      given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが無いとき",
+      given: USER_LIMIT_WITHOUT_MESSAGE,
       status: 429,
       body: { error: "user" },
     },
     {
-      given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが空文字のとき",
+      given: USER_LIMIT_WITH_EMPTY_MESSAGE,
       status: 429,
       body: { error: "user", message: "" },
     },
-    { given: "バックエンドが 500 を返すとき", status: 500, body: { error: "internal" } },
+    { given: "バックエンドでエラーが起きているとき", status: 500, body: { error: "internal" } },
   ]) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
-        steps: [{ Given: given, When: [SEND_REQUEST], Then: NOTHING_NOTIFIED }],
+        steps: [{ Given: given, When: [CALL_BACKEND_API], Then: NOTHING_NOTIFIED }],
       },
       async () => {
         installAdapter(statusAdapter(status, body));
@@ -177,8 +178,12 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: INVALID_KIND_429, When: [SEND_REQUEST], Then: "リクエストは 429 のエラーになる" },
-        { Given: USER_KIND_429, When: [SEND_REQUEST_AGAIN], Then: USER_LIMIT_NOTIFIED },
+        {
+          Given: INVALID_KIND_LIMIT,
+          When: [CALL_BACKEND_API],
+          Then: "API の応答は、日次上限に達したことを示す 429 のエラーになる",
+        },
+        { Given: USER_LIMIT_REACHED, When: [CALL_BACKEND_API], Then: USER_LIMIT_NOTIFIED },
       ],
     },
     async () => {
@@ -197,11 +202,11 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: USER_KIND_429, When: [SEND_REQUEST], Then: USER_LIMIT_NOTIFIED },
+        { Given: USER_LIMIT_REACHED, When: [CALL_BACKEND_API], Then: USER_LIMIT_NOTIFIED },
         {
-          Given: "バックエンドが 200 で応答のデータ「ok」を返すとき",
-          When: [SEND_REQUEST_AGAIN],
-          Then: "リクエストの結果は「ok」になる",
+          Given: "日次上限に達しておらず、応答のデータが「ok」のとき",
+          When: [CALL_BACKEND_API],
+          Then: "API の応答のデータが「ok」になる",
         },
       ],
     },
@@ -229,8 +234,8 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
       正常異常: "異常系",
       steps: [
         {
-          Given: INVALID_KIND_429,
-          When: [SEND_REQUEST],
+          Given: INVALID_KIND_LIMIT,
+          When: [CALL_BACKEND_API],
           Then: "コンソールのエラー出力に、メッセージ「unexpected 429 response shape from backend」が 1 回だけ出る",
         },
       ],
@@ -247,11 +252,8 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
   );
 
   for (const { given, body } of [
-    { given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが無いとき", body: { error: "user" } },
-    {
-      given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが空文字のとき",
-      body: { error: "user", message: "" },
-    },
+    { given: USER_LIMIT_WITHOUT_MESSAGE, body: { error: "user" } },
+    { given: USER_LIMIT_WITH_EMPTY_MESSAGE, body: { error: "user", message: "" } },
   ]) {
     defineCase(
       {
@@ -260,7 +262,7 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
         steps: [
           {
             Given: given,
-            When: [SEND_REQUEST],
+            When: [CALL_BACKEND_API],
             Then: "コンソールのエラー出力に、メッセージ「429 response missing message field」が 1 回だけ出る",
           },
         ],

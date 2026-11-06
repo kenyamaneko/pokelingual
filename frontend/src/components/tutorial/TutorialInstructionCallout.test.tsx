@@ -9,6 +9,10 @@ import { defineCase } from "../../test/defineCase";
 
 const CALLOUT_CONTENT = "タイトルが「この英文を訳してみよう」、案内文が「テスト用の案内文」";
 
+const START_CALLOUT = "案内の吹き出しの表示を始める";
+const WAIT_FOR_CALLOUT_APPEAR = "案内の吹き出しが表示されるまで待つ";
+const CALLOUT_NOT_SHAKING = "案内の吹き出しは揺れていない";
+
 describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -29,7 +33,7 @@ describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
       steps: [
         {
           Given: `${CALLOUT_CONTENT}のとき`,
-          When: ["チュートリアル画面のステップの開始時に、案内の吹き出しの表示を始める"],
+          When: [START_CALLOUT],
           Then: "案内文「テスト用の案内文」が表示されていない",
         },
       ],
@@ -47,7 +51,7 @@ describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
       steps: [
         {
           Given: `${CALLOUT_CONTENT}のとき`,
-          When: ["チュートリアル画面のステップの開始時に、案内の吹き出しの表示を始める", "チュートリアル画面のステップが始まってから 600 ミリ秒待つ"],
+          When: [START_CALLOUT, WAIT_FOR_CALLOUT_APPEAR],
           Then: "タイトル「この英文を訳してみよう」と案内文「テスト用の案内文」が表示される",
         },
       ],
@@ -102,9 +106,9 @@ describe("[本体:チュートリアル]誤答時の案内の吹き出しの揺�
       正常異常: "異常系",
       steps: [
         {
-          Given: `${CALLOUT_CONTENT}で、誤答が 3 回あった状態のとき`,
-          When: ["チュートリアル画面で、案内の吹き出しを表示する"],
-          Then: "吹き出しは揺れていない",
+          Given: `${CALLOUT_CONTENT}で、誤答が 3 回あったとき`,
+          When: [START_CALLOUT, WAIT_FOR_CALLOUT_APPEAR],
+          Then: CALLOUT_NOT_SHAKING,
         },
       ],
     },
@@ -122,8 +126,8 @@ describe("[本体:チュートリアル]誤答時の案内の吹き出しの揺�
       steps: [
         {
           Given: `${CALLOUT_CONTENT}の吹き出しが表示されていて、誤答が 0 回のとき`,
-          When: ["チュートリアル画面で、入力が誤答と判定されて誤答が 1 回になる"],
-          Then: "吹き出しが揺れる",
+          When: ["入力が誤答と判定される"],
+          Then: "案内の吹き出しが揺れる",
         },
       ],
     },
@@ -143,8 +147,8 @@ describe("[本体:チュートリアル]誤答時の案内の吹き出しの揺�
       steps: [
         {
           Given: `${CALLOUT_CONTENT}の吹き出しが表示されていて、誤答が 1 回判定されていて、吹き出しが揺れているとき`,
-          When: ["チュートリアル画面の吹き出しの揺れが始まってから 400 ミリ秒待つ"],
-          Then: "揺れが収まる",
+          When: ["案内の吹き出しの揺れの再生が終わるまで待つ"],
+          Then: CALLOUT_NOT_SHAKING,
         },
       ],
     },

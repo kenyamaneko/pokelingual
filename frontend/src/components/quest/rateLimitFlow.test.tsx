@@ -32,9 +32,14 @@ function setupRateLimited(usageResponses: DailyUsage[]): void {
   );
 }
 
-const USAGE_AT_LIMIT_GIVEN = "ユーザーの AI 呼び出し回数が日次上限の 30 回に達しているとき";
-const MODAL_SHOWN_GIVEN = "ユーザーの AI 呼び出し回数が日次上限の 30 回に達して、日次上限モーダルが表示されているとき";
-const SUBMIT_TRANSLATION = "クエスト画面で、場所を選び、翻訳を入力して「この翻訳に決めた！」を押す";
+const USER_DAILY_LIMIT_REACHED_GIVEN = "ユーザーの日次上限に達しているとき";
+const MODAL_SHOWN_GIVEN = "日次上限モーダルが表示されているとき";
+const OPEN_QUEST_SCREEN = "クエスト画面を開く";
+const SUBMIT_TRANSLATION_FOR_SCORING = [
+  "場所選択画面で「テスト草原」を選ぶ",
+  "クエスト画面の翻訳の入力欄に「この ポケモンは はやい」と入力する",
+  "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
+] as const;
 
 describe("[本体:AI 呼び出し回数]日次上限の表示", () => {
   defineCase(
@@ -43,9 +48,9 @@ describe("[本体:AI 呼び出し回数]日次上限の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: USAGE_AT_LIMIT_GIVEN,
-          When: [SUBMIT_TRANSLATION],
-          Then: "日次上限モーダルのタイトルに「博士は忙しそうにしている」が表示される",
+          Given: USER_DAILY_LIMIT_REACHED_GIVEN,
+          When: [OPEN_QUEST_SCREEN, ...SUBMIT_TRANSLATION_FOR_SCORING],
+          Then: "日次上限モーダルに「博士は忙しそうにしている」と表示される",
         },
       ],
     },
@@ -65,8 +70,8 @@ describe("[本体:AI 呼び出し回数]日次上限の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの AI 呼び出し回数が日次上限の 30 回に達していて、バックエンドが日次上限を知らせるメッセージ「きょうの　じょうげんに　たっしました」を返すとき",
-          When: [SUBMIT_TRANSLATION],
+          Given: "ユーザーの日次上限に達していて、日次上限のメッセージが「きょうの　じょうげんに　たっしました」のとき",
+          When: [OPEN_QUEST_SCREEN, ...SUBMIT_TRANSLATION_FOR_SCORING],
           Then: "日次上限モーダルに「きょうの　じょうげんに　たっしました」と表示される",
         },
       ],
@@ -87,8 +92,8 @@ describe("[本体:AI 呼び出し回数]日次上限の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ヘッダーに「残り 1/30」と表示されていて、翻訳の送信が日次上限で拒否されるとき",
-          When: [SUBMIT_TRANSLATION],
+          Given: `ヘッダーに「残り 1/30」と表示されていて、${USER_DAILY_LIMIT_REACHED_GIVEN}`,
+          When: [OPEN_QUEST_SCREEN, ...SUBMIT_TRANSLATION_FOR_SCORING],
           Then: "ヘッダーに「残り 0/30」と表示される",
         },
       ],
@@ -154,7 +159,7 @@ describe("[本体:AI 呼び出し回数]日次上限モーダルの閉じ方", (
       steps: [
         {
           Given: MODAL_SHOWN_GIVEN,
-          When: ["クエスト画面の日次上限モーダルで、モーダルの外側をクリックする"],
+          When: ["クエスト画面の日次上限モーダルで、モーダルの外側を押す"],
           Then: "日次上限モーダルが画面から消える",
         },
       ],

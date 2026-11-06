@@ -54,7 +54,7 @@ function renderGuarded() {
   );
 }
 
-const OPEN_PROTECTED_SCREEN = "ログイン必須の保護対象の画面を開く";
+const OPEN_PROTECTED_SCREEN = "保護対象の画面を開く";
 const NOT_SIGNED_IN = "ログインしていないとき";
 
 describe("[共通:認証]ログイン必須画面の保護", () => {
@@ -63,7 +63,7 @@ describe("[共通:認証]ログイン必須画面の保護", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: "ログイン済みのとき", When: [OPEN_PROTECTED_SCREEN], Then: "保護対象の画面が表示される" },
+        { Given: "ログインしているとき", When: [OPEN_PROTECTED_SCREEN], Then: "保護対象の画面が表示される" },
       ],
     },
     async () => {
@@ -81,7 +81,7 @@ describe("[共通:認証]ログイン必須画面の保護", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ログイン状態の確認が終わっていないとき",
+          Given: "ログイン状態を確認中のとき",
           When: [OPEN_PROTECTED_SCREEN],
           Then: "「認証を確認中...」の表示のままになる",
         },
@@ -118,7 +118,12 @@ describe("[共通:認証]ログイン必須画面の保護", () => {
       steps: [
         {
           Given: NOT_SIGNED_IN,
-          When: [OPEN_PROTECTED_SCREEN, "ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押す"],
+          When: [
+            OPEN_PROTECTED_SCREEN,
+            "ログイン画面のメールアドレスの入力欄に「dummy@example.com」と入力する",
+            "ログイン画面のパスワードの入力欄に「dummy-pass」と入力する",
+            "ログイン画面で、「メールでログイン」ボタンを押す",
+          ],
           Then: "保護対象の画面が表示される",
         },
       ],
