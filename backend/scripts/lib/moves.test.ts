@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 import { resolveLevelUpMoveCandidates, resolveMoveNameJA, resolveLevelUpMoveNames, type PokeAPIMoveEntry } from "./moves.js";
-import { defineCase } from "../../src/test/defineCase.js";
+import { defineCase, type Viewpoint } from "../../src/test/defineCase.js";
 
 function moveEntry(
   slug: string,
@@ -26,6 +26,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "ソード・シールドで、vine-whip を Lv.7、tackle を Lv.1、growl を Lv.1 のレベルアップで覚えるとき",
@@ -56,6 +57,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "ソード・シールドで、sketch だけを Lv.1 のレベルアップで覚えるとき",
@@ -121,17 +123,21 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
     },
   );
 
-  for (const { given, moves } of [
+  const NO_CANDIDATE_CASES: { given: string; moves: PokeAPIMoveEntry[]; 観点: readonly Viewpoint[] }[] = [
     {
       given: "ソード・シールドで、レベルアップ以外の方法でしか覚えない技として、タマゴ技 egg-move だけがあるとき",
       moves: [moveEntry("egg-move", 99, [{ versionGroup: "sword-shield", level: 0, learnMethod: "egg" }])],
+      観点: ["件数・有無"],
     },
-    { given: "技のデータが 1 件も無いとき", moves: [] },
-  ]) {
+    { given: "技のデータが 1 件も無いとき", moves: [], 観点: ["件数・有無", "エッジケース"] },
+  ];
+
+  for (const { given, moves, 観点 } of NO_CANDIDATE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [{ Given: given, When: [DETERMINE_CANDIDATES], Then: "技の候補は空になる" }],
       },
       () => {
@@ -166,6 +172,7 @@ describe("[外部連携:ポケモンデータ提供元]技の日本語名の決�
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: "技の名称に英語名 Tackle しか無く、通常表記もかな表記も日本語名が無いとき",
@@ -196,6 +203,7 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が tackle・growl・vine-whip・leech-seed の順で 4 件あるとき`,
@@ -224,6 +232,7 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無", "エッジケース"],
       steps: [
         {
           Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が 0 件のとき`,

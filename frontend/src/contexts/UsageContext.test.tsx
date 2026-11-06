@@ -7,7 +7,7 @@ import { useUsage } from "./UsageContext";
 import { server, apiUrl, countRequests } from "../test/mswServer";
 import { renderWithProviders } from "../test/render";
 import type { User } from "firebase/auth";
-import { defineCase } from "../test/defineCase";
+import { defineCase, type Viewpoint } from "../test/defineCase";
 
 /**
  * バックエンドが AI 呼び出し回数と上限を返す状態にする。
@@ -74,11 +74,13 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
   const usageNotFetchedScenarios: {
     given: string;
     outcome: "正常系" | "異常系";
+    viewpoints: readonly Viewpoint[];
     verify: () => Promise<void>;
   }[] = [
     {
       given: LOGGED_OUT,
       outcome: "正常系",
+      viewpoints: [],
       verify: async () => {
         renderUsage(null);
 
@@ -88,6 +90,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     {
       given: "ログインしていて、今日の AI 呼び出し回数を取得できないとき",
       outcome: "異常系",
+      viewpoints: ["外部依存の失敗"],
       verify: async () => {
         const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
         server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
@@ -99,9 +102,14 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       },
     },
   ];
-  for (const { given, outcome, verify } of usageNotFetchedScenarios) {
+  for (const { given, outcome, viewpoints, verify } of usageNotFetchedScenarios) {
     defineCase(
-      { 種別: "部品間結合テスト", 正常異常: outcome, steps: [{ Given: given, When: [START_UP], Then: USAGE_NOT_FETCHED }] },
+      {
+        種別: "部品間結合テスト",
+        正常異常: outcome,
+        観点: viewpoints,
+        steps: [{ Given: given, When: [START_UP], Then: USAGE_NOT_FETCHED }],
+      },
       verify,
     );
   }
@@ -124,6 +132,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given:

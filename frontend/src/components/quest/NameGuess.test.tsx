@@ -3,7 +3,7 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, vi } from "vitest";
 import { spec } from "../../test/labels";
-import { defineCase } from "../../test/defineCase";
+import { defineCase, type Viewpoint } from "../../test/defineCase";
 import { NameGuess } from "./NameGuess";
 import type { GuessResponse, HintResponse } from "../../../../shared/api-types/quest";
 
@@ -46,7 +46,7 @@ const TYPE_AND_MOVE_HINT: HintResponse = {
   attempts_remaining: 1,
 };
 
-type NameGuessScenario = { given: string; props: Partial<NameGuessProps> };
+type NameGuessScenario = { given: string; props: Partial<NameGuessProps>; viewpoints?: readonly Viewpoint[] };
 
 const OPEN_NAME_GUESS = "名前当て画面を開く";
 const NOT_ANSWERED_YET = "まだ名前当てに答えていないとき";
@@ -109,6 +109,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: WRONG_2_LEFT_GIVEN,
@@ -145,14 +146,16 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       given: "不正解で残り挑戦回数が 0 回のとき",
       props: { guessResult: { correct: false, attempts_remaining: 0 }, attemptsRemaining: 0 },
+      viewpoints: ["境界値"],
     },
     { given: CORRECT_GIVEN, props: { guessResult: CORRECT_GUESS, attemptsRemaining: 2 } },
   ];
-  for (const { given, props } of textboxHiddenScenarios) {
+  for (const { given, props, viewpoints } of textboxHiddenScenarios) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: "入力欄が表示されなくなる" }],
       },
       () => {
@@ -166,6 +169,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: WRONG_1_LEFT_GIVEN,
@@ -184,6 +188,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "不正解で残り挑戦回数が 0 回のとき",
@@ -289,13 +294,15 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       given: "ヒントをまだ使っておらず、残り挑戦回数が 1 回のとき",
       props: { guessResult: WRONG_GUESS_1_LEFT, attemptsRemaining: 1, onHint: vi.fn() },
+      viewpoints: ["境界値"],
     },
   ];
-  for (const { given, props } of hintButtonHiddenScenarios) {
+  for (const { given, props, viewpoints } of hintButtonHiddenScenarios) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_BUTTON_HIDDEN }],
       },
       () => {
@@ -313,13 +320,15 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       given: WRONG_2_LEFT_GIVEN,
       props: { guessResult: WRONG_GUESS_2_LEFT, attemptsRemaining: 2, onHint: vi.fn() },
+      viewpoints: ["境界値"],
     },
   ];
-  for (const { given, props } of hintButtonShownScenarios) {
+  for (const { given, props, viewpoints } of hintButtonShownScenarios) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_BUTTON_SHOWN }],
       },
       () => {
@@ -333,6 +342,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "タイプのヒントを取得済みで、残り挑戦回数が 2 回のとき",
@@ -351,17 +361,19 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       given: ONE_LEFT_TYPE_HINT_GIVEN,
       props: { attemptsRemaining: 1, hintResult: TYPE_HINT_1_LEFT, onHint: vi.fn() },
+      viewpoints: ["境界値"],
     },
     {
       given: ONE_LEFT_TYPE_AND_MOVE_HINT_GIVEN,
       props: { attemptsRemaining: 1, hintResult: TYPE_AND_MOVE_HINT, onHint: vi.fn() },
     },
   ];
-  for (const { given, props } of hintAgainButtonHiddenScenarios) {
+  for (const { given, props, viewpoints } of hintAgainButtonHiddenScenarios) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_AGAIN_BUTTON_HIDDEN }],
       },
       () => {
@@ -386,6 +398,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
+        観点: ["境界値"],
         steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_UNAVAILABLE_SHOWN }],
       },
       () => {
@@ -443,6 +456,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "タイプのヒントを取得済みで、タイプがくさとどくの複合のとき",
@@ -462,6 +476,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "技のヒントを取得済みで、覚える技がたいあたり・なきごえ・でんきショックの 3 件のとき",
@@ -487,6 +502,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "技のヒントを取得済みで、覚える技がでんきショックの 1 件のとき",
@@ -505,6 +521,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["件数・有無", "エッジケース"],
       steps: [
         {
           Given: "技のヒントを取得済みで、覚える技が 0 件のとき",

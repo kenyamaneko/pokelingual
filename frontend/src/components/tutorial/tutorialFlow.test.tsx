@@ -192,6 +192,7 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,

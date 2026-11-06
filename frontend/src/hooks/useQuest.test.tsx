@@ -422,6 +422,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: SERVER_ERROR_GIVEN,
@@ -443,6 +444,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: SERVER_ERROR_GIVEN,
@@ -466,6 +468,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗"],
         steps: [
           {
             Given: given,
@@ -486,6 +489,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: NETWORK_DOWN_GIVEN,
@@ -509,6 +513,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗", "回復確認"],
         steps: [
           { Given: cause, When: [SELECT_LOCATION], Then: ERROR_SCREEN },
           {
@@ -529,6 +534,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗", "回復確認"],
         steps: [
           { Given: cause, When: [SELECT_LOCATION], Then: ERROR_SCREEN },
           {
@@ -1215,6 +1221,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗", "回復確認"],
         steps: [
           { Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN },
           {
@@ -1235,6 +1242,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗", "回復確認"],
         steps: [
           { Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN },
           {
@@ -1255,6 +1263,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗", "回復確認"],
         steps: [
           { Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN },
           {
@@ -1325,6 +1334,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [{ Given: FAILURE_RESPONSES[0].given, When: [when], Then: "エラーメッセージは出ない" }],
     },
     async () => {
@@ -1338,6 +1348,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: EXTERNAL_SERVICE_NO_RESPONSE_GIVEN,
@@ -1357,6 +1368,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         { Given: SESSION_EXPIRED_GIVEN, When: [when], Then: ERROR_SCREEN },
       ],
@@ -1372,6 +1384,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: SESSION_EXPIRED_GIVEN,
@@ -1391,6 +1404,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: recoveryGiven(EXTERNAL_SERVICE_NO_RESPONSE_CAUSE),
@@ -1411,6 +1425,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗", "回復確認"],
         steps: [{ Given: recoveryGiven(recoveryCause), When: retryWhen, Then: recoveredOutcome }],
       },
       async () => {
@@ -1426,6 +1441,7 @@ function defineCommunicationErrorCases(operation: CommunicationOperation) {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗"],
         steps: [
           {
             Given: `${TRANSLATING_SCREEN_SHOWN}、${given}`,
@@ -1790,6 +1806,7 @@ describe("[本体:クエスト]クエストの再開", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: ["外部依存の失敗"],
         steps: [{ Given: failure, When: [OPEN_QUEST_SCREEN], Then: ERROR_SCREEN }],
       },
       async () => {
@@ -1804,6 +1821,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: LOCATIONS_FAIL_GIVEN,
@@ -1823,6 +1841,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: CURRENT_QUEST_FAIL_GIVEN,
@@ -1842,6 +1861,7 @@ describe("[本体:クエスト]クエストの再開", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: CURRENT_QUEST_FAIL_GIVEN,

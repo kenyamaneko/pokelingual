@@ -43,6 +43,7 @@ describe("[共通:設定]除外ポケモン設定の検証", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: `${GIVEN_LIMIT}除外する図鑑番号の一覧が空のとき`,
@@ -56,14 +57,19 @@ describe("[共通:設定]除外ポケモン設定の検証", () => {
     },
   );
 
-  for (const { given, raw } of [
-    { given: "出題可能な図鑑番号 25 が 1 件だけ指定されているとき", raw: [25] },
-    { given: "出題可能な図鑑番号 1・4・7 が上限と同じ 3 件だけ指定されているとき", raw: [1, 4, 7] },
+  for (const { given, raw, viewpoints } of [
+    { given: "出題可能な図鑑番号 25 が 1 件だけ指定されているとき", raw: [25], viewpoints: ["件数・有無"] as const },
+    {
+      given: "出題可能な図鑑番号 1・4・7 が上限と同じ 3 件だけ指定されているとき",
+      raw: [1, 4, 7],
+      viewpoints: ["境界値"] as const,
+    },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: `${GIVEN_LIMIT}${given}`, When: [VALIDATE], Then: "検証の結果は受理になる" }],
       },
       () => {
@@ -72,14 +78,15 @@ describe("[共通:設定]除外ポケモン設定の検証", () => {
     );
   }
 
-  for (const { given, raw } of [
-    { given: "除外する図鑑番号の指定が一覧でなく文字列 x のとき", raw: "x" },
-    { given: "除外する図鑑番号の指定が無いとき", raw: undefined },
+  for (const { given, raw, viewpoints } of [
+    { given: "除外する図鑑番号の指定が一覧でなく文字列 x のとき", raw: "x", viewpoints: ["エッジケース"] as const },
+    { given: "除外する図鑑番号の指定が無いとき", raw: undefined, viewpoints: ["エッジケース", "件数・有無"] as const },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点: viewpoints,
         steps: [{ Given: `${GIVEN_LIMIT}${given}`, When: [VALIDATE], Then: NOT_ARRAY_REASON }],
       },
       () => {
@@ -95,6 +102,7 @@ describe("[共通:設定]除外ポケモン設定の検証", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["同値分割"],
       steps: [
         {
           Given: `${GIVEN_LIMIT}出題可能な図鑑番号の最小と最大のあいだにある欠番 5 が指定されているとき`,
@@ -115,6 +123,7 @@ describe("[共通:設定]除外ポケモン設定の検証", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [
         {
           Given: `${GIVEN_LIMIT}整数でない 1.5 が指定されているとき`,
@@ -135,6 +144,7 @@ describe("[共通:設定]除外ポケモン設定の検証", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: `${GIVEN_LIMIT}指定された図鑑番号が上限を 1 件超える 1・4・7・25 の 4 件のとき`,

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { spec } from "../../test/labels";
-import { defineCase } from "../../test/defineCase";
+import { defineCase, type Viewpoint } from "../../test/defineCase";
 import { RateLimitModal, formatUntilJstMidnight } from "./RateLimitModal";
 
 const OPEN_MODAL = "日次上限モーダルを開く";
@@ -63,17 +63,20 @@ describe("[本体:AI 呼び出し回数]日次上限のリセットまでの残�
     vi.useRealTimers();
   });
 
-  for (const { currentTime, jstTime, remaining } of [
-    { currentTime: "2026-01-01T23:59:59+09:00", jstTime: "23:59:59", remaining: "00:00:01" },
-    { currentTime: "2026-01-02T00:00:00+09:00", jstTime: "0:00:00", remaining: "00:00:00" },
-    { currentTime: "2026-01-02T00:00:01+09:00", jstTime: "0:00:01", remaining: "23:59:59" },
-    { currentTime: "2026-01-02T12:34:56+09:00", jstTime: "12:34:56", remaining: "11:25:04" },
-    { currentTime: "2026-01-02T14:50:51+09:00", jstTime: "14:50:51", remaining: "09:09:09" },
-  ]) {
+  const REMAINING_TIME_CASES: { currentTime: string; jstTime: string; remaining: string; 観点: readonly Viewpoint[] }[] = [
+    { currentTime: "2026-01-01T23:59:59+09:00", jstTime: "23:59:59", remaining: "00:00:01", 観点: ["境界値"] },
+    { currentTime: "2026-01-02T00:00:00+09:00", jstTime: "0:00:00", remaining: "00:00:00", 観点: ["境界値"] },
+    { currentTime: "2026-01-02T00:00:01+09:00", jstTime: "0:00:01", remaining: "23:59:59", 観点: ["境界値"] },
+    { currentTime: "2026-01-02T12:34:56+09:00", jstTime: "12:34:56", remaining: "11:25:04", 観点: ["同値分割"] },
+    { currentTime: "2026-01-02T14:50:51+09:00", jstTime: "14:50:51", remaining: "09:09:09", 観点: ["同値分割"] },
+  ];
+
+  for (const { currentTime, jstTime, remaining, 観点 } of REMAINING_TIME_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [
           {
             Given: `現在時刻が JST ${jstTime} のとき`,

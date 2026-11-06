@@ -3,7 +3,7 @@ import type { AxiosAdapter, AxiosResponse } from "axios";
 import api from "./client";
 import { type RateLimitDetail } from "../utils/rateLimitEvents";
 import { spyOnRateLimitEvents } from "../test/rateLimitEventCapture";
-import { defineCase } from "../test/defineCase";
+import { defineCase, type Viewpoint } from "../test/defineCase";
 
 const originalAdapter = api.defaults.adapter;
 
@@ -141,24 +141,29 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     );
   }
 
-  for (const { given, status, body } of [
-    { given: INVALID_KIND_LIMIT, status: 429, body: { error: "invalid", message: "x" } },
+  const NOTHING_NOTIFIED_CASES: { given: string; status: number; body: unknown; 観点: readonly Viewpoint[] }[] = [
+    { given: INVALID_KIND_LIMIT, status: 429, body: { error: "invalid", message: "x" }, 観点: ["エッジケース"] },
     {
       given: USER_LIMIT_WITHOUT_MESSAGE,
       status: 429,
       body: { error: "user" },
+      観点: ["エッジケース", "件数・有無"],
     },
     {
       given: USER_LIMIT_WITH_EMPTY_MESSAGE,
       status: 429,
       body: { error: "user", message: "" },
+      観点: ["エッジケース", "件数・有無"],
     },
-    { given: "バックエンドでエラーが起きているとき", status: 500, body: { error: "internal" } },
-  ]) {
+    { given: "バックエンドでエラーが起きているとき", status: 500, body: { error: "internal" }, 観点: ["外部依存の失敗"] },
+  ];
+
+  for (const { given, status, body, 観点 } of NOTHING_NOTIFIED_CASES) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点,
         steps: [{ Given: given, When: [CALL_BACKEND_API], Then: NOTHING_NOTIFIED }],
       },
       async () => {
@@ -177,6 +182,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["エッジケース", "回復確認"],
       steps: [
         {
           Given: INVALID_KIND_LIMIT,
@@ -201,6 +207,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: USER_LIMIT_REACHED, When: [CALL_BACKEND_API], Then: USER_LIMIT_NOTIFIED },
         {
@@ -232,6 +239,7 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: INVALID_KIND_LIMIT,
@@ -251,14 +259,21 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
     },
   );
 
-  for (const { given, body } of [
-    { given: USER_LIMIT_WITHOUT_MESSAGE, body: { error: "user" } },
-    { given: USER_LIMIT_WITH_EMPTY_MESSAGE, body: { error: "user", message: "" } },
-  ]) {
+  const MISSING_MESSAGE_CASES: { given: string; body: unknown; 観点: readonly Viewpoint[] }[] = [
+    { given: USER_LIMIT_WITHOUT_MESSAGE, body: { error: "user" }, 観点: ["外部依存の失敗", "件数・有無"] },
+    {
+      given: USER_LIMIT_WITH_EMPTY_MESSAGE,
+      body: { error: "user", message: "" },
+      観点: ["外部依存の失敗", "件数・有無"],
+    },
+  ];
+
+  for (const { given, body, 観点 } of MISSING_MESSAGE_CASES) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点,
         steps: [
           {
             Given: given,

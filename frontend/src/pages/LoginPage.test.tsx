@@ -153,6 +153,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: UNVERIFIED_ACCOUNT, When: LOGIN_WITH_CORRECT_PASSWORD, Then: UNVERIFIED_MESSAGE },
         { Given: "メールアドレスの確認が済んでいるとき", When: [PRESS_LOGIN], Then: HOME_SHOWN },
@@ -214,6 +215,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: WRONG_CREDENTIALS, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE },
         {

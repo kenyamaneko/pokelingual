@@ -420,6 +420,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: SERVER_ERROR,
@@ -439,6 +440,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: SERVER_ERROR,
@@ -459,6 +461,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: SERVER_ERROR,
@@ -485,6 +488,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: SERVER_ERROR,
@@ -505,22 +509,25 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
   );
 
-  for (const { given, secondResponse, expectedText } of [
+  for (const { given, secondResponse, expectedText, viewpoints } of [
     {
       given: BACKEND_RECOVERED_WITH_ELECTRIC_HINT,
       secondResponse: () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
       expectedText: "でんきタイプのポケモンだよ",
+      viewpoints: ["外部依存の失敗", "回復確認"] as const,
     },
     {
       given: BACKEND_UNREACHABLE,
       secondResponse: () => HttpResponse.error(),
       expectedText: "接続できません",
+      viewpoints: ["外部依存の失敗"] as const,
     },
   ]) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: viewpoints,
         steps: [
           {
             Given: SERVER_ERROR,
@@ -543,6 +550,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: SERVER_ERROR,
@@ -565,6 +573,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: SERVER_ERROR,
@@ -884,6 +893,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         { Given: SESSION_EXPIRED, When: [SELECT_PLACE, ...SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
       ],
@@ -899,6 +909,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         { Given: SESSION_EXPIRED, When: [SELECT_PLACE, ...SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
         {

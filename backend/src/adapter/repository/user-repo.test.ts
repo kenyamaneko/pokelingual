@@ -1,7 +1,7 @@
 import { describe, expect, beforeEach } from "vitest";
 import { UserRepo } from "./user-repo.js";
 import { requireFirestoreEmulator, clearFirestoreEmulator } from "./firestore-emulator-helper.js";
-import { defineCase } from "../../test/defineCase.js";
+import { defineCase, type Viewpoint } from "../../test/defineCase.js";
 
 const db = requireFirestoreEmulator();
 
@@ -10,14 +10,16 @@ const GET_TUTORIAL_STATUS = "あるユーザーのチュートリアル完了状
 describe("[本体:チュートリアル]チュートリアル完了状態の取得と記録", () => {
   beforeEach(clearFirestoreEmulator);
 
-  for (const { given, usersWithCompletion } of [
-    { given: "どのユーザーもチュートリアルの完了を一度も記録していないとき", usersWithCompletion: [] },
-    { given: "別のユーザーだけがチュートリアルの完了を記録しているとき", usersWithCompletion: ["bob"] },
-  ]) {
+  const incompleteTutorialRows: { given: string; usersWithCompletion: string[]; viewpoints: readonly Viewpoint[] }[] = [
+    { given: "どのユーザーもチュートリアルの完了を一度も記録していないとき", usersWithCompletion: [], viewpoints: ["件数・有無"] },
+    { given: "別のユーザーだけがチュートリアルの完了を記録しているとき", usersWithCompletion: ["bob"], viewpoints: [] },
+  ];
+  for (const { given, usersWithCompletion, viewpoints } of incompleteTutorialRows) {
     defineCase(
       {
         種別: "インフラ結合テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [
           {
             Given: given,

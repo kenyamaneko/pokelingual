@@ -20,6 +20,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["同値分割"],
       steps: [{ Given: POOL_OF_FOUR, When: [DRAW_3], Then: "選ばれる件数は 3 件になる" }],
     },
     () => {
@@ -32,6 +33,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["同値分割"],
       steps: [{ Given: POOL_OF_FOUR, When: [DRAW_3], Then: "選ばれた 3 件に重複は無い" }],
     },
     () => {
@@ -40,34 +42,26 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     },
   );
 
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(4)], Then: "選ばれる件数は 4 件になる" }],
-    },
-    () => {
-      const picked = pickRandomSample(["a", "b", "c", "d"], 4, fixedRandom(0));
-      expect(picked).toHaveLength(4);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "異常系",
-      steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(5)], Then: "選ばれる件数は 4 件になる" }],
-    },
-    () => {
-      const picked = pickRandomSample(["a", "b", "c", "d"], 5, fixedRandom(0));
-      expect(picked).toHaveLength(4);
-    },
-  );
+  for (const count of [4, 5]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        観点: ["境界値"],
+        steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(count)], Then: "選ばれる件数は 4 件になる" }],
+      },
+      () => {
+        const picked = pickRandomSample(["a", "b", "c", "d"], count, fixedRandom(0));
+        expect(picked).toHaveLength(4);
+      },
+    );
+  }
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [{ Given: "プールが 1 件のとき", When: [drawFromPool(1)], Then: "選ばれた一覧はその 1 件になる" }],
     },
     () => {
@@ -78,7 +72,8 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
   defineCase(
     {
       種別: "単体テスト",
-      正常異常: "異常系",
+      正常異常: "正常系",
+      観点: ["同値分割"],
       steps: [{ Given: "プールが 2 件のとき", When: [drawFromPool(5)], Then: "選ばれる件数は 2 件になる" }],
     },
     () => {
@@ -87,14 +82,15 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     },
   );
 
-  for (const { given, count, pool } of [
-    { given: "プールが空のとき", count: 3, pool: [] as string[] },
-    { given: "プールが 2 件のとき", count: 0, pool: ["a", "b"] },
+  for (const { given, count, pool, viewpoints } of [
+    { given: "プールが空のとき", count: 3, pool: [] as string[], viewpoints: ["件数・有無", "エッジケース"] as const },
+    { given: "プールが 2 件のとき", count: 0, pool: ["a", "b"], viewpoints: ["件数・有無"] as const },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [drawFromPool(count)], Then: "選ばれた一覧は空になる" }],
       },
       () => {

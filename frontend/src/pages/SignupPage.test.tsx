@@ -174,6 +174,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: ALREADY_REGISTERED, When: SIGNUP_WITH_MATCHING_PASSWORDS, Then: ALREADY_REGISTERED_MESSAGE },
         {
@@ -243,6 +244,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: PASSWORD_MISMATCH, When: SIGNUP_WITH_MISMATCHING_PASSWORDS, Then: PASSWORD_MISMATCH_MESSAGE },
         {

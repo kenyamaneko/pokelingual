@@ -7,7 +7,7 @@ import type {
 } from "../domain/ports.js";
 import type { UserPokemon } from "../domain/user.js";
 import { makePokemon } from "../testing/pokemon-fixtures.js";
-import { defineCase } from "../test/defineCase.js";
+import { defineCase, type Viewpoint } from "../test/defineCase.js";
 
 const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
   1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
@@ -148,14 +148,15 @@ const makeAllFailingService = () =>
   });
 
 describe("[本体:図鑑]図鑑一覧の取得", () => {
-  for (const { 正常異常, given, makeTargetService } of [
-    { 正常異常: "正常系" as const, given: NO_RECORDS, makeTargetService: () => makeService() },
-    { 正常異常: "異常系" as const, given: ALL_UNREADABLE, makeTargetService: makeAllFailingService },
+  for (const { 正常異常, given, makeTargetService, viewpoints } of [
+    { 正常異常: "正常系" as const, given: NO_RECORDS, makeTargetService: () => makeService(), viewpoints: ["件数・有無"] as const },
+    { 正常異常: "異常系" as const, given: ALL_UNREADABLE, makeTargetService: makeAllFailingService, viewpoints: ["外部依存の失敗"] as const },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常,
+        観点: viewpoints,
         steps: [{ Given: given, When: [GET_POKEDEX], Then: "図鑑一覧は空になる" }],
       },
       async () => {
@@ -165,10 +166,11 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     );
   }
 
-  for (const { 正常異常, given, makeTargetService } of [
+  for (const { 正常異常, given, makeTargetService, viewpoints } of [
     {
       正常異常: "正常系" as const,
       given: THREE_RECORDS_WITH_SECOND_EXCLUDED,
+      viewpoints: [] as const,
       makeTargetService: () =>
         makeService({
           records: [
@@ -179,12 +181,18 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
           excludedIDs: [2],
         }),
     },
-    { 正常異常: "異常系" as const, given: SECOND_UNREADABLE, makeTargetService: makePartiallyFailingService },
+    {
+      正常異常: "異常系" as const,
+      given: SECOND_UNREADABLE,
+      makeTargetService: makePartiallyFailingService,
+      viewpoints: ["外部依存の失敗"] as const,
+    },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常,
+        観点: viewpoints,
         steps: [{ Given: given, When: [GET_POKEDEX], Then: "図鑑一覧は図鑑番号 1、3 の 2 項目になる" }],
       },
       async () => {
@@ -194,15 +202,21 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     );
   }
 
-  for (const { given, overrides } of [
-    { given: NO_RECORDS, overrides: {} },
-    { given: SINGLE_RECORD, overrides: { records: [makeUserPokemon({ pokemon_id: 1 })] } },
+  for (const { given, overrides, viewpoints } of [
+    { given: NO_RECORDS, overrides: {}, viewpoints: ["件数・有無"] },
+    {
+      given: SINGLE_RECORD,
+      overrides: { records: [makeUserPokemon({ pokemon_id: 1 })] },
+      viewpoints: ["件数・有無"],
+    },
     {
       given: TWO_RECORDS,
       overrides: { records: [makeUserPokemon({ pokemon_id: 1 }), makeUserPokemon({ pokemon_id: 2 })] },
+      viewpoints: ["件数・有無"],
     },
     {
       given: THREE_RECORDS_WITH_SECOND_EXCLUDED,
+      viewpoints: [],
       overrides: {
         records: [
           makeUserPokemon({ pokemon_id: 1 }),
@@ -212,11 +226,12 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
         excludedIDs: [2],
       },
     },
-  ] as { given: string; overrides: ServiceOverrides }[]) {
+  ] as { given: string; overrides: ServiceOverrides; viewpoints: Viewpoint[] }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [GET_POKEDEX], Then: "読み込めなかったポケモンの数は 0 になる" }],
       },
       async () => {
@@ -421,6 +436,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [{ Given: SECOND_UNREADABLE, When: [GET_POKEDEX], Then: "読み込めなかったポケモンの数は 1 になる" }],
     },
     async () => {
@@ -433,6 +449,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [{ Given: ALL_UNREADABLE, When: [GET_POKEDEX], Then: "読み込めなかったポケモンの数は 2 になる" }],
     },
     async () => {
@@ -667,6 +684,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "図鑑番号 1 の記録に最終捕獲日時が記録されていないとき",

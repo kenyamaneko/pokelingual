@@ -22,15 +22,24 @@ export type SpecStep = {
 export type SpecFields = {
   種別: CaseKind;
   正常異常: CaseOutcome;
+  観点?: readonly Viewpoint[];
   steps: readonly [SpecStep, ...SpecStep[]];
 };
 
 const STEP_SEPARATOR = "→";
 const CLAUSE_SEPARATOR = "、";
 const LAST_OPERATION_SUFFIX = "と";
+/** ケースに付ける観点。 */
+export type Viewpoint =
+  | "境界値"
+  | "同値分割"
+  | "エッジケース"
+  | "件数・有無"
+  | "外部依存の失敗"
+  | "回復確認";
 
-// テスト観点カタログの生成が、この名前の注釈を読む。backend は rootDir が src のため shared の実行コードを取り込めず、backend と frontend に同じ内容を置く。
-const ANNOTATION = { kind: "種別", outcome: "正常異常", given: "Given", when: "When", then: "Then" } as const;
+// テストケースカタログの生成が、この名前の注釈を読む。backend は rootDir が src のため shared の実行コードを取り込めず、backend と frontend に同じ内容を置く。
+const ANNOTATION = { kind: "種別", outcome: "正常異常", viewpoint: "観点", given: "Given", when: "When", then: "Then" } as const;
 
 function composeStepName(step: SpecStep): string {
   const operations = step.When.map((operation, index) =>
@@ -41,13 +50,16 @@ function composeStepName(step: SpecStep): string {
 
 /**
  * ケースを 1 件登録する。テスト名はステップから組み立て、項目を注釈としてテスト結果に載せる。
- * @param fields 種別・正常異常・ステップ。
+ * @param fields 種別・正常異常・ステップ。観点は任意。
  * @param body 検証の本体。複数ステップのときは、ステップごとの確認をこの中で順に行う。
  */
 export function defineCase(fields: SpecFields, body: () => void | Promise<void>): void {
-  it(fields.steps.map(composeStepName).join(STEP_SEPARATOR), async ({ annotate }) => {
+  const title = fields.steps.map(composeStepName).join(STEP_SEPARATOR);
+  const viewpoints = fields.観点 ?? [];
+  it(title, async ({ annotate }) => {
     await annotate(fields.種別, ANNOTATION.kind);
     await annotate(fields.正常異常, ANNOTATION.outcome);
+    for (const viewpoint of viewpoints) await annotate(viewpoint, ANNOTATION.viewpoint);
     for (const step of fields.steps) {
       if (step.Given) await annotate(step.Given, ANNOTATION.given);
       for (const operation of step.When) await annotate(operation, ANNOTATION.when);
