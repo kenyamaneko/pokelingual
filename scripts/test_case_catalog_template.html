@@ -39,6 +39,11 @@
   .filter-btn[aria-pressed="true"] { background: var(--c); color: var(--on-fill); }
   .filter-btn .count { font-variant-numeric: tabular-nums; opacity: .75; }
 
+  #content > section { scroll-margin-top: calc(var(--filter-bar-height, 12rem) + .75rem); }
+  .toc-link { border-left: 3px solid transparent; }
+  .toc-link[aria-current="location"] { background: var(--accent-soft); color: var(--fg); font-weight: 700; border-left-color: var(--accent); }
+  .toc-link[aria-current="location"] .toc-count { color: var(--fg); }
+
   .legend { margin-top: .75rem; border: 1px solid var(--line-strong); background: var(--surface); }
   .legend > summary { padding: .5rem .75rem; font-size: .8125rem; font-weight: 700; }
   .legend-body { border-top: 1px solid var(--line-strong); padding: .25rem .75rem; }
@@ -101,6 +106,8 @@
   var REGIONS = DATA.regions;
   var PERSPECTIVES = DATA.perspectives;
   var NO_PERSPECTIVE = 'タグなし';
+  // 目次から移動した見出しは絞り込み欄の下 12px に着くため、それより大きい許容幅でその大機能を現在位置と判定する。
+  var HEADING_POSITION_TOLERANCE_PX = 16;
   var state = { kinds: new Set(), na: '', perspectives: new Set(), openAll: null };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -270,9 +277,9 @@
       toc += '<div><p class="mb-1 px-2 text-[0.6875rem] font-bold tracking-widest text-faint">' + esc(region) + '</p><ul class="flex flex-col">';
       majors.forEach(function (mcases, major) {
         var id = slug(region + major);
-        toc += '<li><a href="#' + id + '" class="flex items-center justify-between gap-2 px-2 py-1 text-muted hover:bg-sunken hover:text-fg"><span class="min-w-0">' + esc(major) + '</span><span class="tabular text-xs text-faint">' + mcases.length + '</span></a></li>';
+        toc += '<li><a href="#' + id + '" data-section-id="' + id + '" class="toc-link flex items-center justify-between gap-2 px-2 py-1 text-muted hover:bg-sunken hover:text-fg"><span class="min-w-0">' + esc(major) + '</span><span class="toc-count tabular text-xs text-faint">' + mcases.length + '</span></a></li>';
         var minors = Array.from(groupBy(mcases, function (c) { return c.m || ''; }).entries());
-        var sec = '<section id="' + id + '" class="scroll-mt-40"><div class="mb-3 flex items-baseline gap-3 border-b border-line pb-2">' +
+        var sec = '<section id="' + id + '"><div class="mb-3 flex items-baseline gap-3 border-b border-line pb-2">' +
           '<span class="text-xs font-medium text-faint">' + esc(region) + '</span><h2 class="text-xl font-bold">' + esc(major) + '</h2>' +
           '<div class="ml-auto flex gap-1.5 self-center"><button type="button" data-section-action="expand" class="border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて開く</button>' +
           '<button type="button" data-section-action="collapse" class="border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて閉じる</button></div></div><div class="flex flex-col gap-6">';
@@ -298,6 +305,38 @@
     document.getElementById('toc').innerHTML = toc;
     document.getElementById('content').innerHTML = content;
     state.openAll = null;
+    updateCurrentLocation();
+  }
+
+  function currentSection() {
+    var sections = document.querySelectorAll('#content > section');
+    if (!sections.length) return null;
+    var bar = document.querySelector('section[aria-label="絞り込み"]').getBoundingClientRect();
+    var barBottom = bar.bottom;
+    document.documentElement.style.setProperty('--filter-bar-height', bar.height + 'px');
+    var current = sections[0];
+    sections.forEach(function (s) { if (s.getBoundingClientRect().top <= barBottom + HEADING_POSITION_TOLERANCE_PX) current = s; });
+    return current;
+  }
+
+  function updateCurrentLocation() {
+    var section = currentSection();
+    document.querySelectorAll('.toc-link').forEach(function (a) { a.removeAttribute('aria-current'); });
+    if (!section) return;
+    var link = document.querySelector('.toc-link[data-section-id="' + section.id + '"]');
+    if (!link) return;
+    link.setAttribute('aria-current', 'location');
+    var aside = document.querySelector('aside');
+    var linkRect = link.getBoundingClientRect(), asideRect = aside.getBoundingClientRect();
+    if (linkRect.top < asideRect.top) aside.scrollTop -= asideRect.top - linkRect.top;
+    else if (linkRect.bottom > asideRect.bottom) aside.scrollTop += linkRect.bottom - asideRect.bottom;
+  }
+
+  var isLocationUpdateQueued = false;
+  function queueLocationUpdate() {
+    if (isLocationUpdateQueued) return;
+    isLocationUpdateQueued = true;
+    requestAnimationFrame(function () { isLocationUpdateQueued = false; updateCurrentLocation(); });
   }
 
   function buildLegend() {
@@ -369,6 +408,8 @@
 
   buildFilters();
   render();
+  window.addEventListener('scroll', queueLocationUpdate, { passive: true });
+  window.addEventListener('resize', queueLocationUpdate);
 })();
 </script>
 </body>
