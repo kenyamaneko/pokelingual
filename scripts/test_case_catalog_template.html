@@ -308,28 +308,43 @@
     updateCurrentLocation();
   }
 
-  function currentSection() {
+  function getFilterBarRect() {
+    return document.querySelector('section[aria-label="絞り込み"]').getBoundingClientRect();
+  }
+
+  function syncFilterBarHeight() {
+    document.documentElement.style.setProperty('--filter-bar-height', getFilterBarRect().height + 'px');
+  }
+
+  function findCurrentSection() {
     var sections = document.querySelectorAll('#content > section');
     if (!sections.length) return null;
-    var bar = document.querySelector('section[aria-label="絞り込み"]').getBoundingClientRect();
-    var barBottom = bar.bottom;
-    document.documentElement.style.setProperty('--filter-bar-height', bar.height + 'px');
+    var barBottom = getFilterBarRect().bottom;
     var current = sections[0];
     sections.forEach(function (s) { if (s.getBoundingClientRect().top <= barBottom + HEADING_POSITION_TOLERANCE_PX) current = s; });
     return current;
   }
 
-  function updateCurrentLocation() {
-    var section = currentSection();
+  function scrollTocLinkIntoView(link) {
+    var aside = document.querySelector('aside');
+    var linkRect = link.getBoundingClientRect(), asideRect = aside.getBoundingClientRect();
+    if (linkRect.top < asideRect.top) aside.scrollTop -= asideRect.top - linkRect.top;
+    else if (linkRect.bottom > asideRect.bottom) aside.scrollTop += linkRect.bottom - asideRect.bottom;
+  }
+
+  function highlightCurrentTocLink() {
+    var section = findCurrentSection();
     document.querySelectorAll('.toc-link').forEach(function (a) { a.removeAttribute('aria-current'); });
     if (!section) return;
     var link = document.querySelector('.toc-link[data-section-id="' + section.id + '"]');
     if (!link) return;
     link.setAttribute('aria-current', 'location');
-    var aside = document.querySelector('aside');
-    var linkRect = link.getBoundingClientRect(), asideRect = aside.getBoundingClientRect();
-    if (linkRect.top < asideRect.top) aside.scrollTop -= asideRect.top - linkRect.top;
-    else if (linkRect.bottom > asideRect.bottom) aside.scrollTop += linkRect.bottom - asideRect.bottom;
+    scrollTocLinkIntoView(link);
+  }
+
+  function updateCurrentLocation() {
+    syncFilterBarHeight();
+    highlightCurrentTocLink();
   }
 
   var isLocationUpdateQueued = false;
