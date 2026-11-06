@@ -2055,9 +2055,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given:
-            "レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」「やどりぎのタネ」の4つのポケモンで、2回の出題で技の抽選結果が異なるとき",
+            "レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」「やどりぎのタネ」の4つのポケモンで、1回目の出題では技の抽選で「たいあたり」「なきごえ」「つるのムチ」が選ばれ、2回目の出題では「やどりぎのタネ」「つるのムチ」「なきごえ」が選ばれるとき",
           When: [START_QUEST, REQUEST_HINT, REQUEST_HINT, START_QUEST, REQUEST_HINT, REQUEST_HINT],
-          Then: "2回の出題のそれぞれで開示される技は、互いに異なる",
+          Then: "1回目の出題で開示される技は「たいあたり」「なきごえ」「つるのムチ」、2回目の出題で開示される技は「やどりぎのタネ」「つるのムチ」「なきごえ」になる",
         },
       ],
     },
@@ -2073,7 +2073,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       await serviceB.requestHint(USER_ID);
       const resB = await serviceB.requestHint(USER_ID);
 
-      expect(resA.moves).not.toEqual(resB.moves);
+      expect(resA.moves).toEqual(["たいあたり", "なきごえ", "つるのムチ"]);
+      expect(resB.moves).toEqual(["やどりぎのタネ", "つるのムチ", "なきごえ"]);
     },
   );
 

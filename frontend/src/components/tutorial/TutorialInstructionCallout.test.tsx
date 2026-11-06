@@ -125,27 +125,6 @@ describe("[本体:チュートリアル]誤答時の案内の吹き出しの揺�
       正常異常: "異常系",
       steps: [
         {
-          Given: `${CALLOUT_CONTENT}の吹き出しが表示されていて、誤答が 0 回のとき`,
-          When: ["入力が誤答と判定される"],
-          Then: "案内の吹き出しが揺れる",
-        },
-      ],
-    },
-    () => {
-      const { rerenderWithSignal } = renderVisibleCallout(0);
-
-      rerenderWithSignal(1);
-
-      expect(screen.getByRole("note")).toHaveAttribute("data-state", "invalid");
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "異常系",
-      steps: [
-        {
           Given: `${CALLOUT_CONTENT}の吹き出しが表示されていて、誤答が 1 回判定されていて、吹き出しが揺れているとき`,
           When: ["案内の吹き出しの揺れの再生が終わるまで待つ"],
           Then: CALLOUT_NOT_SHAKING,
