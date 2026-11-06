@@ -16,7 +16,7 @@ import { defineCase } from "../../test/defineCase";
 const OPEN_QUEST_SCREEN = "クエスト画面を開く";
 const SUBMIT_TRANSLATION_FOR_SCORING = [
   "場所選択画面で「木漏れ日の森」を選ぶ",
-  "クエスト画面の翻訳の入力欄に「この ポケモンは はやい」と入力する",
+  "クエスト画面の翻訳の入力欄に「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」と入力する",
   "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
 ] as const;
 

@@ -43,7 +43,7 @@ const CAPTURED_AFTER_SEEN: History = {
     { score: 70, isCaptured: false },
     { score: 95, isCaptured: true },
   ],
-  operation: "そのポケモンの捕獲を記録する",
+  operation: "そのポケモンの遭遇を、捕獲して記録する",
 };
 const SEEN_AGAIN_AFTER_CAPTURE: History = {
   given: CAPTURED,

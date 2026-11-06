@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { getScoreLabel } from "./scoreLabel";
 import { defineCase } from "../test/defineCase";
 
-const GET_LABEL = "『こうか』ラベルを取得する";
+const getLabelOf = (score: number | string) => `最終評価点 ${score} の『こうか』ラベルを取得する`;
 
 describe("[本体:クエスト]最終評価点に応じた『こうか』ラベル", () => {
   defineCase(
@@ -12,8 +12,7 @@ describe("[本体:クエスト]最終評価点に応じた『こうか』ラベ�
       観点: ["境界値"],
       steps: [
         {
-          Given: "最終評価点が 80 のとき",
-          When: [GET_LABEL],
+          When: [getLabelOf(80)],
           Then: "『こうか』ラベルは『効果は　バツグンだ！』になる",
         },
       ],
@@ -31,8 +30,7 @@ describe("[本体:クエスト]最終評価点に応じた『こうか』ラベ�
         観点: ["境界値"],
         steps: [
           {
-            Given: `最終評価点が ${score} のとき`,
-            When: [GET_LABEL],
+            When: [getLabelOf(score)],
             Then: "『こうか』ラベルは『効果は　いまひとつのようだ』になる",
           },
         ],
@@ -50,8 +48,7 @@ describe("[本体:クエスト]最終評価点に応じた『こうか』ラベ�
       観点: ["境界値"],
       steps: [
         {
-          Given: "最終評価点が 0 のとき",
-          When: [GET_LABEL],
+          When: [getLabelOf(0)],
           Then: "『こうか』ラベルは『効果が　ないみたいだ...』になる",
         },
       ],
@@ -69,8 +66,7 @@ describe("[本体:クエスト]最終評価点に応じた『こうか』ラベ�
         観点: ["境界値"],
         steps: [
           {
-            Given: `最終評価点が ${score} のとき`,
-            When: [GET_LABEL],
+            When: [getLabelOf(score)],
             Then: "『こうか』ラベルは無しになる",
           },
         ],

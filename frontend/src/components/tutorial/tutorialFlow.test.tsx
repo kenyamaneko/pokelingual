@@ -85,7 +85,6 @@ const submitTranslation = (translation: string) =>
   ] as const;
 const SUBMIT_TRANSLATION = submitTranslation("電気タイプのねずみポケモン");
 const SUBMIT_TRANSLATION_WITHOUT_ELECTRIC = submitTranslation("ねずみポケモン");
-const ELECTRIC_AND_MOUSE_CORRECT_GIVEN = "「電気」と「ねずみ」を両方含む翻訳が正解になるとき";
 const submitName = (name: string) =>
   [
     `チュートリアル画面のポケモン名当てステップの名前の入力欄に「${name}」と入力する`,
@@ -94,7 +93,6 @@ const submitName = (name: string) =>
 const SUBMIT_NAME_PIKACHU = submitName("pikachu");
 const SUBMIT_NAME_PIKACHU_JA = submitName("ピカチュウ");
 const SUBMIT_NAME_RAICHU = submitName("raichu");
-const PIKACHU_NAME_CORRECT_GIVEN = "「ピカチュウ」または「pikachu」が正解になるとき";
 const POKEMON_NAMES_GIVEN = "出題されたポケモンの英語名が「pikachu」、日本語名が「ピカチュウ」のとき";
 const PRESS_START_QUEST = "ホーム画面で、「ポケモンを探しに行く」ボタンを押す";
 const PRESS_PROCEED = "チュートリアル画面のポケモン名当てステップで、「次へ進む」ボタンを押す";
@@ -195,7 +193,6 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
           Then: "最終評価点が上限の 99% と表示される",
         },
@@ -216,7 +213,6 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION_WITHOUT_ELECTRIC],
           Then: "採点結果画面に進まず、翻訳の入力欄が表示されたままになる",
         },
@@ -238,7 +234,6 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: ELECTRIC_AND_MOUSE_CORRECT_GIVEN,
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION_WITHOUT_ELECTRIC],
           Then: SHAKE_GUIDE_BUBBLE,
         },
@@ -363,7 +358,6 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "異常系",
       steps: [
         {
-          Given: PIKACHU_NAME_CORRECT_GIVEN,
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION, ...SUBMIT_NAME_RAICHU],
           Then: "捕獲待機画面に進まず、名前の入力欄が表示されたままになる",
         },
@@ -385,7 +379,6 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       正常異常: "異常系",
       steps: [
         {
-          Given: PIKACHU_NAME_CORRECT_GIVEN,
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION, ...SUBMIT_NAME_RAICHU],
           Then: SHAKE_GUIDE_BUBBLE,
         },

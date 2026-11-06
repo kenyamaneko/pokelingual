@@ -39,7 +39,7 @@ function renderAuth() {
   return renderHook(() => useAuth(), { wrapper: AuthProvider }).result;
 }
 
-const LOGIN = "ログインする";
+const LOGIN = "メールアドレス「dummy@example.com」とパスワード「dummy-pass」でログインする";
 const CONFIRM_EMAIL = "メールアドレスの確認を済ませる";
 const UNVERIFIED_EMAIL = "メールアドレスの確認が済んでいないとき";
 
@@ -54,7 +54,7 @@ describe("[共通:認証]メール本人確認", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["新規登録する"],
+          When: ["メールアドレス「dummy@example.com」とパスワード「dummy-pass」で新規登録する"],
           Then: "ログインしていない状態になる",
         },
       ],

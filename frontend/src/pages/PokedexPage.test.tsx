@@ -85,7 +85,7 @@ const OPEN_POKEDEX = "図鑑画面を開く";
 const SELECT_BULBASAUR_CARD = "図鑑画面の一覧で、「フシギダネ」のカードを選ぶ";
 const CLOSE_DETAIL_MODAL = "図鑑画面の詳細モーダルで、「閉じる」ボタンを押す";
 const BULBASAUR_IN_POKEDEX = "図鑑に「フシギダネ」があり";
-const POKEDEX_UNAVAILABLE = "図鑑の一覧を読み込めないとき";
+const POKEDEX_UNAVAILABLE = "図鑑一覧を読み込めないとき";
 const DESCRIPTION_TEXT = "「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」";
 const POKEDEX_LOAD_FAILED = "「図鑑の読み込みに失敗しました」と表示される";
 const DETAIL_LOAD_FAILED = "「ポケモンの詳細の読み込みに失敗しました」と表示される";
@@ -126,7 +126,7 @@ async function closeDetailModal() {
   );
 }
 
-describe("[本体:図鑑]図鑑の一覧表示", () => {
+describe("[本体:図鑑]図鑑一覧表示", () => {
   const ONE_CAPTURED_ONE_ENCOUNTERED =
     "ポケモンを 2 匹見つけ、うち「フシギダネ」だけ捕まえていて「ヒトカゲ」は見つけただけのとき";
 

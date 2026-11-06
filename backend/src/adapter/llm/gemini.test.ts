@@ -16,15 +16,15 @@ function makeClient(text: string): GeminiClient {
   return makeClientWithCandidates([{ content: { parts: [{ text }] } }]);
 }
 
-const GENERATE_TEXT = "AI でテキストを生成する";
+const GENERATE_TEXT = "AI にプロンプトを送って、テキストを生成する";
 
-describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
+describe("[外部連携:AI]AI の回答からのテキスト取り出し", () => {
   for (const { given, response } of [
     {
-      given: 'AI 応答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき',
+      given: 'AI の回答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき',
       response: '```json\n{"score":70}\n```',
     },
-    { given: 'AI 応答が {"score":70} でコードブロックで囲まれていないとき', response: '{"score":70}' },
+    { given: 'AI の回答が {"score":70} でコードブロックで囲まれていないとき', response: '{"score":70}' },
   ]) {
     defineCase(
       {
@@ -44,7 +44,7 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "AI 応答が「```」で始まり「```」で終わるコードブロックで囲まれた「plain text」のとき",
+          Given: "AI の回答が「```」で始まり「```」で終わるコードブロックで囲まれた「plain text」のとき",
           When: [GENERATE_TEXT],
           Then: "生成したテキストは「plain text」になる",
         },
@@ -62,7 +62,7 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
       観点: ["エッジケース"],
       steps: [
         {
-          Given: "AI 応答の末尾にだけ「```」がある「text```」のとき",
+          Given: "AI の回答の末尾にだけ「```」がある「text```」のとき",
           When: [GENERATE_TEXT],
           Then: "生成したテキストは「text」になる",
         },
@@ -88,7 +88,7 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
         正常異常: "異常系",
         観点,
         steps: [
-          { Given: given, When: [GENERATE_TEXT], Then: "AI 応答が空であることを示すエラーになる" },
+          { Given: given, When: [GENERATE_TEXT], Then: "AI の回答が空であることを示すエラーになる" },
         ],
       },
       async () => {

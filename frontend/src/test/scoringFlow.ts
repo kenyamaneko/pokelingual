@@ -9,7 +9,7 @@ export const DAILY_LIMIT = 30;
 
 export const fakeUser = { uid: "trainer-test" } as unknown as User;
 
-const TRANSLATION_TEXT = "この ポケモンは はやい";
+const TRANSLATION_TEXT = "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある";
 
 /**
  * 利用状況の取得に、与えた応答列を呼び出し順に返す HTTP ハンドラを作る。

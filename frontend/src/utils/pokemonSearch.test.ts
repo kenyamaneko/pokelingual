@@ -9,8 +9,8 @@ const entries = [
   { name_ja: "アーボ" },
 ];
 
-const ENTRIES_GIVEN = "検索対象のポケモン名が「アズマオウ」「アーボック」「イーブイ」「アーボ」の順で並んでいて";
-const SEARCH_POKEMON_NAME = "ポケモン名を前方一致で検索する";
+const ENTRIES_GIVEN = "検索対象のポケモン名が「アズマオウ」「アーボック」「イーブイ」「アーボ」の順で並んでいるとき";
+const searchPokemonName = (searchTerm: string) => `検索語「${searchTerm}」でポケモン名を検索する`;
 
 describe("[共通:設定]ポケモン名の前方一致検索", () => {
   defineCase(
@@ -20,8 +20,8 @@ describe("[共通:設定]ポケモン名の前方一致検索", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${ENTRIES_GIVEN}、検索語が空文字のとき`,
-          When: [SEARCH_POKEMON_NAME],
+          Given: ENTRIES_GIVEN,
+          When: ["検索語を空文字にしてポケモン名を検索する"],
           Then: "検索結果は 0 件になる",
         },
       ],
@@ -38,8 +38,8 @@ describe("[共通:設定]ポケモン名の前方一致検索", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${ENTRIES_GIVEN}、検索語が「ゼッ」で、どのポケモン名の先頭にも一致しないとき`,
-          When: [SEARCH_POKEMON_NAME],
+          Given: ENTRIES_GIVEN,
+          When: [searchPokemonName("ゼッ")],
           Then: "検索結果は 0 件になる",
         },
       ],
@@ -56,8 +56,8 @@ describe("[共通:設定]ポケモン名の前方一致検索", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${ENTRIES_GIVEN}、検索語が「ア」のとき`,
-          When: [SEARCH_POKEMON_NAME],
+          Given: ENTRIES_GIVEN,
+          When: [searchPokemonName("ア")],
           Then: "検索結果は、五十音順にアーボ、アーボック、アズマオウの 3 件になる",
         },
       ],
@@ -77,8 +77,8 @@ describe("[共通:設定]ポケモン名の前方一致検索", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${ENTRIES_GIVEN}、検索語が「アー」のとき`,
-          When: [SEARCH_POKEMON_NAME],
+          Given: ENTRIES_GIVEN,
+          When: [searchPokemonName("アー")],
           Then: "検索結果は、五十音順にアーボ、アーボックの 2 件になる",
         },
       ],
@@ -98,8 +98,8 @@ describe("[共通:設定]ポケモン名の前方一致検索", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${ENTRIES_GIVEN}、検索語が「アーボッ」のとき`,
-          When: [SEARCH_POKEMON_NAME],
+          Given: ENTRIES_GIVEN,
+          When: [searchPokemonName("アーボッ")],
           Then: "検索結果は、アーボックの 1 件になる",
         },
       ],
@@ -117,8 +117,8 @@ describe("[共通:設定]ポケモン名の前方一致検索", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${ENTRIES_GIVEN}、検索語がひらがなの「あーぼ」のとき`,
-          When: [SEARCH_POKEMON_NAME],
+          Given: ENTRIES_GIVEN,
+          When: [searchPokemonName("あーぼ")],
           Then: "検索結果は、五十音順にアーボ、アーボックの 2 件になる",
         },
       ],

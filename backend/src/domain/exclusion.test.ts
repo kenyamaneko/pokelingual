@@ -2,19 +2,22 @@ import { describe, expect } from "vitest";
 import { buildExcludedPokemonIDs } from "./exclusion.js";
 import { defineCase } from "../test/defineCase.js";
 
-const DECIDE_EXCLUDED_POKEMON = "除外ポケモンの一覧を決める";
+const BUILD_EXCLUDED_POKEMON_LIST = "出題で除外するポケモンの一覧を作る";
 
 describe("[本体:クエスト]出題除外の決定", () => {
-  for (const { given, excludedPokemonIDs } of [
-    { given: "ユーザーが除外ポケモンを設定していないとき", excludedPokemonIDs: null },
-    { given: "ユーザーが除外ポケモンを 0 匹で設定しているとき", excludedPokemonIDs: [] as number[] },
+  for (const { when, excludedPokemonIDs } of [
+    { when: `除外ポケモンの設定を指定せずに、${BUILD_EXCLUDED_POKEMON_LIST}`, excludedPokemonIDs: null },
+    {
+      when: `除外ポケモンの設定に図鑑番号を 1 つも指定せずに、${BUILD_EXCLUDED_POKEMON_LIST}`,
+      excludedPokemonIDs: [] as number[],
+    },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["件数・有無"],
-        steps: [{ Given: given, When: [DECIDE_EXCLUDED_POKEMON], Then: "除外ポケモンの一覧は空になる" }],
+        steps: [{ When: [when], Then: "除外ポケモンの一覧は空になる" }],
       },
       () => {
         expect(buildExcludedPokemonIDs(excludedPokemonIDs)).toEqual(new Set());
@@ -29,8 +32,7 @@ describe("[本体:クエスト]出題除外の決定", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ユーザーが図鑑番号 10 のポケモンだけを除外に設定しているとき",
-          When: [DECIDE_EXCLUDED_POKEMON],
+          When: [`除外ポケモンの設定に図鑑番号 10 を指定して、${BUILD_EXCLUDED_POKEMON_LIST}`],
           Then: "除外ポケモンの一覧は図鑑番号 10 だけになる",
         },
       ],
@@ -47,8 +49,7 @@ describe("[本体:クエスト]出題除外の決定", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ユーザーが図鑑番号 10 と 20 のポケモンを除外に設定しているとき",
-          When: [DECIDE_EXCLUDED_POKEMON],
+          When: [`除外ポケモンの設定に図鑑番号 10 と 20 を指定して、${BUILD_EXCLUDED_POKEMON_LIST}`],
           Then: "除外ポケモンの一覧は図鑑番号 10 と 20 になる",
         },
       ],

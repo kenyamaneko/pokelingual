@@ -85,12 +85,17 @@ const BULBASAUR_FLAVOR_TEXTS_GIVEN =
 const CHARMANDER_FLAVOR_TEXTS_GIVEN =
   "ヒトカゲのバージョン X の説明文が英語「The flame on its tail indicates Charmander’s life⏎force. If it is healthy, the flame burns brightly.」・日本語「尻尾の　炎は⏎ヒトカゲの　生命力の　証。⏎元気だと　さかんに　燃えさかる。」、バージョン Y の説明文が英語「From the time it is born, a flame burns at the tip of⏎its tail. Its life would end if the flame were to⏎go out.」・日本語「生まれたときから　尻尾に　炎が⏎点っている。炎が　消えたとき⏎その　命は　終わってしまう。」のとき";
 
+const FIRST_SENTENCE = "A strange seed was planted on its back at birth.";
+const SECOND_SENTENCE = "The plant sprouts and grows with this Pokémon.";
+const BETWEEN_SENTENCES = `説明文の 1 文目「${FIRST_SENTENCE}」と 2 文目「${SECOND_SENTENCE}」`;
+const CLEANED_FLAVOR_TEXT = "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.";
+
 describe("[外部連携:ポケモンデータ提供元]説明文の整形", () => {
   const WHITESPACE_CASES: { given: string; text: string; 観点: readonly Viewpoint[] }[] = [
-    { given: "「A」と「B」の間に改ページがある", text: "A\fB", 観点: ["同値分割"] },
-    { given: "「A」と「B」の間に改行がある", text: "A\nB", 観点: ["同値分割"] },
-    { given: "「A」と「B」の間に復帰がある", text: "A\rB", 観点: ["同値分割"] },
-    { given: "「A」と「B」の間にスペースが 3 つ連続している", text: "A   B", 観点: [] },
+    { given: `${BETWEEN_SENTENCES}の間に改ページがある`, text: `${FIRST_SENTENCE}\f${SECOND_SENTENCE}`, 観点: ["同値分割"] },
+    { given: `${BETWEEN_SENTENCES}の間に改行がある`, text: `${FIRST_SENTENCE}\n${SECOND_SENTENCE}`, 観点: ["同値分割"] },
+    { given: `${BETWEEN_SENTENCES}の間に復帰がある`, text: `${FIRST_SENTENCE}\r${SECOND_SENTENCE}`, 観点: ["同値分割"] },
+    { given: `${BETWEEN_SENTENCES}の間にスペースが 3 つ連続している`, text: `${FIRST_SENTENCE}   ${SECOND_SENTENCE}`, 観点: [] },
   ];
 
   for (const { given, text, 観点 } of WHITESPACE_CASES) {
@@ -99,10 +104,10 @@ describe("[外部連携:ポケモンデータ提供元]説明文の整形", () =
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ Given: `${given}とき`, When: [CLEAN_FLAVOR_TEXT], Then: "整形後の説明文は「A B」になる" }],
+        steps: [{ Given: `${given}とき`, When: [CLEAN_FLAVOR_TEXT], Then: `整形後の説明文は「${CLEANED_FLAVOR_TEXT}」になる` }],
       },
       () => {
-        expect(cleanFlavorText(text)).toBe("A B");
+        expect(cleanFlavorText(text)).toBe("A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.");
       },
     );
   }
@@ -111,10 +116,10 @@ describe("[外部連携:ポケモンデータ提供元]説明文の整形", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "説明文「AB」の前後にスペースが 2 つずつあるとき", When: [CLEAN_FLAVOR_TEXT], Then: "整形後の説明文は「AB」になる" }],
+      steps: [{ Given: `説明文「${SECOND_SENTENCE}」の前後にスペースが 2 つずつあるとき`, When: [CLEAN_FLAVOR_TEXT], Then: `整形後の説明文は「${SECOND_SENTENCE}」になる` }],
     },
     () => {
-      expect(cleanFlavorText("  AB  ")).toBe("AB");
+      expect(cleanFlavorText("  The plant sprouts and grows with this Pokémon.  ")).toBe("The plant sprouts and grows with this Pokémon.");
     },
   );
 });
@@ -303,7 +308,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       種別: "単体テスト",
       正常異常: "異常系",
       観点: ["外部依存の失敗"],
-      steps: [{ Given: "タイプ名が未知の shadow のとき", When: [CREATE_POKEMON_RECORD], Then: "未知のタイプであることを示すエラーになる" }],
+      steps: [{ Given: "タイプ名が shadow のとき", When: [CREATE_POKEMON_RECORD], Then: "未知のタイプであることを示すエラーになる" }],
     },
     () => {
       const species = speciesOf(1, "Bulbasaur", "フシギダネ", [{ version: "x", en: "en", ja: "ja" }]);

@@ -37,13 +37,13 @@ async function requestWithLimitError(kind: string): Promise<RateLimitDetail> {
   installAdapter(statusAdapter(429, { error: kind, message: "上限に たっしました" }));
   const handler = spyOnRateLimitEvents();
 
-  await expect(api.get("/anything")).rejects.toMatchObject({ response: { status: 429 } });
+  await expect(api.get("/usage")).rejects.toMatchObject({ response: { status: 429 } });
 
   expect(handler).toHaveBeenCalledOnce();
   return (handler.mock.calls[0][0] as CustomEvent<RateLimitDetail>).detail;
 }
 
-const CALL_BACKEND_API = "バックエンドの API を呼び出す";
+const CALL_BACKEND_API = "利用状況取得 API を呼び出す";
 const NOTHING_NOTIFIED = "日次上限の通知は発行されない";
 const INVALID_KIND_LIMIT = "日次上限に達していて、上限の種類が「invalid」でユーザーでも全体でもないとき";
 const USER_LIMIT_REACHED = "ユーザーの日次上限に達しているとき";
@@ -77,7 +77,7 @@ describe("[共通:認証]バックエンド呼び出しへの認証トークン�
         } as AxiosResponse;
       });
 
-      await api.get("/anything");
+      await api.get("/usage");
 
       expect(capturedAuth).toBe("Bearer dev-token");
     },
@@ -171,7 +171,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
         vi.spyOn(console, "error").mockImplementation(() => {});
         const handler = spyOnRateLimitEvents();
 
-        await expect(api.get("/anything")).rejects.toMatchObject({ response: { status } });
+        await expect(api.get("/usage")).rejects.toMatchObject({ response: { status } });
 
         expect(handler).not.toHaveBeenCalled();
       },
@@ -195,7 +195,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       installAdapter(statusAdapter(429, { error: "invalid", message: "x" }));
-      await expect(api.get("/anything")).rejects.toMatchObject({ response: { status: 429 } });
+      await expect(api.get("/usage")).rejects.toMatchObject({ response: { status: 429 } });
 
       const detail = await requestWithLimitError("user");
 
@@ -227,7 +227,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
         config,
       }));
 
-      const response = await api.get("/anything");
+      const response = await api.get("/usage");
 
       expect(response.data).toBe("ok");
     },
@@ -252,7 +252,7 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
       installAdapter(statusAdapter(429, { error: "invalid", message: "x" }));
       const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      await expect(api.get("/anything")).rejects.toMatchObject({ response: { status: 429 } });
+      await expect(api.get("/usage")).rejects.toMatchObject({ response: { status: 429 } });
 
       expect(errorSpy).toHaveBeenCalledOnce();
       expect(errorSpy.mock.calls[0][0]).toBe("unexpected 429 response shape from backend");
@@ -286,7 +286,7 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
         installAdapter(statusAdapter(429, body));
         const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-        await expect(api.get("/anything")).rejects.toMatchObject({ response: { status: 429 } });
+        await expect(api.get("/usage")).rejects.toMatchObject({ response: { status: 429 } });
 
         expect(errorSpy).toHaveBeenCalledOnce();
         expect(errorSpy.mock.calls[0][0]).toBe("429 response missing message field");

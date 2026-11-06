@@ -75,9 +75,10 @@ const ENTER_WRONG_PASSWORD = "ログイン画面のメールアドレスでの�
 const PRESS_LOGIN = "ログイン画面のメールアドレスでのログインで、「メールでログイン」ボタンを押す";
 const LOGIN_WITH_CORRECT_PASSWORD = [ENTER_EMAIL, ENTER_CORRECT_PASSWORD, PRESS_LOGIN] as const;
 const LOGIN_WITH_WRONG_PASSWORD = [ENTER_EMAIL, ENTER_WRONG_PASSWORD, PRESS_LOGIN] as const;
-const CORRECT_CREDENTIALS = "正しいメールアドレスとパスワードのとき";
-const UNVERIFIED_ACCOUNT = "メールアドレスの確認が済んでいないとき";
-const WRONG_CREDENTIALS = "メールアドレスまたはパスワードが間違っているとき";
+const ACCOUNT_PASSWORD_CLAUSE = "「dummy@example.com」のパスワードが「dummy-password」で";
+const VERIFIED_ACCOUNT = `${ACCOUNT_PASSWORD_CLAUSE}、メールアドレスの確認が済んでいるとき`;
+const UNVERIFIED_ACCOUNT = `${ACCOUNT_PASSWORD_CLAUSE}、メールアドレスの確認が済んでいないとき`;
+const ACCOUNT_WITH_PASSWORD = "「dummy@example.com」のパスワードが「dummy-password」のとき";
 const HOME_SHOWN = "ホーム画面に、「ポケモンを探しに行く」ボタンが表示される";
 const UNVERIFIED_MESSAGE = "「メールが未確認です」を含む確認を促すメッセージが表示される";
 const WRONG_CREDENTIALS_MESSAGE = "「メールアドレスまたはパスワードが間違っています」と表示される";
@@ -87,7 +88,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: CORRECT_CREDENTIALS, When: LOGIN_WITH_CORRECT_PASSWORD, Then: HOME_SHOWN }],
+      steps: [{ Given: VERIFIED_ACCOUNT, When: LOGIN_WITH_CORRECT_PASSWORD, Then: HOME_SHOWN }],
     },
     async () => {
       const user = userEvent.setup();
@@ -108,7 +109,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
       errorMessage: /メールが未確認です/,
     },
     {
-      given: WRONG_CREDENTIALS,
+      given: ACCOUNT_WITH_PASSWORD,
       when: LOGIN_WITH_WRONG_PASSWORD,
       loginError: new Error("auth error"),
       password: "wrong-password",
@@ -180,7 +181,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: WRONG_CREDENTIALS, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE }],
+      steps: [{ Given: ACCOUNT_WITH_PASSWORD, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE }],
     },
     async () => {
       const user = userEvent.setup();
@@ -198,7 +199,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: WRONG_CREDENTIALS, When: LOGIN_WITH_WRONG_PASSWORD, Then: "「メールでログイン」ボタンが押せる状態のままになる" }],
+      steps: [{ Given: ACCOUNT_WITH_PASSWORD, When: LOGIN_WITH_WRONG_PASSWORD, Then: "「メールでログイン」ボタンが押せる状態のままになる" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -217,9 +218,8 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
       正常異常: "異常系",
       観点: ["回復確認"],
       steps: [
-        { Given: WRONG_CREDENTIALS, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE },
+        { Given: ACCOUNT_WITH_PASSWORD, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE },
         {
-          Given: CORRECT_CREDENTIALS,
           When: [
             "ログイン画面のメールアドレスでのログインで、パスワード欄に「dummy-password」と入力し直す",
             PRESS_LOGIN,

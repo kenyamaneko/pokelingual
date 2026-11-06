@@ -17,9 +17,9 @@ function moveEntry(
   };
 }
 
-const DETERMINE_CANDIDATES = "レベルアップで覚える技の候補を決定する";
-const DETERMINE_MOVE_NAME = "技の日本語名を決定する";
-const CREATE_NAME_LIST = "技の候補の日本語名の一覧を作成する";
+const CONVERT_CANDIDATES = "PokeAPI の技のデータを、レベルアップで覚える技の候補に変換する";
+const CONVERT_MOVE_NAME = "PokeAPI の技の名称の一覧を、技の日本語名に変換する";
+const CONVERT_NAME_LIST = "技の候補を、日本語名の一覧に変換する";
 
 describe("[外部連携:ポケモンデータ提供元]レベルアップで覚える技の候補の決定", () => {
   defineCase(
@@ -30,7 +30,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       steps: [
         {
           Given: "ソード・シールドで、vine-whip を Lv.7、tackle を Lv.1、growl を Lv.1 のレベルアップで覚えるとき",
-          When: [DETERMINE_CANDIDATES],
+          When: [CONVERT_CANDIDATES],
           Then: "技の候補は、順不同で、tackle・growl・vine-whip の 3 件になる",
         },
       ],
@@ -61,7 +61,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       steps: [
         {
           Given: "ソード・シールドで、sketch だけを Lv.1 のレベルアップで覚えるとき",
-          When: [DETERMINE_CANDIDATES],
+          When: [CONVERT_CANDIDATES],
           Then: "技の候補は、sketch の 1 件だけになる",
         },
       ],
@@ -79,7 +79,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       steps: [
         {
           Given: "ソード・シールドにレベルアップで覚える技のデータが無く、X・Y で、tackle と growl を Lv.1 のレベルアップで覚えるとき",
-          When: [DETERMINE_CANDIDATES],
+          When: [CONVERT_CANDIDATES],
           Then: "技の候補は、順不同で、tackle・growl の 2 件になる",
         },
       ],
@@ -107,7 +107,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       steps: [
         {
           Given: "ソード・シールドで、double-edge を Lv.10 と Lv.30 のレベルアップで覚えるとき",
-          When: [DETERMINE_CANDIDATES],
+          When: [CONVERT_CANDIDATES],
           Then: "技の候補は、double-edge の 1 件だけになる",
         },
       ],
@@ -125,7 +125,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
 
   const NO_CANDIDATE_CASES: { given: string; moves: PokeAPIMoveEntry[]; 観点: readonly Viewpoint[] }[] = [
     {
-      given: "ソード・シールドで、レベルアップ以外の方法でしか覚えない技として、タマゴ技 egg-move だけがあるとき",
+      given: "ソード・シールドで、レベルアップ以外の方法でしか覚えない技として、タマゴ技だけがあるとき",
       moves: [moveEntry("egg-move", 99, [{ versionGroup: "sword-shield", level: 0, learnMethod: "egg" }])],
       観点: ["件数・有無"],
     },
@@ -138,7 +138,7 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ Given: given, When: [DETERMINE_CANDIDATES], Then: "技の候補は空になる" }],
+        steps: [{ Given: given, When: [CONVERT_CANDIDATES], Then: "技の候補は空になる" }],
       },
       () => {
         expect(resolveLevelUpMoveCandidates(moves)).toEqual([]);
@@ -156,7 +156,7 @@ describe("[外部連携:ポケモンデータ提供元]技の日本語名の決�
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [DETERMINE_MOVE_NAME], Then: "技の日本語名は「たいあたり」になる" }],
+        steps: [{ Given: given, When: [CONVERT_MOVE_NAME], Then: "技の日本語名は「たいあたり」になる" }],
       },
       () => {
         const names = [
@@ -176,7 +176,7 @@ describe("[外部連携:ポケモンデータ提供元]技の日本語名の決�
       steps: [
         {
           Given: "技の名称に英語名 Tackle しか無く、通常表記もかな表記も日本語名が無いとき",
-          When: [DETERMINE_MOVE_NAME],
+          When: [CONVERT_MOVE_NAME],
           Then: "日本語名が無いことを示すエラーになる",
         },
       ],
@@ -207,7 +207,7 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       steps: [
         {
           Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が tackle・growl・vine-whip・leech-seed の順で 4 件あるとき`,
-          When: [CREATE_NAME_LIST],
+          When: [CONVERT_NAME_LIST],
           Then: "日本語名の一覧は、たいあたり・なきごえ・つるのムチ・やどりぎのタネの順の 4 件になる",
         },
       ],
@@ -236,7 +236,7 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       steps: [
         {
           Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が 0 件のとき`,
-          When: [CREATE_NAME_LIST],
+          When: [CONVERT_NAME_LIST],
           Then: "日本語名の一覧は空になる",
         },
       ],
@@ -252,8 +252,8 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       正常異常: "異常系",
       steps: [
         {
-          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補に、日本語名を調べ終えていない技 unknown-move があるとき`,
-          When: [CREATE_NAME_LIST],
+          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補に、日本語名を調べ終えていない技があるとき`,
+          When: [CONVERT_NAME_LIST],
           Then: "日本語名を調べ終えていない技があることを示すエラーになる",
         },
       ],

@@ -6,8 +6,11 @@ import {
 } from "./generation.js";
 import { defineCase } from "../test/defineCase.js";
 
-const FIND_IDS = "選択世代に含まれる図鑑番号を求める";
-const GENERATIONS_2_AND_4 = "第2世代と第4世代が選択されているとき";
+function findIDsOf(generationsText: string): string {
+  return `選択世代に${generationsText}を指定して、含まれる図鑑番号の一覧を求める`;
+}
+
+const FIND_IDS_OF_GENERATIONS_2_AND_4 = findIDsOf("第 2 世代と第 4 世代");
 
 describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
   for (const { generation, id } of [
@@ -33,7 +36,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: `第${generation}世代のみが選択されているとき`, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
+        steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
       },
       () => {
         expect(generationsToPokemonIDs([generation]).has(id)).toBe(true);
@@ -64,7 +67,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: `第${generation}世代のみが選択されているとき`, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` }],
+        steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` }],
       },
       () => {
         expect(generationsToPokemonIDs([generation]).has(id)).toBe(false);
@@ -76,7 +79,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "第1世代のみが選択されているとき", When: [FIND_IDS], Then: "図鑑番号は 151 件になる" }],
+      steps: [{ When: [findIDsOf("第 1 世代だけ")], Then: "図鑑番号は 151 件になる" }],
     },
     () => {
       expect(generationsToPokemonIDs([1]).size).toBe(151);
@@ -87,7 +90,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: "図鑑番号は 207 件になる" }],
+      steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: "図鑑番号は 207 件になる" }],
     },
     () => {
       expect(generationsToPokemonIDs([2, 4]).size).toBe(207);
@@ -100,7 +103,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
+        steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
       },
       () => {
         expect(generationsToPokemonIDs([2, 4]).has(id)).toBe(true);
@@ -115,7 +118,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
         正常異常: "正常系",
         観点: ["境界値"],
         steps: [
-          { Given: GENERATIONS_2_AND_4, When: [FIND_IDS], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` },
+          { When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `選択世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` },
         ],
       },
       () => {
@@ -129,7 +132,7 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
       種別: "単体テスト",
       正常異常: "異常系",
       観点: ["件数・有無"],
-      steps: [{ Given: "世代を 1 つも選択していないとき", When: [FIND_IDS], Then: "図鑑番号は 0 件になる" }],
+      steps: [{ When: ["選択世代に世代を 1 つも指定せずに、含まれる図鑑番号の一覧を求める"], Then: "図鑑番号は 0 件になる" }],
     },
     () => {
       expect(generationsToPokemonIDs([]).size).toBe(0);
@@ -137,8 +140,11 @@ describe("[本体:クエスト]選択世代に含まれる図鑑番号", () => {
   );
 });
 
-const BUILD_POOL = "出題プールを作る";
-const GENERATION_1_WITH_EXCLUSIONS = "第1世代が選択され、図鑑番号 5 と 10 が除外されているとき";
+function buildPoolWith(excludedText: string): string {
+  return `選択世代に第 1 世代、除外ポケモンに${excludedText}を指定して、出題プールを作る`;
+}
+
+const BUILD_POOL_EXCLUDING_5_AND_10 = buildPoolWith("図鑑番号 5 と 10");
 
 describe("[本体:クエスト]出題プールの図鑑番号", () => {
   defineCase(
@@ -146,7 +152,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: GENERATION_1_WITH_EXCLUSIONS, When: [BUILD_POOL], Then: "出題プールは 149 件になる" }],
+      steps: [{ When: [BUILD_POOL_EXCLUDING_5_AND_10], Then: "出題プールは 149 件になる" }],
     },
     () => {
       const pool = buildQuestPoolIDs([1], new Set([5, 10]));
@@ -160,8 +166,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: GENERATION_1_WITH_EXCLUSIONS,
-          When: [BUILD_POOL],
+          When: [BUILD_POOL_EXCLUDING_5_AND_10],
           Then: "除外した図鑑番号 5 と 10 は出題プールに含まれない",
         },
       ],
@@ -179,8 +184,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: GENERATION_1_WITH_EXCLUSIONS,
-          When: [BUILD_POOL],
+          When: [BUILD_POOL_EXCLUDING_5_AND_10],
           Then: "除外していない図鑑番号 1 は出題プールに含まれる",
         },
       ],
@@ -191,14 +195,14 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
     },
   );
 
-  for (const { given, excluded, viewpoints } of [
+  for (const { when, excluded, viewpoints } of [
     {
-      given: "第1世代が選択され、除外された図鑑番号が 0 件のとき",
+      when: "選択世代に第 1 世代を指定し、除外ポケモンに図鑑番号を 1 つも指定せずに、出題プールを作る",
       excluded: [] as number[],
       viewpoints: ["件数・有無"] as const,
     },
     {
-      given: "第1世代が選択され、第1世代の外にある図鑑番号 200 が除外されているとき",
+      when: buildPoolWith("図鑑番号 200"),
       excluded: [200],
       viewpoints: [] as const,
     },
@@ -208,7 +212,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: given, When: [BUILD_POOL], Then: "出題プールは 151 件になる" }],
+        steps: [{ When: [when], Then: "出題プールは 151 件になる" }],
       },
       () => {
         const pool = buildQuestPoolIDs([1], new Set(excluded));
@@ -224,8 +228,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "第1世代が選択され、第1世代の図鑑番号 5 だけが除外されているとき",
-          When: [BUILD_POOL],
+          When: [buildPoolWith("図鑑番号 5 だけ")],
           Then: "出題プールは 150 件になる",
         },
       ],
@@ -243,8 +246,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "第1世代が選択され、第1世代の 151 件の図鑑番号がすべて除外されているとき",
-          When: [BUILD_POOL],
+          When: [buildPoolWith("図鑑番号 1 から 151 のすべて")],
           Then: "出題プールは空になる",
         },
       ],
@@ -257,7 +259,9 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
   );
 });
 
-const VALIDATE_GENERATIONS = "出題世代設定を検証する";
+function validateGenerationsWith(inputText: string): string {
+  return `${inputText}、出題世代設定を検証する`;
+}
 
 describe("[共通:設定]出題世代設定の検証", () => {
   defineCase(
@@ -266,8 +270,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "世代の指定が、順不同で重複した第3世代・第1世代・第1世代のとき",
-          When: [VALIDATE_GENERATIONS],
+          When: [validateGenerationsWith("世代 3・1・1 を指定して")],
           Then: "検証後の出題世代は第1世代・第3世代の昇順になる",
         },
       ],
@@ -277,16 +280,13 @@ describe("[共通:設定]出題世代設定の検証", () => {
     },
   );
 
-  for (const { given, generation } of [
-    { given: "最小の第1世代だけが指定されているとき", generation: 1 },
-    { given: "最大の第8世代だけが指定されているとき", generation: 8 },
-  ]) {
+  for (const generation of [1, 8]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: given, When: [VALIDATE_GENERATIONS], Then: "検証の結果は受理になる" }],
+        steps: [{ When: [validateGenerationsWith(`世代 ${generation} を指定して`)], Then: "検証の結果は受理になる" }],
       },
       () => {
         expect(validateEnabledGenerations([generation]).ok).toBe(true);
@@ -301,8 +301,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "世代の一覧が空のとき",
-          When: [VALIDATE_GENERATIONS],
+          When: [validateGenerationsWith("世代を 1 つも指定せずに")],
           Then: "1 つ以上の世代の選択が必要なことを示すエラーになる",
         },
       ],
@@ -315,9 +314,9 @@ describe("[共通:設定]出題世代設定の検証", () => {
     },
   );
 
-  for (const { given, raw, viewpoints } of [
-    { given: "世代の指定が一覧でなく文字列 x のとき", raw: "x", viewpoints: ["エッジケース"] as const },
-    { given: "世代の指定が無いとき", raw: undefined, viewpoints: ["エッジケース", "件数・有無"] as const },
+  for (const { when, raw, viewpoints } of [
+    { when: validateGenerationsWith("世代を一覧でなく文字列で指定して"), raw: "x", viewpoints: ["エッジケース"] as const },
+    { when: validateGenerationsWith("世代を指定せずに"), raw: undefined, viewpoints: ["エッジケース", "件数・有無"] as const },
   ]) {
     defineCase(
       {
@@ -326,8 +325,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
         観点: viewpoints,
         steps: [
           {
-            Given: given,
-            When: [VALIDATE_GENERATIONS],
+            When: [when],
             Then: "世代は一覧で指定する必要があることを示すエラーになる",
           },
         ],
@@ -348,8 +346,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: "世代に最小の 1 を下回る 0 が指定されているとき",
-          When: [VALIDATE_GENERATIONS],
+          When: [validateGenerationsWith("世代 0 を指定して")],
           Then: "世代 0 が存在しないことを示すエラーになる",
         },
       ],
@@ -369,8 +366,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: "世代に最大の 8 を上回る 9 が指定されているとき",
-          When: [VALIDATE_GENERATIONS],
+          When: [validateGenerationsWith("世代 9 を指定して")],
           Then: "世代 9 が存在しないことを示すエラーになる",
         },
       ],
@@ -390,8 +386,7 @@ describe("[共通:設定]出題世代設定の検証", () => {
       観点: ["エッジケース"],
       steps: [
         {
-          Given: "世代に整数でない 1.5 が指定されているとき",
-          When: [VALIDATE_GENERATIONS],
+          When: [validateGenerationsWith("世代 1.5 を指定して")],
           Then: "世代 1.5 が存在しないことを示すエラーになる",
         },
       ],

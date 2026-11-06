@@ -2,9 +2,10 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { spec } from "../../test/labels";
 import { defineCase, type Viewpoint } from "../../test/defineCase";
-import { RateLimitModal, formatUntilJstMidnight } from "./RateLimitModal";
+import { RateLimitModal } from "./RateLimitModal";
 
 const OPEN_MODAL = "日次上限モーダルを開く";
+const LIMIT_MESSAGE = "本日の AI 呼び出し回数の上限に達しました";
 
 describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
   defineCase(
@@ -22,7 +23,7 @@ describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
     () => {
       render(
         <RateLimitModal
-          detail={{ kind: "user", message: "x" }}
+          detail={{ kind: "user", message: LIMIT_MESSAGE }}
           onDismiss={vi.fn()}
         />,
       );
@@ -45,7 +46,7 @@ describe("[本体:AI 呼び出し回数]日次上限モーダル", () => {
     () => {
       render(
         <RateLimitModal
-          detail={{ kind: "global", message: "x" }}
+          detail={{ kind: "global", message: LIMIT_MESSAGE }}
           onDismiss={vi.fn()}
         />,
       );
@@ -80,14 +81,17 @@ describe("[本体:AI 呼び出し回数]日次上限のリセットまでの残�
         steps: [
           {
             Given: `現在時刻が JST ${jstTime} のとき`,
-            When: ["日次上限のリセットまでの残り時間を求める"],
-            Then: `リセットまでの残り時間は ${remaining} になる`,
+            When: [OPEN_MODAL],
+            Then: `日次上限モーダルのリセットまでの残り時間が ${remaining} と表示される`,
           },
         ],
       },
       () => {
         vi.setSystemTime(new Date(currentTime));
-        expect(formatUntilJstMidnight()).toBe(remaining);
+
+        render(<RateLimitModal detail={{ kind: "user", message: LIMIT_MESSAGE }} onDismiss={vi.fn()} />);
+
+        expect(screen.getByText(remaining)).toBeInTheDocument();
       },
     );
   }

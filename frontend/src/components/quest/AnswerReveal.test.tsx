@@ -63,6 +63,8 @@ afterEach(() => {
 
 const SHOW_RESULT_SCREEN = "採点結果画面を開く";
 const ALL_FIELDS_IN_VIEW = "すべての欄が画面内に入っているとき";
+const DESCRIPTION_JA_IS = "採点結果の日本語版の説明が「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」で、";
+const REVIEW_IS = "採点結果の講評が「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」で、";
 const WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN = "採点結果画面の段階的開示で、「英語版の図鑑の説明」のフェードインが終わるまで待つ";
 const WAIT_FOR_DESCRIPTION_START = "採点結果画面の段階的開示で、「解答例」の表示が始まるまで待つ";
 const WAIT_FOR_DESCRIPTION_COMPLETE = "採点結果画面の段階的開示で、「解答例」を全文表示し終えるまで待つ";
@@ -219,7 +221,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
+          Given: `${DESCRIPTION_JA_IS}${ALL_FIELDS_IN_VIEW}`,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN, WAIT_FOR_DESCRIPTION_START],
           Then: "「解答例」の先頭の 1 文字「何」が表示される",
         },
@@ -239,7 +241,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
+          Given: `${DESCRIPTION_JA_IS}${ALL_FIELDS_IN_VIEW}`,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN, WAIT_FOR_DESCRIPTION_COMPLETE],
           Then: "「解答例」が「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」と全文表示される",
         },
@@ -281,7 +283,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
+          Given: `${REVIEW_IS}${ALL_FIELDS_IN_VIEW}`,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_START],
           Then: "「博士からのコメント」の先頭の 1 文字「雷」が表示される",
         },
@@ -301,7 +303,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
+          Given: `${REVIEW_IS}${ALL_FIELDS_IN_VIEW}`,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_COMPLETE],
           Then: "「博士からのコメント」が「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」と全文表示される",
         },

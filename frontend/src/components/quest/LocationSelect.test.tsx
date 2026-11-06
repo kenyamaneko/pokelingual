@@ -19,7 +19,7 @@ describe("[本体:クエスト]場所選択画面", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "説明が「やわらかい光と、虫の声」の場所「木漏れ日の森」が選べるとき",
+          Given: "場所の候補に、説明が「やわらかい光と、虫の声」の場所「木漏れ日の森」があるとき",
           When: [OPEN_LOCATION_SELECT],
           Then: "場所選択画面に説明「やわらかい光と、虫の声」が表示される",
         },
@@ -32,8 +32,8 @@ describe("[本体:クエスト]場所選択画面", () => {
   );
 
   for (const { given, selectable } of [
-    { given: "選べる場所が「木漏れ日の森」と「きらめく水晶の洞窟」の 2 件", selectable: locations },
-    { given: "選べる場所が「木漏れ日の森」の 1 件だけ", selectable: [locations[0]] },
+    { given: "場所の候補が「木漏れ日の森」と「きらめく水晶の洞窟」の 2 件", selectable: locations },
+    { given: "場所の候補が「木漏れ日の森」の 1 件だけ", selectable: [locations[0]] },
   ]) {
     defineCase(
       {
@@ -54,7 +54,7 @@ describe("[本体:クエスト]場所選択画面", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: "選べる場所が 0 件のとき", When: [OPEN_LOCATION_SELECT], Then: "場所選択画面に「行き先を　探しています」と表示される" }],
+      steps: [{ Given: "場所の候補が 0 件のとき", When: [OPEN_LOCATION_SELECT], Then: "場所選択画面に「行き先を　探しています」と表示される" }],
     },
     () => {
       render(<LocationSelect locations={[]} onSelect={() => {}} />);

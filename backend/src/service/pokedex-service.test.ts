@@ -83,7 +83,7 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   return new PokedexService(repo, pokemonClient, settingsRepo);
 }
 
-const GET_POKEDEX = "図鑑一覧を取得する";
+const GET_POKEDEX = "あるユーザーの図鑑一覧を取得する";
 const GET_SEARCH_CANDIDATES = "名前検索の候補を取得する";
 const GET_POKEMON_DETAIL = "図鑑番号 1 の図鑑詳細を取得する";
 

@@ -162,12 +162,12 @@ const captureFailed: CaptureResponse = {
 const SCORE_STATE = "AI が翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」に最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」を付ける";
 const GUESS_WRONG_STATE = "名前「Pikachu」が不正解で、残り挑戦回数が 2 である";
 const ELECTRIC_HINT_STATE =
-  "出題されたポケモンのタイプが「でんき」で、最大挑戦回数が 3 回で、ヒントの要求でチャンスを 1 回使う";
+  "出題されたポケモンのタイプが「でんき」で、最大挑戦回数が 3 回である";
 const CAPTURE_SUCCESS_STATE =
   "捕獲の抽選に当たり、捕獲確率が 0.9、出題されたポケモンがピカチュウ、最終評価点が 75、使うボールがハイパーボールである";
 const CAPTURE_FAILURE_DETAIL_STATE =
   "捕獲の抽選に外れ、捕獲確率が 0.2、出題されたポケモンがピカチュウ、最終評価点が 40、使うボールがモンスターボールである";
-const SKIP_BALL_STATE = "スキップで獲得できるボールがモンスターボールである";
+const SKIP_SUCCESS_STATE = "バックエンドが正常に動作している";
 
 interface CommunicationOperation {
   path: string;
@@ -239,7 +239,7 @@ const captureOperation: CommunicationOperation = {
 const skipGuessOperation: CommunicationOperation = {
   path: "/quest/skip-guess",
   when: "名前当てをスキップする",
-  successState: SKIP_BALL_STATE,
+  successState: SKIP_SUCCESS_STATE,
   call: (r) => r.skipGuess(),
   buildSuccess: () => HttpResponse.json({ ball_type: "poke" }),
   recoveredOutcome:
@@ -280,27 +280,27 @@ async function startNewQuestAfterProgress() {
 
 const QUEST_DETAIL = "図鑑番号 25、英語の説明文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、伝説でも幻でもない、最大挑戦回数 3 回";
 const NO_QUEST_AND_QUEST_AVAILABLE = "進行中のクエストが無く、出題を取得できるとき";
-const NO_QUEST_AND_LOCATIONS_AVAILABLE = "進行中のクエストが無く、場所の一覧を取得できるとき";
-const NO_QUEST_AND_GRASSLAND_ONLY = "進行中のクエストが無く、選べる場所が「木漏れ日の森」の 1 件だけのとき";
+const NO_QUEST_AND_LOCATIONS_AVAILABLE = "進行中のクエストが無く、場所の候補を取得できるとき";
+const NO_QUEST_AND_GRASSLAND_ONLY = "進行中のクエストが無く、場所の候補が「木漏れ日の森」の 1 件だけのとき";
 const TRANSLATING_SCREEN_SHOWN = "翻訳画面を表示していて";
 
-const SELECT_LOCATION = "場所を選択する";
+const SELECT_LOCATION = "場所「木漏れ日の森」を選ぶ";
 const START_NEW_QUEST = "新しいクエストを開始する";
-const OPEN_QUEST_SCREEN = "クエストを開始する";
+const OPEN_QUEST_SCREEN = "クエスト画面を開く";
 
 const TRANSLATING_SCREEN = "翻訳画面が表示される";
 const GUESSING_SCREEN = "名前当て画面が表示される";
 const CAPTURING_SCREEN = "捕獲待機画面が表示される";
 const ERROR_SCREEN = "エラー画面が表示される";
 const SELECT_LOCATION_SCREEN = "場所選択画面が表示される";
-const GRASSLAND_LIST = "場所の一覧は、「木漏れ日の森」の 1 件になる";
+const GRASSLAND_LIST = "場所の候補は、「木漏れ日の森」の 1 件になる";
 const ERROR_MESSAGE_CLEARED = "エラーメッセージが消える";
 const QUEST_CONTENT = `出題の内容は、${QUEST_DETAIL}になる`;
 const SCORE_CONTENT = "採点結果は、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる";
 const HINT_CONTENT = "ヒントの内容は、タイプ「でんき」、残り挑戦回数 2 になる";
 const ULTRA_BALL = "獲得したボールはハイパーボールになる";
 
-const LOCATIONS_FAIL_GIVEN = "バックエンドでエラーが起きていて、場所の一覧を取得できないとき";
+const LOCATIONS_FAIL_GIVEN = "バックエンドでエラーが起きていて、場所の候補を取得できないとき";
 const CURRENT_QUEST_FAIL_GIVEN = "外部サービスが応答せず、進行中のクエストを確認できないとき";
 const SERVER_ERROR_GIVEN = "バックエンドでエラーが起きていて、出題を取得できないとき";
 const NEW_QUEST_FAILURE_MESSAGES = [
@@ -698,7 +698,6 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${SKIP_BALL_STATE}とき`,
           When: [SKIP_GUESS],
           Then: "獲得したボールはモンスターボールになる",
         },
@@ -775,9 +774,9 @@ describe("[本体:名前当て]名前当てから捕獲待機への移行", () =
 });
 
 const ELECTRIC_HINT_GIVEN = `${ELECTRIC_HINT_STATE}とき`;
-const HINT_ATTEMPTS_REMAINING_2_GIVEN = "最大挑戦回数が 3 回で、ヒントの要求でチャンスを 1 回使うとき";
+const HINT_ATTEMPTS_REMAINING_2_GIVEN = "最大挑戦回数が 3 回のとき";
 const TWO_HINTS_GIVEN =
-  "出題されたポケモンのタイプが「でんき」、レベルアップで覚える技が「たいあたり」「なきごえ」「でんきショック」で、最大挑戦回数が 3 回で、ヒントの要求でチャンスを 1 回使うとき";
+  "出題されたポケモンのタイプが「でんき」、レベルアップで覚える技が「たいあたり」「なきごえ」「でんきショック」で、最大挑戦回数が 3 回のとき";
 const SECOND_HINT_ATTEMPTS_REMAINING_1_GIVEN = HINT_ATTEMPTS_REMAINING_2_GIVEN;
 const REQUEST_HINT = "ヒントを要求する";
 
@@ -1617,7 +1616,7 @@ describe("[本体:クエスト]クエストの再開", () => {
         {
           Given: TRANSLATING_SESSION,
           When: [OPEN_QUEST_SCREEN],
-          Then: "バックエンドへ場所の一覧の取得要求が届かない",
+          Then: "バックエンドへ場所の候補の取得要求が届かない",
         },
       ],
     },
@@ -1867,7 +1866,7 @@ describe("[本体:クエスト]クエストの再開", () => {
         {
           Given: CURRENT_QUEST_FAIL_GIVEN,
           When: [OPEN_QUEST_SCREEN],
-          Then: "バックエンドへ場所の一覧の取得要求が届かない",
+          Then: "バックエンドへ場所の候補の取得要求が届かない",
         },
       ],
     },

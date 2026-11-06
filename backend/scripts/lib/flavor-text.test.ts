@@ -7,7 +7,7 @@ function entry(version: string, language: string, text: string): FlavorTextSourc
   return { version, language, text };
 }
 
-const BUILD_PAIRS = "英日説明文ペアの一覧を構築する";
+const BUILD_PAIRS = "PokeAPI の説明文の一覧を、英日説明文ペアの一覧に変換する";
 
 describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの構築", () => {
   defineCase(
@@ -119,7 +119,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
 
   const EMPTY_PAIRS_CASES: { given: string; entries: FlavorTextSource[]; 観点: readonly Viewpoint[] }[] = [
     {
-      given: "図鑑に表示しないバージョン red の英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.」と日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」だけがあるとき",
+      given: "バージョン red に英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.」と日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」だけがあるとき",
       entries: [entry("red", "en", "A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON."), entry("red", "ja", "うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。")],
       観点: [],
     },

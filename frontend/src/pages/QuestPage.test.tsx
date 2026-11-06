@@ -30,7 +30,7 @@ const PRESS_PROCEED = "名前当て画面の名前の判定で、「次へ進む
 const PRESS_NEXT_QUEST = "捕獲結果画面の次のポケモンの出題で、「次のポケモンを探す」ボタンを押す";
 const SUBMIT_NAME_BULBASAUR = submitNameOperations("Bulbasaur");
 const SERVER_ERROR = "バックエンドでエラーが起きているとき";
-const BACKEND_RECOVERED_WITH_ELECTRIC_HINT = "バックエンドが正常に動作していて、出題ポケモンのタイプが「でんき」のとき";
+const BACKEND_RECOVERED_WITH_ELECTRIC_HINT = "バックエンドが正常に動作していて、出題されたポケモンのタイプが「でんき」のとき";
 const BACKEND_UNREACHABLE = "バックエンドに接続できないとき";
 const HINT_FAILURE_MESSAGE = "「ヒントの取得に失敗しました」を含むメッセージが表示される";
 const HINT_FAILURE_GONE = "「ヒントの取得に失敗しました」を含むメッセージが表示されなくなる";
@@ -118,7 +118,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       steps: [
         {
           Given:
-            "1 回目の出題の英文が「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、2 回目の出題の英文が「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」で、出題ポケモンの名前が「ピカチュウ」で、捕獲の抽選が必ず成功するとき",
+            "1 回目の出題の英文が「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、2 回目の出題の英文が「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」で、出題されたポケモンの名前が「ピカチュウ」で、捕獲の抽選が必ず成功するとき",
           When: [OPEN_QUEST_SCREEN, SELECT_PLACE],
           Then: "出題の英文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」が表示される",
         },
@@ -328,9 +328,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     await user.click(await screen.findByRole("button", { name: SKIP_BUTTON }));
   }
 
-  const HINT_ELECTRIC_WITH_TWO_REMAINING = "名前当ての最大挑戦回数が 3 回で、出題ポケモンのタイプが「でんき」のとき";
+  const HINT_ELECTRIC_WITH_TWO_REMAINING = "名前当ての最大挑戦回数が 3 回で、出題されたポケモンのタイプが「でんき」のとき";
   const HINT_ELECTRIC_THEN_MOVES =
-    "名前当ての最大挑戦回数が 3 回で、出題ポケモンのタイプが「でんき」、覚える技が「たいあたり」「なきごえ」「でんきショック」のとき";
+    "名前当ての最大挑戦回数が 3 回で、出題されたポケモンのタイプが「でんき」、レベルアップで覚える技が「たいあたり」「なきごえ」「でんきショック」のとき";
 
   defineCase(
     {
@@ -935,8 +935,8 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
 
 describe("[本体:クエスト]伝説・幻の気配演出", () => {
   for (const { given, pokemonID, isLegendary, isMythical } of [
-    { given: "出題ポケモンが伝説のとき", pokemonID: 150, isLegendary: true, isMythical: false },
-    { given: "出題ポケモンが幻のとき", pokemonID: 151, isLegendary: false, isMythical: true },
+    { given: "出題されたポケモンが伝説のとき", pokemonID: 150, isLegendary: true, isMythical: false },
+    { given: "出題されたポケモンが幻のとき", pokemonID: 151, isLegendary: false, isMythical: true },
   ]) {
     defineCase(
       {
@@ -972,7 +972,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "出題ポケモンが伝説・幻のどちらでもないとき",
+          Given: "出題されたポケモンが伝説・幻のどちらでもないとき",
           When: [SELECT_PLACE],
           Then: "翻訳画面に、「ただならない　気配を感じる...」と表示されない",
         },

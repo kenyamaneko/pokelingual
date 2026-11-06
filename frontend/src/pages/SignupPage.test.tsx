@@ -87,10 +87,8 @@ const SIGNUP_WITH_MISMATCHING_PASSWORDS = [
   ENTER_MISMATCHING_PASSWORD_CONFIRM,
   PRESS_SIGNUP,
 ] as const;
-const SIGNUP_AVAILABLE =
-  "メールアドレスがまだ登録されておらず、パスワードと「パスワード（確認）」が一致するとき";
-const ALREADY_REGISTERED = "すでに登録されているメールアドレスのとき";
-const PASSWORD_MISMATCH = "パスワードと「パスワード（確認）」が一致しないとき";
+const NOT_REGISTERED = "「dummy@example.com」がまだ登録されていないとき";
+const ALREADY_REGISTERED = "「dummy@example.com」がすでに登録されているとき";
 const VERIFICATION_NOTICE_SHOWN = "「確認メールを送りました」の案内画面が表示される";
 const ALREADY_REGISTERED_MESSAGE = "「既に登録されています」を含むメッセージが表示される";
 const PASSWORD_MISMATCH_MESSAGE = "「パスワードが一致しません」と表示される";
@@ -102,7 +100,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: SIGNUP_AVAILABLE,
+          Given: NOT_REGISTERED,
           When: SIGNUP_WITH_MATCHING_PASSWORDS,
           Then: "Firebase Auth に「dummy@example.com」と「dummy-pass-1」でアカウントの作成が依頼される",
         },
@@ -124,7 +122,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: SIGNUP_AVAILABLE, When: SIGNUP_WITH_MATCHING_PASSWORDS, Then: VERIFICATION_NOTICE_SHOWN }],
+      steps: [{ Given: NOT_REGISTERED, When: SIGNUP_WITH_MATCHING_PASSWORDS, Then: VERIFICATION_NOTICE_SHOWN }],
     },
     async () => {
       const user = userEvent.setup();
@@ -140,7 +138,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: SIGNUP_AVAILABLE, When: SIGNUP_WITH_MATCHING_PASSWORDS, Then: "エラーメッセージが表示されない" }],
+      steps: [{ Given: NOT_REGISTERED, When: SIGNUP_WITH_MATCHING_PASSWORDS, Then: "エラーメッセージが表示されない" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -178,7 +176,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
       steps: [
         { Given: ALREADY_REGISTERED, When: SIGNUP_WITH_MATCHING_PASSWORDS, Then: ALREADY_REGISTERED_MESSAGE },
         {
-          Given: "まだ登録されていないメールアドレスのとき",
+          Given: "「other@example.com」がまだ登録されていないとき",
           When: ["新規登録画面のメールアドレスでの新規登録で、メールアドレス欄に「other@example.com」と入力し直す", PRESS_SIGNUP],
           Then: VERIFICATION_NOTICE_SHOWN,
         },
@@ -203,7 +201,7 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: PASSWORD_MISMATCH, When: SIGNUP_WITH_MISMATCHING_PASSWORDS, Then: PASSWORD_MISMATCH_MESSAGE }],
+      steps: [{ When: SIGNUP_WITH_MISMATCHING_PASSWORDS, Then: PASSWORD_MISMATCH_MESSAGE }],
     },
     async () => {
       const user = userEvent.setup();
@@ -223,7 +221,6 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: PASSWORD_MISMATCH,
           When: SIGNUP_WITH_MISMATCHING_PASSWORDS,
           Then: "Firebase Auth にアカウントの作成が依頼されない",
         },
@@ -246,9 +243,8 @@ describe("[共通:認証]メールアドレスでの新規登録", () => {
       正常異常: "異常系",
       観点: ["回復確認"],
       steps: [
-        { Given: PASSWORD_MISMATCH, When: SIGNUP_WITH_MISMATCHING_PASSWORDS, Then: PASSWORD_MISMATCH_MESSAGE },
+        { When: SIGNUP_WITH_MISMATCHING_PASSWORDS, Then: PASSWORD_MISMATCH_MESSAGE },
         {
-          Given: "パスワードと「パスワード（確認）」が一致するとき",
           When: ["新規登録画面のメールアドレスでの新規登録で、「パスワード（確認）」欄に「dummy-pass-1」と入力し直す", PRESS_SIGNUP],
           Then: VERIFICATION_NOTICE_SHOWN,
         },

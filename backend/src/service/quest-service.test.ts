@@ -118,8 +118,6 @@ async function missThreeTimes(service: QuestService) {
   return service.guessName(USER_ID, "Pidgey");
 }
 
-const CALCULATE_CAPTURE_RATE = "捕獲確率を計算する";
-
 describe("[本体:捕獲]捕獲確率の計算", () => {
   // ボール補正は設定値に依存しない純関数の引数のため、本番の設定値とは独立したテスト固有の値を使う
   const POKE_BONUS = 0;
@@ -133,8 +131,7 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: "ボール補正がなく、最終評価点が0で種族値合計が680のとき",
-          When: [CALCULATE_CAPTURE_RATE],
+          When: ["ボール補正がない場合の、最終評価点0、種族値合計680の捕獲確率を計算する"],
           Then: "捕獲確率は0.05未満になる",
         },
       ],
@@ -150,10 +147,9 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ボール補正がなく、種族値合計が300のとき",
           When: [
-            "最終評価点が90の捕獲確率を計算する",
-            "最終評価点が30の捕獲確率を計算する",
+            "ボール補正がない場合の、最終評価点90、種族値合計300の捕獲確率を計算する",
+            "ボール補正がない場合の、最終評価点30、種族値合計300の捕獲確率を計算する",
           ],
           Then: "最終評価点が90の捕獲確率は、最終評価点が30の捕獲確率より高くなる",
         },
@@ -172,10 +168,9 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ボール補正がなく、最終評価点が50のとき",
           When: [
-            "種族値合計が300の捕獲確率を計算する",
-            "種族値合計が680の捕獲確率を計算する",
+            "ボール補正がない場合の、最終評価点50、種族値合計300の捕獲確率を計算する",
+            "ボール補正がない場合の、最終評価点50、種族値合計680の捕獲確率を計算する",
           ],
           Then: "種族値合計が300の捕獲確率は、種族値合計が680の捕獲確率より高くなる",
         },
@@ -195,8 +190,7 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: "ボール補正が大きく、最終評価点が99で種族値合計が200のとき",
-          When: [CALCULATE_CAPTURE_RATE],
+          When: ["ボール補正が大きい場合の、最終評価点99、種族値合計200の捕獲確率を計算する"],
           Then: "捕獲確率は1.0以下になる",
         },
       ],
@@ -213,8 +207,7 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: "ボール補正が大きく、最終評価点が99で種族値合計が680のとき",
-          When: [CALCULATE_CAPTURE_RATE],
+          When: ["ボール補正が大きい場合の、最終評価点99、種族値合計680の捕獲確率を計算する"],
           Then: "捕獲確率は0.99を超える",
         },
       ],
@@ -230,10 +223,9 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "最終評価点が0で種族値合計が680のとき",
           When: [
-            "ボール補正が大きい場合の捕獲確率を計算する",
-            "ボール補正がない場合の捕獲確率を計算する",
+            "ボール補正が大きい場合の、最終評価点0、種族値合計680の捕獲確率を計算する",
+            "ボール補正がない場合の、最終評価点0、種族値合計680の捕獲確率を計算する",
           ],
           Then: "ボール補正が大きい場合の捕獲確率は、ボール補正がない場合より高くなる",
         },
@@ -252,11 +244,10 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "最終評価点が20で種族値合計が500のとき",
           When: [
-            "ボール補正がない場合の捕獲確率を計算する",
-            "ボール補正が小さい場合の捕獲確率を計算する",
-            "ボール補正が大きい場合の捕獲確率を計算する",
+            "ボール補正がない場合の、最終評価点20、種族値合計500の捕獲確率を計算する",
+            "ボール補正が小さい場合の、最終評価点20、種族値合計500の捕獲確率を計算する",
+            "ボール補正が大きい場合の、最終評価点20、種族値合計500の捕獲確率を計算する",
           ],
           Then: "捕獲確率は、ボール補正がない場合、小さい場合、大きい場合の順に高くなる",
         },
@@ -272,8 +263,13 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
   );
 });
 
-const MASK_ENGLISH_DESCRIPTION = "英語説明文のポケモン名を伏せ字にする";
-const MASK_JAPANESE_DESCRIPTION = "日本語説明文のポケモン名を伏せ字にする";
+function maskEnglishDescriptionWhen(pokemonName: string, description: string): string {
+  return `${pokemonName}を指定して、英語説明文「${description}」のポケモン名を伏せ字にする`;
+}
+
+function maskJapaneseDescriptionWhen(pokemonName: string, description: string): string {
+  return `${pokemonName}を指定して、日本語説明文「${description}」のポケモン名を伏せ字にする`;
+}
 
 describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", () => {
   defineCase(
@@ -283,8 +279,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、説明文が「It stores electricity in the electric pouches on its cheeks.」でポケモン名を含まないとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "It stores electricity in the electric pouches on its cheeks.")],
           Then: "伏せ字にした説明文は「It stores electricity in the electric pouches on its cheeks.」のままになる",
         },
       ],
@@ -300,8 +295,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名が文中に出現する「A wild Pikachu appeared.」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "A wild Pikachu appeared.")],
           Then: "伏せ字にした説明文は「A wild this Pokémon appeared.」になる",
         },
       ],
@@ -319,8 +313,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名が文頭に出現する「Pikachu stores electricity in the electric pouches on its cheeks.」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "Pikachu stores electricity in the electric pouches on its cheeks.")],
           Then: "伏せ字にした説明文は「This Pokémon stores electricity in the electric pouches on its cheeks.」になる",
         },
       ],
@@ -336,8 +329,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名がピリオドの直後に出現する「It is very quick. Pikachu stores electricity in its cheeks.」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "It is very quick. Pikachu stores electricity in its cheeks.")],
           Then: "伏せ字にした説明文は「It is very quick. This Pokémon stores electricity in its cheeks.」になる",
         },
       ],
@@ -353,8 +345,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名の直前に「Several」がある「Several Pikachu gather.」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "Several Pikachu gather.")],
           Then: "伏せ字にした説明文は「Several of these Pokémon gather.」になる",
         },
       ],
@@ -373,8 +364,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名が複数回出現する「Pikachu and Pikachu」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "Pikachu and Pikachu")],
           Then: "伏せ字にした説明文は「This Pokémon and this Pokémon」になる",
         },
       ],
@@ -390,8 +380,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名と大文字小文字が異なる表記が出現する「A pikachu here」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名「Pikachu」", "A pikachu here")],
           Then: "伏せ字にした説明文は「A this Pokémon here」になる",
         },
       ],
@@ -408,8 +397,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       観点: ["件数・有無", "エッジケース"],
       steps: [
         {
-          Given: "ポケモン名が空文字で、説明文が「It stores electricity in the electric pouches on its cheeks.」のとき",
-          When: [MASK_ENGLISH_DESCRIPTION],
+          When: [maskEnglishDescriptionWhen("ポケモン名に空文字", "It stores electricity in the electric pouches on its cheeks.")],
           Then: "伏せ字にした説明文は「It stores electricity in the electric pouches on its cheeks.」のままになる",
         },
       ],
@@ -427,8 +415,7 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が「ピカチュウ」で、ポケモン名が出現する「ピカチュウは黄色い」のとき",
-          When: [MASK_JAPANESE_DESCRIPTION],
+          When: [maskJapaneseDescriptionWhen("ポケモン名「ピカチュウ」", "ピカチュウは黄色い")],
           Then: "伏せ字にした説明文は「この ポケモンは黄色い」になる",
         },
       ],
@@ -445,8 +432,7 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ポケモン名が「ピカチュウ」で、ポケモン名が複数回出現する「ピカチュウとピカチュウ」のとき",
-          When: [MASK_JAPANESE_DESCRIPTION],
+          When: [maskJapaneseDescriptionWhen("ポケモン名「ピカチュウ」", "ピカチュウとピカチュウ")],
           Then: "伏せ字にした説明文は「この ポケモンとこの ポケモン」になる",
         },
       ],
@@ -456,16 +442,16 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
     },
   );
 
-  for (const { 正常異常, given, pokemonName, viewpoints } of [
+  for (const { 正常異常, nameLabel, pokemonName, viewpoints } of [
     {
       正常異常: "正常系" as const,
-      given: "ポケモン名が「ピカチュウ」で、説明文が「あいうえお」でポケモン名を含まないとき",
+      nameLabel: "ポケモン名「ピカチュウ」",
       pokemonName: "ピカチュウ",
       viewpoints: ["件数・有無"] as const,
     },
     {
       正常異常: "異常系" as const,
-      given: "ポケモン名が空文字で、説明文が「あいうえお」のとき",
+      nameLabel: "ポケモン名に空文字",
       pokemonName: "",
       viewpoints: ["件数・有無", "エッジケース"] as const,
     },
@@ -477,8 +463,7 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
         観点: viewpoints,
         steps: [
           {
-            Given: given,
-            When: [MASK_JAPANESE_DESCRIPTION],
+            When: [maskJapaneseDescriptionWhen(nameLabel, "あいうえお")],
             Then: "伏せ字にした説明文は「あいうえお」のままになる",
           },
         ],
@@ -490,8 +475,6 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
   }
 });
 
-const COMPUTE_RAW_SCORE = "意味単位の判定値から素点を算出する";
-
 describe("[本体:採点]意味単位の判定値からの素点算出", () => {
   defineCase(
     {
@@ -500,8 +483,7 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "意味単位が1件で判定値が0.6のとき",
-          When: [COMPUTE_RAW_SCORE],
+          When: ["判定値0.6の意味単位1件から素点を算出する"],
           Then: "素点は60になる",
         },
       ],
@@ -518,8 +500,7 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
       観点: ["境界値", "件数・有無"],
       steps: [
         {
-          Given: "判定値が1.0、0.2、0.0の3件のとき",
-          When: [COMPUTE_RAW_SCORE],
+          When: ["判定値1.0、0.2、0.0の意味単位3件から素点を算出する"],
           Then: "素点は40になる",
         },
       ],
@@ -536,9 +517,8 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
       観点: ["境界値", "件数・有無"],
       steps: [
         {
-          Given: "判定値が1.0、1.0、0.0の3件のとき",
-          When: [COMPUTE_RAW_SCORE],
-          Then: "素点は四捨五入して67になる",
+          When: ["判定値1.0、1.0、0.0の意味単位3件から素点を算出する"],
+          Then: "素点は67になる",
         },
       ],
     },
@@ -547,16 +527,16 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
     },
   );
 
-  for (const { given, units } of [
-    { given: "すべての意味単位の判定値が0.8で、意味単位が1件のとき", units: [0.8] },
-    { given: "すべての意味単位の判定値が0.8で、意味単位が3件のとき", units: [0.8, 0.8, 0.8] },
+  for (const { when, units } of [
+    { when: "判定値0.8の意味単位1件から素点を算出する", units: [0.8] },
+    { when: "判定値0.8、0.8、0.8の意味単位3件から素点を算出する", units: [0.8, 0.8, 0.8] },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["件数・有無"],
-        steps: [{ Given: given, When: [COMPUTE_RAW_SCORE], Then: "素点は80になる" }],
+        steps: [{ When: [when], Then: "素点は80になる" }],
       },
       () => {
         expect(computeScoreFromUnits(units)).toBe(80);
@@ -565,8 +545,6 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
   }
 });
 
-const CONVERT_TO_FINAL_SCORE = "素点を最終評価点に変換する";
-
 describe("[本体:採点]素点から最終評価点への変換", () => {
   for (const rawScore of [0, 10]) {
     defineCase(
@@ -574,7 +552,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: `素点が${rawScore}のとき`, When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は0になる" }],
+        steps: [{ When: [`素点${rawScore}を最終評価点に変換する`], Then: "最終評価点は0になる" }],
       },
       () => {
         expect(translateToFinalScore(rawScore)).toBe(0);
@@ -587,7 +565,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: "素点が100のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は99になる" }],
+      steps: [{ When: ["素点100を最終評価点に変換する"], Then: "最終評価点は99になる" }],
     },
     () => {
       expect(translateToFinalScore(100)).toBe(99);
@@ -599,7 +577,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: "素点が11のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は1になる" }],
+      steps: [{ When: ["素点11を最終評価点に変換する"], Then: "最終評価点は1になる" }],
     },
     () => {
       expect(translateToFinalScore(11)).toBe(1);
@@ -611,7 +589,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["同値分割"],
-      steps: [{ Given: "素点が15のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は6になる" }],
+      steps: [{ When: ["素点15を最終評価点に変換する"], Then: "最終評価点は6になる" }],
     },
     () => {
       expect(translateToFinalScore(15)).toBe(6);
@@ -619,11 +597,12 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
   );
 });
 
-const START_QUEST = "クエストを出題する";
+const START_QUEST = "ユーザー「alice」に、場所を指定せずにクエストを出題する";
+const START_QUEST_AT_LOCATION = "ユーザー「alice」に、場所「廃墟の発電所」を指定してクエストを出題する";
 
 describe("[本体:クエスト]クエストの出題", () => {
   const LOCATION_ID = "ruined-powerplant";
-  const LOCATION_GIVEN = "でんき・はがね・どくタイプの場所「廃墟の発電所」を選んでいて、";
+  const LOCATION_GIVEN = "場所「廃墟の発電所」がでんき・はがね・どくタイプで、";
 
   defineCase(
     {
@@ -631,7 +610,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "英語説明文が「Bulbasaur can be seen napping in bright sunlight.」のポケモンのとき",
+          Given: "英語名が「Bulbasaur」で、英語説明文が「Bulbasaur can be seen napping in bright sunlight.」のポケモンのとき",
           When: [START_QUEST],
           Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon can be seen napping in bright sunlight.」になる",
         },
@@ -790,7 +769,7 @@ describe("[本体:クエスト]クエストの出題", () => {
 
   for (const { given, flavorTexts } of [
     {
-      given: "バージョン別の説明文が「Under the bright sun, Bulbasaur naps with a strange seed on its back.」の1件のとき",
+      given: "英語名が「Bulbasaur」のポケモンで、バージョン別の説明文が「Under the bright sun, Bulbasaur naps with a strange seed on its back.」の1件のとき",
       flavorTexts: [
         {
           version_names: ["X"],
@@ -801,7 +780,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     {
       given:
-        "バージョン別の説明文が、1件目「Under the bright sun, Bulbasaur naps with a strange seed on its back.」、2件目「For some time after its birth, it grows by gaining nourishment from the seed on its back.」の2件あり、抽選で1件目が選ばれるとき",
+        "英語名が「Bulbasaur」のポケモンで、バージョン別の説明文が、1件目「Under the bright sun, Bulbasaur naps with a strange seed on its back.」、2件目「For some time after its birth, it grows by gaining nourishment from the seed on its back.」の2件あり、抽選で1件目が選ばれるとき",
       flavorTexts: [
         {
           version_names: ["X"],
@@ -924,7 +903,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         steps: [
           {
             Given: `${LOCATION_GIVEN}${given}`,
-            When: [START_QUEST],
+            When: [START_QUEST_AT_LOCATION],
             Then: "出題されたポケモンの図鑑番号は100になる",
           },
         ],
@@ -944,7 +923,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       steps: [
         {
           Given: `${LOCATION_GIVEN}幻・伝説の抽選に当たっていて、でんきタイプの図鑑番号100とエスパータイプの図鑑番号150の伝説ポケモンがいるとき`,
-          When: [START_QUEST],
+          When: [START_QUEST_AT_LOCATION],
           Then: "出題されたポケモンの図鑑番号は150になる",
         },
       ],
@@ -960,7 +939,8 @@ describe("[本体:クエスト]クエストの出題", () => {
   );
 });
 
-const SCORE_TRANSLATION = "訳文を採点する";
+const SCORE_SHORT_TRANSLATION = "訳文「みどり」を採点する";
+const SCORE_BULBASAUR_TRANSLATION = "訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を採点する";
 
 describe("[本体:採点]翻訳の採点", () => {
   defineCase(
@@ -971,7 +951,7 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           Given: "AI の採点結果が意味単位1件の判定値0.7のとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_SHORT_TRANSLATION],
           Then: "最終評価点は66になる",
         },
       ],
@@ -993,7 +973,7 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           Given: "AI の採点結果が判定値1.0、0.6、0.2の3件のとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "最終評価点は55になる",
         },
       ],
@@ -1014,8 +994,8 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           Given: "AI の採点結果が講評「意味がしっかり伝わる、よい翻訳だ。」のとき",
-          When: [SCORE_TRANSLATION],
-          Then: "講評は「よい」になる",
+          When: [SCORE_SHORT_TRANSLATION],
+          Then: "講評は「意味がしっかり伝わる、よい翻訳だ。」になる",
         },
       ],
     },
@@ -1035,7 +1015,7 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           Given: "日本語説明文が「フシギダネは 緑色だ。」でポケモン名がフシギダネのとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_SHORT_TRANSLATION],
           Then: "日本語説明文は、ポケモン名を伏せ字にした「この ポケモンは 緑色だ。」になる",
         },
       ],
@@ -1056,7 +1036,7 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           Given: "英語説明文が「Pikachu stores electricity in the electric pouches on its cheeks.」でポケモン名が Pikachu のとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "AI に渡す英文に、伏せ字にした説明文「This Pokémon stores electricity in the electric pouches on its cheeks.」が含まれる",
         },
       ],
@@ -1088,7 +1068,7 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           Given: "クエストセッションの保存先が、エラー「boom」で利用できないとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "エラー「boom」を原因とする、クエストセッションの保存先が利用できないことを示すエラーになる",
         },
       ],
@@ -1123,7 +1103,7 @@ describe("[本体:採点]翻訳の採点", () => {
         steps: [
           {
             Given: given,
-            When: ["ユーザー「bob」の訳文を採点する"],
+            When: ["ユーザー「bob」の訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を採点する"],
             Then: "クエストセッションが見つからないことを示すエラーになる",
           },
         ],
@@ -1167,7 +1147,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
         steps: [
           {
             Given: given,
-            When: [SCORE_TRANSLATION],
+            When: [SCORE_BULBASAUR_TRANSLATION],
             Then: "AI の採点結果が JSON として読めないことを原因とする、AI の採点が失敗したことを示すエラーになる",
           },
         ],
@@ -1183,7 +1163,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
 
   const NO_SCORING_UNITS_CASES: { given: string; llmText: string; 観点: readonly Viewpoint[] }[] = [
     {
-      given: "AI の採点結果が2回続けて、判定値の項目がなく講評だけ「r」があるとき",
+      given: "AI の採点結果が2回続けて、判定値の項目がなく講評だけがあるとき",
       llmText: JSON.stringify({ review: "r" }),
       観点: ["外部依存の失敗", "件数・有無"],
     },
@@ -1208,7 +1188,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
         steps: [
           {
             Given: given,
-            When: [SCORE_TRANSLATION],
+            When: [SCORE_BULBASAUR_TRANSLATION],
             Then: "判定値が無いことを原因とする、AI の採点が失敗したことを示すエラーになる",
           },
         ],
@@ -1230,7 +1210,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       steps: [
         {
           Given: "AI の採点結果が2回続けて、判定値に数値でない値「a」を含むとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "範囲外の判定値「a」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
       ],
@@ -1257,7 +1237,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       steps: [
         {
           Given: "AI の採点結果が2回続けて、0.0から1.0の範囲外の判定値「-0.1」を含むとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "範囲外の判定値「-0.1」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
       ],
@@ -1284,7 +1264,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       steps: [
         {
           Given: "AI の採点結果が2回続けて、0.0から1.0の範囲外の判定値「1.1」を含むとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "範囲外の判定値「1.1」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
       ],
@@ -1325,7 +1305,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
         steps: [
           {
             Given: given,
-            When: [SCORE_TRANSLATION],
+            When: [SCORE_BULBASAUR_TRANSLATION],
             Then: "講評が空であることを原因とする、AI の採点が失敗したことを示すエラーになる",
           },
         ],
@@ -1351,7 +1331,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       steps: [
         {
           Given: RETRIED_THEN_VALID_GIVEN,
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "最終評価点は66になる",
         },
       ],
@@ -1371,8 +1351,8 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       steps: [
         {
           Given: RETRIED_THEN_VALID_GIVEN,
-          When: [SCORE_TRANSLATION],
-          Then: "講評は「よい」になる",
+          When: [SCORE_BULBASAUR_TRANSLATION],
+          Then: "講評は「意味がしっかり伝わる、よい翻訳だ。」になる",
         },
       ],
     },
@@ -1391,7 +1371,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       steps: [
         {
           Given: "AI の採点結果が意味単位1件の判定値0.0のとき",
-          When: [SCORE_TRANSLATION],
+          When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "最終評価点は0になる",
         },
       ],
@@ -1407,8 +1387,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
 });
 
 const ASKED_BULBASAUR = "英語名「Bulbasaur」、日本語名「フシギダネ」のポケモンを出題済みのとき";
-const LEGENDARY_SCORED_70_BASE = "英語名「Bulbasaur」の伝説ポケモンを最終評価点70で採点済み";
-const LEGENDARY_SCORED_70 = `${LEGENDARY_SCORED_70_BASE}のとき`;
+const LEGENDARY_SCORED_70 = "英語名「Bulbasaur」の伝説ポケモンを最終評価点70で採点済みのとき";
 const MISS_THREE_TIMES = [
   "名前当てで「Charmander」と答える",
   "名前当てで「Squirtle」と答える",
@@ -1564,7 +1543,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 
   const FUZZY_BULBASAUR_GIVEN =
-    "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みで、「bulbasaxx」の綴りが英語名からあいまい一致の許容距離ちょうど違うとき";
+    "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みのとき";
   const WITHIN_FUZZY_DISTANCE_SPELLING = "名前当てで「bulbasaxx」と答える";
 
   defineCase(
@@ -1643,7 +1622,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 
   const ABRA_GIVEN =
-    "英語名「Abra」、日本語名「ケーシィ」で、英語名の文字数があいまい一致の最小文字数ちょうどのポケモンを出題済みで、「abrx」の綴りが英語名からあいまい一致の許容距離以内で1文字違うとき";
+    "英語名「Abra」、日本語名「ケーシィ」で、英語名の文字数があいまい一致の最小文字数ちょうどのポケモンを出題済みのとき";
   const ONE_CHARACTER_OFF_SPELLING = "名前当てで「abrx」と答える";
 
   defineCase(
@@ -1677,7 +1656,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   for (const { given, when, pokemons, guess, viewpoints } of [
     {
       given:
-        "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みで、「bulbasxxx」の綴りが英語名からあいまい一致の許容距離を超えて違うとき",
+        "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みのとき",
       when: "名前当てで「bulbasxxx」と答える",
       pokemons: [makePokemon()],
       guess: "bulbasxxx",
@@ -1685,7 +1664,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
     {
       given:
-        "英語名「Mew」、日本語名「ミュウ」で、英語名があいまい一致の最小文字数に満たないポケモンを出題済みで、「mex」の綴りが英語名と1文字違うとき",
+        "英語名「Mew」、日本語名「ミュウ」で、英語名があいまい一致の最小文字数に満たないポケモンを出題済みのとき",
       when: "名前当てで「mex」と答える",
       pokemons: [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })],
       guess: "mex",
@@ -1805,14 +1784,13 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 
   const FUZZY_ENGLISH_NAME = "名前当てで「bulbasaxx」と答える";
-  const LEGENDARY_FUZZY_GIVEN = `${LEGENDARY_SCORED_70_BASE}で、「bulbasaxx」の綴りが英語名からあいまい一致の許容距離ちょうど違うとき`;
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: LEGENDARY_FUZZY_GIVEN, When: [FUZZY_ENGLISH_NAME], Then: RESULT_CORRECT }],
+      steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: RESULT_CORRECT }],
     },
     async () => {
       const service = await startScoredQuest(LEGENDARY_SCORED_OPTIONS);
@@ -1826,7 +1804,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: LEGENDARY_FUZZY_GIVEN, When: [FUZZY_ENGLISH_NAME], Then: BALL_MASTER }],
+      steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: BALL_MASTER }],
     },
     async () => {
       const service = await startScoredQuest(LEGENDARY_SCORED_OPTIONS);
@@ -1840,7 +1818,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: LEGENDARY_FUZZY_GIVEN, When: [FUZZY_ENGLISH_NAME], Then: RESULT_FUZZY }],
+      steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: RESULT_FUZZY }],
     },
     async () => {
       const service = await startScoredQuest(LEGENDARY_SCORED_OPTIONS);
@@ -1999,7 +1977,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
   );
 });
 
-const REQUEST_HINT = "名前当てのヒントを要求する";
+const REQUEST_HINT = "ユーザー「alice」の名前当てのヒントを要求する";
+const REQUEST_HINT_OF_NOBODY = "ユーザー「nobody」の名前当てのヒントを要求する";
 
 describe("[本体:名前当て]名前当てのヒント", () => {
   async function requestSecondHint(levelUpMoves: string[] | undefined) {
@@ -2266,7 +2245,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: "進行中のクエストセッションがないとき",
-          When: [REQUEST_HINT],
+          When: [REQUEST_HINT_OF_NOBODY],
           Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],
@@ -2278,7 +2257,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
   );
 });
 
-const SKIP_GUESS = "名前当てをスキップする";
+const SKIP_GUESS = "ユーザー「alice」の名前当てをスキップする";
+const SKIP_GUESS_OF_NOBODY = "ユーザー「nobody」の名前当てをスキップする";
 
 describe("[本体:名前当て]名前当てのスキップ", () => {
   for (const { given, start } of [
@@ -2315,7 +2295,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
       steps: [
         {
           Given: "進行中のクエストセッションがないとき",
-          When: [SKIP_GUESS],
+          When: [SKIP_GUESS_OF_NOBODY],
           Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],
@@ -2371,7 +2351,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
   );
 });
 
-const ATTEMPT_CAPTURE = "ボールを使って捕獲する";
+const ATTEMPT_CAPTURE = "ユーザー「alice」がボールを使って捕獲する";
 
 describe("[本体:捕獲]捕獲の実行", () => {
   const MASTER_BALL_CAPTURE_OPTIONS: ServiceOverrides = {
@@ -2624,7 +2604,8 @@ describe("[本体:捕獲]捕獲の実行", () => {
   );
 });
 
-const RESUME_QUEST = "進行中のクエストを再開する";
+const RESUME_QUEST = "ユーザー「alice」の進行中のクエストを再開する";
+const RESUME_QUEST_OF_NOBODY = "ユーザー「nobody」の進行中のクエストを再開する";
 
 describe("[本体:クエスト]再開するクエストの段階と状態", () => {
   const MEWTWO_OPTIONS: ServiceOverrides = {
@@ -3123,7 +3104,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       steps: [
         {
           Given: "進行中のクエストセッションがないとき",
-          When: [RESUME_QUEST],
+          When: [RESUME_QUEST_OF_NOBODY],
           Then: "クエストセッションが見つからないことを示すエラーになる",
         },
       ],

@@ -11,7 +11,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const TEXT_ABC = "表示する文章が「ABC」のとき";
+const TEXT_GREETING = "表示する文章が「こんにちは」のとき";
 const START_TYPEWRITER = "文章のタイプライター演出を始める";
 
 describe("[本体:クエスト]文章のタイプライター演出", () => {
@@ -21,14 +21,14 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: TEXT_ABC,
+          Given: "表示する文章が「こんにちは」で、演出をまだ始めていないとき",
           When: ["文章のタイプライター演出を表示する"],
-          Then: "演出を始めるまでは、文字が表示されない",
+          Then: "何も表示されない",
         },
       ],
     },
     () => {
-      const { container } = render(<TypewriterText text="ABC" isActive={false} />);
+      const { container } = render(<TypewriterText text="こんにちは" isActive={false} />);
       expect(container.textContent).toBe("");
     },
   );
@@ -61,18 +61,18 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: TEXT_ABC,
+          Given: TEXT_GREETING,
           When: [START_TYPEWRITER, "先頭の 1 文字の表示が終わるまで待つ"],
-          Then: "先頭の 1 文字「A」が表示される",
+          Then: "先頭の 1 文字「こ」が表示される",
         },
       ],
     },
     () => {
-      const { container } = render(<TypewriterText text="ABC" isActive={true} />);
+      const { container } = render(<TypewriterText text="こんにちは" isActive={true} />);
       act(() => {
         vi.advanceTimersByTime(CHAR_INTERVAL_MS);
       });
-      expect(container.textContent).toBe("A");
+      expect(container.textContent).toBe("こ");
     },
   );
 
@@ -83,18 +83,18 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: TEXT_ABC,
+          Given: TEXT_GREETING,
           When: [START_TYPEWRITER, "文章の表示が終わるまで待つ"],
-          Then: "「ABC」が全文表示される",
+          Then: "「こんにちは」が全文表示される",
         },
       ],
     },
     () => {
-      const { container } = render(<TypewriterText text="ABC" isActive={true} />);
+      const { container } = render(<TypewriterText text="こんにちは" isActive={true} />);
       act(() => {
-        vi.advanceTimersByTime(CHAR_INTERVAL_MS * 3);
+        vi.advanceTimersByTime(CHAR_INTERVAL_MS * 5);
       });
-      expect(container.textContent).toBe("ABC");
+      expect(container.textContent).toBe("こんにちは");
     },
   );
 });
