@@ -34,6 +34,17 @@ export class EmptyQuestPoolError extends Error {
   }
 }
 
+/** 現在のクエストの状態ではヒントを要求できないことを表す。handleError で 409 にマップされる。 */
+export class HintUnavailableError extends Error {
+  /**
+   * @param message ヒントを要求できない理由。
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = "HintUnavailableError";
+  }
+}
+
 // RateLimitKind は 429 レスポンスの error フィールドに乗る wire 値なので、shared/api-types を SSOT として再 export する。
 import type { RateLimitKind } from "../../../shared/api-types/rate-limit.js";
 export type { RateLimitKind };

@@ -152,7 +152,6 @@ const CALL_POKEDEX = "図鑑一覧の取得 API を呼び出す";
 const NO_QUEST_SESSION = "クエストセッションが無いとき";
 const EXTERNAL_SERVICE_UNAVAILABLE_ERROR = "API の応答は、外部サービスが利用できないことを示す 502 のエラーになる";
 const NOT_FOUND_ERROR = "API の応答は、対象が見つからないことを示す 404 のエラーになる";
-const INTERNAL_ERROR = "API の応答は、サーバー内部のエラーを示す 500 のエラーになる";
 const USER_DAILY_LIMIT = "ユーザーの日次上限に達しているとき";
 const GLOBAL_DAILY_LIMIT = "全体の日次上限に達しているとき";
 const TUTORIAL_QUEST_ANSWERED =
@@ -630,7 +629,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
         {
           Given: "名前当てに 2 回不正解になっていて、残り挑戦回数が 1 回のとき",
           When: [CALL_HINT],
-          Then: INTERNAL_ERROR,
+          Then: "API の応答は、残り挑戦回数が足りずヒントを要求できないことを示す 409 のエラーになる",
         },
       ],
     },
@@ -640,8 +639,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       await request(app).post("/api/quest/guess-name").send({ guess: "Charmander" });
       await request(app).post("/api/quest/guess-name").send({ guess: "Squirtle" });
       const res = await request(app).post("/api/quest/hint").send({});
-      expect(res.status).toBe(500);
-      expect(res.body).toEqual({ error: "internal server error" });
+      expect(res.status).toBe(409);
+      expect(res.body).toEqual({ error: "hint_unavailable" });
     },
   );
 });

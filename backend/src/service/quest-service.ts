@@ -1,5 +1,5 @@
 import levenshtein from "js-levenshtein";
-import { NotFoundError, ExternalServiceError, EmptyQuestPoolError } from "../domain/errors.js";
+import { NotFoundError, ExternalServiceError, EmptyQuestPoolError, HintUnavailableError } from "../domain/errors.js";
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
@@ -331,18 +331,17 @@ export class QuestService {
    * レベルアップで覚える技が無いポケモンでは、2回目も技を0件として返す。
    * @param userId ユーザ ID。
    * @returns 今回開示された情報 (タイプまたは技) と消費後の残り挑戦回数。
-   * @throws 名前当てが完了済み、ヒントを2回開示済み、または残り挑戦回数が不足している場合
-   * (正しく実装されたフロントエンドからは到達しない不正な呼び出し)。
+   * @throws HintUnavailableError 名前当てが完了済み、ヒントを2回開示済み、または残り挑戦回数が不足している場合。
    */
   async requestHint(userId: string): Promise<HintResponse> {
     const session = await this.loadSession(userId);
 
     if (session.name_guessed || session.hint_reveal_count >= MAX_HINT_REVEALS) {
-      throw new Error("hint requested on a session that cannot accept one (already guessed or hints exhausted)");
+      throw new HintUnavailableError("hint requested on a session that cannot accept one (already guessed or hints exhausted)");
     }
     const remaining = MAX_NAME_GUESS_ATTEMPTS - session.guess_attempts;
     if (remaining < MIN_REMAINING_ATTEMPTS_FOR_HINT) {
-      throw new Error("hint requested with insufficient guess attempts remaining");
+      throw new HintUnavailableError("hint requested with insufficient guess attempts remaining");
     }
     const isSecondReveal = session.hint_reveal_count === 1;
 
