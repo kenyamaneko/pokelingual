@@ -177,7 +177,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: junit-backend
-          path: backend/test-results/junit.xml
+          path: |
+            backend/test-results/junit.xml
+            backend/test-results/integration-junit.xml
           retention-days: 1
 
       # 同一 run 内でカバレッジページを組むためだけに使うので保持は最短にする。
@@ -342,6 +344,7 @@ jobs:
             --commit "${GITHUB_SHA}" \
             --css scripts/test_case_catalog.css \
             --junit junit-artifacts/junit-backend/junit.xml \
+            --junit junit-artifacts/junit-backend/integration-junit.xml \
             --junit junit-artifacts/junit-frontend/vitest-junit.xml \
             --junit junit-artifacts/junit-e2e/e2e-junit.xml \
             > catalog/index.html

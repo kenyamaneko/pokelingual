@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["src/**/*.integration.test.ts"],
+    reporters: ["default", ["junit", { outputFile: "test-results/integration-junit.xml" }]],
     // コンテナ起動を含むため既定のテストタイムアウトでは不足しうる。
     testTimeout: 30_000,
     hookTimeout: 30_000,
