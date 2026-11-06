@@ -9,7 +9,7 @@ import { server, apiUrl, countRequests } from "../../test/mswServer";
 import { renderWithProviders } from "../../test/render";
 import { submitTranslationForScoring } from "../../test/scoringFlow";
 import { Header } from "./Header";
-import { defineCase } from "../../test/defineCase";
+import { defineCase, type Viewpoint } from "../../test/defineCase";
 
 const fakeUser = { uid: "alice" } as unknown as User;
 
@@ -76,17 +76,17 @@ describe("[共通:画面共通]実行環境の表示", () => {
     given: string;
     outcome: "正常系" | "異常系";
     environment: string | undefined;
+    viewpoints: readonly Viewpoint[];
   }[] = [
-    { given: "ログインしていて、VITE_ENVIRONMENT が prod のとき", outcome: "正常系", environment: "prod" },
-    { given: "ログインしていて、VITE_ENVIRONMENT が未設定のとき", outcome: "異常系", environment: undefined },
+    { given: "ログインしていて、VITE_ENVIRONMENT が prod のとき", outcome: "正常系", environment: "prod", viewpoints: ["同値分割"] },
+    { given: "ログインしていて、VITE_ENVIRONMENT が未設定のとき", outcome: "異常系", environment: undefined, viewpoints: ["エッジケース"] },
   ];
-  for (const { given, outcome, environment } of environmentBadgeHiddenScenarios) {
+  for (const { given, outcome, environment, viewpoints } of environmentBadgeHiddenScenarios) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: outcome,
-      観点: ["同値分割"],
-      観点: ["エッジケース"],
+        観点: viewpoints,
         steps: [{ Given: given, When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「LOCAL」も「DEV」も表示されない" }],
       },
       async () => {
@@ -127,17 +127,21 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
     },
   );
 
-  const usageExhaustedScenarios: { given: string; outcome: "正常系" | "異常系"; count: number }[] = [
-    { given: "ログインしていて、今日の AI 呼び出し回数が 30 回で、日次上限が 30 回のとき", outcome: "正常系", count: 30 },
-    { given: "ログインしていて、今日の AI 呼び出し回数が 31 回で、日次上限が 30 回のとき", outcome: "異常系", count: 31 },
+  const usageExhaustedScenarios: {
+    given: string;
+    outcome: "正常系" | "異常系";
+    count: number;
+    viewpoints: readonly Viewpoint[];
+  }[] = [
+    { given: "ログインしていて、今日の AI 呼び出し回数が 30 回で、日次上限が 30 回のとき", outcome: "正常系", count: 30, viewpoints: ["境界値"] },
+    { given: "ログインしていて、今日の AI 呼び出し回数が 31 回で、日次上限が 30 回のとき", outcome: "異常系", count: 31, viewpoints: ["境界値", "エッジケース"] },
   ];
-  for (const { given, outcome, count } of usageExhaustedScenarios) {
+  for (const { given, outcome, count, viewpoints } of usageExhaustedScenarios) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: outcome,
-      観点: ["境界値"],
-      観点: ["境界値", "エッジケース"],
+        観点: viewpoints,
         steps: [{ Given: given, When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「残り 0/30」と表示される" }],
       },
       async () => {
