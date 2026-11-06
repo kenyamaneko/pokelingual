@@ -398,12 +398,12 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       steps: [
         {
           When: [maskEnglishDescriptionWhen("ポケモン名に空文字", "It stores electricity in the electric pouches on its cheeks.")],
-          Then: "伏せ字にした説明文は「It stores electricity in the electric pouches on its cheeks.」のままになる",
+          Then: "ポケモン名が空であることを示すエラーになる",
         },
       ],
     },
     () => {
-      expect(maskPokemonNameEN("It stores electricity in the electric pouches on its cheeks.", "")).toBe("It stores electricity in the electric pouches on its cheeks.");
+      expect(() => maskPokemonNameEN("It stores electricity in the electric pouches on its cheeks.", "")).toThrow("pokemon name to mask is empty");
     },
   );
 });
@@ -442,37 +442,39 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
     },
   );
 
-  for (const { 正常異常, nameLabel, pokemonName, viewpoints } of [
+  defineCase(
     {
-      正常異常: "正常系" as const,
-      nameLabel: "ポケモン名「ピカチュウ」",
-      pokemonName: "ピカチュウ",
-      viewpoints: ["件数・有無"] as const,
+      種別: "単体テスト",
+      正常異常: "正常系",
+      観点: ["件数・有無"],
+      steps: [
+        {
+          When: [maskJapaneseDescriptionWhen("ポケモン名「ピカチュウ」", "ほっぺたの 電気袋に 電気を ためる")],
+          Then: "伏せ字にした説明文は「ほっぺたの 電気袋に 電気を ためる」のままになる",
+        },
+      ],
     },
+    () => {
+      expect(maskPokemonNameJA("ほっぺたの 電気袋に 電気を ためる", "ピカチュウ")).toBe("ほっぺたの 電気袋に 電気を ためる");
+    },
+  );
+
+  defineCase(
     {
-      正常異常: "異常系" as const,
-      nameLabel: "ポケモン名に空文字",
-      pokemonName: "",
-      viewpoints: ["件数・有無", "エッジケース"] as const,
+      種別: "単体テスト",
+      正常異常: "異常系",
+      観点: ["件数・有無", "エッジケース"],
+      steps: [
+        {
+          When: [maskJapaneseDescriptionWhen("ポケモン名に空文字", "ほっぺたの 電気袋に 電気を ためる")],
+          Then: "ポケモン名が空であることを示すエラーになる",
+        },
+      ],
     },
-  ]) {
-    defineCase(
-      {
-        種別: "単体テスト",
-        正常異常,
-        観点: viewpoints,
-        steps: [
-          {
-            When: [maskJapaneseDescriptionWhen(nameLabel, "ほっぺたの 電気袋に 電気を ためる")],
-            Then: "伏せ字にした説明文は「ほっぺたの 電気袋に 電気を ためる」のままになる",
-          },
-        ],
-      },
-      () => {
-        expect(maskPokemonNameJA("ほっぺたの 電気袋に 電気を ためる", pokemonName)).toBe("ほっぺたの 電気袋に 電気を ためる");
-      },
-    );
-  }
+    () => {
+      expect(() => maskPokemonNameJA("ほっぺたの 電気袋に 電気を ためる", "")).toThrow("pokemon name to mask is empty");
+    },
+  );
 });
 
 describe("[本体:採点]意味単位の判定値からの素点算出", () => {

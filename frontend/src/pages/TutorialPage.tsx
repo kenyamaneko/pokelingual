@@ -8,6 +8,9 @@ import { useTutorial } from "../contexts/TutorialContext";
 import { tutorialQuestApi } from "../api/questApi";
 import { validateTutorialTranslation, validateTutorialName } from "../utils/tutorialValidation";
 
+// チュートリアルの出題はでんきタイプのピカチュウに固定されているため、でんきタイプを含む場所で出題する
+const TUTORIAL_LOCATION_ID = "ruined-powerplant";
+
 /**
  * TutorialPage の案内文言。テストから import される SSOT。
  */
@@ -39,7 +42,7 @@ export function TutorialPage() {
         enableHint={false}
         questOptions={{
           api: tutorialQuestApi,
-          hasLocationChoice: false,
+          fixedLocationId: TUTORIAL_LOCATION_ID,
           enableResume: false,
           validateBeforeScore: validateTutorialTranslation,
           validateBeforeGuess: validateTutorialName,

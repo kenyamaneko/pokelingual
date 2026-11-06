@@ -2,7 +2,6 @@ import { useState } from "react";
 
 interface TranslationInputProps {
   onSubmit: (translation: string) => Promise<boolean>;
-  onChangeText?: (text: string) => void;
 }
 
 /**
@@ -15,10 +14,9 @@ export const TRANSLATION_INPUT_LABELS = {
 /**
  * 翻訳文を入力して採点へ送信する UI。送信中はスピナーを表示する。
  * onSubmit が真を返すと入力欄を空にし、偽を返すと入力を残す。
- * @param props onSubmit / onChangeText を含む props。
  * @returns 翻訳入力 UI の要素。
  */
-export function TranslationInput({ onSubmit, onChangeText }: TranslationInputProps) {
+export function TranslationInput({ onSubmit }: TranslationInputProps) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,10 +35,7 @@ export function TranslationInput({ onSubmit, onChangeText }: TranslationInputPro
     <div className="mt-4">
       <textarea
         value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          onChangeText?.(e.target.value);
-        }}
+        onChange={(e) => setText(e.target.value)}
         placeholder="日本語を入力してね"
         className="w-full h-32 p-4 border-2 border-gray-300 rounded-xl
                    focus:border-blue-500 focus:outline-none text-lg resize-none

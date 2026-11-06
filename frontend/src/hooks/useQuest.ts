@@ -53,8 +53,8 @@ export interface UseQuestResult {
 export interface UseQuestOptions {
   /** 場所選択・出題・採点・推測・捕獲を担う実装。既定は本番の HTTP クライアント。 */
   api?: QuestApi;
-  /** 場所選択の候補があるか。無ければ、場所を指定せず出題を直接取得する。 */
-  hasLocationChoice?: boolean;
+  /** 出題する場所の ID。指定すると場所選択を出さずにこの場所で出題し、省略すると場所を選ばせる。 */
+  fixedLocationId?: string;
   /** リロード再開を試みるか。チュートリアルはリロードで最初から再開する仕様のため false を渡す。 */
   enableResume?: boolean;
   /** 採点送信前の入力検証。false を返すと採点へ進めない。 */
@@ -126,14 +126,14 @@ function getErrorMessage(err: unknown, fallback: string): string {
 export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   const {
     api = questApi,
-    hasLocationChoice = true,
+    fixedLocationId,
     enableResume = true,
     validateBeforeScore,
     validateBeforeGuess,
     onValidationFailed,
     onResult,
   } = options;
-  const [phase, setPhase] = useState<QuestPhase>(hasLocationChoice ? "selectLocation" : "loading");
+  const [phase, setPhase] = useState<QuestPhase>(fixedLocationId === undefined ? "selectLocation" : "loading");
   const [quest, setQuest] = useState<QuestNewResponse | null>(null);
   const [locations, setLocations] = useState<QuestLocation[]>([]);
   const [score, setScore] = useState<ScoreResponse | null>(null);
@@ -230,9 +230,9 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
-    if (hasLocationChoice) startNewQuest();
-    else selectLocation("");
-  }, [hasLocationChoice, startNewQuest, selectLocation]);
+    if (fixedLocationId === undefined) startNewQuest();
+    else selectLocation(fixedLocationId);
+  }, [fixedLocationId, startNewQuest, selectLocation]);
 
   const handleActionError = (err: unknown, fallback: string) => {
     if (isRateLimitError(err)) return;

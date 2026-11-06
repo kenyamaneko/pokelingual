@@ -63,7 +63,6 @@ export function AnswerReveal({ description, userTranslation, score }: AnswerReve
           <QuestCard
             description={description}
             variant="answer"
-            prevComplete={true}
             onComplete={handleQuestTextComplete}
           />
         </div>

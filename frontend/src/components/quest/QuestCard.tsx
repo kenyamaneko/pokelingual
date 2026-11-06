@@ -6,8 +6,6 @@ import { useFadeReveal, FADE_DURATION_MS } from "../../hooks/useFadeReveal";
 interface QuestCardProps {
   description: string;
   variant: "quest" | "answer";
-  /** answer variant のみ使用。前段階の完了 (要素の可視化との AND でこの段の開始を決める)。 */
-  prevComplete?: boolean;
   onComplete?: () => void;
 }
 
@@ -15,13 +13,12 @@ interface QuestCardProps {
  * 出題の英語説明文を表示するクエストカード。quest variant は出題画面用に、シルエットと
  * タイプライター演出で表示する。answer variant は採点結果画面用に、枠なしのフェードイン
  * で表示する。
- * @param props description / variant / prevComplete / onComplete を含む props。
  * @returns クエストカードの要素。
  */
-export function QuestCard({ description, variant, prevComplete = true, onComplete }: QuestCardProps) {
+export function QuestCard({ description, variant, onComplete }: QuestCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const hasAppeared = useHasAppeared(ref);
-  const visible = useFadeReveal(variant === "answer" && prevComplete && hasAppeared, onComplete);
+  const visible = useFadeReveal(variant === "answer" && hasAppeared, onComplete);
 
   if (variant === "answer") {
     return (
