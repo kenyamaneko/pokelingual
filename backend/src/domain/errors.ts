@@ -34,7 +34,7 @@ export class EmptyQuestPoolError extends Error {
   }
 }
 
-/** 現在のクエストの状態ではヒントを要求できないことを表す。handleError で 409 にマップされる。 */
+/** 現在のクエストの状態ではヒントを要求できないことを表す。 */
 export class HintUnavailableError extends Error {
   /**
    * @param message ヒントを要求できない理由。

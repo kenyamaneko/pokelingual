@@ -7,7 +7,9 @@ function entry(version: string, language: string, text: string): FlavorTextSourc
   return { version, language, text };
 }
 
-const BUILD_PAIRS = "PokeAPI の説明文の一覧を、英日説明文ペアの一覧に変換する";
+function buildPairsFrom(source: string): string {
+  return `${source} PokeAPI の説明文の一覧を、英日説明文ペアの一覧に変換する`;
+}
 
 describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの構築", () => {
   defineCase(
@@ -16,8 +18,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
       正常異常: "正常系",
       steps: [
         {
-          Given: "バージョン X の英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」と日本語の説明文「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」が揃っているとき",
-          When: [BUILD_PAIRS],
+          When: [buildPairsFrom("バージョン X に英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」と日本語の説明文「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」がある")],
           Then: "説明文ペアの一覧は、バージョン名 X・英語「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」・日本語「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」の 1 組になる",
         },
       ],
@@ -36,8 +37,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
       正常異常: "正常系",
       steps: [
         {
-          Given: "同じバージョンに、通常表記の日本語の説明文「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」とかな表記の日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」が両方あるとき",
-          When: [BUILD_PAIRS],
+          When: [buildPairsFrom("バージョン X に英語の説明文と、通常表記の日本語の説明文「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」・かな表記の日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」の両方がある")],
           Then: "説明文ペアの日本語の説明文は「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」になる",
         },
       ],
@@ -58,8 +58,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
       正常異常: "正常系",
       steps: [
         {
-          Given: "通常表記の日本語の説明文が無く、かな表記の日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」だけがあるとき",
-          When: [BUILD_PAIRS],
+          When: [buildPairsFrom("バージョン X に英語の説明文と、かな表記の日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」だけがあり、通常表記の日本語の説明文が無い")],
           Then: "説明文ペアの日本語の説明文は「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」になる",
         },
       ],
@@ -76,8 +75,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
       正常異常: "正常系",
       steps: [
         {
-          Given: "バージョン X と Y の英語の説明文が「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、日本語の説明文が「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」でそれぞれ同じとき",
-          When: [BUILD_PAIRS],
+          When: [buildPairsFrom("バージョン X と Y の英語の説明文が「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、日本語の説明文が「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」でそれぞれ同じである")],
           Then: "説明文ペアの一覧は、バージョン名 X・Y をまとめた 1 組になる",
         },
       ],
@@ -100,8 +98,7 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
       正常異常: "正常系",
       steps: [
         {
-          Given: "説明文がソード、X の順に並んでいるとき",
-          When: [BUILD_PAIRS],
+          When: [buildPairsFrom("バージョン ソード、X の順に説明文が並んでいる")],
           Then: "説明文ペアの一覧は X、ソードの順に並ぶ",
         },
       ],
@@ -117,32 +114,32 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
     },
   );
 
-  const EMPTY_PAIRS_CASES: { given: string; entries: FlavorTextSource[]; 観点: readonly Viewpoint[] }[] = [
+  const EMPTY_PAIRS_CASES: { source: string; entries: FlavorTextSource[]; 観点: readonly Viewpoint[] }[] = [
     {
-      given: "バージョン red に英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.」と日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」だけがあるとき",
+      source: "バージョン red に英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.」と日本語の説明文「うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。」だけがある",
       entries: [entry("red", "en", "A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON."), entry("red", "ja", "うまれたときから　せなかに ふしぎな　タネが　うえてあって からだと　ともに　そだつという。")],
       観点: [],
     },
     {
-      given: "バージョン X に日本語の説明文「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」だけがあるとき",
+      source: "バージョン X に日本語の説明文「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」だけがある",
       entries: [entry("x", "ja", "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。")],
-      観点: ["件数・有無", "エッジケース"],
+      観点: ["件数・有無"],
     },
     {
-      given: "バージョン X に英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」だけがあるとき",
+      source: "バージョン X に英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」だけがある",
       entries: [entry("x", "en", "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.")],
-      観点: ["件数・有無", "エッジケース"],
+      観点: ["件数・有無"],
     },
-    { given: "説明文が 1 件も無いとき", entries: [], 観点: ["件数・有無", "エッジケース"] },
+    { source: "1 件も無い", entries: [], 観点: ["件数・有無"] },
   ];
 
-  for (const { given, entries, 観点 } of EMPTY_PAIRS_CASES) {
+  for (const { source, entries, 観点 } of EMPTY_PAIRS_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ Given: given, When: [BUILD_PAIRS], Then: "説明文ペアの一覧は空になる" }],
+        steps: [{ When: [buildPairsFrom(source)], Then: "説明文ペアの一覧は空になる" }],
       },
       () => {
         expect(buildFlavorTextPairs([...entries])).toEqual([]);

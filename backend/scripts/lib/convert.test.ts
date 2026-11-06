@@ -77,34 +77,44 @@ function convertCharmander() {
   return convertToPokemonRecord(CHARMANDER_SPECIES, CHARMANDER_POKEMON, CHARMANDER_LEVEL_UP_MOVES);
 }
 
-const CLEAN_FLAVOR_TEXT = "PokeAPI の説明文を整形する";
-const CREATE_POKEMON_RECORD = "PokeAPI の元データからポケモンデータを作成する";
+function cleanFlavorTextOf(source: string): string {
+  return `${source}を整形する`;
+}
+
+function createPokemonRecordFrom(source: string): string {
+  return `${source}の PokeAPI の元データからポケモンデータを作成する`;
+}
+
+function createPokemonRecordWithLevelUpMoves(pokemonName: string, moveNames: string): string {
+  return `${pokemonName}の PokeAPI の元データと、レベルアップで覚える技の日本語名「${moveNames}」からポケモンデータを作成する`;
+}
+
 const FLAVOR_TEXT_PAIR_COUNT = "作成したポケモンデータの説明文ペアの一覧は 2 組になる";
-const BULBASAUR_FLAVOR_TEXTS_GIVEN =
-  "フシギダネのバージョン X の説明文が英語「A strange seed was planted on its back at birth.⏎The plant sprouts and grows with this Pokémon.」・日本語「生まれたときから　背中に⏎不思議な　タネが　植えてあって⏎体と　ともに　育つという。」、バージョン Y の説明文が英語「For some time after its birth, it grows by gaining⏎nourishment from the seed on its back.」・日本語「生まれてから　しばらくの　あいだは⏎背中の　タネから　栄養を　もらって⏎大きく　育つ。」のとき";
-const CHARMANDER_FLAVOR_TEXTS_GIVEN =
-  "ヒトカゲのバージョン X の説明文が英語「The flame on its tail indicates Charmander’s life⏎force. If it is healthy, the flame burns brightly.」・日本語「尻尾の　炎は⏎ヒトカゲの　生命力の　証。⏎元気だと　さかんに　燃えさかる。」、バージョン Y の説明文が英語「From the time it is born, a flame burns at the tip of⏎its tail. Its life would end if the flame were to⏎go out.」・日本語「生まれたときから　尻尾に　炎が⏎点っている。炎が　消えたとき⏎その　命は　終わってしまう。」のとき";
+const BULBASAUR_FLAVOR_TEXTS_SOURCE =
+  "バージョン X の説明文が英語「A strange seed was planted on its back at birth.⏎The plant sprouts and grows with this Pokémon.」・日本語「生まれたときから　背中に⏎不思議な　タネが　植えてあって⏎体と　ともに　育つという。」、バージョン Y の説明文が英語「For some time after its birth, it grows by gaining⏎nourishment from the seed on its back.」・日本語「生まれてから　しばらくの　あいだは⏎背中の　タネから　栄養を　もらって⏎大きく　育つ。」であるフシギダネ";
+const CHARMANDER_FLAVOR_TEXTS_SOURCE =
+  "バージョン X の説明文が英語「The flame on its tail indicates Charmander’s life⏎force. If it is healthy, the flame burns brightly.」・日本語「尻尾の　炎は⏎ヒトカゲの　生命力の　証。⏎元気だと　さかんに　燃えさかる。」、バージョン Y の説明文が英語「From the time it is born, a flame burns at the tip of⏎its tail. Its life would end if the flame were to⏎go out.」・日本語「生まれたときから　尻尾に　炎が⏎点っている。炎が　消えたとき⏎その　命は　終わってしまう。」であるヒトカゲ";
 
 const FIRST_SENTENCE = "A strange seed was planted on its back at birth.";
 const SECOND_SENTENCE = "The plant sprouts and grows with this Pokémon.";
-const BETWEEN_SENTENCES = `説明文の 1 文目「${FIRST_SENTENCE}」と 2 文目「${SECOND_SENTENCE}」`;
+const BETWEEN_SENTENCES = `1 文目「${FIRST_SENTENCE}」と 2 文目「${SECOND_SENTENCE}」`;
 const CLEANED_FLAVOR_TEXT = "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.";
 
 describe("[外部連携:ポケモンデータ提供元]説明文の整形", () => {
-  const WHITESPACE_CASES: { given: string; text: string; 観点: readonly Viewpoint[] }[] = [
-    { given: `${BETWEEN_SENTENCES}の間に改ページがある`, text: `${FIRST_SENTENCE}\f${SECOND_SENTENCE}`, 観点: ["同値分割"] },
-    { given: `${BETWEEN_SENTENCES}の間に改行がある`, text: `${FIRST_SENTENCE}\n${SECOND_SENTENCE}`, 観点: ["同値分割"] },
-    { given: `${BETWEEN_SENTENCES}の間に復帰がある`, text: `${FIRST_SENTENCE}\r${SECOND_SENTENCE}`, 観点: ["同値分割"] },
-    { given: `${BETWEEN_SENTENCES}の間にスペースが 3 つ連続している`, text: `${FIRST_SENTENCE}   ${SECOND_SENTENCE}`, 観点: [] },
+  const WHITESPACE_CASES: { source: string; text: string; 観点: readonly Viewpoint[] }[] = [
+    { source: `${BETWEEN_SENTENCES}の間に改ページがある PokeAPI の説明文`, text: `${FIRST_SENTENCE}\f${SECOND_SENTENCE}`, 観点: ["同値分割"] },
+    { source: `${BETWEEN_SENTENCES}の間に改行がある PokeAPI の説明文`, text: `${FIRST_SENTENCE}\n${SECOND_SENTENCE}`, 観点: ["同値分割"] },
+    { source: `${BETWEEN_SENTENCES}の間に復帰がある PokeAPI の説明文`, text: `${FIRST_SENTENCE}\r${SECOND_SENTENCE}`, 観点: ["同値分割"] },
+    { source: `${BETWEEN_SENTENCES}の間にスペースが 3 つ連続している PokeAPI の説明文`, text: `${FIRST_SENTENCE}   ${SECOND_SENTENCE}`, 観点: [] },
   ];
 
-  for (const { given, text, 観点 } of WHITESPACE_CASES) {
+  for (const { source, text, 観点 } of WHITESPACE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ Given: `${given}とき`, When: [CLEAN_FLAVOR_TEXT], Then: `整形後の説明文は「${CLEANED_FLAVOR_TEXT}」になる` }],
+        steps: [{ When: [cleanFlavorTextOf(source)], Then: `整形後の説明文は「${CLEANED_FLAVOR_TEXT}」になる` }],
       },
       () => {
         expect(cleanFlavorText(text)).toBe("A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.");
@@ -116,7 +126,7 @@ describe("[外部連携:ポケモンデータ提供元]説明文の整形", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `説明文「${SECOND_SENTENCE}」の前後にスペースが 2 つずつあるとき`, When: [CLEAN_FLAVOR_TEXT], Then: `整形後の説明文は「${SECOND_SENTENCE}」になる` }],
+      steps: [{ When: [cleanFlavorTextOf(`前後にスペースが 2 つずつある PokeAPI の説明文「${SECOND_SENTENCE}」`)], Then: `整形後の説明文は「${SECOND_SENTENCE}」になる` }],
     },
     () => {
       expect(cleanFlavorText("  The plant sprouts and grows with this Pokémon.  ")).toBe("The plant sprouts and grows with this Pokémon.");
@@ -129,7 +139,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネの元データの図鑑番号が 1 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの図鑑番号は 1 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("図鑑番号 1・フシギダネ")], Then: "作成したポケモンデータの図鑑番号は 1 になる" }],
     },
     () => {
       expect(convertBulbasaur().id).toBe(1);
@@ -140,7 +150,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲの元データの図鑑番号が 4 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの図鑑番号は 4 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("図鑑番号 4・ヒトカゲ")], Then: "作成したポケモンデータの図鑑番号は 4 になる" }],
     },
     () => {
       expect(convertCharmander().id).toBe(4);
@@ -151,7 +161,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネの元データの英語名が Bulbasaur のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの英語名は Bulbasaur になる" }],
+      steps: [{ When: [createPokemonRecordFrom("英語名 Bulbasaur")], Then: "作成したポケモンデータの英語名は Bulbasaur になる" }],
     },
     () => {
       expect(convertBulbasaur().name_en).toBe("Bulbasaur");
@@ -162,7 +172,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲの元データの英語名が Charmander のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの英語名は Charmander になる" }],
+      steps: [{ When: [createPokemonRecordFrom("英語名 Charmander")], Then: "作成したポケモンデータの英語名は Charmander になる" }],
     },
     () => {
       expect(convertCharmander().name_en).toBe("Charmander");
@@ -173,7 +183,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネの元データの日本語名がフシギダネのとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの日本語名はフシギダネになる" }],
+      steps: [{ When: [createPokemonRecordFrom("日本語名フシギダネ")], Then: "作成したポケモンデータの日本語名はフシギダネになる" }],
     },
     () => {
       expect(convertBulbasaur().name_ja).toBe("フシギダネ");
@@ -184,7 +194,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲの元データの日本語名がヒトカゲのとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの日本語名はヒトカゲになる" }],
+      steps: [{ When: [createPokemonRecordFrom("日本語名ヒトカゲ")], Then: "作成したポケモンデータの日本語名はヒトカゲになる" }],
     },
     () => {
       expect(convertCharmander().name_ja).toBe("ヒトカゲ");
@@ -195,7 +205,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "種族値が 45・49・49・65・65・45 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの種族値の合計は 318 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("種族値 45・49・49・65・65・45")], Then: "作成したポケモンデータの種族値の合計は 318 になる" }],
     },
     () => {
       expect(convertBulbasaur().base_stat_total).toBe(318);
@@ -206,7 +216,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "種族値が 39・52・43・60・50・65 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの種族値の合計は 309 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("種族値 39・52・43・60・50・65")], Then: "作成したポケモンデータの種族値の合計は 309 になる" }],
     },
     () => {
       expect(convertCharmander().base_stat_total).toBe(309);
@@ -218,7 +228,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: "タイプが grass と poison のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのタイプは grass と poison の 2 つになる" }],
+      steps: [{ When: [createPokemonRecordFrom("タイプ grass・poison")], Then: "作成したポケモンデータのタイプは grass と poison の 2 つになる" }],
     },
     () => {
       expect(convertBulbasaur().types).toEqual(["grass", "poison"]);
@@ -230,7 +240,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: "タイプが fire のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのタイプは fire の 1 つになる" }],
+      steps: [{ When: [createPokemonRecordFrom("タイプ fire")], Then: "作成したポケモンデータのタイプは fire の 1 つになる" }],
     },
     () => {
       expect(convertCharmander().types).toEqual(["fire"]);
@@ -241,7 +251,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネの元データの高さが 7 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの高さは 7 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("高さ 7")], Then: "作成したポケモンデータの高さは 7 になる" }],
     },
     () => {
       expect(convertBulbasaur().height).toBe(7);
@@ -252,7 +262,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲの元データの高さが 6 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの高さは 6 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("高さ 6")], Then: "作成したポケモンデータの高さは 6 になる" }],
     },
     () => {
       expect(convertCharmander().height).toBe(6);
@@ -263,7 +273,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネの元データの重さが 69 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの重さは 69 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("重さ 69")], Then: "作成したポケモンデータの重さは 69 になる" }],
     },
     () => {
       expect(convertBulbasaur().weight).toBe(69);
@@ -274,7 +284,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲの元データの重さが 85 のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの重さは 85 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("重さ 85")], Then: "作成したポケモンデータの重さは 85 になる" }],
     },
     () => {
       expect(convertCharmander().weight).toBe(85);
@@ -285,7 +295,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネがレベルアップで覚える技の日本語名が、たいあたり・なきごえ・つるのムチであるとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのレベルアップで覚える技は、たいあたり・なきごえ・つるのムチの順になる" }],
+      steps: [{ When: [createPokemonRecordWithLevelUpMoves("フシギダネ", "たいあたり・なきごえ・つるのムチ")], Then: "作成したポケモンデータのレベルアップで覚える技は、たいあたり・なきごえ・つるのムチの順になる" }],
     },
     () => {
       expect(convertBulbasaur().level_up_moves).toEqual(["たいあたり", "なきごえ", "つるのムチ"]);
@@ -296,7 +306,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲがレベルアップで覚える技の日本語名が、ひっかく・なきごえ・ひのこであるとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのレベルアップで覚える技は、ひっかく・なきごえ・ひのこの順になる" }],
+      steps: [{ When: [createPokemonRecordWithLevelUpMoves("ヒトカゲ", "ひっかく・なきごえ・ひのこ")], Then: "作成したポケモンデータのレベルアップで覚える技は、ひっかく・なきごえ・ひのこの順になる" }],
     },
     () => {
       expect(convertCharmander().level_up_moves).toEqual(["ひっかく", "なきごえ", "ひのこ"]);
@@ -308,7 +318,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       種別: "単体テスト",
       正常異常: "異常系",
       観点: ["外部依存の失敗"],
-      steps: [{ Given: "タイプ名が shadow のとき", When: [CREATE_POKEMON_RECORD], Then: "未知のタイプであることを示すエラーになる" }],
+      steps: [{ When: [createPokemonRecordFrom("タイプ shadow")], Then: "未知のタイプであることを示すエラーになる" }],
     },
     () => {
       const species = speciesOf(1, "Bulbasaur", "フシギダネ", [{ version: "x", en: "en", ja: "ja" }]);
@@ -325,8 +335,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "英語の説明文だけがあり日本語の説明文が無いとき",
-          When: [CREATE_POKEMON_RECORD],
+          When: [createPokemonRecordFrom("日本語の説明文が無く、英語の説明文だけ")],
           Then: "英語と日本語の説明文ペアが無いことを示すエラーになる",
         },
       ],
@@ -346,7 +355,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネのバージョン X の英語の説明文が「A strange seed was planted on its back at birth.⏎The plant sprouts and grows with this Pokémon.」のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの英語の説明文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」になる" }],
+      steps: [{ When: [createPokemonRecordFrom("バージョン X の英語の説明文が「A strange seed was planted on its back at birth.⏎The plant sprouts and grows with this Pokémon.」であるフシギダネ")], Then: "作成したポケモンデータの英語の説明文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」になる" }],
     },
     () => {
       expect(convertBulbasaur().description_en).toBe(
@@ -359,7 +368,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲのバージョン X の英語の説明文が「The flame on its tail indicates Charmander’s life⏎force. If it is healthy, the flame burns brightly.」のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの英語の説明文は「The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.」になる" }],
+      steps: [{ When: [createPokemonRecordFrom("バージョン X の英語の説明文が「The flame on its tail indicates Charmander’s life⏎force. If it is healthy, the flame burns brightly.」であるヒトカゲ")], Then: "作成したポケモンデータの英語の説明文は「The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.」になる" }],
     },
     () => {
       expect(convertCharmander().description_en).toBe(
@@ -372,7 +381,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "フシギダネのバージョン X の日本語の説明文が「生まれたときから　背中に⏎不思議な　タネが　植えてあって⏎体と　ともに　育つという。」のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの日本語の説明文は「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」になる" }],
+      steps: [{ When: [createPokemonRecordFrom("バージョン X の日本語の説明文が「生まれたときから　背中に⏎不思議な　タネが　植えてあって⏎体と　ともに　育つという。」であるフシギダネ")], Then: "作成したポケモンデータの日本語の説明文は「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」になる" }],
     },
     () => {
       expect(convertBulbasaur().description_ja).toBe(
@@ -385,7 +394,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ヒトカゲのバージョン X の日本語の説明文が「尻尾の　炎は⏎ヒトカゲの　生命力の　証。⏎元気だと　さかんに　燃えさかる。」のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータの日本語の説明文は「尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。」になる" }],
+      steps: [{ When: [createPokemonRecordFrom("バージョン X の日本語の説明文が「尻尾の　炎は⏎ヒトカゲの　生命力の　証。⏎元気だと　さかんに　燃えさかる。」であるヒトカゲ")], Then: "作成したポケモンデータの日本語の説明文は「尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。」になる" }],
     },
     () => {
       expect(convertCharmander().description_ja).toBe(
@@ -399,7 +408,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: BULBASAUR_FLAVOR_TEXTS_GIVEN, When: [CREATE_POKEMON_RECORD], Then: FLAVOR_TEXT_PAIR_COUNT }],
+      steps: [{ When: [createPokemonRecordFrom(BULBASAUR_FLAVOR_TEXTS_SOURCE)], Then: FLAVOR_TEXT_PAIR_COUNT }],
     },
     () => {
       expect(convertBulbasaur().flavor_texts).toHaveLength(2);
@@ -412,8 +421,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       正常異常: "正常系",
       steps: [
         {
-          Given: BULBASAUR_FLAVOR_TEXTS_GIVEN,
-          When: [CREATE_POKEMON_RECORD],
+          When: [createPokemonRecordFrom(BULBASAUR_FLAVOR_TEXTS_SOURCE)],
           Then: "作成したポケモンデータの説明文ペアの一覧の 1 組目は、バージョン名 X・英語「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」・日本語「生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。」になる",
         },
       ],
@@ -433,8 +441,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       正常異常: "正常系",
       steps: [
         {
-          Given: BULBASAUR_FLAVOR_TEXTS_GIVEN,
-          When: [CREATE_POKEMON_RECORD],
+          When: [createPokemonRecordFrom(BULBASAUR_FLAVOR_TEXTS_SOURCE)],
           Then: "作成したポケモンデータの説明文ペアの一覧の 2 組目は、バージョン名 Y・英語「For some time after its birth, it grows by gaining nourishment from the seed on its back.」・日本語「生まれてから　しばらくの　あいだは 背中の　タネから　栄養を　もらって 大きく　育つ。」になる",
         },
       ],
@@ -453,7 +460,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: CHARMANDER_FLAVOR_TEXTS_GIVEN, When: [CREATE_POKEMON_RECORD], Then: FLAVOR_TEXT_PAIR_COUNT }],
+      steps: [{ When: [createPokemonRecordFrom(CHARMANDER_FLAVOR_TEXTS_SOURCE)], Then: FLAVOR_TEXT_PAIR_COUNT }],
     },
     () => {
       expect(convertCharmander().flavor_texts).toHaveLength(2);
@@ -466,8 +473,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       正常異常: "正常系",
       steps: [
         {
-          Given: CHARMANDER_FLAVOR_TEXTS_GIVEN,
-          When: [CREATE_POKEMON_RECORD],
+          When: [createPokemonRecordFrom(CHARMANDER_FLAVOR_TEXTS_SOURCE)],
           Then: "作成したポケモンデータの説明文ペアの一覧の 1 組目は、バージョン名 X・英語「The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.」・日本語「尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。」になる",
         },
       ],
@@ -487,8 +493,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
       正常異常: "正常系",
       steps: [
         {
-          Given: CHARMANDER_FLAVOR_TEXTS_GIVEN,
-          When: [CREATE_POKEMON_RECORD],
+          When: [createPokemonRecordFrom(CHARMANDER_FLAVOR_TEXTS_SOURCE)],
           Then: "作成したポケモンデータの説明文ペアの一覧の 2 組目は、バージョン名 Y・英語「From the time it is born, a flame burns at the tip of its tail. Its life would end if the flame were to go out.」・日本語「生まれたときから　尻尾に　炎が 点っている。炎が　消えたとき その　命は　終わってしまう。」になる",
         },
       ],
