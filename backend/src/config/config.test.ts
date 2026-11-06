@@ -45,10 +45,10 @@ function setDefaultTuningEnv(): void {
 }
 
 function setRealRequiredEnv(): void {
-  process.env.GOOGLE_CLOUD_PROJECT = "proj";
-  process.env.GOOGLE_CLOUD_LOCATION = "loc";
+  process.env.GOOGLE_CLOUD_PROJECT = "my-project-123";
+  process.env.GOOGLE_CLOUD_LOCATION = "asia-northeast1";
   process.env.FRONTEND_URL = "https://example.com";
-  process.env.GEMINI_MODEL = "gemini-test";
+  process.env.GEMINI_MODEL = "gemini-2.5-pro";
   process.env.PER_USER_DAILY_LIMIT = "10";
   process.env.GLOBAL_DAILY_LIMIT = "100";
   process.env.POKEMON_SNAPSHOT_URI = "gs://bucket/pokemon-snapshot.json";
@@ -67,7 +67,7 @@ function setRealModeEnv(): void {
   setRealRequiredEnv();
 }
 
-const LOAD_CONFIG = "バックエンドの起動時に、環境変数から起動設定を読み込む";
+const LOAD_CONFIG = "起動設定を読み込む";
 const TUNING_SET = "チューニングパラメーターの環境変数がすべて設定されていて";
 const MOCK_MODE = `${TUNING_SET}、APP_MODE が mock で`;
 const REAL_MODE = `${TUNING_SET}、APP_MODE が real で、チューニングパラメーター以外の必須の環境変数がすべて設定されていて`;
@@ -110,7 +110,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
-      steps: [{ Given: `${TUNING_SET}、APP_MODE が mock でも real でもない prod のとき`, When: [LOAD_CONFIG], Then: "APP_MODE の値が不正であることを示す起動エラーになる" }],
+      steps: [{ Given: `${TUNING_SET}、APP_MODE が prod のとき`, When: [LOAD_CONFIG], Then: "APP_MODE の値が不正であることを示す起動エラーになる" }],
     },
     () => {
       setDefaultTuningEnv();
@@ -184,7 +184,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が下限の 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定のユーザー 1 人あたりの AI 呼び出しの日次上限は 1 回になる" }],
+      steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定のユーザー 1 人あたりの AI 呼び出しの日次上限は 1 回になる" }],
     },
     () => {
       setMockModeEnv();
@@ -198,7 +198,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が最終評価点の下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 0 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 0 になる" }],
     },
     () => {
       setMockModeEnv();
@@ -212,7 +212,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が最終評価点の上限の 99 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 99 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が 99 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 99 になる" }],
     },
     () => {
       setMockModeEnv();
@@ -239,21 +239,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
-    },
-    () => {
-      setMockModeEnv();
-      process.env.BALL_CAPTURE_BONUS_POKE = "0";
-      expect(loadConfig().ballCaptureBonus.poke).toBe(0);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0 になる" }],
     },
     () => {
       setMockModeEnv();
@@ -267,7 +253,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が上限の 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 1 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 1 になる" }],
     },
     () => {
       setMockModeEnv();
@@ -287,7 +273,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
-        steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が ${value} のとき`, When: [LOAD_CONFIG], Then: "PER_USER_DAILY_LIMIT が 1 以上の整数でないという起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が ${value} のとき`, When: [LOAD_CONFIG], Then: "PER_USER_DAILY_LIMIT が 1 以上の整数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
@@ -297,19 +283,19 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     );
   }
 
-  const MASTER_BALL_MIN_SCORE_CASES: { label: string; value: string; 観点: readonly Viewpoint[] }[] = [
-    { label: "最終評価点の下限 0 を下回る", value: "-1", 観点: ["境界値"] },
-    { label: "最終評価点の上限 99 を超える", value: "100", 観点: ["境界値"] },
-    { label: "整数でない", value: "1.5", 観点: [] },
+  const MASTER_BALL_MIN_SCORE_CASES: { value: string; 観点: readonly Viewpoint[] }[] = [
+    { value: "-1", 観点: ["境界値"] },
+    { value: "100", 観点: ["境界値"] },
+    { value: "1.5", 観点: [] },
   ];
 
-  for (const { label, value, 観点 } of MASTER_BALL_MIN_SCORE_CASES) {
+  for (const { value, 観点 } of MASTER_BALL_MIN_SCORE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
-        steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "MASTER_BALL_MIN_SCORE が 0 以上 99 以下の整数でないという起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が ${value} のとき`, When: [LOAD_CONFIG], Then: "MASTER_BALL_MIN_SCORE が 0 以上 99 以下の整数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
@@ -324,7 +310,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "異常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が下限 0 を下回る -0.01 のとき`, When: [LOAD_CONFIG], Then: "BALL_CAPTURE_BONUS_POKE の値が許容範囲の数でないことを示す起動エラーになる" }],
+      steps: [{ Given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が -0.01 のとき`, When: [LOAD_CONFIG], Then: "BALL_CAPTURE_BONUS_POKE が 0 以上の数でないことを示す起動エラーになる" }],
     },
     () => {
       setMockModeEnv();
@@ -333,19 +319,19 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  const LEGENDARY_ENCOUNTER_RATE_CASES: { label: string; value: string; 観点: readonly Viewpoint[] }[] = [
-    { label: "下限 0 を下回る", value: "-0.01", 観点: ["境界値"] },
-    { label: "上限 1 を上回る", value: "1.01", 観点: ["境界値"] },
-    { label: "数でない", value: "abc", 観点: [] },
+  const LEGENDARY_ENCOUNTER_RATE_CASES: { value: string; 観点: readonly Viewpoint[] }[] = [
+    { value: "-0.01", 観点: ["境界値"] },
+    { value: "1.01", 観点: ["境界値"] },
+    { value: "abc", 観点: [] },
   ];
 
-  for (const { label, value, 観点 } of LEGENDARY_ENCOUNTER_RATE_CASES) {
+  for (const { value, 観点 } of LEGENDARY_ENCOUNTER_RATE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
-        steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_ENCOUNTER_RATE が 0 以上 1 以下の数でないという起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_ENCOUNTER_RATE が 0 以上 1 以下の数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
@@ -371,11 +357,11 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、GOOGLE_CLOUD_PROJECT が proj のとき`, When: [LOAD_CONFIG], Then: "起動設定の Google Cloud のプロジェクトは proj になる" }],
+      steps: [{ Given: `${REAL_MODE}、GOOGLE_CLOUD_PROJECT が my-project-123 のとき`, When: [LOAD_CONFIG], Then: "起動設定の Google Cloud のプロジェクトは my-project-123 になる" }],
     },
     () => {
       setRealModeEnv();
-      expect(loadConfig().googleCloudProject).toBe("proj");
+      expect(loadConfig().googleCloudProject).toBe("my-project-123");
     },
   );
 
@@ -383,11 +369,11 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、GOOGLE_CLOUD_LOCATION が loc のとき`, When: [LOAD_CONFIG], Then: "起動設定の Google Cloud のロケーションは loc になる" }],
+      steps: [{ Given: `${REAL_MODE}、GOOGLE_CLOUD_LOCATION が asia-northeast1 のとき`, When: [LOAD_CONFIG], Then: "起動設定の Google Cloud のロケーションは asia-northeast1 になる" }],
     },
     () => {
       setRealModeEnv();
-      expect(loadConfig().googleCloudLocation).toBe("loc");
+      expect(loadConfig().googleCloudLocation).toBe("asia-northeast1");
     },
   );
 
@@ -407,11 +393,11 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、GEMINI_MODEL が gemini-test のとき`, When: [LOAD_CONFIG], Then: "起動設定の Gemini のモデルは gemini-test になる" }],
+      steps: [{ Given: `${REAL_MODE}、GEMINI_MODEL が gemini-2.5-pro のとき`, When: [LOAD_CONFIG], Then: "起動設定の Gemini のモデルは gemini-2.5-pro になる" }],
     },
     () => {
       setRealModeEnv();
-      expect(loadConfig().geminiModel).toBe("gemini-test");
+      expect(loadConfig().geminiModel).toBe("gemini-2.5-pro");
     },
   );
 
@@ -501,18 +487,23 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、BALL_CAPTURE_BONUS_POKE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
-    },
-    () => {
-      setRealModeEnv();
-      process.env.BALL_CAPTURE_BONUS_POKE = "0";
-      expect(loadConfig().ballCaptureBonus.poke).toBe(0);
-    },
-  );
+  for (const { given, setModeEnv } of [
+    { given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が 0 のとき`, setModeEnv: setMockModeEnv },
+    { given: `${REAL_MODE}、BALL_CAPTURE_BONUS_POKE が 0 のとき`, setModeEnv: setRealModeEnv },
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        steps: [{ Given: given, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
+      },
+      () => {
+        setModeEnv();
+        process.env.BALL_CAPTURE_BONUS_POKE = "0";
+        expect(loadConfig().ballCaptureBonus.poke).toBe(0);
+      },
+    );
+  }
 
   defineCase(
     {
@@ -594,7 +585,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
 
   const GOOGLE_CLOUD_PROJECT_CASES: { label: string; value: string; 観点: readonly Viewpoint[] }[] = [
     { label: "空文字", value: "", 観点: ["件数・有無"] },
-    { label: "空白のみ (半角スペース 3 文字)", value: "   ", 観点: ["エッジケース"] },
+    { label: "半角スペース 3 文字", value: "   ", 観点: ["エッジケース"] },
   ];
 
   for (const { label, value, 観点 } of GOOGLE_CLOUD_PROJECT_CASES) {

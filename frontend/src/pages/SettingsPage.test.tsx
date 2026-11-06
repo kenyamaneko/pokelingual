@@ -110,11 +110,7 @@ function renderSettings(logout: () => Promise<void> = async () => {}) {
   return render(<Harness />);
 }
 
-const LOAD_SETTINGS = "設定画面を開いて、設定を読み込む";
-const LOAD_POKEMON_NAME_LIST = "設定画面を開いて、除外ポケモンの検索のためにポケモンの名前の一覧を読み込む";
-const SHOW_GENERATION_SELECTION = "設定画面を開いて、出題する世代の選択状況を表示する";
-const SHOW_CONTACT = "設定画面を開いて、問い合わせのリンクを表示する";
-const SHOW_GITHUB_REPOSITORY = "設定画面を開いて、GitHub リポジトリのリンクと案内を表示する";
+const OPEN_SETTINGS = "設定画面を開く";
 const INTEGRATION = "部品間結合テスト";
 
 describe("[共通:認証]ログアウト", () => {
@@ -126,7 +122,7 @@ describe("[共通:認証]ログアウト", () => {
     {
       種別: INTEGRATION,
       正常異常: "正常系",
-      steps: [{ When: ["設定画面で「ログアウト」を押す"], Then: "ログイン画面が表示される" }],
+      steps: [{ When: ["設定画面のログアウトで、「ログアウト」ボタンを押す"], Then: "ログイン画面が表示される" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -148,8 +144,8 @@ describe("[共通:設定]設定の読み込み", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "設定の取得に失敗するとき",
-          When: [LOAD_SETTINGS],
+          Given: "設定を読み込めないとき",
+          When: [OPEN_SETTINGS],
           Then: "「設定の読み込みに失敗しました」と表示される",
         },
       ],
@@ -170,8 +166,8 @@ describe("[共通:設定]設定の読み込み", () => {
 
 const GOLBAT_IN_NAME_LIST = "ポケモンの名前の一覧に「ゴルバット」があり";
 const SEARCH_AND_SELECT_GOLBAT = [
-  "設定画面の除外ポケモンの検索欄に、「ゴル」と入力する",
-  "設定画面の検索結果の「ゴルバット」(図鑑番号 42) を選んで、除外ポケモンに追加する",
+  "設定画面の除外ポケモンの検索で、「ポケモンの名前で探す」欄に「ゴル」と入力する",
+  "設定画面の除外ポケモンの検索で、検索結果の「ゴルバット」を選ぶ",
 ] as const;
 
 function mockGolbatCandidate() {
@@ -243,8 +239,8 @@ describe("[共通:設定]除外ポケモン設定", () => {
       steps: [
         {
           Given: "ポケモンの名前の一覧に「ゴルバット」があるとき",
-          When: ["設定画面の除外ポケモンの検索欄に、検索語「いない」を入力する"],
-          Then: "検索結果に「ゴルバット」が表示されない",
+          When: ["設定画面の除外ポケモンの検索で、「ポケモンの名前で探す」欄に「いない」と入力する"],
+          Then: "検索結果に、「ゴルバット」が表示されない",
         },
       ],
     },
@@ -268,7 +264,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
         {
           Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがいないとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
-          Then: "除外ポケモンの一覧に「#042」と「ゴルバット」が表示される",
+          Then: "除外ポケモンの一覧に、「#042」と「ゴルバット」が表示される",
         },
       ],
     },
@@ -312,7 +308,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
         {
           Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがいないとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
-          Then: "バックエンドに保存される除外ポケモンが、ゴルバット (図鑑番号 42) だけになる",
+          Then: "バックエンドに保存される除外ポケモンの図鑑番号が、42 だけになる",
         },
       ],
     },
@@ -330,8 +326,8 @@ describe("[共通:設定]除外ポケモン設定", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバット (図鑑番号 42) が除外済みのとき`,
-          When: ["設定画面の除外ポケモンの一覧で、ゴルバットの「削除」を押して、除外ポケモンから外す"],
+          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバットが除外済みのとき`,
+          When: ["設定画面の除外ポケモンの一覧で、ゴルバットの「削除」ボタンを押す"],
           Then: "「除外ポケモンはいません」と表示される",
         },
       ],
@@ -352,9 +348,9 @@ describe("[共通:設定]除外ポケモン設定", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバット (図鑑番号 42) が除外済みのとき`,
-          When: ["設定画面の除外ポケモンの一覧で、ゴルバットの「削除」を押して、除外ポケモンから外す"],
-          Then: "除外ポケモンの一覧に「#042」が表示されなくなる",
+          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバットが除外済みのとき`,
+          When: ["設定画面の除外ポケモンの一覧で、ゴルバットの「削除」ボタンを押す"],
+          Then: "除外ポケモンの一覧に、「#042」が表示されなくなる",
         },
       ],
     },
@@ -374,8 +370,8 @@ describe("[共通:設定]除外ポケモン設定", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバット (図鑑番号 42) が除外済みのとき`,
-          When: ["設定画面の除外ポケモンの一覧で、ゴルバットの「削除」を押して、除外ポケモンから外す"],
+          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバットが除外済みのとき`,
+          When: ["設定画面の除外ポケモンの一覧で、ゴルバットの「削除」ボタンを押す"],
           Then: "バックエンドに保存される除外ポケモンが、空になる",
         },
       ],
@@ -394,7 +390,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバット (図鑑番号 42) が除外済みのとき`,
+          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバットが除外済みのとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
           Then: "除外ポケモンの一覧の「#042」が 1 件のままになる",
         },
@@ -415,9 +411,9 @@ describe("[共通:設定]除外ポケモン設定", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバット (図鑑番号 42) が除外済みのとき`,
+          Given: `${GOLBAT_IN_NAME_LIST}、ゴルバットが除外済みのとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
-          Then: "バックエンドに保存される除外ポケモンが、ゴルバット (図鑑番号 42) だけのままになる",
+          Then: "バックエンドに保存される除外ポケモンの図鑑番号が、42 だけのままになる",
         },
       ],
     },
@@ -436,7 +432,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがおらず、除外ポケモンの保存に失敗するとき`,
+          Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがいなくて、除外ポケモンを保存できないとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
           Then: "「設定の保存に失敗しました」と表示される",
         },
@@ -460,7 +456,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがおらず、除外ポケモンの保存に失敗するとき`,
+          Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがいなくて、除外ポケモンを保存できないとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
           Then: "除外ポケモンの一覧が空のまま「除外ポケモンはいません」と表示される",
         },
@@ -486,9 +482,9 @@ describe("[共通:設定]除外ポケモン設定", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ポケモンの名前の一覧に「ニドリーナ」(図鑑番号 30) と「ニドクイン」(図鑑番号 31) があるとき",
-          When: ["設定画面の除外ポケモンの検索欄に、検索語「ニド」を入力する"],
-          Then: "検索結果に「ニドリーナ」と「ニドクイン」の両方が表示される",
+          Given: "ポケモンの名前の一覧に「ニドリーナ」と「ニドクイン」があるとき",
+          When: ["設定画面の除外ポケモンの検索で、「ポケモンの名前で探す」欄に「ニド」と入力する"],
+          Then: "検索結果に、「ニドリーナ」と「ニドクイン」の両方が表示される",
         },
       ],
     },
@@ -515,8 +511,8 @@ describe("[共通:設定]除外ポケモン設定", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "ポケモンの名前の一覧の取得に失敗するとき",
-          When: [LOAD_POKEMON_NAME_LIST],
+          Given: "ポケモンの名前の一覧を読み込めないとき",
+          When: [OPEN_SETTINGS],
           Then: "「ポケモン一覧を読み込めませんでした。ページを再読み込みしてください」と表示される",
         },
       ],
@@ -539,8 +535,8 @@ describe("[共通:設定]除外ポケモン設定", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "ポケモンの名前の一覧の取得に失敗するとき",
-          When: [LOAD_POKEMON_NAME_LIST],
+          Given: "ポケモンの名前の一覧を読み込めないとき",
+          When: [OPEN_SETTINGS],
           Then: "「ポケモンの名前で探す」の検索欄が表示されない",
         },
       ],
@@ -596,7 +592,7 @@ describe("[共通:設定]出題する世代", () => {
       steps: [
         {
           Given: "設定済みの出題世代が第1世代と第3世代のとき",
-          When: [SHOW_GENERATION_SELECTION],
+          When: [OPEN_SETTINGS],
           Then: "「第1世代」にチェックが付く",
         },
       ],
@@ -616,7 +612,7 @@ describe("[共通:設定]出題する世代", () => {
       steps: [
         {
           Given: "設定済みの出題世代が第1世代と第3世代のとき",
-          When: [SHOW_GENERATION_SELECTION],
+          When: [OPEN_SETTINGS],
           Then: "「第2世代」にチェックが付かない",
         },
       ],
@@ -636,7 +632,7 @@ describe("[共通:設定]出題する世代", () => {
       steps: [
         {
           Given: "設定済みの出題世代が第1世代と第3世代のとき",
-          When: [SHOW_GENERATION_SELECTION],
+          When: [OPEN_SETTINGS],
           Then: "「第3世代」にチェックが付く",
         },
       ],
@@ -738,12 +734,12 @@ describe("[共通:設定]出題する世代", () => {
   defineCase(
     {
       種別: INTEGRATION,
-      正常異常: "異常系",
+      正常異常: "正常系",
       観点: ["境界値"],
       steps: [
         {
           Given: "第5世代だけが選ばれているとき",
-          When: [SHOW_GENERATION_SELECTION],
+          When: [OPEN_SETTINGS],
           Then: "「第5世代」のチェックボックスが押せない状態になる",
         },
       ],
@@ -759,12 +755,12 @@ describe("[共通:設定]出題する世代", () => {
   defineCase(
     {
       種別: INTEGRATION,
-      正常異常: "異常系",
+      正常異常: "正常系",
       観点: ["境界値"],
       steps: [
         {
           Given: "第5世代だけが選ばれているとき",
-          When: [SHOW_GENERATION_SELECTION],
+          When: [OPEN_SETTINGS],
           Then: "「1つ以上えらんでね（ぜんぶは外せないよ）」と表示される",
         },
       ],
@@ -789,7 +785,7 @@ describe("[共通:設定]出題する世代", () => {
         {
           Given: "第5世代だけが選ばれているとき",
           When: ["設定画面の出題する世代の選択で、「第5世代」のチェックを押す"],
-          Then: "チェックが付いたままになる",
+          Then: "「第5世代」のチェックが付いたままになる",
         },
       ],
     },
@@ -834,8 +830,8 @@ describe("[共通:サイト情報]設定画面の問い合わせ", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: [SHOW_CONTACT],
-          Then: "「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く",
+          When: [OPEN_SETTINGS],
+          Then: "設定画面の「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く",
         },
       ],
     },
@@ -860,8 +856,8 @@ describe("[共通:サイト情報]設定画面の GitHub リポジトリ", () =>
       正常異常: "正常系",
       steps: [
         {
-          When: [SHOW_GITHUB_REPOSITORY],
-          Then: "「GitHub リポジトリ」のリンク先は「https://github.com/kenyamaneko/pokelingual」で、新しいタブで開く",
+          When: [OPEN_SETTINGS],
+          Then: "設定画面の「GitHub リポジトリ」のリンク先は「https://github.com/kenyamaneko/pokelingual」で、新しいタブで開く",
         },
       ],
     },
@@ -880,8 +876,8 @@ describe("[共通:サイト情報]設定画面の GitHub リポジトリ", () =>
       正常異常: "正常系",
       steps: [
         {
-          When: [SHOW_GITHUB_REPOSITORY],
-          Then: "「回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます」と表示される",
+          When: [OPEN_SETTINGS],
+          Then: "設定画面に、「回数を気にせず遊びたい方は、このソースコードで自分の環境にホスティングすることもできます」と表示される",
         },
       ],
     },
@@ -912,7 +908,7 @@ describe("[共通:サイト情報]設定画面の利用規約", () => {
     {
       種別: INTEGRATION,
       正常異常: "正常系",
-      steps: [{ When: ["設定画面で「利用規約」を押す"], Then: "利用規約モーダルが表示される" }],
+      steps: [{ When: ["設定画面の利用規約で、「利用規約」ボタンを押す"], Then: "利用規約モーダルが表示される" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -931,7 +927,7 @@ describe("[共通:サイト情報]設定画面の利用規約", () => {
       steps: [
         {
           Given: "利用規約モーダルが開いているとき",
-          When: ["設定画面の利用規約モーダルで「閉じる」を押す"],
+          When: ["設定画面の利用規約モーダルで、「閉じる」ボタンを押す"],
           Then: "モーダルが閉じて設定画面が表示される",
         },
       ],

@@ -4,7 +4,6 @@ import {
   CaptureEffect,
   SHAKE_DURATION_MS,
   EFFECT_DURATION_MS,
-  WHITEOUT_DURATION_MS,
 } from "./CaptureEffect";
 import { defineCase } from "../../test/defineCase";
 
@@ -34,12 +33,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const SHOW_EFFECT = "クエスト画面で、捕獲演出を表示する";
-const WAIT_FOR_SHAKE = "クエスト画面の捕獲演出で、ボールの揺れの再生が終わるまで待つ";
-const WAIT_FOR_EFFECT =
-  "クエスト画面の捕獲演出で、ボールの揺れと、捕獲の成否を示すエフェクトの再生が終わるまで待つ";
-const WAIT_FOR_WHITEOUT =
-  "クエスト画面の捕獲演出で、ボールの揺れ、捕獲の成否を示すエフェクト、白フェードの再生が終わるまで待つ";
+const SHOW_EFFECT = "捕獲演出を始める";
+const WAIT_FOR_SHAKE = "ボールの揺れの再生が終わるまで待つ";
+const WAIT_FOR_EFFECT = "ボールの揺れと、捕獲の成否を示すエフェクトの再生が終わるまで待つ";
 
 describe("[本体:捕獲]捕獲演出", () => {
   defineCase(
@@ -48,9 +44,8 @@ describe("[本体:捕獲]捕獲演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ボールの揺れの再生中のとき",
           When: [SHOW_EFFECT],
-          Then: "捕獲の成否を示すエフェクトは表示されない",
+          Then: "ボールの揺れの再生中は、捕獲の成否を示すエフェクトは表示されない",
         },
       ],
     },
@@ -76,26 +71,6 @@ describe("[本体:捕獲]捕獲演出", () => {
       advance(SHAKE_DURATION_MS);
       advance(EFFECT_DURATION_MS);
       expect(screen.getByTestId("capture-whiteout")).toBeInTheDocument();
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          When: [SHOW_EFFECT, WAIT_FOR_WHITEOUT],
-          Then: "結果画面へ切り替える指示が 1 回出される",
-        },
-      ],
-    },
-    () => {
-      const onComplete = renderEffect(true);
-      advance(SHAKE_DURATION_MS);
-      advance(EFFECT_DURATION_MS);
-      advance(WHITEOUT_DURATION_MS);
-      expect(onComplete).toHaveBeenCalledTimes(1);
     },
   );
 

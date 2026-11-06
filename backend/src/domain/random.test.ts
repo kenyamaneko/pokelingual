@@ -7,13 +7,11 @@ function fixedRandom(value: number): RandomSource {
   return { next: () => value };
 }
 
-const POOL_OF_FOUR = "プールが 4 件のとき";
-
-function drawFromPool(count: number): string {
-  return `クエスト画面のポケモン名当てのヒントに出す技を、プールから ${count} 件抽選する`;
+function drawFromPool(poolSize: number, count: number): string {
+  return `${poolSize} 件のプールから ${count} 件抽選する`;
 }
 
-const DRAW_3 = drawFromPool(3);
+const DRAW_3_FROM_POOL_OF_FOUR = drawFromPool(4, 3);
 
 describe("[共通:機能共通]プールからの重複無し抽選", () => {
   defineCase(
@@ -21,7 +19,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["同値分割"],
-      steps: [{ Given: POOL_OF_FOUR, When: [DRAW_3], Then: "選ばれる件数は 3 件になる" }],
+      steps: [{ When: [DRAW_3_FROM_POOL_OF_FOUR], Then: "選ばれる件数は 3 件になる" }],
     },
     () => {
       const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
@@ -34,7 +32,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["同値分割"],
-      steps: [{ Given: POOL_OF_FOUR, When: [DRAW_3], Then: "選ばれた 3 件に重複は無い" }],
+      steps: [{ When: [DRAW_3_FROM_POOL_OF_FOUR], Then: "選ばれた 3 件に重複は無い" }],
     },
     () => {
       const picked = pickRandomSample(["a", "b", "c", "d"], 3, fixedRandom(0));
@@ -48,7 +46,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: POOL_OF_FOUR, When: [drawFromPool(count)], Then: "選ばれる件数は 4 件になる" }],
+        steps: [{ When: [drawFromPool(4, count)], Then: "選ばれる件数は 4 件になる" }],
       },
       () => {
         const picked = pickRandomSample(["a", "b", "c", "d"], count, fixedRandom(0));
@@ -62,7 +60,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: "プールが 1 件のとき", When: [drawFromPool(1)], Then: "選ばれた一覧はその 1 件になる" }],
+      steps: [{ When: [drawFromPool(1, 1)], Then: "選ばれた一覧はその 1 件になる" }],
     },
     () => {
       expect(pickRandomSample(["a"], 1, fixedRandom(0))).toEqual(["a"]);
@@ -74,7 +72,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["同値分割"],
-      steps: [{ Given: "プールが 2 件のとき", When: [drawFromPool(5)], Then: "選ばれる件数は 2 件になる" }],
+      steps: [{ When: [drawFromPool(2, 5)], Then: "選ばれる件数は 2 件になる" }],
     },
     () => {
       const picked = pickRandomSample(["a", "b"], 5, fixedRandom(0));
@@ -82,16 +80,16 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     },
   );
 
-  for (const { given, count, pool, viewpoints } of [
-    { given: "プールが空のとき", count: 3, pool: [] as string[], viewpoints: ["件数・有無", "エッジケース"] as const },
-    { given: "プールが 2 件のとき", count: 0, pool: ["a", "b"], viewpoints: ["件数・有無"] as const },
+  for (const { count, pool, viewpoints } of [
+    { count: 3, pool: [] as string[], viewpoints: ["件数・有無", "エッジケース"] as const },
+    { count: 0, pool: ["a", "b"], viewpoints: ["件数・有無"] as const },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
-        正常異常: "異常系",
+        正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: given, When: [drawFromPool(count)], Then: "選ばれた一覧は空になる" }],
+        steps: [{ When: [drawFromPool(pool.length, count)], Then: "選ばれた一覧は空になる" }],
       },
       () => {
         expect(pickRandomSample(pool, count, fixedRandom(0))).toEqual([]);

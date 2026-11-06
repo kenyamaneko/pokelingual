@@ -2,8 +2,7 @@ import { describe, expect } from "vitest";
 import { hiraganaToKatakana } from "./kana";
 import { defineCase } from "../test/defineCase";
 
-const CONVERT_TO_KATAKANA =
-  "設定画面のポケモン名の検索欄に入力された文字列のうち、ひらがなの部分をカタカナに変換する";
+const convertToKatakana = (text: string) => `${text}をカタカナに変換する`;
 
 describe("[共通:設定]ひらがなのカタカナ変換", () => {
   defineCase(
@@ -13,8 +12,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       観点: ["同値分割"],
       steps: [
         {
-          Given: "ひらがなだけの「ふしぎだね」のとき",
-          When: [CONVERT_TO_KATAKANA],
+          When: [convertToKatakana("「ふしぎだね」")],
           Then: "カタカナの「フシギダネ」になる",
         },
       ],
@@ -31,8 +29,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       観点: ["同値分割"],
       steps: [
         {
-          Given: "小書き文字を含む「ぴかちゅう」のとき",
-          When: [CONVERT_TO_KATAKANA],
+          When: [convertToKatakana("「ぴかちゅう」")],
           Then: "小書き文字もカタカナになり「ピカチュウ」になる",
         },
       ],
@@ -49,8 +46,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       観点: ["同値分割"],
       steps: [
         {
-          Given: "ひらがなとカタカナが混ざった「ふしぎダネ」のとき",
-          When: [CONVERT_TO_KATAKANA],
+          When: [convertToKatakana("「ふしぎダネ」")],
           Then: "ひらがなの部分だけがカタカナになり「フシギダネ」になる",
         },
       ],
@@ -67,8 +63,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       観点: ["同値分割"],
       steps: [
         {
-          Given: "長音符を含む「あーぼ」のとき",
-          When: [CONVERT_TO_KATAKANA],
+          When: [convertToKatakana("「あーぼ」")],
           Then: "長音符「ー」はそのままで、ひらがなの部分がカタカナになり「アーボ」になる",
         },
       ],
@@ -85,8 +80,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       観点: ["同値分割"],
       steps: [
         {
-          Given: "カタカナだけの「フシギダネ」のとき",
-          When: [CONVERT_TO_KATAKANA],
+          When: [convertToKatakana("「フシギダネ」")],
           Then: "そのまま「フシギダネ」になる",
         },
       ],
@@ -101,7 +95,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["件数・有無"],
-      steps: [{ Given: "空文字のとき", When: [CONVERT_TO_KATAKANA], Then: "そのまま空文字になる" }],
+      steps: [{ When: [convertToKatakana("空文字")], Then: "そのまま空文字になる" }],
     },
     () => {
       expect(hiraganaToKatakana("")).toBe("");

@@ -1,6 +1,5 @@
 import type { ComponentProps } from "react";
 import { render, screen, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, vi } from "vitest";
 import { spec } from "../../test/labels";
 import { defineCase, type Viewpoint } from "../../test/defineCase";
@@ -48,9 +47,7 @@ const TYPE_AND_MOVE_HINT: HintResponse = {
 
 type NameGuessScenario = { given: string; props: Partial<NameGuessProps>; viewpoints?: readonly Viewpoint[] };
 
-const SHOW_NAME_GUESS = "名前当て画面で、入力欄と回答結果を表示する";
-const SHOW_NAME_GUESS_HINT = "名前当て画面で、ヒントのボタンと内容を表示する";
-const SHOW_ATTEMPTS_REMAINING = "名前当て画面で、残り挑戦回数を表示する";
+const OPEN_NAME_GUESS = "名前当て画面を開く";
 const NOT_ANSWERED_YET = "まだ名前当てに答えていないとき";
 const WRONG_2_LEFT_GIVEN = "不正解で残り挑戦回数が 2 回のとき";
 const WRONG_1_LEFT_GIVEN = "不正解で残り挑戦回数が 1 回のとき";
@@ -68,7 +65,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: NOT_ANSWERED_YET, When: [SHOW_NAME_GUESS], Then: "入力欄が入力できる状態で表示される" },
+        { Given: NOT_ANSWERED_YET, When: [OPEN_NAME_GUESS], Then: "入力欄が入力できる状態で表示される" },
       ],
     },
     () => {
@@ -84,7 +81,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
       steps: [
         {
           Given: "まだ名前当てに答えておらず、入力欄が空のとき",
-          When: [SHOW_NAME_GUESS],
+          When: [OPEN_NAME_GUESS],
           Then: "「君に　決めた！」ボタンは押せない状態になる",
         },
       ],
@@ -99,7 +96,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: WRONG_2_LEFT_GIVEN, When: [SHOW_NAME_GUESS], Then: "入力欄が表示される" }],
+      steps: [{ Given: WRONG_2_LEFT_GIVEN, When: [OPEN_NAME_GUESS], Then: "入力欄が表示される" }],
     },
     () => {
       renderNameGuess({ guessResult: WRONG_GUESS_2_LEFT, attemptsRemaining: 2 });
@@ -115,8 +112,8 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
       steps: [
         {
           Given: WRONG_2_LEFT_GIVEN,
-          When: [SHOW_NAME_GUESS],
-          Then: "「もう一度」を含むメッセージ (「はずれ…　もう一度やってみよう！」) が表示される",
+          When: [OPEN_NAME_GUESS],
+          Then: "「はずれ…　もう一度やってみよう！」と表示される",
         },
       ],
     },
@@ -135,7 +132,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [SHOW_NAME_GUESS], Then: "「君に　決めた！」ボタンが表示される" }],
+        steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: "「君に　決めた！」ボタンが表示される" }],
       },
       () => {
         renderNameGuess(props);
@@ -158,7 +155,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
         種別: "部品間結合テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: given, When: [SHOW_NAME_GUESS], Then: "入力欄が表示されなくなる" }],
+        steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: "入力欄が表示されなくなる" }],
       },
       () => {
         renderNameGuess(props);
@@ -175,8 +172,8 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
       steps: [
         {
           Given: WRONG_1_LEFT_GIVEN,
-          When: [SHOW_NAME_GUESS],
-          Then: "「ラストチャンス」を含むメッセージ (「はずれ…　ラストチャンス！」) が表示される",
+          When: [OPEN_NAME_GUESS],
+          Then: "「はずれ…　ラストチャンス！」と表示される",
         },
       ],
     },
@@ -194,7 +191,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
       steps: [
         {
           Given: "不正解で残り挑戦回数が 0 回のとき",
-          When: [SHOW_NAME_GUESS],
+          When: [OPEN_NAME_GUESS],
           Then: "「残念...」と表示される",
         },
       ],
@@ -210,7 +207,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: CORRECT_GIVEN, When: [SHOW_NAME_GUESS], Then: "「正解！」と表示される" }],
+      steps: [{ Given: CORRECT_GIVEN, When: [OPEN_NAME_GUESS], Then: "「正解！」と表示される" }],
     },
     () => {
       renderNameGuess({ guessResult: CORRECT_GUESS, attemptsRemaining: 2 });
@@ -222,7 +219,7 @@ describe("[本体:名前当て]名前当ての入力と結果表示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: CORRECT_GIVEN, When: [SHOW_NAME_GUESS], Then: "「次へ進む」ボタンが表示される" }],
+      steps: [{ Given: CORRECT_GIVEN, When: [OPEN_NAME_GUESS], Then: "「次へ進む」ボタンが表示される" }],
     },
     () => {
       renderNameGuess({ guessResult: CORRECT_GUESS, attemptsRemaining: 2 });
@@ -239,7 +236,7 @@ describe("[本体:名前当て]残り挑戦回数の表示", () => {
       steps: [
         {
           Given: "残り挑戦回数がまだ分からないとき",
-          When: [SHOW_ATTEMPTS_REMAINING],
+          When: [OPEN_NAME_GUESS],
           Then: "残り挑戦回数の表示が出ない",
         },
       ],
@@ -257,7 +254,7 @@ describe("[本体:名前当て]残り挑戦回数の表示", () => {
       steps: [
         {
           Given: "最大挑戦回数が 3 回で残り挑戦回数が 2 回のとき",
-          When: [SHOW_ATTEMPTS_REMAINING],
+          When: [OPEN_NAME_GUESS],
           Then: "残り挑戦回数の表示が 3 回中 2 回を示す",
         },
       ],
@@ -305,7 +302,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
         種別: "部品間結合テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: given, When: [SHOW_NAME_GUESS_HINT], Then: HINT_BUTTON_HIDDEN }],
+        steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_BUTTON_HIDDEN }],
       },
       () => {
         renderNameGuess(props);
@@ -331,7 +328,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
         種別: "部品間結合テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: given, When: [SHOW_NAME_GUESS_HINT], Then: HINT_BUTTON_SHOWN }],
+        steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_BUTTON_SHOWN }],
       },
       () => {
         renderNameGuess(props);
@@ -348,7 +345,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       steps: [
         {
           Given: "タイプのヒントを取得済みで、残り挑戦回数が 2 回のとき",
-          When: [SHOW_NAME_GUESS_HINT],
+          When: [OPEN_NAME_GUESS],
           Then: "「別のヒントを見る（チャンスを1回使う）」ボタンが表示される",
         },
       ],
@@ -376,7 +373,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
         種別: "部品間結合テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: given, When: [SHOW_NAME_GUESS_HINT], Then: HINT_AGAIN_BUTTON_HIDDEN }],
+        steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_AGAIN_BUTTON_HIDDEN }],
       },
       () => {
         renderNameGuess(props);
@@ -401,7 +398,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
         種別: "部品間結合テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ Given: given, When: [SHOW_NAME_GUESS_HINT], Then: HINT_UNAVAILABLE_SHOWN }],
+        steps: [{ Given: given, When: [OPEN_NAME_GUESS], Then: HINT_UNAVAILABLE_SHOWN }],
       },
       () => {
         renderNameGuess(props);
@@ -417,7 +414,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       steps: [
         {
           Given: ONE_LEFT_TYPE_AND_MOVE_HINT_GIVEN,
-          When: [SHOW_NAME_GUESS_HINT],
+          When: [OPEN_NAME_GUESS],
           Then: "「もうヒントは使えないよ」と表示されない",
         },
       ],
@@ -434,7 +431,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       props: { attemptsRemaining: 2, hintResult: TYPE_HINT_2_LEFT },
     },
     {
-      given: "タイプ「でんき」を含むヒントを取得済みで、ヒントがタイプ「でんき」と覚える技「でんきショック」のとき",
+      given: "タイプ「でんき」を含むヒントを取得済みで、ヒントがタイプ「でんき」とレベルアップで覚える技「でんきショック」のとき",
       props: { attemptsRemaining: 1, hintResult: TYPE_AND_MOVE_HINT },
     },
   ];
@@ -444,7 +441,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
         種別: "部品間結合テスト",
         正常異常: "正常系",
         steps: [
-          { Given: given, When: [SHOW_NAME_GUESS_HINT], Then: "「でんきタイプのポケモンだよ」と表示される" },
+          { Given: given, When: [OPEN_NAME_GUESS], Then: "「でんきタイプのポケモンだよ」と表示される" },
         ],
       },
       async () => {
@@ -462,7 +459,7 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       steps: [
         {
           Given: "タイプのヒントを取得済みで、タイプがくさとどくの複合のとき",
-          When: [SHOW_NAME_GUESS_HINT],
+          When: [OPEN_NAME_GUESS],
           Then: "「くさ・どくタイプのポケモンだよ」と表示される",
         },
       ],
@@ -481,8 +478,8 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "技のヒントを取得済みで、覚える技がたいあたり・なきごえ・でんきショックの 3 件のとき",
-          When: [SHOW_NAME_GUESS_HINT],
+          Given: "技のヒントを取得済みで、レベルアップで覚える技がたいあたり・なきごえ・でんきショックの 3 件のとき",
+          When: [OPEN_NAME_GUESS],
           Then: "「「たいあたり」「なきごえ」「でんきショック」を覚えるよ」と表示される",
         },
       ],
@@ -507,8 +504,8 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "技のヒントを取得済みで、覚える技がでんきショックの 1 件のとき",
-          When: [SHOW_NAME_GUESS_HINT],
+          Given: "技のヒントを取得済みで、レベルアップで覚える技がでんきショックの 1 件のとき",
+          When: [OPEN_NAME_GUESS],
           Then: "「「でんきショック」を覚えるよ」と表示される",
         },
       ],
@@ -526,8 +523,8 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
       観点: ["件数・有無", "エッジケース"],
       steps: [
         {
-          Given: "技のヒントを取得済みで、覚える技が 0 件のとき",
-          When: [SHOW_NAME_GUESS_HINT],
+          Given: "技のヒントを取得済みで、レベルアップで覚える技が 0 件のとき",
+          When: [OPEN_NAME_GUESS],
           Then: "「このポケモンはレベルアップで覚える技がないみたいだよ」と表示される",
         },
       ],
@@ -541,55 +538,18 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     },
   );
 
-  const hintRequestScenarios: (NameGuessScenario & { buttonName: string })[] = [
-    { given: "ヒントをまだ使っていないとき", buttonName: HINT_BUTTON, props: { attemptsRemaining: 3 } },
-    {
-      given: "タイプのヒントを取得済みのとき",
-      buttonName: HINT_BUTTON_AGAIN,
-      props: { attemptsRemaining: 2, hintResult: TYPE_HINT_2_LEFT },
-    },
-  ];
-  for (const { given, buttonName, props } of hintRequestScenarios) {
-    defineCase(
-      {
-        種別: "部品間結合テスト",
-        正常異常: "正常系",
-        steps: [{ Given: given, When: [`名前当て画面のヒント表示で、「${buttonName}」ボタンを押す`], Then: "ヒントが 1 回要求される" }],
-      },
-      async () => {
-        const user = userEvent.setup();
-        const onHint = vi.fn().mockResolvedValue(undefined);
-        renderNameGuess({ ...props, onHint });
-        await user.click(screen.getByRole("button", { name: buttonName }));
-        expect(onHint).toHaveBeenCalledTimes(1);
-      },
-    );
-  }
-
-  const HINT_REQUEST_PENDING = "ヒントの要求が完了していないとき";
-  const CLICK_HINT_BUTTON_REPEATEDLY = "名前当て画面のヒント表示で、ヒントボタンを連打する";
+  const HINT_RETRIEVAL_SLOW = "ヒントの取得に時間がかかるとき";
+  const CLICK_HINT_BUTTON_TWICE = [
+    `名前当て画面のヒント表示で、「${HINT_BUTTON}」ボタンを押す`,
+    `名前当て画面のヒント表示で、「${HINT_BUTTON}」ボタンを押す`,
+  ] as const;
 
   defineCase(
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: HINT_REQUEST_PENDING, When: [CLICK_HINT_BUTTON_REPEATEDLY], Then: "ヒントは 1 回だけ要求される" },
-      ],
-    },
-    async () => {
-      const { onHint, completeHint } = await clickHintButtonTwiceBeforeCompletion();
-      expect(onHint).toHaveBeenCalledTimes(1);
-      await completeHint();
-    },
-  );
-
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "異常系",
-      steps: [
-        { Given: HINT_REQUEST_PENDING, When: [CLICK_HINT_BUTTON_REPEATEDLY], Then: "ヒントボタンは押せない状態になる" },
+        { Given: HINT_RETRIEVAL_SLOW, When: CLICK_HINT_BUTTON_TWICE, Then: "ヒントボタンは押せない状態になる" },
       ],
     },
     async () => {

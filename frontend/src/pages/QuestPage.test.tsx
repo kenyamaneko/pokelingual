@@ -18,30 +18,42 @@ const PROCEED_BUTTON = "次へ進む";
 const CORRECT_TITLE = "正解！";
 const NEXT_QUEST_BUTTON = "次のポケモンを探す";
 
-const OPEN_QUEST_SCREEN = "クエスト画面を開いて、場所の選択を表示する";
-const SELECT_PLACE = "場所選択画面で、場所「テスト草原」を選ぶ";
-const SELECT_PLACE_FOR_SIGN =
-  "場所選択画面で場所「テスト草原」を選んで、伝説・幻の気配演出の表示先である翻訳画面を開く";
-const PRESS_HINT = "名前当て画面で「ヒントを見る（チャンスを1回使う）」を押す";
-const PRESS_HINT_AGAIN = "名前当て画面で、もう一度「ヒントを見る（チャンスを1回使う）」を押す";
-const PRESS_SKIP = "名前当て画面で「わからないのでスキップ →」を押す";
-const PRESS_SKIP_TO_DECIDE_BALL =
-  "名前当て画面で、捕獲に使うボールを決めるために「わからないのでスキップ →」を押す";
-const PRESS_PROCEED = "名前当て画面で、捕獲に進むために「次へ進む」を押す";
-const SUBMIT_NAME_BULBASAUR = "名前当て画面で、名前の判定のために名前「Bulbasaur」を送信する";
-const SUBMIT_NAME_BULBASAUR_AGAIN = "名前当て画面で、名前の判定のために、もう一度名前「Bulbasaur」を送信する";
-const HINT_FAILED_ONCE = "ヒント要求がサーバーエラー (500) で失敗するとき";
-const HINT_FAILURE_MESSAGE = "名前当て画面に「ヒントの取得に失敗しました」が表示される";
-const HINT_FAILURE_GONE = "「ヒントの取得に失敗しました」が表示されなくなる";
-const SECOND_HINT_SUCCEEDS = "2 回目のヒント要求の応答がタイプ「でんき」のとき";
-const SECOND_HINT_FAILS_TO_CONNECT = "2 回目のヒント要求が通信に失敗するとき";
-const NAME_GUESS_FAILED_ONCE = "名前の判定の 1 回目の送信がサーバーエラー (500) で失敗するとき";
+const OPEN_QUEST_SCREEN = "クエスト画面を開く";
+const LONG_SCENARIO_TIMEOUT_MS = 15000;
+const SELECT_PLACE = "場所選択画面で「木漏れ日の森」を選ぶ";
+const PRESS_TRANSLATION_SUBMIT = "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す";
+const PRESS_NAME_SUBMIT = "名前当て画面の名前の入力で、「君に　決めた！」ボタンを押す";
+const PRESS_HINT = "名前当て画面のヒントで、「ヒントを見る（チャンスを1回使う）」ボタンを押す";
+const PRESS_ANOTHER_HINT = "名前当て画面のヒントで、「別のヒントを見る（チャンスを1回使う）」ボタンを押す";
+const PRESS_SKIP = "名前当て画面のスキップで、「わからないのでスキップ →」ボタンを押す";
+const PRESS_PROCEED = "名前当て画面の名前の判定で、「次へ進む」ボタンを押す";
+const PRESS_NEXT_QUEST = "捕獲結果画面の次のポケモンの出題で、「次のポケモンを探す」ボタンを押す";
+const SUBMIT_NAME_BULBASAUR = submitNameOperations("Bulbasaur");
+const SERVER_ERROR = "バックエンドでエラーが起きているとき";
+const BACKEND_RECOVERED_WITH_ELECTRIC_HINT = "バックエンドが正常に動作していて、出題されたポケモンのタイプが「でんき」のとき";
+const BACKEND_UNREACHABLE = "バックエンドに接続できないとき";
+const BACKEND_SKIP_ACCEPTED = "バックエンドが正常に動作していて、確定するボールがモンスターボールのとき";
+const HINT_FAILURE_MESSAGE = "「ヒントの取得に失敗しました」を含むメッセージが表示される";
+const HINT_FAILURE_GONE = "「ヒントの取得に失敗しました」を含むメッセージが表示されなくなる";
 const NAME_GUESS_FAILURE_MESSAGE = "「名前の判定に失敗しました」を含むメッセージが表示される";
-const SECOND_NAME_GUESS_CORRECT = "2 回目の送信が英語名として正解と判定されるとき";
-const SESSION_EXPIRED_SCORING = "採点の送信がセッション切れ (404) で失敗するとき";
+const NAME_GUESS_FAILURE_GONE = "「名前の判定に失敗しました」を含むメッセージが表示されなくなる";
+const SECOND_NAME_GUESS_CORRECT = "バックエンドが正常に動作していて、出題されたポケモンの英語名が「Bulbasaur」のとき";
+const SESSION_EXPIRED = "セッションが切れているとき";
 const SESSION_EXPIRED_MESSAGE = "「セッションが切断されました」を含むメッセージが表示される";
-const AT_NAME_GUESS_SCREEN = "翻訳の採点が済み、名前当て画面に進んでいる";
-const LEGENDARY_SIGN = "「ただならない　気配を感じる...」と表示される";
+const AT_NAME_GUESS_SCREEN = "翻訳の採点が済み、名前当て画面に進んでいて";
+const LEGENDARY_SIGN = "翻訳画面に、「ただならない　気配を感じる...」と表示される";
+
+function enterTranslationOperation(translation: string): string {
+  return `クエスト画面の翻訳の入力欄に「${translation}」と入力する`;
+}
+
+function submitNameOperations(name: string): [string, string] {
+  return [`名前当て画面の名前の入力で、入力欄に「${name}」と入力する`, PRESS_NAME_SUBMIT];
+}
+
+function pressBallUseButtonOperation(ballName: string): string {
+  return `捕獲待機画面の捕獲に使うボールで、「${ballName}を　使う」ボタンを押す`;
+}
 
 type UserSession = ReturnType<typeof userEvent.setup>;
 
@@ -50,8 +62,8 @@ type UserSession = ReturnType<typeof userEvent.setup>;
  * @param user userEvent のセッション。
  */
 async function startQuestAndSubmitTranslation(user: UserSession): Promise<void> {
-  await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
-  await user.type(await screen.findByRole("textbox"), "やくぶん");
+  await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
+  await user.type(await screen.findByRole("textbox"), "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
   await user.click(screen.getByRole("button", { name: TRANSLATION_SUBMIT_BUTTON }));
 }
 
@@ -62,9 +74,9 @@ describe("[本体:クエスト]場所の選択", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "場所の候補が「テスト草原」の 1 件のとき",
+          Given: "場所の候補が「木漏れ日の森」の 1 件のとき",
           When: [OPEN_QUEST_SCREEN],
-          Then: "場所選択画面に、「どこに　ポケモンを　探しに行く？」の見出しが表示される",
+          Then: "場所選択画面に、見出し「どこに　ポケモンを　探しに行く？」が表示される",
         },
       ],
     },
@@ -83,9 +95,9 @@ describe("[本体:クエスト]場所の選択", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "場所の候補が「テスト草原」の 1 件のとき",
+          Given: "場所の候補が「木漏れ日の森」の 1 件のとき",
           When: [OPEN_QUEST_SCREEN],
-          Then: "場所選択画面に、「テスト草原」のボタンが表示される",
+          Then: "場所選択画面に、「木漏れ日の森」ボタンが表示される",
         },
       ],
     },
@@ -93,7 +105,7 @@ describe("[本体:クエスト]場所の選択", () => {
       renderWithProviders(<QuestPage />, { withRouter: true });
 
       expect(
-        await screen.findByRole("button", { name: /テスト草原/ }),
+        await screen.findByRole("button", { name: /木漏れ日の森/ }),
       ).toBeInTheDocument();
     },
   );
@@ -107,25 +119,19 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       steps: [
         {
           Given:
-            "1 回目の出題の英文が「The first wild creature.」、2 回目の出題の英文が「A second wild creature.」で、名前の判定が「ピカチュウ」だけを正解とし、捕獲が成功するとき",
-          When: [OPEN_QUEST_SCREEN, SELECT_PLACE],
-          Then: "出題の英文「The first wild creature.」が表示される",
-        },
-        {
-          When: ["翻訳画面で、出題の英文への翻訳「さいしょのやくぶん」を送信する"],
-          Then: "翻訳「さいしょのやくぶん」が表示される",
-        },
-        {
-          When: ["名前当て画面で、出題されたポケモンの名前「ピカチュウ」を答える"],
-          Then: "「正解！」が表示される",
-        },
-        {
-          When: [PRESS_PROCEED, "捕獲待機画面で、捕獲に使うボールとして「ハイパーボール」を使う"],
-          Then: "「やったー！　ピカチュウを　捕まえたぞ！」が表示される",
-        },
-        {
-          When: ["捕獲結果画面で、次の出題に進むために「次のポケモンを探す」を押す", SELECT_PLACE],
-          Then: "2 回目の出題の英文「A second wild creature.」が表示される",
+            "1 回目の出題の英文が「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、2 回目の出題の英文が「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」で、出題されたポケモンの名前が「ピカチュウ」で、捕獲の抽選が必ず成功するとき",
+          When: [
+            OPEN_QUEST_SCREEN,
+            SELECT_PLACE,
+            enterTranslationOperation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"),
+            PRESS_TRANSLATION_SUBMIT,
+            ...submitNameOperations("ピカチュウ"),
+            PRESS_PROCEED,
+            pressBallUseButtonOperation("ハイパーボール"),
+            PRESS_NEXT_QUEST,
+            SELECT_PLACE,
+          ],
+          Then: "2 回目の出題の英文「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」が表示される",
         },
       ],
     },
@@ -157,14 +163,14 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
           return HttpResponse.json({
             pokemon_id: newQuestCall === 1 ? 25 : 4,
             description_en:
-              newQuestCall === 1 ? "The first wild creature." : "A second wild creature.",
+              newQuestCall === 1 ? "When several of these Pokémon gather, their electricity could build and cause lightning storms." : "The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.",
             is_legendary: false,
             is_mythical: false,
             max_guess_attempts: 3,
           });
         }),
         http.post(apiUrl("/quest/score"), () =>
-          HttpResponse.json({ score: 80, review: "いいね", description_ja: "テストの せつめい" }),
+          HttpResponse.json({ score: 80, review: "雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。", description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。" }),
         ),
         http.post(apiUrl("/quest/guess-name"), async ({ request }) => {
           const { guess } = (await request.json()) as { guess: string };
@@ -179,15 +185,15 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
 
       renderWithProviders(<QuestPage />, { withRouter: true });
 
-      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
 
       const translationBox = await screen.findByRole("textbox");
       // タイプライター演出で全文表示まで実時間がかかるため、既定の待機時間 (1000ms) を延長する。
-      await screen.findByText(/The first wild creature\./, {}, { timeout: 3000 });
+      await screen.findByText(/When several of these Pokémon gather, their electricity could build and cause lightning storms\./, {}, { timeout: 3000 });
 
-      await user.type(translationBox, "さいしょのやくぶん");
+      await user.type(translationBox, "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
       await user.click(screen.getByRole("button", { name: TRANSLATION_SUBMIT_BUTTON }));
-      expect(await screen.findByText("さいしょのやくぶん")).toBeInTheDocument();
+      expect(await screen.findByText("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある")).toBeInTheDocument();
 
       await user.type(screen.getByRole("textbox"), "ピカチュウ");
       await user.click(screen.getByRole("button", { name: NAME_SUBMIT_BUTTON }));
@@ -205,11 +211,12 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole("button", { name: NEXT_QUEST_BUTTON }));
-      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
       expect(
-        await screen.findByText(/A second wild creature\./, {}, { timeout: 3000 }),
+        await screen.findByText(/The flame on its tail indicates this Pokémon’s life force\. If it is healthy, the flame burns brightly\./, {}, { timeout: 3000 }),
       ).toBeInTheDocument();
     },
+    LONG_SCENARIO_TIMEOUT_MS,
   );
 });
 
@@ -219,14 +226,14 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       http.get(apiUrl("/quest/new"), () =>
         HttpResponse.json({
           pokemon_id: 25,
-          description_en: "A wild creature.",
+          description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
           is_legendary: false,
           is_mythical: false,
           max_guess_attempts: 3,
         }),
       ),
       http.post(apiUrl("/quest/score"), () =>
-        HttpResponse.json({ score: 50, review: "", description_ja: "せつめい" }),
+        HttpResponse.json({ score: 50, review: "", description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。" }),
       ),
     );
   }
@@ -300,6 +307,18 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     await user.click(screen.getByRole("button", { name: HINT_BUTTON }));
   }
 
+  async function pressHintButtonWhileUnreachable() {
+    const user = userEvent.setup();
+    server.use(
+      http.post(apiUrl("/quest/hint"), () => HttpResponse.error()),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await startQuestAndSubmitTranslation(user);
+
+    await user.click(await screen.findByRole("button", { name: HINT_BUTTON }));
+  }
+
   async function skipNameGuessAfterHintFailure() {
     const user = userEvent.setup();
     server.use(
@@ -316,10 +335,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     await user.click(await screen.findByRole("button", { name: SKIP_BUTTON }));
   }
 
-  const HINT_ELECTRIC_WITH_TWO_REMAINING =
-    "名前当ての最大挑戦回数が 3 回で、ヒント要求の応答がタイプ「でんき」と残り挑戦回数 2 回のとき";
+  const HINT_ELECTRIC_WITH_TWO_REMAINING = "名前当ての最大挑戦回数が 3 回で、出題されたポケモンのタイプが「でんき」のとき";
   const HINT_ELECTRIC_THEN_MOVES =
-    "名前当ての最大挑戦回数が 3 回で、1 回目のヒント要求の応答がタイプ「でんき」と残り挑戦回数 2 回、2 回目の応答が技「たいあたり」「なきごえ」「でんきショック」と残り挑戦回数 1 回のとき";
+    "名前当ての最大挑戦回数が 3 回で、出題されたポケモンのタイプが「でんき」、レベルアップで覚える技が「たいあたり」「なきごえ」「でんきショック」のとき";
 
   defineCase(
     {
@@ -370,8 +388,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: HINT_ELECTRIC_THEN_MOVES,
-          When: [PRESS_HINT, "名前当て画面で「別のヒントを見る（チャンスを1回使う）」を押す"],
-          Then: "ヒントで返された技「たいあたり」「なきごえ」「でんきショック」が、「「たいあたり」「なきごえ」「でんきショック」を覚えるよ」の形で表示される",
+          When: [PRESS_HINT, PRESS_ANOTHER_HINT],
+          Then: "『「たいあたり」「なきごえ」「でんきショック」を覚えるよ』と表示される",
         },
       ],
     },
@@ -391,7 +409,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       steps: [
         {
           Given: HINT_ELECTRIC_THEN_MOVES,
-          When: [PRESS_HINT, "名前当て画面で「別のヒントを見る（チャンスを1回使う）」を押す"],
+          When: [PRESS_HINT, PRESS_ANOTHER_HINT],
           Then: "名前当て画面の残り挑戦回数が 1 回になる",
         },
       ],
@@ -414,9 +432,9 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: HINT_FAILED_ONCE,
+          Given: SERVER_ERROR,
           When: [PRESS_HINT],
-          Then: "「ヒントの取得に失敗しました」を含むメッセージが表示される",
+          Then: HINT_FAILURE_MESSAGE,
         },
       ],
     },
@@ -434,7 +452,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: HINT_FAILED_ONCE,
+          Given: SERVER_ERROR,
           When: [PRESS_HINT],
           Then: "名前当て画面に、「ヒントを見る（チャンスを1回使う）」ボタンが表示されたままになる",
         },
@@ -455,14 +473,14 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
-          Given: "1 回目のヒント要求がサーバーエラー (500) で失敗するとき",
+          Given: SERVER_ERROR,
           When: [PRESS_HINT],
           Then: HINT_FAILURE_MESSAGE,
         },
         {
-          Given: SECOND_HINT_SUCCEEDS,
-          When: [PRESS_HINT_AGAIN],
-          Then: "「でんきタイプのポケモンだよ」が表示される",
+          Given: BACKEND_RECOVERED_WITH_ELECTRIC_HINT,
+          When: [PRESS_HINT],
+          Then: "「でんきタイプのポケモンだよ」と表示される",
         },
       ],
     },
@@ -482,60 +500,18 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "1 回目のヒント要求がサーバーエラー (500) で失敗するとき",
+          Given: BACKEND_UNREACHABLE,
           When: [PRESS_HINT],
-          Then: HINT_FAILURE_MESSAGE,
-        },
-        {
-          Given: SECOND_HINT_FAILS_TO_CONNECT,
-          When: [PRESS_HINT_AGAIN],
           Then: "「接続できません」を含むメッセージが表示される",
         },
       ],
     },
     async () => {
-      await pressHintButtonAgainAfterFailure(() => HttpResponse.error());
+      await pressHintButtonWhileUnreachable();
 
       expect(await screen.findByText(/接続できません/)).toBeInTheDocument();
     },
   );
-
-  for (const { given, secondResponse, expectedText, viewpoints } of [
-    {
-      given: SECOND_HINT_SUCCEEDS,
-      secondResponse: () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
-      expectedText: "でんきタイプのポケモンだよ",
-      viewpoints: ["外部依存の失敗", "回復確認"] as const,
-    },
-    {
-      given: SECOND_HINT_FAILS_TO_CONNECT,
-      secondResponse: () => HttpResponse.error(),
-      expectedText: "接続できません",
-      viewpoints: ["外部依存の失敗"] as const,
-    },
-  ]) {
-    defineCase(
-      {
-        種別: "部品間結合テスト",
-        正常異常: "異常系",
-        観点: viewpoints,
-        steps: [
-          {
-            Given: "1 回目のヒント要求がサーバーエラー (500) で失敗するとき",
-            When: [PRESS_HINT],
-            Then: HINT_FAILURE_MESSAGE,
-          },
-          { Given: given, When: [PRESS_HINT_AGAIN], Then: HINT_FAILURE_GONE },
-        ],
-      },
-      async () => {
-        await pressHintButtonAgainAfterFailure(secondResponse);
-
-        await screen.findByText(new RegExp(expectedText));
-        expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
-      },
-    );
-  }
 
   defineCase(
     {
@@ -544,11 +520,56 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
-          Given: "ヒント要求がサーバーエラー (500) で失敗するとき",
+          Given: SERVER_ERROR,
           When: [PRESS_HINT],
           Then: HINT_FAILURE_MESSAGE,
         },
-        { When: [PRESS_SKIP], Then: "捕獲待機画面に「モンスターボールを　手に　入れた！」が表示される" },
+        { Given: BACKEND_RECOVERED_WITH_ELECTRIC_HINT, When: [PRESS_HINT], Then: HINT_FAILURE_GONE },
+      ],
+    },
+    async () => {
+      await pressHintButtonAgainAfterFailure(() =>
+        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+      );
+
+      await screen.findByText(/でんきタイプのポケモンだよ/);
+      expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      観点: ["外部依存の失敗"],
+      steps: [
+        {
+          Given: "名前当て画面に「ヒントの取得に失敗しました」を含むメッセージが表示されていて、バックエンドに接続できないとき",
+          When: [PRESS_HINT],
+          Then: HINT_FAILURE_GONE,
+        },
+      ],
+    },
+    async () => {
+      await pressHintButtonAgainAfterFailure(() => HttpResponse.error());
+
+      await screen.findByText(/接続できません/);
+      expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
+      steps: [
+        {
+          Given: SERVER_ERROR,
+          When: [PRESS_HINT],
+          Then: HINT_FAILURE_MESSAGE,
+        },
+        { Given: BACKEND_SKIP_ACCEPTED, When: [PRESS_SKIP], Then: "捕獲待機画面に「モンスターボールを　手に　入れた！」と表示される" },
       ],
     },
     async () => {
@@ -567,11 +588,11 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
-          Given: "ヒント要求がサーバーエラー (500) で失敗するとき",
+          Given: SERVER_ERROR,
           When: [PRESS_HINT],
           Then: HINT_FAILURE_MESSAGE,
         },
-        { When: [PRESS_SKIP], Then: HINT_FAILURE_GONE },
+        { Given: BACKEND_SKIP_ACCEPTED, When: [PRESS_SKIP], Then: HINT_FAILURE_GONE },
       ],
     },
     async () => {
@@ -616,8 +637,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "名前の判定の送信がサーバーエラー (500) で失敗するとき",
-          When: [SUBMIT_NAME_BULBASAUR],
+          Given: SERVER_ERROR,
+          When: SUBMIT_NAME_BULBASAUR,
           Then: NAME_GUESS_FAILURE_MESSAGE,
         },
       ],
@@ -634,8 +655,8 @@ describe("[本体:名前当て]名前当ての判定", () => {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: NAME_GUESS_FAILED_ONCE, When: [SUBMIT_NAME_BULBASAUR], Then: NAME_GUESS_FAILURE_MESSAGE },
-        { Given: SECOND_NAME_GUESS_CORRECT, When: [SUBMIT_NAME_BULBASAUR_AGAIN], Then: "「正解！」と表示される" },
+        { Given: SERVER_ERROR, When: SUBMIT_NAME_BULBASAUR, Then: NAME_GUESS_FAILURE_MESSAGE },
+        { Given: SECOND_NAME_GUESS_CORRECT, When: SUBMIT_NAME_BULBASAUR, Then: "「正解！」と表示される" },
       ],
     },
     async () => {
@@ -651,11 +672,11 @@ describe("[本体:名前当て]名前当ての判定", () => {
       種別: "部品間結合テスト",
       正常異常: "異常系",
       steps: [
-        { Given: NAME_GUESS_FAILED_ONCE, When: [SUBMIT_NAME_BULBASAUR], Then: NAME_GUESS_FAILURE_MESSAGE },
+        { Given: SERVER_ERROR, When: SUBMIT_NAME_BULBASAUR, Then: NAME_GUESS_FAILURE_MESSAGE },
         {
           Given: SECOND_NAME_GUESS_CORRECT,
-          When: [SUBMIT_NAME_BULBASAUR_AGAIN],
-          Then: "「名前の判定に失敗しました」が表示されなくなる",
+          When: SUBMIT_NAME_BULBASAUR,
+          Then: NAME_GUESS_FAILURE_GONE,
         },
       ],
     },
@@ -758,8 +779,8 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
           name_ja: "フシギダネ",
           sprite_url: "https://example.com/1.png",
           score: 80,
-          description_en: "x",
-          description_ja: "y",
+          description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+          description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
           base_stat_total: 318,
           ball_type: ballCase.ballType,
           types: ["grass", "poison"],
@@ -780,29 +801,27 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
 
   for (const { given, answerOperations, ballCase } of [
     {
-      given: `${AT_NAME_GUESS_SCREEN}とき`,
-      answerOperations: [PRESS_SKIP_TO_DECIDE_BALL],
+      given: "翻訳の採点が済み、名前当て画面に進んでいるとき",
+      answerOperations: [PRESS_SKIP],
       ballCase: SKIPPED_NAME_GUESS,
     },
     {
-      given: `${AT_NAME_GUESS_SCREEN}うえ、日本語名「フシギダネ」が正解と判定されるとき`,
-      answerOperations: ["名前当て画面で、捕獲に使うボールを決めるために日本語名「フシギダネ」を答える", PRESS_PROCEED],
+      given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの日本語名が「フシギダネ」のとき`,
+      answerOperations: [...submitNameOperations("フシギダネ"), PRESS_PROCEED],
       ballCase: CORRECT_JAPANESE_NAME_GUESS,
     },
     {
-      given: `${AT_NAME_GUESS_SCREEN}うえ、英語名「Bulbasaur」が正解と判定されるとき`,
-      answerOperations: ["名前当て画面で、捕獲に使うボールを決めるために英語名「Bulbasaur」を答える", PRESS_PROCEED],
+      given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの英語名が「Bulbasaur」のとき`,
+      answerOperations: [...SUBMIT_NAME_BULBASAUR, PRESS_PROCEED],
       ballCase: CORRECT_ENGLISH_NAME_GUESS,
     },
     {
-      given: `${AT_NAME_GUESS_SCREEN}うえ、英語名「Bulbasaur」が正解と判定され、マスターボールが確定するとき`,
-      answerOperations: ["名前当て画面で、捕獲に使うボールを決めるために英語名「Bulbasaur」を答える", PRESS_PROCEED],
+      given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの英語名が「Bulbasaur」で、マスターボールが確定するとき`,
+      answerOperations: [...SUBMIT_NAME_BULBASAUR, PRESS_PROCEED],
       ballCase: CORRECT_ENGLISH_NAME_GUESS_WITH_MASTER_BALL,
     },
   ] as const) {
-    const useButtonLabel = `「${ballCase.ballName}を　使う」ボタン`;
-
-    defineCase(
+        defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
@@ -810,7 +829,7 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
           {
             Given: given,
             When: answerOperations,
-            Then: `捕獲待機画面に${useButtonLabel}が表示される`,
+            Then: `捕獲待機画面に、「${ballCase.ballName}を　使う」ボタンが表示される`,
           },
         ],
       },
@@ -826,7 +845,7 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
         steps: [
           {
             Given: given,
-            When: [...answerOperations, `捕獲待機画面で、捕獲に使うボールとして${useButtonLabel}を押す`],
+            When: [...answerOperations, pressBallUseButtonOperation(ballCase.ballName)],
             Then: `捕獲演出に${ballCase.ballName}が表示される`,
           },
         ],
@@ -843,9 +862,9 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${AT_NAME_GUESS_SCREEN}うえ、英語名「Bulbasaur」が正解と判定され、マスターボールが確定するとき`,
-          When: ["名前当て画面で、捕獲に使うボールを決めるために英語名「Bulbasaur」を答える", PRESS_PROCEED],
-          Then: "博士の「今こそ　このボールを　使うときだ！」が表示される",
+          Given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの英語名が「Bulbasaur」で、マスターボールが確定するとき`,
+          When: [...SUBMIT_NAME_BULBASAUR, PRESS_PROCEED],
+          Then: "博士のセリフ「今こそ　このボールを　使うときだ！」が表示される",
         },
       ],
     },
@@ -880,7 +899,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     return user;
   }
 
-  const SUBMIT_TRANSLATION = "場所選択画面で場所を選び、翻訳画面で採点のために翻訳「やくぶん」を送信する";
+  const SUBMIT_TRANSLATION = [enterTranslationOperation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"), PRESS_TRANSLATION_SUBMIT] as const;
 
   defineCase(
     {
@@ -888,7 +907,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
       正常異常: "異常系",
       観点: ["外部依存の失敗"],
       steps: [
-        { Given: SESSION_EXPIRED_SCORING, When: [SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
+        { Given: SESSION_EXPIRED, When: [SELECT_PLACE, ...SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
       ],
     },
     async () => {
@@ -904,10 +923,11 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
       正常異常: "異常系",
       観点: ["外部依存の失敗", "回復確認"],
       steps: [
-        { Given: SESSION_EXPIRED_SCORING, When: [SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
+        { Given: SESSION_EXPIRED, When: [SELECT_PLACE, ...SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
         {
-          When: ["エラー画面で、セッション切れから回復するために「もう一度探す」を押す"],
-          Then: "場所選択画面に「テスト草原」のボタンが表示される",
+          Given: "場所の候補が「木漏れ日の森」の 1 件のとき",
+          When: ["エラー画面のセッション切れの表示で、「もう一度探す」ボタンを押す"],
+          Then: "場所選択画面に、「木漏れ日の森」ボタンが表示される",
         },
       ],
     },
@@ -918,7 +938,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
       await user.click(screen.getByRole("button", { name: /もう一度探す/ }));
 
       expect(
-        await screen.findByRole("button", { name: /テスト草原/ }),
+        await screen.findByRole("button", { name: /木漏れ日の森/ }),
       ).toBeInTheDocument();
     },
   );
@@ -926,14 +946,14 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
 
 describe("[本体:クエスト]伝説・幻の気配演出", () => {
   for (const { given, pokemonID, isLegendary, isMythical } of [
-    { given: "出題ポケモンが伝説のとき", pokemonID: 150, isLegendary: true, isMythical: false },
-    { given: "出題ポケモンが幻のとき", pokemonID: 151, isLegendary: false, isMythical: true },
+    { given: "出題されたポケモンが伝説のとき", pokemonID: 150, isLegendary: true, isMythical: false },
+    { given: "出題されたポケモンが幻のとき", pokemonID: 151, isLegendary: false, isMythical: true },
   ]) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [SELECT_PLACE_FOR_SIGN], Then: LEGENDARY_SIGN }],
+        steps: [{ Given: given, When: [SELECT_PLACE], Then: LEGENDARY_SIGN }],
       },
       async () => {
         const user = userEvent.setup();
@@ -941,7 +961,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
           http.get(apiUrl("/quest/new"), () =>
             HttpResponse.json({
               pokemon_id: pokemonID,
-              description_en: "A wild creature.",
+              description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
               is_legendary: isLegendary,
               is_mythical: isMythical,
               max_guess_attempts: 3,
@@ -950,7 +970,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
         );
 
         renderWithProviders(<QuestPage />, { withRouter: true });
-        await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+        await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
 
         expect(await screen.findByText(spec("ただならない　気配を感じる..."))).toBeInTheDocument();
       },
@@ -963,9 +983,9 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "出題ポケモンが伝説・幻のどちらでもないとき",
-          When: [SELECT_PLACE_FOR_SIGN],
-          Then: "「ただならない　気配を感じる...」と表示されない",
+          Given: "出題されたポケモンが伝説・幻のどちらでもないとき",
+          When: [SELECT_PLACE],
+          Then: "翻訳画面に、「ただならない　気配を感じる...」と表示されない",
         },
       ],
     },
@@ -975,7 +995,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
         http.get(apiUrl("/quest/new"), () =>
           HttpResponse.json({
             pokemon_id: 25,
-            description_en: "A wild creature.",
+            description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
             is_legendary: false,
             is_mythical: false,
             max_guess_attempts: 3,
@@ -984,7 +1004,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
       );
 
       renderWithProviders(<QuestPage />, { withRouter: true });
-      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
       await screen.findByTestId("quest-description");
 
       expect(screen.queryByText(spec("ただならない　気配を感じる..."))).not.toBeInTheDocument();

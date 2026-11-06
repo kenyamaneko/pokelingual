@@ -83,18 +83,36 @@ function makeService(o: ServiceOverrides = {}): PokedexService {
   return new PokedexService(repo, pokemonClient, settingsRepo);
 }
 
-const GET_POKEDEX = "図鑑画面を開くために、図鑑一覧を取得する";
-const GET_SEARCH_CANDIDATES = "設定画面の苦手ポケモン設定で、ポケモンの名前で探すために、名前検索の候補を取得する";
-const GET_POKEMON_DETAIL = "図鑑画面でポケモンの詳細を開くために、図鑑番号 1 の図鑑詳細を取得する";
+const GET_POKEDEX = "あるユーザーの図鑑一覧を取得する";
+const GET_SEARCH_CANDIDATES = "名前検索の候補を取得する";
+const GET_POKEMON_DETAIL = "図鑑番号 1 の図鑑詳細を取得する";
 
 const NO_RECORDS = "図鑑に記録が 1 件も無いとき";
-const SINGLE_RECORD = "図鑑番号 1 の記録 (捕獲済み・捕獲回数 2・最高スコア 90) が 1 件あるとき";
-const TWO_RECORDS =
-  "図鑑番号 1 (捕獲済み・捕獲回数 5・最高スコア 90) と図鑑番号 2 (未捕獲・捕獲回数 0・最高スコア 40) の記録があるとき";
+const SINGLE_RECORD = "図鑑番号 1 の記録が 1 件あるとき";
+const RECORD_CAPTURED = "図鑑番号 1 の記録が捕獲済みのとき";
+const RECORD_CAPTURE_COUNT = "図鑑番号 1 の記録の捕獲回数が 2 のとき";
+const RECORD_BEST_SCORE_90 = "図鑑番号 1 の記録の最高スコアが 90 のとき";
+const RECORD_ENGLISH_NAME = "図鑑番号 1 の記録があり、ポケモンデータの図鑑番号 1 の英語名が Bulbasaur のとき";
+const RECORD_JAPANESE_NAME = "図鑑番号 1 の記録があり、ポケモンデータの図鑑番号 1 の日本語名がフシギダネのとき";
+const RECORD_SPRITE_URL = "図鑑番号 1 の記録があり、ポケモンデータの図鑑番号 1 の画像の URL が https://example.com/1.png のとき";
+const TWO_RECORDS = "図鑑番号 1、2 の記録があるとき";
+const TWO_RECORDS_IN_ORDER = "図鑑番号 1、2 の順に記録されているとき";
+const TWO_RECORDS_ENGLISH_NAMES =
+  "図鑑番号 1、2 の順に記録されていて、ポケモンデータの図鑑番号 1、2 の英語名が Bulbasaur、Ivysaur のとき";
+const TWO_RECORDS_JAPANESE_NAMES =
+  "図鑑番号 1、2 の順に記録されていて、ポケモンデータの図鑑番号 1、2 の日本語名がフシギダネ、フシギソウのとき";
+const TWO_RECORDS_SPRITE_URLS =
+  "図鑑番号 1、2 の順に記録されていて、ポケモンデータの図鑑番号 1、2 の画像の URL が https://example.com/1.png、https://example.com/2.png のとき";
+const TWO_RECORDS_STATUS =
+  "図鑑番号 1 が捕獲済み、図鑑番号 2 が未捕獲で、図鑑番号 1、2 の順に記録されているとき";
+const TWO_RECORDS_CAPTURE_COUNT =
+  "図鑑番号 1 の捕獲回数が 5、図鑑番号 2 の捕獲回数が 0 で、図鑑番号 1、2 の順に記録されているとき";
+const TWO_RECORDS_BEST_SCORE =
+  "図鑑番号 1 の最高スコアが 90、図鑑番号 2 の最高スコアが 40 で、図鑑番号 1、2 の順に記録されているとき";
 const THREE_RECORDS_WITH_SECOND_EXCLUDED =
   "図鑑番号 1、2、3 の記録があり、図鑑番号 2 を除外ポケモンに設定しているとき";
-const SECOND_UNREADABLE = "図鑑番号 1、2、3 の記録があり、図鑑番号 2 のポケモンの名前・画像を読み込めないとき";
-const ALL_UNREADABLE = "図鑑番号 1、2 の記録があり、どちらのポケモンの名前・画像も読み込めないとき";
+const SECOND_UNREADABLE = "図鑑番号 1、2、3 の記録があり、図鑑番号 2 のポケモンデータが利用できないとき";
+const ALL_UNREADABLE = "図鑑番号 1、2 の記録があり、どちらのポケモンデータも利用できないとき";
 
 const getSingleRecordEntries = async () => {
   const service = makeService({
@@ -130,54 +148,69 @@ const makeAllFailingService = () =>
   });
 
 describe("[本体:図鑑]図鑑一覧の取得", () => {
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      観点: ["件数・有無"],
-      steps: [{ Given: NO_RECORDS, When: [GET_POKEDEX], Then: "図鑑一覧は空になる" }],
-    },
-    async () => {
-      const res = await makeService().getPokedex("alice");
-      expect(res.entries).toEqual([]);
-    },
-  );
+  for (const { 正常異常, given, makeTargetService, viewpoints } of [
+    { 正常異常: "正常系" as const, given: NO_RECORDS, makeTargetService: () => makeService(), viewpoints: ["件数・有無"] as const },
+    { 正常異常: "異常系" as const, given: ALL_UNREADABLE, makeTargetService: makeAllFailingService, viewpoints: ["外部依存の失敗"] as const },
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常,
+        観点: viewpoints,
+        steps: [{ Given: given, When: [GET_POKEDEX], Then: "図鑑一覧は空になる" }],
+      },
+      async () => {
+        const res = await makeTargetService().getPokedex("alice");
+        expect(res.entries).toEqual([]);
+      },
+    );
+  }
 
-  defineCase(
+  for (const { 正常異常, given, makeTargetService, viewpoints } of [
     {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: THREE_RECORDS_WITH_SECOND_EXCLUDED,
-          When: [GET_POKEDEX],
-          Then: "図鑑一覧は図鑑番号 1 と 3 の 2 項目になる",
-        },
-      ],
+      正常異常: "正常系" as const,
+      given: THREE_RECORDS_WITH_SECOND_EXCLUDED,
+      viewpoints: [] as const,
+      makeTargetService: () =>
+        makeService({
+          records: [
+            makeUserPokemon({ pokemon_id: 1 }),
+            makeUserPokemon({ pokemon_id: 2 }),
+            makeUserPokemon({ pokemon_id: 3 }),
+          ],
+          excludedIDs: [2],
+        }),
     },
-    async () => {
-      const service = makeService({
-        records: [
-          makeUserPokemon({ pokemon_id: 1 }),
-          makeUserPokemon({ pokemon_id: 2 }),
-          makeUserPokemon({ pokemon_id: 3 }),
-        ],
-        excludedIDs: [2],
-      });
-      const res = await service.getPokedex("alice");
-      expect(res.entries.map((e) => e.pokemon_id)).toEqual([1, 3]);
+    {
+      正常異常: "異常系" as const,
+      given: SECOND_UNREADABLE,
+      makeTargetService: makePartiallyFailingService,
+      viewpoints: ["外部依存の失敗"] as const,
     },
-  );
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常,
+        観点: viewpoints,
+        steps: [{ Given: given, When: [GET_POKEDEX], Then: "図鑑一覧は図鑑番号 1、3 の 2 項目になる" }],
+      },
+      async () => {
+        const res = await makeTargetService().getPokedex("alice");
+        expect(res.entries.map((e) => e.pokemon_id)).toEqual([1, 3]);
+      },
+    );
+  }
 
   for (const { given, overrides, viewpoints } of [
     { given: NO_RECORDS, overrides: {}, viewpoints: ["件数・有無"] },
     {
-      given: "図鑑番号 1 の記録が 1 件あるとき",
+      given: SINGLE_RECORD,
       overrides: { records: [makeUserPokemon({ pokemon_id: 1 })] },
       viewpoints: ["件数・有無"],
     },
     {
-      given: "図鑑番号 1 と 2 の記録があるとき",
+      given: TWO_RECORDS,
       overrides: { records: [makeUserPokemon({ pokemon_id: 1 }), makeUserPokemon({ pokemon_id: 2 })] },
       viewpoints: ["件数・有無"],
     },
@@ -224,7 +257,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: SINGLE_RECORD, When: [GET_POKEDEX], Then: "図鑑一覧の項目の英語名は Bulbasaur になる" }],
+      steps: [{ Given: RECORD_ENGLISH_NAME, When: [GET_POKEDEX], Then: "図鑑一覧の項目の英語名は Bulbasaur になる" }],
     },
     async () => {
       const entries = await getSingleRecordEntries();
@@ -236,7 +269,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: SINGLE_RECORD, When: [GET_POKEDEX], Then: "図鑑一覧の項目の日本語名はフシギダネになる" }],
+      steps: [{ Given: RECORD_JAPANESE_NAME, When: [GET_POKEDEX], Then: "図鑑一覧の項目の日本語名はフシギダネになる" }],
     },
     async () => {
       const entries = await getSingleRecordEntries();
@@ -250,7 +283,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: SINGLE_RECORD,
+          Given: RECORD_SPRITE_URL,
           When: [GET_POKEDEX],
           Then: "図鑑一覧の項目の画像の URL は https://example.com/1.png になる",
         },
@@ -266,7 +299,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: SINGLE_RECORD, When: [GET_POKEDEX], Then: "図鑑一覧の項目の捕獲状況は捕獲済みになる" }],
+      steps: [{ Given: RECORD_CAPTURED, When: [GET_POKEDEX], Then: "図鑑一覧の項目の捕獲状況は捕獲済みになる" }],
     },
     async () => {
       const entries = await getSingleRecordEntries();
@@ -278,7 +311,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: SINGLE_RECORD, When: [GET_POKEDEX], Then: "図鑑一覧の項目の捕獲回数は 2 になる" }],
+      steps: [{ Given: RECORD_CAPTURE_COUNT, When: [GET_POKEDEX], Then: "図鑑一覧の項目の捕獲回数は 2 になる" }],
     },
     async () => {
       const entries = await getSingleRecordEntries();
@@ -290,7 +323,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: SINGLE_RECORD, When: [GET_POKEDEX], Then: "図鑑一覧の項目の最高スコアは 90 になる" }],
+      steps: [{ Given: RECORD_BEST_SCORE_90, When: [GET_POKEDEX], Then: "図鑑一覧の項目の最高スコアは 90 になる" }],
     },
     async () => {
       const entries = await getSingleRecordEntries();
@@ -304,7 +337,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: TWO_RECORDS,
+          Given: TWO_RECORDS_IN_ORDER,
           When: [GET_POKEDEX],
           Then: "図鑑一覧は、記録の並びのまま図鑑番号 1、2 の 2 項目になる",
         },
@@ -320,7 +353,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: TWO_RECORDS, When: [GET_POKEDEX], Then: "図鑑一覧の英語名は、Bulbasaur、Ivysaur の順になる" }],
+      steps: [{ Given: TWO_RECORDS_ENGLISH_NAMES, When: [GET_POKEDEX], Then: "図鑑一覧の英語名は、Bulbasaur、Ivysaur の順になる" }],
     },
     async () => {
       const entries = await getTwoRecordsEntries();
@@ -333,7 +366,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
-        { Given: TWO_RECORDS, When: [GET_POKEDEX], Then: "図鑑一覧の日本語名は、フシギダネ、フシギソウの順になる" },
+        { Given: TWO_RECORDS_JAPANESE_NAMES, When: [GET_POKEDEX], Then: "図鑑一覧の日本語名は、フシギダネ、フシギソウの順になる" },
       ],
     },
     async () => {
@@ -348,7 +381,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: TWO_RECORDS,
+          Given: TWO_RECORDS_SPRITE_URLS,
           When: [GET_POKEDEX],
           Then: "図鑑一覧の画像の URL は、https://example.com/1.png、https://example.com/2.png の順になる",
         },
@@ -367,7 +400,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: TWO_RECORDS, When: [GET_POKEDEX], Then: "図鑑一覧の捕獲状況は、捕獲済み、未捕獲の順になる" }],
+      steps: [{ Given: TWO_RECORDS_STATUS, When: [GET_POKEDEX], Then: "図鑑一覧の捕獲状況は、捕獲済み、未捕獲の順になる" }],
     },
     async () => {
       const entries = await getTwoRecordsEntries();
@@ -379,7 +412,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: TWO_RECORDS, When: [GET_POKEDEX], Then: "図鑑一覧の捕獲回数は、5、0 の順になる" }],
+      steps: [{ Given: TWO_RECORDS_CAPTURE_COUNT, When: [GET_POKEDEX], Then: "図鑑一覧の捕獲回数は、5、0 の順になる" }],
     },
     async () => {
       const entries = await getTwoRecordsEntries();
@@ -391,26 +424,11 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: TWO_RECORDS, When: [GET_POKEDEX], Then: "図鑑一覧の最高スコアは、90、40 の順になる" }],
+      steps: [{ Given: TWO_RECORDS_BEST_SCORE, When: [GET_POKEDEX], Then: "図鑑一覧の最高スコアは、90、40 の順になる" }],
     },
     async () => {
       const entries = await getTwoRecordsEntries();
       expect(entries.map((e) => e.best_score)).toEqual([90, 40]);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "異常系",
-      観点: ["外部依存の失敗"],
-      steps: [
-        { Given: SECOND_UNREADABLE, When: [GET_POKEDEX], Then: "図鑑一覧は図鑑番号 1 と 3 の 2 項目になる" },
-      ],
-    },
-    async () => {
-      const res = await makePartiallyFailingService().getPokedex("alice");
-      expect(res.entries.map((e) => e.pokemon_id)).toEqual([1, 3]);
     },
   );
 
@@ -424,19 +442,6 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
     async () => {
       const res = await makePartiallyFailingService().getPokedex("alice");
       expect(res.unavailable_count).toBe(1);
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "異常系",
-      観点: ["外部依存の失敗"],
-      steps: [{ Given: ALL_UNREADABLE, When: [GET_POKEDEX], Then: "図鑑一覧は空になる" }],
-    },
-    async () => {
-      const res = await makeAllFailingService().getPokedex("alice");
-      expect(res.entries).toEqual([]);
     },
   );
 
@@ -461,7 +466,7 @@ describe("[共通:設定]名前検索の候補ポケモン", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモンデータに図鑑番号 1 と 2 のポケモンがあるとき",
+          Given: "ポケモンデータに図鑑番号 1、2 のポケモンがあるとき",
           When: [GET_SEARCH_CANDIDATES],
           Then: "名前検索の候補は、図鑑番号 1・日本語名フシギダネと図鑑番号 2・日本語名フシギソウの 2 件になり、各候補は図鑑番号と日本語名だけを持つ",
         },
@@ -483,7 +488,7 @@ describe("[共通:設定]名前検索の候補ポケモン", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "図鑑番号 1 を除外ポケモンに設定していて、ポケモンデータに図鑑番号 1 と 2 のポケモンがあるとき",
+          Given: "図鑑番号 1 を除外ポケモンに設定していて、ポケモンデータに図鑑番号 1、2 のポケモンがあるとき",
           When: [GET_SEARCH_CANDIDATES],
           Then: "名前検索の候補の図鑑番号は 1、2 の順になる",
         },
@@ -502,7 +507,7 @@ describe("[共通:設定]名前検索の候補ポケモン", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "出題世代に第 1 世代だけを選んでいて、ポケモンデータに図鑑番号 1 と 152 のポケモンがあるとき",
+          Given: "出題世代に第 1 世代だけを選んでいて、ポケモンデータに図鑑番号 1、152 のポケモンがあるとき",
           When: [GET_SEARCH_CANDIDATES],
           Then: "名前検索の候補の図鑑番号は 1、152 の順になる",
         },
@@ -528,19 +533,18 @@ const makeDetailService = (overrides: Partial<UserPokemon> = {}) =>
     ],
   });
 
-const DETAIL_RECORD_STATS =
-  "ユーザーの図鑑に図鑑番号 1 の記録があり、記録が捕獲済み・捕獲回数 2・遭遇回数 3・最高スコア 80 のとき";
-const DETAIL_RECORD_DATES =
-  "ユーザーの図鑑に図鑑番号 1 の記録があり、最終捕獲日時が 2026-03-04 05:06:07 (UTC)、最終遭遇日時が 2026-03-05 06:07:08 (UTC) のとき";
-const DETAIL_POKEMON_DATA =
-  "ユーザーの図鑑に図鑑番号 1 の記録があり、ポケモンデータの図鑑番号 1 が英語名 Bulbasaur・日本語名フシギダネ・タイプくさとどくのとき";
+const DETAIL_ENCOUNTER_COUNT = "図鑑番号 1 の記録の遭遇回数が 3 のとき";
+const DETAIL_BEST_SCORE = "図鑑番号 1 の記録の最高スコアが 80 のとき";
+const DETAIL_LAST_CAPTURED_AT = "図鑑番号 1 の記録の最終捕獲日時が UTC 2026-03-04 05:06:07 のとき";
+const DETAIL_LAST_ENCOUNTERED_AT = "図鑑番号 1 の記録の最終遭遇日時が UTC 2026-03-05 06:07:08 のとき";
+const DETAIL_TYPES = "図鑑番号 1 の記録があり、ポケモンデータの図鑑番号 1 のタイプが grass と poison のとき";
 
 describe("[本体:図鑑]図鑑詳細の取得", () => {
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: DETAIL_RECORD_STATS, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の図鑑番号は 1 になる" }],
+      steps: [{ Given: "図鑑番号 1 の記録があるとき", When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の図鑑番号は 1 になる" }],
     },
     async () => {
       const res = await makeDetailService().getPokemonDetail("alice", 1);
@@ -552,7 +556,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: DETAIL_RECORD_STATS, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の捕獲状況は捕獲済みになる" }],
+      steps: [{ Given: RECORD_CAPTURED, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の捕獲状況は捕獲済みになる" }],
     },
     async () => {
       const res = await makeDetailService().getPokemonDetail("alice", 1);
@@ -564,7 +568,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: DETAIL_RECORD_STATS, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の捕獲回数は 2 になる" }],
+      steps: [{ Given: RECORD_CAPTURE_COUNT, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の捕獲回数は 2 になる" }],
     },
     async () => {
       const res = await makeDetailService().getPokemonDetail("alice", 1);
@@ -576,7 +580,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: DETAIL_RECORD_STATS, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の遭遇回数は 3 になる" }],
+      steps: [{ Given: DETAIL_ENCOUNTER_COUNT, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の遭遇回数は 3 になる" }],
     },
     async () => {
       const res = await makeDetailService().getPokemonDetail("alice", 1);
@@ -588,7 +592,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: DETAIL_RECORD_STATS, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の最高スコアは 80 になる" }],
+      steps: [{ Given: DETAIL_BEST_SCORE, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の最高スコアは 80 になる" }],
     },
     async () => {
       const res = await makeDetailService().getPokemonDetail("alice", 1);
@@ -602,7 +606,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: DETAIL_RECORD_DATES,
+          Given: DETAIL_LAST_CAPTURED_AT,
           When: [GET_POKEMON_DETAIL],
           Then: '図鑑詳細の最終捕獲日時は "2026-03-04T05:06:07.000Z" の文字列になる',
         },
@@ -620,7 +624,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: DETAIL_RECORD_DATES,
+          Given: DETAIL_LAST_ENCOUNTERED_AT,
           When: [GET_POKEMON_DETAIL],
           Then: '図鑑詳細の最終遭遇日時は "2026-03-05T06:07:08.000Z" の文字列になる',
         },
@@ -636,7 +640,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: DETAIL_POKEMON_DATA, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の英語名は Bulbasaur になる" }],
+      steps: [{ Given: RECORD_ENGLISH_NAME, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の英語名は Bulbasaur になる" }],
     },
     async () => {
       const res = await makeDetailService().getPokemonDetail("alice", 1);
@@ -649,7 +653,7 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
-        { Given: DETAIL_POKEMON_DATA, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の日本語名はフシギダネになる" },
+        { Given: RECORD_JAPANESE_NAME, When: [GET_POKEMON_DETAIL], Then: "図鑑詳細の日本語名はフシギダネになる" },
       ],
     },
     async () => {
@@ -664,9 +668,9 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: DETAIL_POKEMON_DATA,
+          Given: DETAIL_TYPES,
           When: [GET_POKEMON_DETAIL],
-          Then: "図鑑詳細のタイプは grass と poison (くさ・どく) になる",
+          Then: "図鑑詳細のタイプは grass と poison になる",
         },
       ],
     },
@@ -683,9 +687,9 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ユーザーの図鑑に図鑑番号 1 の記録があり、最終捕獲日時が記録されていないとき",
+          Given: "図鑑番号 1 の記録に最終捕獲日時が記録されていないとき",
           When: [GET_POKEMON_DETAIL],
-          Then: "図鑑詳細の最終捕獲日時は空 (null) になる",
+          Then: "図鑑詳細の最終捕獲日時は null になる",
         },
       ],
     },

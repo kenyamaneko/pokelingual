@@ -17,7 +17,7 @@ type History = {
 const NOT_ENCOUNTERED = "あるユーザーがまだ遭遇していないポケモンがいるとき";
 const ENCOUNTERED_NOT_CAPTURED = "あるユーザーが遭遇済みで、まだ捕獲していないポケモンがいるとき";
 const CAPTURED = "あるユーザーが捕獲済みのポケモンがいるとき";
-const RECORD_ENCOUNTER_WITHOUT_CAPTURE = "遭遇・捕獲の記録で、そのポケモンの遭遇を、捕獲せずに記録する";
+const RECORD_ENCOUNTER_WITHOUT_CAPTURE = "そのポケモンの遭遇を、捕獲せずに記録する";
 
 const SEEN_FIRST_TIME: History = {
   given: NOT_ENCOUNTERED,
@@ -27,7 +27,7 @@ const SEEN_FIRST_TIME: History = {
 const CAPTURED_FIRST_TIME: History = {
   given: NOT_ENCOUNTERED,
   records: [{ score: 90, isCaptured: true }],
-  operation: "遭遇・捕獲の記録で、そのポケモンの遭遇を、捕獲して記録する",
+  operation: "そのポケモンの遭遇を、捕獲して記録する",
 };
 const SEEN_AGAIN_WITHOUT_CAPTURE: History = {
   given: ENCOUNTERED_NOT_CAPTURED,
@@ -35,7 +35,7 @@ const SEEN_AGAIN_WITHOUT_CAPTURE: History = {
     { score: 70, isCaptured: false },
     { score: 60, isCaptured: false },
   ],
-  operation: "遭遇・捕獲の記録で、そのポケモンへの再度の遭遇を、捕獲せずに記録する",
+  operation: "そのポケモンの遭遇を、捕獲せずに記録する",
 };
 const CAPTURED_AFTER_SEEN: History = {
   given: ENCOUNTERED_NOT_CAPTURED,
@@ -43,7 +43,7 @@ const CAPTURED_AFTER_SEEN: History = {
     { score: 70, isCaptured: false },
     { score: 95, isCaptured: true },
   ],
-  operation: "遭遇・捕獲の記録で、そのポケモンの捕獲を記録する",
+  operation: "そのポケモンの遭遇を、捕獲して記録する",
 };
 const SEEN_AGAIN_AFTER_CAPTURE: History = {
   given: CAPTURED,
@@ -51,7 +51,7 @@ const SEEN_AGAIN_AFTER_CAPTURE: History = {
     { score: 95, isCaptured: true },
     { score: 50, isCaptured: false },
   ],
-  operation: "遭遇・捕獲の記録で、そのポケモンへの再度の遭遇を、捕獲せずに記録する",
+  operation: "そのポケモンの遭遇を、捕獲せずに記録する",
 };
 
 async function recordAndMeasureLastRecord(records: readonly EncounterRecord[]) {
@@ -72,8 +72,8 @@ async function recordAndGetPokemon(records: readonly EncounterRecord[]) {
   return (await recordAndMeasureLastRecord(records)).pokemon;
 }
 
-const GET_RECORDED_POKEMON = "図鑑詳細の取得で、記録したポケモンの記録を取得する";
-const GET_POKEDEX = "図鑑一覧の取得で、あるユーザーの図鑑一覧を取得する";
+const GET_POKEMON_DETAIL = "そのポケモンの図鑑詳細を取得する";
+const GET_POKEDEX = "あるユーザーの図鑑一覧を取得する";
 
 describe("[本体:図鑑]遭遇・捕獲の記録", () => {
   beforeEach(clearFirestoreEmulator);
@@ -86,7 +86,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "図鑑の状態は遭遇済みになる",
           },
         ],
@@ -105,7 +105,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "図鑑の状態は捕獲済みになる",
           },
         ],
@@ -124,7 +124,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "遭遇回数は 1 になる",
           },
         ],
@@ -143,7 +143,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "遭遇回数は 2 になる",
           },
         ],
@@ -162,7 +162,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "捕獲回数は 0 になる",
           },
         ],
@@ -181,7 +181,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "捕獲回数は 1 になる",
           },
         ],
@@ -199,7 +199,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
       steps: [
         {
           Given: NOT_ENCOUNTERED,
-          When: ["遭遇・捕獲の記録で、そのポケモンの遭遇を、スコア 70 で捕獲せずに記録する", GET_RECORDED_POKEMON],
+          When: ["そのポケモンの遭遇を、スコア 70 で捕獲せずに記録する", GET_POKEMON_DETAIL],
           Then: "最高スコアは 70 になる",
         },
       ],
@@ -217,7 +217,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
       steps: [
         {
           Given: NOT_ENCOUNTERED,
-          When: ["遭遇・捕獲の記録で、そのポケモンの遭遇を、スコア 90 で捕獲して記録する", GET_RECORDED_POKEMON],
+          When: ["そのポケモンの遭遇を、スコア 90 で捕獲して記録する", GET_POKEMON_DETAIL],
           Then: "最高スコアは 90 になる",
         },
       ],
@@ -235,7 +235,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
       steps: [
         {
           Given: NOT_ENCOUNTERED,
-          When: ["遭遇・捕獲の記録で、そのポケモンの遭遇を、スコア 80、60、90、70 の順に記録する", GET_RECORDED_POKEMON],
+          When: ["そのポケモンの遭遇を、スコア 80、60、90、70 の順に記録する", GET_POKEMON_DETAIL],
           Then: "最高スコアは 90 になる",
         },
       ],
@@ -258,7 +258,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
       steps: [
         {
           Given: NOT_ENCOUNTERED,
-          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_RECORDED_POKEMON],
+          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_POKEMON_DETAIL],
           Then: "最終捕獲日時は空になる",
         },
       ],
@@ -277,7 +277,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
         steps: [
           {
             Given: given,
-            When: [operation, GET_RECORDED_POKEMON],
+            When: [operation, GET_POKEMON_DETAIL],
             Then: "最終捕獲日時は捕獲を記録した日時になる",
           },
         ],
@@ -297,7 +297,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
       steps: [
         {
           Given: NOT_ENCOUNTERED,
-          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_RECORDED_POKEMON],
+          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_POKEMON_DETAIL],
           Then: "最終遭遇日時は遭遇を記録した日時になる",
         },
       ],
@@ -316,7 +316,7 @@ describe("[本体:図鑑]遭遇・捕獲の記録", () => {
       steps: [
         {
           Given: "あるユーザーがまだ遭遇していない、図鑑番号 25 のポケモンがいるとき",
-          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_RECORDED_POKEMON],
+          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_POKEMON_DETAIL],
           Then: "記録の図鑑番号は 25 になる",
         },
       ],
@@ -337,8 +337,8 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["遭遇・捕獲の記録で、あるユーザーの遭遇を、図鑑番号 150、1、25 の順に記録する", GET_POKEDEX],
-          Then: "図鑑一覧は図鑑番号 1、25、150 の昇順で得られる",
+          When: ["あるユーザーの遭遇を、図鑑番号 150、1、25 の順に記録する", GET_POKEDEX],
+          Then: "図鑑一覧の図鑑番号は 1、25、150 の昇順になる",
         },
       ],
     },
@@ -369,7 +369,7 @@ describe("[本体:図鑑]図鑑一覧の取得", () => {
           {
             Given: `${situation}とき`,
             When: [GET_POKEDEX],
-            Then: "図鑑一覧は 1 件も得られない",
+            Then: "図鑑一覧は空になる",
           },
         ],
       },
@@ -395,8 +395,8 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "遭遇していないポケモンがいるとき",
-          When: ["図鑑詳細の取得で、そのポケモンの記録を取得する"],
+          Given: NOT_ENCOUNTERED,
+          When: [GET_POKEMON_DETAIL],
           Then: "そのポケモンの記録が無いことを示すエラーになる",
         },
       ],
@@ -414,15 +414,12 @@ describe("[本体:図鑑]図鑑詳細の取得", () => {
       観点: ["回復確認", "件数・有無"],
       steps: [
         {
-          Given: "遭遇していないポケモンがいるとき",
-          When: ["図鑑詳細の取得で、そのポケモンの記録を取得する"],
+          Given: NOT_ENCOUNTERED,
+          When: [GET_POKEMON_DETAIL],
           Then: "そのポケモンの記録が無いことを示すエラーになる",
         },
         {
-          When: [
-            "遭遇・捕獲の記録で、同じポケモンの遭遇を、スコア 70 で捕獲せずに記録する",
-            "図鑑詳細の取得で、そのポケモンの記録を取得する",
-          ],
+          When: [RECORD_ENCOUNTER_WITHOUT_CAPTURE, GET_POKEMON_DETAIL],
           Then: "図鑑の状態は遭遇済みになる",
         },
       ],

@@ -65,33 +65,36 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
       steps: [
         {
           Given: "ログインしていて、チュートリアルが完了済みで、除外ポケモンが未設定であるとき",
-          When: ["ホーム画面で「ポケモンを探しに行く」を押す"],
+          When: ["ホーム画面で、「ポケモンを探しに行く」ボタンを押す"],
           Then: "クエスト画面に遷移する",
         },
         {
-          When: ["クエスト画面で、表示された場所を 1 つ選ぶ"],
+          When: ["場所選択画面で、表示された場所を 1 つ選ぶ"],
           Then: {
             ローカル: "英文「It raises its tail to check its surroundings. The tail is sometimes struck by lightning in this pose.」が表示される",
             dev環境: "英単語を含む英文が表示される",
           },
         },
         {
-          When: ["クエスト画面で、翻訳「これはテストの翻訳です」を送信する"],
+          When: [
+            "クエスト画面の翻訳の入力欄に「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」と入力する",
+            "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
+          ],
           Then: {
-            ローカル: "ダメージが 11% 以上 94% 以下で表示され、博士からのコメントに「モック講評だぞ」が表示される",
+            ローカル: "ダメージが、モックの採点が取りうる範囲内の値で表示され、博士からのコメントに「モック講評だぞ」が表示される",
             dev環境: "ダメージが 0% 以上 100% 以下で表示される",
           },
         },
-        { When: ["クエスト画面の名前当てをスキップする"], Then: "「モンスターボール」が表示される" },
+        { When: ["クエスト画面の名前当てで、「わからないのでスキップ →」ボタンを押す"], Then: "「モンスターボール」と表示される" },
         {
-          When: ["クエスト画面でボールを使う"],
+          When: ["捕獲待機画面で、「モンスターボールを　使う」ボタンを押す"],
           Then: {
-            ローカル: "「捕まえたぞ」と、捕まえたポケモンの英語名「Pikachu」、日本語名「ピカチュウ」と「次のポケモンを探す」が表示される",
-            dev環境: "「捕まえたぞ」か「逃げ出した」のどちらかと、英字を含む英語名と、仮名か漢字を含む日本語名と、「次のポケモンを探す」が表示される",
+            ローカル: "「捕まえたぞ」と、捕まえたポケモンの英語名「Pikachu」と日本語名「ピカチュウ」と、「次のポケモンを探す」ボタンが表示される",
+            dev環境: "「捕まえたぞ」か「逃げ出した」のどちらかと、英字を含む英語名と、仮名か漢字を含む日本語名と、「次のポケモンを探す」ボタンが表示される",
           },
         },
         {
-          When: ["クエスト画面のヘッダーで「ずかん」のリンクを押す"],
+          When: ["クエスト画面のヘッダーで、「ずかん」リンクを押す"],
           Then: "図鑑画面に遷移し、見出し「図鑑」が表示される",
         },
       ],
@@ -110,7 +113,7 @@ test.describe("[シナリオ:ポケモンを捕まえる:通常の動線]ホー�
       await selectLocation(page, locationsLoaded);
       await expect(page.getByTestId("quest-description")).toContainText(QUEST_DESCRIPTION);
 
-      await page.getByPlaceholder(PLACEHOLDER.translation).fill("これはテストの翻訳です");
+      await page.getByPlaceholder(PLACEHOLDER.translation).fill("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
       await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
       await expect(page.getByTestId("damage-value")).toHaveText(/^\d+%$/, {
         timeout: SCORE_REVEAL_TIMEOUT_MS,

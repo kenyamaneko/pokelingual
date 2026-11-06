@@ -11,8 +11,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const THREE_CHAR_TEXT_STARTED = "3 文字の文章「ABC」の演出が始まっているとき";
-const ONE_CHAR_INTERVAL_PASSES = "クエスト画面の文章のタイプライター演出で、1 文字分の時間が経つ";
+const TEXT_GREETING = "表示する文章が「こんにちは」のとき";
+const START_TYPEWRITER = "文章のタイプライター演出を始める";
 
 describe("[本体:クエスト]文章のタイプライター演出", () => {
   defineCase(
@@ -21,14 +21,14 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "文章「ABC」の演出が始まる前のとき",
-          When: ["クエスト画面に、タイプライター演出の文章を配置する"],
-          Then: "文字が表示されない",
+          Given: "表示する文章が「こんにちは」で、演出をまだ始めていないとき",
+          When: ["文章のタイプライター演出を表示する"],
+          Then: "何も表示されない",
         },
       ],
     },
     () => {
-      const { container } = render(<TypewriterText text="ABC" isActive={false} />);
+      const { container } = render(<TypewriterText text="こんにちは" isActive={false} />);
       expect(container.textContent).toBe("");
     },
   );
@@ -41,7 +41,7 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       steps: [
         {
           Given: "表示する文章が空のとき",
-          When: ["クエスト画面で、文章のタイプライター演出を始める", ONE_CHAR_INTERVAL_PASSES],
+          When: [START_TYPEWRITER, "文章の表示が終わるまで待つ"],
           Then: "何も表示されない",
         },
       ],
@@ -61,18 +61,18 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: THREE_CHAR_TEXT_STARTED,
-          When: [ONE_CHAR_INTERVAL_PASSES],
-          Then: "先頭の 1 文字「A」が表示される",
+          Given: TEXT_GREETING,
+          When: [START_TYPEWRITER, "先頭の 1 文字の表示が終わるまで待つ"],
+          Then: "先頭の 1 文字「こ」が表示される",
         },
       ],
     },
     () => {
-      const { container } = render(<TypewriterText text="ABC" isActive={true} />);
+      const { container } = render(<TypewriterText text="こんにちは" isActive={true} />);
       act(() => {
         vi.advanceTimersByTime(CHAR_INTERVAL_MS);
       });
-      expect(container.textContent).toBe("A");
+      expect(container.textContent).toBe("こ");
     },
   );
 
@@ -80,21 +80,20 @@ describe("[本体:クエスト]文章のタイプライター演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
       steps: [
         {
-          Given: THREE_CHAR_TEXT_STARTED,
-          When: ["クエスト画面の文章のタイプライター演出で、3 文字分の時間が経つ"],
-          Then: "3 文字が「ABC」と全文表示される",
+          Given: TEXT_GREETING,
+          When: [START_TYPEWRITER, "文章の表示が終わるまで待つ"],
+          Then: "「こんにちは」が全文表示される",
         },
       ],
     },
     () => {
-      const { container } = render(<TypewriterText text="ABC" isActive={true} />);
+      const { container } = render(<TypewriterText text="こんにちは" isActive={true} />);
       act(() => {
-        vi.advanceTimersByTime(CHAR_INTERVAL_MS * 3);
+        vi.advanceTimersByTime(CHAR_INTERVAL_MS * 5);
       });
-      expect(container.textContent).toBe("ABC");
+      expect(container.textContent).toBe("こんにちは");
     },
   );
 });

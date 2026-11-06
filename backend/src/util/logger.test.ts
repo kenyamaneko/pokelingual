@@ -2,8 +2,9 @@ import { describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { buildLogEntry, logger } from "./logger.js";
 import { defineCase } from "../test/defineCase.js";
 
-const BUILD_LOG_ENTRY = "ログ出力に、ログ 1 件の組み立てを依頼する";
-const CURRENT_TIME = "現在時刻が 2026-07-03T04:56:07.000Z で";
+const CURRENT_TIME = "現在時刻が 2026-07-03T04:56:07.000Z のとき";
+const BUILD_INFO_LOG_ENTRY =
+  "severity に INFO、メッセージに starting server、ログに添える項目 port に 8080 を指定して、ログ 1 件を組み立てる";
 
 describe("[運用:ログ出力]ログの形式", () => {
   beforeEach(() => {
@@ -21,8 +22,8 @@ describe("[運用:ログ出力]ログの形式", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${CURRENT_TIME}、severity が INFO、メッセージが starting server、追加フィールドの port が 8080 のとき`,
-          When: [BUILD_LOG_ENTRY],
+          Given: CURRENT_TIME,
+          When: [BUILD_INFO_LOG_ENTRY],
           Then: "ログの JSON は severity が INFO、message が starting server、time が 2026-07-03T04:56:07.000Z、port が 8080 になる",
         },
       ],
@@ -45,8 +46,7 @@ describe("[運用:ログ出力]ログの形式", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "severity が INFO、メッセージが starting server、追加フィールドの port が 8080 のとき",
-          When: [BUILD_LOG_ENTRY],
+          When: [BUILD_INFO_LOG_ENTRY],
           Then: "ログは 1 行に収まり改行を含まない",
         },
       ],
@@ -65,8 +65,8 @@ describe("[運用:ログ出力]ログの形式", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${CURRENT_TIME}、severity が WARNING、メッセージが running in public mode で、追加フィールドが無いとき`,
-          When: [BUILD_LOG_ENTRY],
+          Given: CURRENT_TIME,
+          When: ["severity に WARNING、メッセージに running in public mode を指定し、ログに添える項目は指定せずに、ログ 1 件を組み立てる"],
           Then: "ログの JSON は severity が WARNING、message が running in public mode、time が 2026-07-03T04:56:07.000Z の 3 項目だけになる",
         },
       ],
@@ -89,9 +89,8 @@ describe("[運用:ログ出力]ログの形式", () => {
         正常異常: "異常系",
         steps: [
           {
-            Given: `追加フィールドに ${reservedKey} が含まれているとき`,
-            When: [BUILD_LOG_ENTRY],
-            Then: `${reservedKey} を上書きしようとしたエラーになる`,
+            When: [`ログに添える項目に ${reservedKey} を指定して、ログ 1 件を組み立てる`],
+            Then: `${reservedKey} をログに添える項目に指定できないことを示すエラーになる`,
           },
         ],
       },
@@ -123,8 +122,8 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
     vi.restoreAllMocks();
   });
 
-  const MESSAGE_AND_FIELD = "メッセージが something happened で、追加フィールド path が /api/quest で";
-  const WRITE_LOG = "ログ出力に、ログの書き出しを依頼する";
+  const writeLogAt = (level: "Info" | "Warn" | "Error") =>
+    `ログレベル ${level}、メッセージに quest session expired、ログに添える項目 path に /api/quest を指定して、ログを書き出す`;
 
   defineCase(
     {
@@ -132,21 +131,20 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${MESSAGE_AND_FIELD}、ログレベルが Info のとき`,
-          When: [WRITE_LOG],
-          Then: "標準出力に、severity が INFO、message が something happened、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
+          When: [writeLogAt("Info")],
+          Then: "標準出力に、severity が INFO、message が quest session expired、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
         },
       ],
     },
     () => {
-      logger.info("something happened", { path: "/api/quest" });
+      logger.info("quest session expired", { path: "/api/quest" });
 
       expect(written.stdout).toHaveLength(1);
       const line = written.stdout[0];
       expect(line.endsWith("\n")).toBe(true);
       expect(JSON.parse(line)).toMatchObject({
         severity: "INFO",
-        message: "something happened",
+        message: "quest session expired",
         path: "/api/quest",
       });
     },
@@ -158,21 +156,20 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${MESSAGE_AND_FIELD}、ログレベルが Warn のとき`,
-          When: [WRITE_LOG],
-          Then: "標準エラー出力に、severity が WARNING、message が something happened、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
+          When: [writeLogAt("Warn")],
+          Then: "標準エラー出力に、severity が WARNING、message が quest session expired、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
         },
       ],
     },
     () => {
-      logger.warn("something happened", { path: "/api/quest" });
+      logger.warn("quest session expired", { path: "/api/quest" });
 
       expect(written.stderr).toHaveLength(1);
       const line = written.stderr[0];
       expect(line.endsWith("\n")).toBe(true);
       expect(JSON.parse(line)).toMatchObject({
         severity: "WARNING",
-        message: "something happened",
+        message: "quest session expired",
         path: "/api/quest",
       });
     },
@@ -184,21 +181,20 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${MESSAGE_AND_FIELD}、ログレベルが Error のとき`,
-          When: [WRITE_LOG],
-          Then: "標準エラー出力に、severity が ERROR、message が something happened、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
+          When: [writeLogAt("Error")],
+          Then: "標準エラー出力に、severity が ERROR、message が quest session expired、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
         },
       ],
     },
     () => {
-      logger.error("something happened", { path: "/api/quest" });
+      logger.error("quest session expired", { path: "/api/quest" });
 
       expect(written.stderr).toHaveLength(1);
       const line = written.stderr[0];
       expect(line.endsWith("\n")).toBe(true);
       expect(JSON.parse(line)).toMatchObject({
         severity: "ERROR",
-        message: "something happened",
+        message: "quest session expired",
         path: "/api/quest",
       });
     },

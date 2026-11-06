@@ -10,11 +10,12 @@ import {
 } from "../../test/intersectionObserverMock";
 import type { ScoreResponse } from "../../../../shared/api-types/quest";
 import { defineCase } from "../../test/defineCase";
+import { spec } from "../../test/labels";
 
-const DESCRIPTION_EN = "A wild creature roams.";
-const USER_TRANSLATION = "やくぶん";
-const REVIEW = "いいね";
-const DESCRIPTION_JA = "テストの せつめい";
+const DESCRIPTION_EN = "When several of these Pokémon gather, their electricity could build and cause lightning storms.";
+const USER_TRANSLATION = "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある";
+const REVIEW = "雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。";
+const DESCRIPTION_JA = "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。";
 
 function buildScore(): ScoreResponse {
   return { score: 85, review: REVIEW, description_ja: DESCRIPTION_JA };
@@ -60,11 +61,15 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const SHOW_RESULT_SCREEN = "採点結果画面を表示して、各欄の段階的開示を始める";
+const SHOW_RESULT_SCREEN = "採点結果画面を開く";
 const ALL_FIELDS_IN_VIEW = "すべての欄が画面内に入っているとき";
-const WAIT_FOR_TRANSLATION_FADE_IN = "採点結果画面の段階的開示で、「英語版の図鑑の説明」のフェードインが終わるまで待つ";
+const DESCRIPTION_JA_IS = "採点結果の日本語版の説明が「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」で、";
+const REVIEW_IS = "採点結果の講評が「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」で、";
+const WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN = "採点結果画面の段階的開示で、「英語版の図鑑の説明」のフェードインが終わるまで待つ";
+const WAIT_FOR_DESCRIPTION_START = "採点結果画面の段階的開示で、「解答例」の表示が始まるまで待つ";
 const WAIT_FOR_DESCRIPTION_COMPLETE = "採点結果画面の段階的開示で、「解答例」を全文表示し終えるまで待つ";
-const WAIT_ONE_CHAR = "採点結果画面の段階的開示で、1 文字分の時間を待つ";
+const WAIT_FOR_REVIEW_START = "採点結果画面の段階的開示で、「博士からのコメント」の表示が始まるまで待つ";
+const WAIT_FOR_REVIEW_COMPLETE = "採点結果画面の段階的開示で、「博士からのコメント」を全文表示し終えるまで待つ";
 
 describe("[本体:採点]採点結果画面の段階的開示", () => {
   defineCase(
@@ -74,8 +79,8 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       steps: [
         {
           Given: "「英語版の図鑑の説明」の欄がまだ画面内に入っていないとき",
-          When: [SHOW_RESULT_SCREEN, "採点結果画面の段階的開示で、「英語版の図鑑の説明」のフェードイン 2 回分の時間を待つ"],
-          Then: "「英語版の図鑑の説明」は表示されない",
+          When: [SHOW_RESULT_SCREEN],
+          Then: "「英語版の図鑑の説明」は、表示が始まる前の状態のままで表示されない",
         },
       ],
     },
@@ -114,12 +119,11 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
       steps: [
         {
           Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, "採点結果画面の段階的開示で、「英語版の図鑑の説明」のフェードインが終わる直前まで待つ"],
-          Then: "「君の翻訳」は表示されない",
+          When: [SHOW_RESULT_SCREEN],
+          Then: "「英語版の図鑑の説明」のフェードインの途中は、「君の翻訳」は表示されない",
         },
       ],
     },
@@ -134,11 +138,10 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
       steps: [
         {
           Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN],
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN],
           Then: "「君の翻訳」が表示される",
         },
       ],
@@ -157,8 +160,8 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       steps: [
         {
           Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN, "採点結果画面の段階的開示で、「君の翻訳」のフェードインが終わる直前まで待つ"],
-          Then: "「解答例」の欄には文字が 1 文字も表示されていない",
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN],
+          Then: "「君の翻訳」のフェードインの途中は、「解答例」の欄には文字が 1 文字も表示されていない",
         },
       ],
     },
@@ -177,7 +180,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       steps: [
         {
           Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, "採点結果画面の段階的開示で、「博士からのコメント」の先頭の 1 文字「い」が表示されるまで待つ"],
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_START],
           Then: "「博士からのコメント」の表示が終わっていない間、HP は 100% と表示される",
         },
       ],
@@ -196,8 +199,8 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "スコアが 85 で、すべての欄が画面内に入っているとき",
-          When: [SHOW_RESULT_SCREEN, "採点結果画面の段階的開示で、「博士からのコメント」を全文表示し終えるまで待つ", "採点結果画面の段階的開示で、HP バーの減少が終わるまで待つ"],
+          Given: "最終評価点が 85 で、すべての欄が画面内に入っているとき",
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_REVIEW_COMPLETE, "採点結果画面の段階的開示で、HP バーの減少が終わるまで待つ"],
           Then: "HP が 15% と表示される",
         },
       ],
@@ -216,9 +219,9 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN, WAIT_ONE_CHAR],
-          Then: "「解答例」の先頭の 1 文字「テ」が表示される",
+          Given: `${DESCRIPTION_JA_IS}${ALL_FIELDS_IN_VIEW}`,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN, WAIT_FOR_DESCRIPTION_START],
+          Then: "「解答例」の先頭の 1 文字「何」が表示される",
         },
       ],
     },
@@ -226,7 +229,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToDescriptionStage();
       advance(CHAR_INTERVAL_MS);
-      expect(screen.getByTestId("description-text")).toHaveTextContent("「テ」");
+      expect(screen.getByTestId("description-text")).toHaveTextContent("「何」");
     },
   );
 
@@ -236,9 +239,9 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_TRANSLATION_FADE_IN, "採点結果画面の段階的開示で、「解答例」の文字数 (9 文字) 分の時間を待つ"],
-          Then: "「解答例」が「テストの せつめい」と全文表示される",
+          Given: `${DESCRIPTION_JA_IS}${ALL_FIELDS_IN_VIEW}`,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN, WAIT_FOR_DESCRIPTION_COMPLETE],
+          Then: "「解答例」が「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」と全文表示される",
         },
       ],
     },
@@ -246,7 +249,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToDescriptionStage();
       advance(CHAR_INTERVAL_MS * DESCRIPTION_JA.length);
-      expect(screen.getByTestId("description-text")).toHaveTextContent("「テストの せつめい」");
+      expect(screen.getByTestId("description-text")).toHaveTextContent(spec("「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」"));
     },
   );
 
@@ -254,12 +257,11 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
       steps: [
         {
           Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, "採点結果画面の段階的開示で、1 文字分の時間が経つ直前まで待つ"],
-          Then: "「博士からのコメント」には文字が 1 文字も表示されていない",
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE],
+          Then: "「博士からのコメント」の表示が始まる前は、「博士からのコメント」には文字が 1 文字も表示されていない",
         },
       ],
     },
@@ -278,9 +280,9 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_ONE_CHAR],
-          Then: "「博士からのコメント」の先頭の 1 文字「い」が表示される",
+          Given: `${REVIEW_IS}${ALL_FIELDS_IN_VIEW}`,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_START],
+          Then: "「博士からのコメント」の先頭の 1 文字「雷」が表示される",
         },
       ],
     },
@@ -288,7 +290,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToReviewStage();
       advance(CHAR_INTERVAL_MS);
-      expect(screen.getByTestId("review-text")).toHaveTextContent("い");
+      expect(screen.getByTestId("review-text")).toHaveTextContent("雷");
     },
   );
 
@@ -298,9 +300,9 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: ALL_FIELDS_IN_VIEW,
-          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, "採点結果画面の段階的開示で、「博士からのコメント」の文字数 (3 文字) 分の時間を待つ"],
-          Then: "「博士からのコメント」が「いいね」と全文表示される",
+          Given: `${REVIEW_IS}${ALL_FIELDS_IN_VIEW}`,
+          When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_COMPLETE],
+          Then: "「博士からのコメント」が「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」と全文表示される",
         },
       ],
     },
@@ -308,7 +310,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToReviewStage();
       advance(CHAR_INTERVAL_MS * REVIEW.length);
-      expect(screen.getByTestId("review-text")).toHaveTextContent("いいね");
+      expect(screen.getByTestId("review-text")).toHaveTextContent("雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。");
     },
   );
 

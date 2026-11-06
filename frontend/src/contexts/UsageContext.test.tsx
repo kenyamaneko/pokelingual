@@ -7,7 +7,7 @@ import { useUsage } from "./UsageContext";
 import { server, apiUrl, countRequests } from "../test/mswServer";
 import { renderWithProviders } from "../test/render";
 import type { User } from "firebase/auth";
-import { defineCase } from "../test/defineCase";
+import { defineCase, type Viewpoint } from "../test/defineCase";
 
 /**
  * バックエンドが AI 呼び出し回数と上限を返す状態にする。
@@ -41,8 +41,8 @@ function renderUsage(user: User | null = fakeUser) {
   return renderWithProviders(<Probe />, { user });
 }
 
-const START_UP = "アプリを起動して、ヘッダーに残り回数を表示するために AI 呼び出し回数を取得する";
-const LOGGED_OUT = "未ログインのとき";
+const START_UP = "アプリを起動する";
+const LOGGED_OUT = "ログインしていないとき";
 const USAGE_NOT_FETCHED = "AI 呼び出し回数の表示が「未取得」のままになる";
 
 describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得", () => {
@@ -56,7 +56,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "正常系",
       steps: [
         {
-          Given: "ログインしていて、バックエンドが AI 呼び出し回数 3、日次上限 30 を返すとき",
+          Given: "ログインしていて、今日の AI 呼び出し回数が 3 回で、日次上限が 30 回のとき",
           When: [START_UP],
           Then: "AI 呼び出し回数の表示が「3/30」になる",
         },
@@ -71,18 +71,48 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     },
   );
 
-  defineCase(
+  const usageNotFetchedScenarios: {
+    given: string;
+    outcome: "正常系" | "異常系";
+    viewpoints: readonly Viewpoint[];
+    verify: () => Promise<void>;
+  }[] = [
     {
-      種別: "部品間結合テスト",
-      正常異常: "正常系",
-      steps: [{ Given: LOGGED_OUT, When: [START_UP], Then: USAGE_NOT_FETCHED }],
-    },
-    async () => {
-      renderUsage(null);
+      given: LOGGED_OUT,
+      outcome: "正常系",
+      viewpoints: [],
+      verify: async () => {
+        renderUsage(null);
 
-      expect(await screen.findByText("未取得")).toBeInTheDocument();
+        expect(await screen.findByText("未取得")).toBeInTheDocument();
+      },
     },
-  );
+    {
+      given: "ログインしていて、今日の AI 呼び出し回数を取得できないとき",
+      outcome: "異常系",
+      viewpoints: ["外部依存の失敗"],
+      verify: async () => {
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
+
+        renderUsage();
+
+        await waitFor(() => expect(warnSpy).toHaveBeenCalled());
+        expect(screen.getByText("未取得")).toBeInTheDocument();
+      },
+    },
+  ];
+  for (const { given, outcome, viewpoints, verify } of usageNotFetchedScenarios) {
+    defineCase(
+      {
+        種別: "部品間結合テスト",
+        正常異常: outcome,
+        観点: viewpoints,
+        steps: [{ Given: given, When: [START_UP], Then: USAGE_NOT_FETCHED }],
+      },
+      verify,
+    );
+  }
 
   defineCase(
     {
@@ -102,35 +132,11 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      観点: ["外部依存の失敗"],
-      steps: [
-        {
-          Given: "ログインしていて、バックエンドの AI 呼び出し回数の取得が通信エラーで失敗するとき",
-          When: [START_UP],
-          Then: USAGE_NOT_FETCHED,
-        },
-      ],
-    },
-    async () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-      server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
-
-      renderUsage();
-
-      await waitFor(() => expect(warnSpy).toHaveBeenCalled());
-      expect(screen.getByText("未取得")).toBeInTheDocument();
-    },
-  );
-
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "異常系",
       観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given:
-            "ログインしていて、バックエンドの AI 呼び出し回数の取得が最初は通信エラーで失敗し、日次上限に達する操作に 429 を返し、その後の取得で AI 呼び出し回数 30、日次上限 30 を返すとき",
+            "ログインしていて、最初は今日の AI 呼び出し回数を取得できず、その後は今日の AI 呼び出し回数が 30 回で、日次上限が 30 回のとき",
           When: [START_UP, "AI を呼び出す画面で「日次上限に達する操作」ボタンを押す"],
           Then: "AI 呼び出し回数の表示が「30/30」になる",
         },

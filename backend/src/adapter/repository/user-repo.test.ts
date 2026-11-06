@@ -5,8 +5,7 @@ import { defineCase, type Viewpoint } from "../../test/defineCase.js";
 
 const db = requireFirestoreEmulator();
 
-const GET_TUTORIAL_STATUS =
-  "ホーム画面の「ポケモンを探しに行く」の遷移先を決めるために、あるユーザーのチュートリアル完了状態を取得する";
+const GET_TUTORIAL_STATUS = "あるユーザーのチュートリアル完了状態を取得する";
 
 describe("[本体:チュートリアル]チュートリアル完了状態の取得と記録", () => {
   beforeEach(clearFirestoreEmulator);

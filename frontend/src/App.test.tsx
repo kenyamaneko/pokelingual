@@ -4,6 +4,8 @@ import { describe, expect } from "vitest";
 import App from "./App";
 import { defineCase } from "./test/defineCase";
 
+const MOCK_MODE = "VITE_APP_MODE が mock のとき";
+
 describe("[共通:画面共通]404 画面の表示", () => {
   defineCase(
     {
@@ -11,9 +13,8 @@ describe("[共通:画面共通]404 画面の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "VITE_APP_MODE が mock のとき",
-          When: ["存在しない URL「/no-such-page」を開いて、404 画面を表示する"],
-          Then: "見出し「ページが見つかりません」が表示される",
+          When: ["URL「/no-such-page」を開く"],
+          Then: "404 画面に、見出し「ページが見つかりません」が表示される",
         },
       ],
     },
@@ -34,9 +35,9 @@ describe("[共通:画面共通]404 画面の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "VITE_APP_MODE が mock のとき",
-          When: ["存在しない URL「/no-such-page」を開いて、404 画面を表示する", "404 画面の「ホーム画面に戻る」を押す"],
-          Then: "ホーム画面の「ポケモンを探しに行く」ボタンが表示される",
+          Given: MOCK_MODE,
+          When: ["URL「/no-such-page」を開く", "404 画面の表示で、「ホーム画面に戻る」リンクを押す"],
+          Then: "ホーム画面に、「ポケモンを探しに行く」ボタンが表示される",
         },
       ],
     },
@@ -59,9 +60,9 @@ describe("[共通:画面共通]404 画面の表示", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "VITE_APP_MODE が mock のとき",
-          When: ["定義済みの URL「/」を開いて、ホーム画面を表示する"],
-          Then: "「Pokelingual」が表示され、見出し「ページが見つかりません」は表示されない",
+          Given: MOCK_MODE,
+          When: ["URL「/」を開く"],
+          Then: "ホーム画面に、「Pokelingual」が表示され、見出し「ページが見つかりません」は表示されない",
         },
       ],
     },

@@ -188,7 +188,7 @@ export async function completeQuest(page: Page) {
   await page.getByTestId("quest-description").waitFor();
 
   // 翻訳入力 → 送信
-  await page.getByPlaceholder(PLACEHOLDER.translation).fill("テスト翻訳");
+  await page.getByPlaceholder(PLACEHOLDER.translation).fill("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
   await page.getByRole("button", { name: BUTTON.submitTranslation }).click();
 
   // スコア表示待ち → 名前スキップ

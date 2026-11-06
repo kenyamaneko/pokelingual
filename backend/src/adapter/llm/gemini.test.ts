@@ -16,35 +16,37 @@ function makeClient(text: string): GeminiClient {
   return makeClientWithCandidates([{ content: { parts: [{ text }] } }]);
 }
 
-const REQUEST_TEXT_GENERATION = "クエストの翻訳を採点するために、AI にテキストの生成を依頼して、AI 応答からテキストを取り出す";
+const GENERATE_TEXT = "AI にプロンプトを送って、テキストを生成する";
 
-describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
+describe("[外部連携:AI]AI の回答からのテキスト取り出し", () => {
+  for (const { given, response } of [
+    {
+      given: 'AI の回答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき',
+      response: '```json\n{"score":70}\n```',
+    },
+    { given: 'AI の回答が {"score":70} でコードブロックで囲まれていないとき', response: '{"score":70}' },
+  ]) {
+    defineCase(
+      {
+        種別: "単体テスト",
+        正常異常: "正常系",
+        steps: [{ Given: given, When: [GENERATE_TEXT], Then: '生成したテキストは {"score":70} になる' }],
+      },
+      async () => {
+        expect(await makeClient(response).generateText("p")).toBe('{"score":70}');
+      },
+    );
+  }
+
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
         {
-          Given: 'AI 応答が「```json」で始まり「```」で終わるコードブロックで囲まれた {"score":70} のとき',
-          When: [REQUEST_TEXT_GENERATION],
-          Then: '得られるテキストは {"score":70} になる',
-        },
-      ],
-    },
-    async () => {
-      expect(await makeClient('```json\n{"score":70}\n```').generateText("p")).toBe('{"score":70}');
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
-      steps: [
-        {
-          Given: "AI 応答が「```」で始まり「```」で終わるコードブロックで囲まれた「plain text」のとき",
-          When: [REQUEST_TEXT_GENERATION],
-          Then: "得られるテキストは「plain text」になる",
+          Given: "AI の回答が「```」で始まり「```」で終わるコードブロックで囲まれた「plain text」のとき",
+          When: [GENERATE_TEXT],
+          Then: "生成したテキストは「plain text」になる",
         },
       ],
     },
@@ -57,29 +59,12 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [
-        {
-          Given: 'AI 応答が {"score":70} でコードブロックで囲まれていないとき',
-          When: [REQUEST_TEXT_GENERATION],
-          Then: '得られるテキストは {"score":70} になる',
-        },
-      ],
-    },
-    async () => {
-      expect(await makeClient('{"score":70}').generateText("p")).toBe('{"score":70}');
-    },
-  );
-
-  defineCase(
-    {
-      種別: "単体テスト",
-      正常異常: "正常系",
       観点: ["エッジケース"],
       steps: [
         {
-          Given: "AI 応答の末尾にだけ「```」がある「text```」のとき",
-          When: [REQUEST_TEXT_GENERATION],
-          Then: "得られるテキストは「text」になる",
+          Given: "AI の回答の末尾にだけ「```」がある「text```」のとき",
+          When: [GENERATE_TEXT],
+          Then: "生成したテキストは「text」になる",
         },
       ],
     },
@@ -88,22 +73,22 @@ describe("[外部連携:AI]AI 応答からのテキスト取り出し", () => {
     },
   );
 
-  const EMPTY_RESPONSE_CASES: { situation: string; candidates: unknown[]; 観点: readonly Viewpoint[] }[] = [
-    { situation: "応答の candidates が空である", candidates: [], 観点: ["外部依存の失敗", "件数・有無"] },
-    { situation: "応答の candidates に content が無い", candidates: [{}], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
-    { situation: "応答の content に parts が無い", candidates: [{ content: {} }], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
-    { situation: "応答の parts が空である", candidates: [{ content: { parts: [] } }], 観点: ["外部依存の失敗", "件数・有無"] },
-    { situation: "応答の parts のテキストが空文字である", candidates: [{ content: { parts: [{ text: "" }] } }], 観点: ["外部依存の失敗", "件数・有無"] },
+  const EMPTY_RESPONSE_CASES: { given: string; candidates: unknown[]; 観点: readonly Viewpoint[] }[] = [
+    { given: "AI の回答の候補が 0 件のとき", candidates: [], 観点: ["外部依存の失敗", "件数・有無"] },
+    { given: "AI の回答の候補に内容が無いとき", candidates: [{}], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
+    { given: "AI の回答の候補の内容に本文の部分が無いとき", candidates: [{ content: {} }], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
+    { given: "AI の回答の候補の本文の部分が 0 件のとき", candidates: [{ content: { parts: [] } }], 観点: ["外部依存の失敗", "件数・有無"] },
+    { given: "AI の回答の本文が空文字であるとき", candidates: [{ content: { parts: [{ text: "" }] } }], 観点: ["外部依存の失敗", "件数・有無"] },
   ];
 
-  for (const { situation, candidates, 観点 } of EMPTY_RESPONSE_CASES) {
+  for (const { given, candidates, 観点 } of EMPTY_RESPONSE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
         steps: [
-          { Given: `${situation}とき`, When: [REQUEST_TEXT_GENERATION], Then: "AI 応答が空であることを示すエラーになる" },
+          { Given: given, When: [GENERATE_TEXT], Then: "AI の回答が空であることを示すエラーになる" },
         ],
       },
       async () => {

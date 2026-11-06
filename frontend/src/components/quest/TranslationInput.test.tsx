@@ -11,7 +11,7 @@ describe("[本体:採点]翻訳の入力欄", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["クエスト画面の翻訳の入力欄に、翻訳「テスト翻訳」を入力する"],
+          When: ["クエスト画面の翻訳の入力欄に「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」と入力する"],
           Then: "「この翻訳に決めた！」ボタンが押せる状態になる",
         },
       ],
@@ -20,7 +20,7 @@ describe("[本体:採点]翻訳の入力欄", () => {
       const user = userEvent.setup();
       render(<TranslationInput onSubmit={vi.fn()} />);
 
-      await user.type(screen.getByRole("textbox"), "テスト翻訳");
+      await user.type(screen.getByRole("textbox"), "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
 
       expect(screen.getByRole("button")).toBeEnabled();
     },
@@ -34,7 +34,7 @@ describe("[本体:採点]翻訳の入力欄", () => {
       steps: [
         {
           Given: "入力欄が空のとき",
-          When: ["クエスト画面で、翻訳の入力欄を表示する"],
+          When: ["クエスト画面を開く"],
           Then: "「この翻訳に決めた！」ボタンは押せない状態になる",
         },
       ],

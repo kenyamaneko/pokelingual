@@ -306,6 +306,7 @@ jobs:
             --commit "${GITHUB_SHA}" \
             --css scripts/test_case_catalog.css \
             --junit junit-artifacts/junit-backend/junit.xml \
+            --junit junit-artifacts/junit-backend/integration-junit.xml \
             --junit junit-artifacts/junit-frontend/vitest-junit.xml \
             --junit junit-artifacts/junit-e2e/e2e-junit.xml \
             > _site/index.html

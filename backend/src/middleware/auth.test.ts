@@ -20,9 +20,8 @@ function makeApp(authClient: Auth) {
   return app;
 }
 
-const SEND_REQUEST_WITH_BEARER_TOKEN =
-  "ログイン後の画面から、API リクエストの認証を受けるために、Bearer 形式でトークンを付けて API にリクエストを送る";
-const SEND_REQUEST = "ログイン後の画面から、API リクエストの認証を受けるために、API にリクエストを送る";
+const CALL_WITH_BEARER_TOKEN = "ログインが必要な API に、Bearer 形式のトークンを指定して呼び出す";
+const CALL_API = "ログインが必要な API を呼び出す";
 const VERIFIED_TOKEN = "トークンがメール確認済みのとき";
 
 describe("[共通:認証]API リクエストの認証", () => {
@@ -33,8 +32,8 @@ describe("[共通:認証]API リクエストの認証", () => {
       steps: [
         {
           Given: VERIFIED_TOKEN,
-          When: [SEND_REQUEST_WITH_BEARER_TOKEN],
-          Then: "リクエストは後続の処理に渡される",
+          When: [CALL_WITH_BEARER_TOKEN],
+          Then: "API の応答は 200 になる",
         },
       ],
     },
@@ -57,8 +56,8 @@ describe("[共通:認証]API リクエストの認証", () => {
       steps: [
         {
           Given: "メール確認済みのトークンに記録されたユーザー ID が user-1 のとき",
-          When: [SEND_REQUEST_WITH_BEARER_TOKEN],
-          Then: "後続の処理から見たユーザー ID は user-1 になる",
+          When: [CALL_WITH_BEARER_TOKEN],
+          Then: "API の応答のユーザー ID は user-1 になる",
         },
       ],
     },
@@ -80,8 +79,8 @@ describe("[共通:認証]API リクエストの認証", () => {
       steps: [
         {
           Given: "Authorization ヘッダが無いとき",
-          When: [SEND_REQUEST],
-          Then: "リクエストは 401 で拒否され、認証情報が無い旨が返る",
+          When: [CALL_API],
+          Then: "API の応答は、認証情報が無いことを示す 401 のエラーになる",
         },
       ],
     },
@@ -102,8 +101,8 @@ describe("[共通:認証]API リクエストの認証", () => {
       steps: [
         {
           Given: "Authorization ヘッダの値が Basic 形式のとき",
-          When: [SEND_REQUEST],
-          Then: "リクエストは 401 で拒否され、認証情報の形式が正しくない旨が返る",
+          When: [CALL_API],
+          Then: "API の応答は、認証情報の形式が正しくないことを示す 401 のエラーになる",
         },
       ],
     },
@@ -123,9 +122,9 @@ describe("[共通:認証]API リクエストの認証", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "トークンの検証が失敗するとき",
-          When: [SEND_REQUEST_WITH_BEARER_TOKEN],
-          Then: "リクエストは 401 で拒否され、トークンが無効である旨が返る",
+          Given: "トークンが期限切れのとき",
+          When: [CALL_WITH_BEARER_TOKEN],
+          Then: "API の応答は、トークンが無効であることを示す 401 のエラーになる",
         },
       ],
     },
@@ -164,8 +163,8 @@ describe("[共通:認証]API リクエストの認証", () => {
         steps: [
           {
             Given: given,
-            When: [SEND_REQUEST_WITH_BEARER_TOKEN],
-            Then: "リクエストは 403 で拒否され、メール未確認である旨が返る",
+            When: [CALL_WITH_BEARER_TOKEN],
+            Then: "API の応答は、メール未確認であることを示す 403 のエラーになる",
           },
         ],
       },

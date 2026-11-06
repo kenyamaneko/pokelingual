@@ -69,11 +69,17 @@ async function submitLogin(
 
 const CORRECT_PASSWORD = "dummy-password";
 
-const SUBMIT_LOGIN = "ログイン画面で、メールアドレスとパスワードを入力して「メールでログイン」を押す";
-const RETRY_LOGIN = "ログイン画面で、もう一度「メールでログイン」を押す";
-const UNVERIFIED_ACCOUNT = "メールアドレスが未確認のアカウントのとき";
-const WRONG_CREDENTIALS = "メールアドレスまたはパスワードが間違っているとき";
-const HOME_SHOWN = "ホーム画面が表示される";
+const ENTER_EMAIL = "ログイン画面のメールアドレスでのログインで、メールアドレス欄に「dummy@example.com」と入力する";
+const ENTER_CORRECT_PASSWORD = "ログイン画面のメールアドレスでのログインで、パスワード欄に「dummy-password」と入力する";
+const ENTER_WRONG_PASSWORD = "ログイン画面のメールアドレスでのログインで、パスワード欄に「wrong-password」と入力する";
+const PRESS_LOGIN = "ログイン画面のメールアドレスでのログインで、「メールでログイン」ボタンを押す";
+const LOGIN_WITH_CORRECT_PASSWORD = [ENTER_EMAIL, ENTER_CORRECT_PASSWORD, PRESS_LOGIN] as const;
+const LOGIN_WITH_WRONG_PASSWORD = [ENTER_EMAIL, ENTER_WRONG_PASSWORD, PRESS_LOGIN] as const;
+const ACCOUNT_PASSWORD_CLAUSE = "「dummy@example.com」のパスワードが「dummy-password」で";
+const VERIFIED_ACCOUNT = `${ACCOUNT_PASSWORD_CLAUSE}、メールアドレスの確認が済んでいるとき`;
+const UNVERIFIED_ACCOUNT = `${ACCOUNT_PASSWORD_CLAUSE}、メールアドレスの確認が済んでいないとき`;
+const ACCOUNT_WITH_PASSWORD = "「dummy@example.com」のパスワードが「dummy-password」のとき";
+const HOME_SHOWN = "ホーム画面に、「ポケモンを探しに行く」ボタンが表示される";
 const UNVERIFIED_MESSAGE = "「メールが未確認です」を含む確認を促すメッセージが表示される";
 const WRONG_CREDENTIALS_MESSAGE = "「メールアドレスまたはパスワードが間違っています」と表示される";
 
@@ -82,7 +88,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "正しいメールアドレスとパスワードのとき", When: [SUBMIT_LOGIN], Then: HOME_SHOWN }],
+      steps: [{ Given: VERIFIED_ACCOUNT, When: LOGIN_WITH_CORRECT_PASSWORD, Then: HOME_SHOWN }],
     },
     async () => {
       const user = userEvent.setup();
@@ -94,15 +100,17 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     },
   );
 
-  for (const { given, loginError, password, errorMessage } of [
+  for (const { given, when, loginError, password, errorMessage } of [
     {
       given: UNVERIFIED_ACCOUNT,
+      when: LOGIN_WITH_CORRECT_PASSWORD,
       loginError: new EmailNotVerifiedError(),
       password: CORRECT_PASSWORD,
       errorMessage: /メールが未確認です/,
     },
     {
-      given: WRONG_CREDENTIALS,
+      given: ACCOUNT_WITH_PASSWORD,
+      when: LOGIN_WITH_WRONG_PASSWORD,
       loginError: new Error("auth error"),
       password: "wrong-password",
       errorMessage: spec("メールアドレスまたはパスワードが間違っています"),
@@ -112,7 +120,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
-        steps: [{ Given: given, When: [SUBMIT_LOGIN], Then: "ホーム画面が表示されない" }],
+        steps: [{ Given: given, When: when, Then: "ホーム画面に、「ポケモンを探しに行く」ボタンが表示されない" }],
       },
       async () => {
         const user = userEvent.setup();
@@ -130,7 +138,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: UNVERIFIED_ACCOUNT, When: [SUBMIT_LOGIN], Then: UNVERIFIED_MESSAGE }],
+      steps: [{ Given: UNVERIFIED_ACCOUNT, When: LOGIN_WITH_CORRECT_PASSWORD, Then: UNVERIFIED_MESSAGE }],
     },
     async () => {
       const user = userEvent.setup();
@@ -148,8 +156,8 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
       正常異常: "異常系",
       観点: ["回復確認"],
       steps: [
-        { Given: UNVERIFIED_ACCOUNT, When: [SUBMIT_LOGIN], Then: UNVERIFIED_MESSAGE },
-        { Given: "メールアドレスの確認が済んでいるとき", When: [RETRY_LOGIN], Then: HOME_SHOWN },
+        { Given: UNVERIFIED_ACCOUNT, When: LOGIN_WITH_CORRECT_PASSWORD, Then: UNVERIFIED_MESSAGE },
+        { Given: "メールアドレスの確認が済んでいるとき", When: [PRESS_LOGIN], Then: HOME_SHOWN },
       ],
     },
     async () => {
@@ -173,7 +181,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: WRONG_CREDENTIALS_MESSAGE }],
+      steps: [{ Given: ACCOUNT_WITH_PASSWORD, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE }],
     },
     async () => {
       const user = userEvent.setup();
@@ -191,7 +199,7 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
-      steps: [{ Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: "「メールでログイン」ボタンがもう一度押せる状態のままになる" }],
+      steps: [{ Given: ACCOUNT_WITH_PASSWORD, When: LOGIN_WITH_WRONG_PASSWORD, Then: "「メールでログイン」ボタンが押せる状態のままになる" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -210,8 +218,14 @@ describe("[共通:認証]メールアドレスでのログイン", () => {
       正常異常: "異常系",
       観点: ["回復確認"],
       steps: [
-        { Given: WRONG_CREDENTIALS, When: [SUBMIT_LOGIN], Then: WRONG_CREDENTIALS_MESSAGE },
-        { When: ["ログイン画面のパスワード欄に、正しいパスワードを入力し直す", RETRY_LOGIN], Then: HOME_SHOWN },
+        { Given: ACCOUNT_WITH_PASSWORD, When: LOGIN_WITH_WRONG_PASSWORD, Then: WRONG_CREDENTIALS_MESSAGE },
+        {
+          When: [
+            "ログイン画面のメールアドレスでのログインで、パスワード欄に「dummy-password」と入力し直す",
+            PRESS_LOGIN,
+          ],
+          Then: HOME_SHOWN,
+        },
       ],
     },
     async () => {
@@ -238,8 +252,8 @@ describe("[共通:サイト情報]ログイン画面の問い合わせ", () => {
       正常異常: "正常系",
       steps: [
         {
-          When: ["問い合わせのリンクを表示するために、ログイン画面を開く"],
-          Then: "「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く",
+          When: ["ログイン画面を開く"],
+          Then: "ログイン画面の「問い合わせ」のリンク先は「https://forms.gle/mUhMjSMf8TPJc3CC9」で、新しいタブで開く",
         },
       ],
     },
@@ -265,7 +279,7 @@ describe("[共通:サイト情報]ログイン画面の利用規約", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ When: ["ログイン画面で、利用規約を表示するために「利用規約」を押す"], Then: "利用規約モーダルが表示される" }],
+      steps: [{ When: ["ログイン画面の利用規約で、「利用規約」ボタンを押す"], Then: "利用規約モーダルが表示される" }],
     },
     async () => {
       const user = userEvent.setup();
@@ -284,7 +298,7 @@ describe("[共通:サイト情報]ログイン画面の利用規約", () => {
       steps: [
         {
           Given: "利用規約モーダルが開いているとき",
-          When: ["ログイン画面の利用規約モーダルで、「閉じる」を押す"],
+          When: ["ログイン画面の利用規約モーダルで、「閉じる」ボタンを押す"],
           Then: "モーダルが閉じてログイン画面が表示される",
         },
       ],
@@ -304,7 +318,7 @@ describe("[共通:サイト情報]ログイン画面の利用規約", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       steps: [
-        { Given: "利用規約モーダルが開いているとき", When: ["ログイン画面の利用規約モーダルで、モーダルの外側をクリックする"], Then: "モーダルが閉じる" },
+        { Given: "利用規約モーダルが開いているとき", When: ["ログイン画面の利用規約モーダルで、モーダルの外側を押す"], Then: "モーダルが閉じる" },
       ],
     },
     async () => {

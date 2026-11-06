@@ -53,8 +53,8 @@ afterAll(async () => {
 function makeSession(overrides: Partial<QuestSession> = {}): QuestSession {
   return {
     pokemon_id: 1,
-    description_en: "A strange seed.",
-    description_ja: "説明",
+    description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+    description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
     name_en: "Bulbasaur",
     name_ja: "フシギダネ",
     sprite_url: "https://example.com/1.png",
@@ -148,10 +148,10 @@ async function playQuestToCaptureAlternatingInstances(keyPrefix: string) {
   const quest = await request(instanceA).get("/api/quest/new");
   expect(quest.status).toBe(200);
 
-  const score = await request(instanceB).post("/api/quest/score").send({ translation: "はやい" });
+  const score = await request(instanceB).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
   expect(score.status).toBe(200);
 
-  const guess = await request(instanceA).post("/api/quest/guess-name").send({ guess: "wrong" });
+  const guess = await request(instanceA).post("/api/quest/guess-name").send({ guess: "Charmander" });
   expect(guess.status).toBe(200);
 
   const skip = await request(instanceB).post("/api/quest/skip-guess").send({});
@@ -166,7 +166,7 @@ async function getCurrentQuestOnOtherInstanceAfterScore(keyPrefix: string) {
   const { instanceA, instanceB } = buildTwoInstances(keyPrefix);
 
   await request(instanceA).get("/api/quest/new");
-  await request(instanceA).post("/api/quest/score").send({ translation: "はやい" });
+  await request(instanceA).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
 
   const current = await request(instanceB).get("/api/quest/current");
   expect(current.status).toBe(200);
@@ -243,17 +243,20 @@ describe("[本体:クエスト]セッションの保存・取得・削除", () =
   );
 });
 
-const QUEST_NEW_ON_INSTANCE_A = "セッションの引き継ぎで、インスタンス A に出題を要求する";
-const SCORE_ON_INSTANCE_A = "セッションの引き継ぎで、インスタンス A に訳文「はやい」の採点を要求する";
-const SCORE_ON_INSTANCE_B = "セッションの引き継ぎで、インスタンス B に訳文「はやい」の採点を要求する";
+const QUEST_NEW_ON_INSTANCE_A = "インスタンス A のクエストの出題 API を呼び出す";
+const SCORE_ON_INSTANCE_A = "インスタンス A の翻訳の採点 API に、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を指定して呼び出す";
+const SCORE_ON_INSTANCE_B = "インスタンス B の翻訳の採点 API に、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を指定して呼び出す";
+const CURRENT_QUEST_ON_INSTANCE_B = "インスタンス B の進行中のクエストの取得 API を呼び出す";
 
 const ALTERNATING_INSTANCES_OPERATIONS = [
   QUEST_NEW_ON_INSTANCE_A,
   SCORE_ON_INSTANCE_B,
-  "セッションの引き継ぎで、インスタンス A に不正解になる名前当ての回答を送る",
-  "セッションの引き継ぎで、インスタンス B に名前当てのスキップを要求する",
-  "セッションの引き継ぎで、インスタンス A に捕獲を要求する",
+  "インスタンス A の名前当ての回答 API に、回答「Charmander」を指定して呼び出す",
+  "インスタンス B の名前当てのスキップ API を呼び出す",
+  "インスタンス A の捕獲 API を呼び出す",
 ] as const;
+
+const BULBASAUR_ONLY = "出題されるポケモンがフシギダネだけのとき";
 
 describe("[本体:クエスト]インスタンス間でのセッションの引き継ぎ", () => {
   beforeEach(clearFirestoreEmulator);
@@ -264,8 +267,9 @@ describe("[本体:クエスト]インスタンス間でのセッションの引�
       正常異常: "正常系",
       steps: [
         {
+          Given: BULBASAUR_ONLY,
           When: ALTERNATING_INSTANCES_OPERATIONS,
-          Then: "名前当てのスキップの応答のボールも捕獲結果のボールもモンスターボールになる",
+          Then: "名前当てのスキップ API の応答のボールも、捕獲 API の応答のボールも、モンスターボールになる",
         },
       ],
     },
@@ -283,8 +287,9 @@ describe("[本体:クエスト]インスタンス間でのセッションの引�
       正常異常: "正常系",
       steps: [
         {
+          Given: BULBASAUR_ONLY,
           When: ALTERNATING_INSTANCES_OPERATIONS,
-          Then: "捕獲結果のポケモンは、出題された図鑑番号 1 のポケモンになる",
+          Then: "捕獲 API の応答のポケモンの図鑑番号は 1 になる",
         },
       ],
     },
@@ -301,12 +306,8 @@ describe("[本体:クエスト]インスタンス間でのセッションの引�
       正常異常: "正常系",
       steps: [
         {
-          When: [
-            QUEST_NEW_ON_INSTANCE_A,
-            SCORE_ON_INSTANCE_A,
-            "セッションの引き継ぎで、採点とは別のインスタンス B に現在のクエストの取得を要求する",
-          ],
-          Then: "現在のクエストは、名前当ての段階として得られる",
+          When: [QUEST_NEW_ON_INSTANCE_A, SCORE_ON_INSTANCE_A, CURRENT_QUEST_ON_INSTANCE_B],
+          Then: "進行中のクエストの取得 API の応答の段階は名前当てになる",
         },
       ],
     },
@@ -323,19 +324,15 @@ describe("[本体:クエスト]インスタンス間でのセッションの引�
       正常異常: "正常系",
       steps: [
         {
-          When: [
-            QUEST_NEW_ON_INSTANCE_A,
-            SCORE_ON_INSTANCE_A,
-            "セッションの引き継ぎで、採点とは別のインスタンス B に現在のクエストの取得を要求する",
-          ],
-          Then: "現在のクエストの入力済みの訳文は「はやい」になる",
+          When: [QUEST_NEW_ON_INSTANCE_A, SCORE_ON_INSTANCE_A, CURRENT_QUEST_ON_INSTANCE_B],
+          Then: "進行中のクエストの取得 API の応答の訳文は「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」になる",
         },
       ],
     },
     async () => {
       const current = await getCurrentQuestOnOtherInstanceAfterScore("test:resume:translation:");
 
-      expect(current.body).toMatchObject({ user_translation: "はやい" });
+      expect(current.body).toMatchObject({ user_translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
     },
   );
 });

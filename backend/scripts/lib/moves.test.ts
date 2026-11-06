@@ -17,9 +17,17 @@ function moveEntry(
   };
 }
 
-const DETERMINE_CANDIDATES = "ポケモンデータのスナップショット生成で、ポケモンの技のデータから、レベルアップで覚える技の候補を決定する";
-const DETERMINE_MOVE_NAME = "ポケモンデータのスナップショット生成で、技の名称の一覧から、技の日本語名を決定する";
-const CREATE_NAME_LIST = "ポケモンデータのスナップショット生成で、技の候補の日本語名の一覧を作成する";
+function convertCandidatesFrom(source: string): string {
+  return `${source} PokeAPI の技のデータを、レベルアップで覚える技の候補に変換する`;
+}
+
+function convertMoveNameFrom(source: string): string {
+  return `${source} PokeAPI の技の名称の一覧を、技の日本語名に変換する`;
+}
+
+function convertNameListFrom(candidates: string): string {
+  return `技の候補 ${candidates}を、日本語名の一覧に変換する`;
+}
 
 describe("[外部連携:ポケモンデータ提供元]レベルアップで覚える技の候補の決定", () => {
   defineCase(
@@ -29,9 +37,8 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ソード・シールドでレベルアップで覚える技が vine-whip (技の番号 22・Lv.7)・tackle (33・Lv.1)・growl (45・Lv.1) の 3 つあるとき",
-          When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は、tackle (技の番号 33)・growl (45)・vine-whip (22) の 3 件になる (並びは問わない)",
+          When: [convertCandidatesFrom("ソード・シールドで、vine-whip を Lv.7、tackle を Lv.1、growl を Lv.1 のレベルアップで覚える")],
+          Then: "技の候補は、順不同で、tackle・growl・vine-whip の 3 件になる",
         },
       ],
     },
@@ -60,9 +67,8 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ソード・シールドでレベルアップで覚える技が sketch (技の番号 166・Lv.1) の 1 つだけのとき",
-          When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は sketch (技の番号 166) の 1 件だけになる",
+          When: [convertCandidatesFrom("ソード・シールドで、sketch だけを Lv.1 のレベルアップで覚える")],
+          Then: "技の候補は、sketch の 1 件だけになる",
         },
       ],
     },
@@ -78,9 +84,8 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       正常異常: "正常系",
       steps: [
         {
-          Given: "ソード・シールドにレベルアップで覚える技のデータが無く、X・Y に tackle (技の番号 33・Lv.1) と growl (45・Lv.1) があるとき",
-          When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は tackle (33) と growl (45) の 2 件になる (並びは問わない)",
+          When: [convertCandidatesFrom("ソード・シールドにレベルアップで覚える技のデータが無く、X・Y で、tackle と growl を Lv.1 のレベルアップで覚える")],
+          Then: "技の候補は、順不同で、tackle・growl の 2 件になる",
         },
       ],
     },
@@ -106,9 +111,8 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
       正常異常: "正常系",
       steps: [
         {
-          Given: "ソード・シールドで double-edge (技の番号 38) を Lv.10 と Lv.30 の 2 つのレベルで覚えるとき",
-          When: [DETERMINE_CANDIDATES],
-          Then: "技の候補は double-edge (技の番号 38) の 1 件だけになる",
+          When: [convertCandidatesFrom("ソード・シールドで、double-edge を Lv.10 と Lv.30 のレベルアップで覚える")],
+          Then: "技の候補は、double-edge の 1 件だけになる",
         },
       ],
     },
@@ -123,22 +127,22 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
     },
   );
 
-  const NO_CANDIDATE_CASES: { given: string; moves: PokeAPIMoveEntry[]; 観点: readonly Viewpoint[] }[] = [
+  const NO_CANDIDATE_CASES: { source: string; moves: PokeAPIMoveEntry[]; 観点: readonly Viewpoint[] }[] = [
     {
-      given: "ソード・シールドで、タマゴ技 (egg-move・技の番号 99) のようにレベルアップ以外の方法でしか覚えない技だけがあるとき",
+      source: "ソード・シールドで、レベルアップ以外の方法でしか覚えない技として、タマゴ技だけがある",
       moves: [moveEntry("egg-move", 99, [{ versionGroup: "sword-shield", level: 0, learnMethod: "egg" }])],
       観点: ["件数・有無"],
     },
-    { given: "技のデータが 1 件も無いとき", moves: [], 観点: ["件数・有無", "エッジケース"] },
+    { source: "1 件も無い", moves: [], 観点: ["件数・有無"] },
   ];
 
-  for (const { given, moves, 観点 } of NO_CANDIDATE_CASES) {
+  for (const { source, moves, 観点 } of NO_CANDIDATE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ Given: given, When: [DETERMINE_CANDIDATES], Then: "技の候補は空になる" }],
+        steps: [{ When: [convertCandidatesFrom(source)], Then: "技の候補は空になる" }],
       },
       () => {
         expect(resolveLevelUpMoveCandidates(moves)).toEqual([]);
@@ -148,15 +152,15 @@ describe("[外部連携:ポケモンデータ提供元]レベルアップで覚�
 });
 
 describe("[外部連携:ポケモンデータ提供元]技の日本語名の決定", () => {
-  for (const { given, languageCode } of [
-    { given: "技の名称に通常表記の日本語名「たいあたり」があるとき", languageCode: "ja" },
-    { given: "通常表記の日本語名が無く、かな表記の名称「たいあたり」があるとき", languageCode: "ja-Hrkt" },
+  for (const { source, languageCode } of [
+    { source: "英語名 Tackle と通常表記の日本語名「たいあたり」がある", languageCode: "ja" },
+    { source: "英語名 Tackle とかな表記の名称「たいあたり」があり、通常表記の日本語名が無い", languageCode: "ja-Hrkt" },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        steps: [{ Given: given, When: [DETERMINE_MOVE_NAME], Then: "技の日本語名は「たいあたり」になる" }],
+        steps: [{ When: [convertMoveNameFrom(source)], Then: "技の日本語名は「たいあたり」になる" }],
       },
       () => {
         const names = [
@@ -175,8 +179,7 @@ describe("[外部連携:ポケモンデータ提供元]技の日本語名の決�
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "技の名称に英語名 Tackle しか無く、通常表記もかな表記も日本語名が無いとき",
-          When: [DETERMINE_MOVE_NAME],
+          When: [convertMoveNameFrom("英語名 Tackle しか無く、通常表記もかな表記も日本語名が無い")],
           Then: "日本語名が無いことを示すエラーになる",
         },
       ],
@@ -196,7 +199,7 @@ const moveNamesJA = new Map([
 ]);
 
 const MOVE_NAMES_RESOLVED_GIVEN =
-  "日本語名を調べ終えている技が、tackle (たいあたり)・growl (なきごえ)・vine-whip (つるのムチ)・leech-seed (やどりぎのタネ) の 4 つで";
+  "日本語名を調べ終えている技が、tackle はたいあたり・growl はなきごえ・vine-whip はつるのムチ・leech-seed はやどりぎのタネの 4 つのとき";
 
 describe("[外部連携:ポケモンデータ提供元]技の候補の日本語名の一覧の作成", () => {
   defineCase(
@@ -206,8 +209,8 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       観点: ["件数・有無"],
       steps: [
         {
-          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が tackle・growl・vine-whip・leech-seed の順で 4 件あるとき`,
-          When: [CREATE_NAME_LIST],
+          Given: MOVE_NAMES_RESOLVED_GIVEN,
+          When: [convertNameListFrom("tackle・growl・vine-whip・leech-seed の順の 4 件")],
           Then: "日本語名の一覧は、たいあたり・なきごえ・つるのムチ・やどりぎのタネの順の 4 件になる",
         },
       ],
@@ -232,11 +235,10 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      観点: ["件数・有無", "エッジケース"],
+      観点: ["件数・有無"],
       steps: [
         {
-          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が 0 件のとき`,
-          When: [CREATE_NAME_LIST],
+          When: [convertNameListFrom("0 件")],
           Then: "日本語名の一覧は空になる",
         },
       ],
@@ -252,14 +254,14 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       正常異常: "異常系",
       steps: [
         {
-          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補に、日本語名を調べ終えていない技 (unknown-move) があるとき`,
-          When: [CREATE_NAME_LIST],
-          Then: "日本語名が解決されていないことを示すエラーになる",
+          Given: MOVE_NAMES_RESOLVED_GIVEN,
+          When: [convertNameListFrom("ember の 1 件")],
+          Then: "日本語名を調べ終えていない技があることを示すエラーになる",
         },
       ],
     },
     () => {
-      const candidates = [{ slug: "unknown-move", id: 999 }];
+      const candidates = [{ slug: "ember", id: 999 }];
       expect(() => resolveLevelUpMoveNames(candidates, moveNamesJA)).toThrow(
         /no resolved japanese name/,
       );
