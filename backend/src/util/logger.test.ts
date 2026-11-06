@@ -62,6 +62,7 @@ describe("[運用:ログ出力]ログの形式", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: `${CURRENT_TIME}、severity が WARNING、メッセージが running in public mode で、追加フィールドが無いとき`,

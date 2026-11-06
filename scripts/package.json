@@ -1,9 +1,9 @@
 {
   "name": "catalog-styles",
   "private": true,
-  "description": "テスト観点カタログの CSS を生成する",
+  "description": "テストケースカタログの CSS を生成する",
   "scripts": {
-    "build:css": "tailwindcss -i behavior_catalog.input.css -o behavior_catalog.css --minify"
+    "build:css": "tailwindcss -i test_case_catalog.input.css -o test_case_catalog.css --minify"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.18",

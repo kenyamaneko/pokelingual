@@ -7,7 +7,7 @@ import {
 } from "./ScoreDisplay";
 import type { ScoreResponse } from "../../../../shared/api-types/quest";
 import { spec } from "../../test/labels";
-import { defineCase } from "../../test/defineCase";
+import { defineCase, type Viewpoint } from "../../test/defineCase";
 
 function withScore(score: number): ScoreResponse {
   return { score, review: "", description_ja: "" };
@@ -40,6 +40,7 @@ type HpBandRow = {
   operations: readonly [string, ...string[]];
   elapsedRatio: number;
   remainingHp: number;
+  viewpoints: readonly Viewpoint[];
 };
 
 describe("[本体:採点]採点スコアの演出", () => {
@@ -187,14 +188,15 @@ describe("[本体:採点]採点スコアの演出", () => {
     },
   );
 
-  for (const { score, operations, elapsedRatio, remainingHp } of [
-    { score: 85, operations: [DISPLAY_SCORE], elapsedRatio: 0, remainingHp: 100 },
-    { score: 49, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 51 },
+  for (const { score, operations, elapsedRatio, remainingHp, viewpoints } of [
+    { score: 85, operations: [DISPLAY_SCORE], elapsedRatio: 0, remainingHp: 100, viewpoints: [] },
+    { score: 49, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 51, viewpoints: ["境界値"] },
   ] satisfies HpBandRow[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: `スコアが ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は緑になる` }],
       },
       () => {
@@ -204,15 +206,16 @@ describe("[本体:採点]採点スコアの演出", () => {
     );
   }
 
-  for (const { score, operations, elapsedRatio, remainingHp } of [
-    { score: 85, operations: [DISPLAY_SCORE, WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE], elapsedRatio: 0.6, remainingHp: 49 },
-    { score: 50, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 50 },
-    { score: 79, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 21 },
+  for (const { score, operations, elapsedRatio, remainingHp, viewpoints } of [
+    { score: 85, operations: [DISPLAY_SCORE, WAIT_UNTIL_SIX_TENTHS_OF_HP_DECREASE], elapsedRatio: 0.6, remainingHp: 49, viewpoints: [] },
+    { score: 50, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 50, viewpoints: ["境界値"] },
+    { score: 79, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 21, viewpoints: ["境界値"] },
   ] satisfies HpBandRow[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: `スコアが ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は黄になる` }],
       },
       () => {
@@ -222,14 +225,15 @@ describe("[本体:採点]採点スコアの演出", () => {
     );
   }
 
-  for (const { score, operations, elapsedRatio, remainingHp } of [
-    { score: 85, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 15 },
-    { score: 80, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 20 },
+  for (const { score, operations, elapsedRatio, remainingHp, viewpoints } of [
+    { score: 85, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 15, viewpoints: ["同値分割"] },
+    { score: 80, operations: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], elapsedRatio: 1, remainingHp: 20, viewpoints: ["境界値"] },
   ] satisfies HpBandRow[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: `スコアが ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は赤になる` }],
       },
       () => {

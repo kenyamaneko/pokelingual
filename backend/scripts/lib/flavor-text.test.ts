@@ -1,7 +1,7 @@
 import { describe, expect } from "vitest";
 import { buildFlavorTextPairs } from "./flavor-text.js";
 import type { FlavorTextSource } from "./flavor-text.js";
-import { defineCase } from "../../src/test/defineCase.js";
+import { defineCase, type Viewpoint } from "../../src/test/defineCase.js";
 
 function entry(version: string, language: string, text: string): FlavorTextSource {
   return { version, language, text };
@@ -117,19 +117,31 @@ describe("[外部連携:ポケモンデータ提供元]英日説明文ペアの�
     },
   );
 
-  for (const { given, entries } of [
+  const EMPTY_PAIRS_CASES: { given: string; entries: FlavorTextSource[]; 観点: readonly Viewpoint[] }[] = [
     {
       given: "図鑑に表示しないバージョン (red) の英語の説明文「Old.」と日本語の説明文「古い。」だけがあるとき",
       entries: [entry("red", "en", "Old."), entry("red", "ja", "古い。")],
+      観点: [],
     },
-    { given: "バージョン X に日本語の説明文「速い。」だけがあるとき", entries: [entry("x", "ja", "速い。")] },
-    { given: "バージョン X に英語の説明文「Fast.」だけがあるとき", entries: [entry("x", "en", "Fast.")] },
-    { given: "説明文が 1 件も無いとき", entries: [] },
-  ]) {
+    {
+      given: "バージョン X に日本語の説明文「速い。」だけがあるとき",
+      entries: [entry("x", "ja", "速い。")],
+      観点: ["件数・有無", "エッジケース"],
+    },
+    {
+      given: "バージョン X に英語の説明文「Fast.」だけがあるとき",
+      entries: [entry("x", "en", "Fast.")],
+      観点: ["件数・有無", "エッジケース"],
+    },
+    { given: "説明文が 1 件も無いとき", entries: [], 観点: ["件数・有無", "エッジケース"] },
+  ];
+
+  for (const { given, entries, 観点 } of EMPTY_PAIRS_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [{ Given: given, When: [BUILD_PAIRS], Then: "説明文ペアの一覧は空になる" }],
       },
       () => {

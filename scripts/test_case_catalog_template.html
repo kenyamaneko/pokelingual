@@ -6,38 +6,21 @@
 <title>__TITLE__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
 <style>__CSS__</style>
 <style>
   /* レイアウト: 左に区分と大機能の目次、右に大機能 > 小機能の順で縦に読む。小機能ごとに Given・When・Then・タグの表を置く。 */
   :root {
-    --bg: #f5f6f8; --surface: #ffffff; --sunken: #eceef2;
-    --fg: #1d2330; --muted: #566074; --faint: #8b93a5; --line: #dde1e8; --line-strong: #aab3c5;
-    --accent: #1f5fbf; --accent-soft: #e3edfb;
-    --ok: #17663f; --ok-soft: #e0f2e8; --err: #9a3412; --err-soft: #fde8d8;
-    --k0: #64748b; --k1: #2563eb; --k2: #7c3aed; --k3: #0d9488; --k4: #db2777; --k5: #ca8a04;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #12151c; --surface: #1a1f29; --sunken: #232937;
-      --fg: #e6e9f0; --muted: #a2abbd; --faint: #78819a; --line: #2e3544; --line-strong: #5a6580;
-      --accent: #7fb0ff; --accent-soft: #1f2f4d;
-      --ok: #6fd3a0; --ok-soft: #173627; --err: #ffb27a; --err-soft: #46261a;
-      --k0: #94a3b8; --k1: #60a5fa; --k2: #a78bfa; --k3: #2dd4bf; --k4: #f472b6; --k5: #facc15;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #12151c; --surface: #1a1f29; --sunken: #232937;
-    --fg: #e6e9f0; --muted: #a2abbd; --faint: #78819a; --line: #2e3544; --line-strong: #5a6580;
-    --accent: #7fb0ff; --accent-soft: #1f2f4d;
-    --ok: #6fd3a0; --ok-soft: #173627; --err: #ffb27a; --err-soft: #46261a;
-    --k0: #94a3b8; --k1: #60a5fa; --k2: #a78bfa; --k3: #2dd4bf; --k4: #f472b6; --k5: #facc15;
     color-scheme: dark;
+    --bg: #1c1c1c; --surface: #242424; --sunken: #2d2d2d;
+    --fg: #f2f2f2; --muted: #d0d0d0; --faint: #aaaaaa; --line: #4c4c4c; --line-strong: #8c8c8c;
+    --accent: #ffe14d; --accent-soft: #3d3600;
+    --ok: #8ef0a0; --err: #ff9b9b; --on-fill: #111111;
+    --k0: #b8bcc6; --k1: #6fe3ff; --k2: #c9a6ff; --k3: #7ef0d0; --k4: #ff9bd0; --k5: #ffd27a;
+    --t0: #ffe14d; --t1: #ff9ec4; --t2: #ffb35c; --t3: #8ef0a0; --t4: #8fd8ff; --t5: #d2b3ff;
   }
-  body { background: var(--bg); color: var(--fg); font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif; }
+  body { background: var(--bg); color: var(--fg); }
   .tabular { font-variant-numeric: tabular-nums; }
-  .dot { width: .5rem; height: .5rem; border-radius: 9999px; background: var(--dot, var(--k0)); flex: none; }
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
   details[open] > summary .chev { transform: rotate(90deg); }
@@ -45,6 +28,24 @@
   button:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { .chev { transition: none; } html { scroll-behavior: auto; } }
   html { scroll-behavior: smooth; }
+
+  /* 種別と観点は色枠と同じ色の文字、正常系と異常系は塗りつぶし。--c に色を渡す。 */
+  .chip { display: inline-flex; align-items: center; padding: .125rem .5rem; font-size: .6875rem; font-weight: 700; line-height: 1.4; white-space: nowrap; }
+  .chip-outline { color: var(--c); border: 1.5px solid var(--c); }
+  .chip-ok { background: var(--ok); color: var(--bg); }
+  .chip-err { background: var(--err); color: var(--bg); }
+  .filter-btn { --c: var(--muted); display: inline-flex; align-items: center; gap: .375rem; padding: .25rem .625rem; font-size: .75rem; font-weight: 700; color: var(--c); border: 1.5px solid var(--c); background: transparent; cursor: pointer; }
+  .filter-btn:hover { background: var(--sunken); }
+  .filter-btn[aria-pressed="true"] { background: var(--c); color: var(--on-fill); }
+  .filter-btn .count { font-variant-numeric: tabular-nums; opacity: .75; }
+
+  .legend { margin-top: .75rem; border: 1px solid var(--line-strong); background: var(--surface); }
+  .legend > summary { padding: .5rem .75rem; font-size: .8125rem; font-weight: 700; }
+  .legend-body { border-top: 1px solid var(--line-strong); padding: .25rem .75rem; }
+  .legend-item { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: .25rem .75rem; padding: .5rem 0; border-top: 1px solid var(--line); font-size: .8125rem; line-height: 1.6; }
+  .legend-item:first-child { border-top: 0; }
+  .legend-count { margin-top: .25rem; font-size: .6875rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+  @media (max-width: 40rem) { .legend-item { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 </head>
@@ -56,6 +57,7 @@
       <p id="summary" class="text-sm text-muted tabular"></p>
     </div>
     <p id="disclaimer" class="max-w-3xl text-sm text-muted leading-relaxed"></p>
+    <details class="legend"><summary>観点の一覧と付ける条件</summary><div class="legend-body" id="legend-body"></div></details>
     <p id="commit" class="text-xs text-faint" hidden>生成元 commit: <code id="commit-sha"></code></p>
   </header>
 
@@ -65,19 +67,23 @@
     </aside>
 
     <main class="min-w-0">
-      <section aria-label="絞り込み" class="sticky z-20 -mx-1 mb-4 rounded-lg border border-line bg-surface px-3 py-3 shadow-sm" style="top: env(safe-area-inset-top, 0px)">
+      <section aria-label="絞り込み" class="sticky z-20 -mx-1 mb-4 border border-line bg-surface px-3 py-3 shadow-sm" style="top: env(safe-area-inset-top, 0px)">
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span class="w-14 text-xs font-medium text-muted">種別</span>
+            <span class="w-[4.5rem] text-xs font-medium text-muted">正常異常</span>
+            <div id="na-filter" class="inline-flex overflow-hidden border border-line text-sm" role="group" aria-label="正常異常"></div>
+            <div class="ml-auto flex gap-1.5">
+              <button id="expand" type="button" class="border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて開く</button>
+              <button id="collapse" type="button" class="border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて閉じる</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span class="w-[4.5rem] text-xs font-medium text-muted">種別</span>
             <div id="kind-filter" class="flex flex-wrap gap-1.5"></div>
           </div>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span class="w-14 text-xs font-medium text-muted">正常異常</span>
-            <div id="na-filter" class="inline-flex overflow-hidden rounded-md border border-line text-sm" role="group" aria-label="正常異常"></div>
-            <div class="ml-auto flex gap-1.5">
-              <button id="expand" type="button" class="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて開く</button>
-              <button id="collapse" type="button" class="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて閉じる</button>
-            </div>
+            <span class="w-[4.5rem] text-xs font-medium text-muted">観点</span>
+            <div id="perspective-filter" class="flex flex-wrap items-center gap-1.5"></div>
           </div>
         </div>
       </section>
@@ -93,15 +99,24 @@
   var CASES = DATA.cases;
   var KINDS = ['単体テスト', '部品間結合テスト', 'インフラ結合テスト', 'サービス間結合テスト', 'E2Eテスト', 'シナリオテスト'];
   var REGIONS = DATA.regions;
-  var state = { kinds: new Set(), na: '', openAll: null };
+  var PERSPECTIVES = DATA.perspectives;
+  var NO_PERSPECTIVE = 'タグなし';
+  var state = { kinds: new Set(), na: '', perspectives: new Set(), openAll: null };
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function kindIndex(k) { var i = KINDS.indexOf(k); return i < 0 ? 0 : i; }
   function slug(s) { return 'sec-' + Array.from(s).map(function (c) { return c.charCodeAt(0).toString(36); }).join('').slice(0, 40); }
 
+  function perspectiveIndex(name) { for (var i = 0; i < PERSPECTIVES.length; i++) if (PERSPECTIVES[i].name === name) return i; return 0; }
+
   function visible(c) {
     if (state.kinds.size && !state.kinds.has(c.t)) return false;
     if (state.na && c.n !== state.na) return false;
+    if (state.perspectives.size) {
+      var isMatched = false;
+      state.perspectives.forEach(function (p) { if (p === NO_PERSPECTIVE ? c.g.length === 0 : c.g.indexOf(p) >= 0) isMatched = true; });
+      if (!isMatched) return false;
+    }
     return true;
   }
 
@@ -112,14 +127,15 @@
   }
 
   function tagsHtml(c) {
-    var kind = c.t ? '<span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-bg px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap"><span class="dot" style="--dot:var(--k' + kindIndex(c.t) + ')"></span>' + esc(c.t) + '</span>' : '';
-    var na = c.n === '異常系'
-      ? '<span class="inline-flex items-center rounded-full bg-err-soft px-2 py-0.5 text-[0.6875rem] font-bold text-err whitespace-nowrap">異常系</span>'
-      : c.n === '正常系'
-        ? '<span class="inline-flex items-center rounded-full bg-ok-soft px-2 py-0.5 text-[0.6875rem] font-medium text-ok whitespace-nowrap">正常系</span>' : '';
-    var environments = (c.e || []).map(function (e) { return '<span class="inline-flex items-center rounded-md border border-line bg-surface px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap">' + esc(e) + '</span>'; }).join('');
-    var skip = c.x ? '<span class="inline-flex items-center rounded-full border border-dashed border-strong px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap">skip 中</span>' : '';
-    return kind + environments + na + skip;
+    var na = c.n === '異常系' ? '<span class="chip chip-err">異常系</span>' : c.n === '正常系' ? '<span class="chip chip-ok">正常系</span>' : '';
+    var kind = c.t ? '<span class="chip chip-outline" style="--c:var(--k' + kindIndex(c.t) + ')">' + esc(c.t) + '</span>' : '';
+    var environments = (c.e || []).map(function (e) { return '<span class="inline-flex items-center border border-line bg-surface px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap">' + esc(e) + '</span>'; }).join('');
+    var skip = c.x ? '<span class="inline-flex items-center border border-dashed border-strong px-2 py-0.5 text-[0.6875rem] font-medium text-muted whitespace-nowrap">skip 中</span>' : '';
+    return na + kind + environments + skip + c.g.map(perspectiveChipHtml).join('');
+  }
+
+  function perspectiveChipHtml(name) {
+    return '<span class="chip chip-outline" style="--c:var(--t' + perspectiveIndex(name) + ')">' + esc(name) + '</span>';
   }
 
   function cellText(text) {
@@ -188,20 +204,20 @@
   }
 
   function environmentThenHtml(environment, text) {
-    return '<span class="mr-2 inline-flex items-center rounded-md border border-line bg-surface px-1.5 py-0.5 align-middle text-[0.6875rem] font-medium text-muted whitespace-nowrap">' + esc(environment) + '</span>' + cellText(text);
+    return '<span class="mr-2 inline-flex items-center border border-line bg-surface px-1.5 py-0.5 align-middle text-[0.6875rem] font-medium text-muted whitespace-nowrap">' + esc(environment) + '</span>' + cellText(text);
   }
 
-  function stepRowsHtml(c, newG, span, rowClass, cell) {
+  function stepRowsHtml(c, newG, span, cell) {
     var total = rowsOf(c), numbered = c.steps.length > 1, html = '';
     c.steps.forEach(function (st, i) {
       var rows = rowsOfStep(st);
       var whenCell = numbered
-        ? '<div class="flex items-start gap-2.5"><span class="mt-px inline-flex h-6 min-w-6 flex-none items-center justify-center rounded-full bg-accent-soft px-1.5 text-base font-bold text-accent">' + (i + 1) + '</span><div class="min-w-0 flex-1">' + whenHtml(st.W, true) + '</div></div>'
+        ? '<div class="flex items-start gap-2.5"><span class="mt-px inline-flex h-6 min-w-6 flex-none items-center justify-center bg-accent-soft px-1.5 text-base font-bold text-accent">' + (i + 1) + '</span><div class="min-w-0 flex-1">' + whenHtml(st.W, true) + '</div></div>'
         : whenHtml(st.W, false);
       for (var r = 0; r < rows; r++) {
         var isFirstRow = i === 0 && r === 0;
         var border = r > 0 ? 'border-t border-dashed' : isFirstRow ? (newG ? 'border-t-2' : 'border-t') : 'border-t border-dashed';
-        html += '<tr class="' + border + ' border-strong ' + rowClass + '">';
+        html += '<tr class="' + border + ' border-strong">';
         if (isFirstRow && newG) html += '<td rowspan="' + span + '" class="' + cell.replace('border-l border-strong', '') + ' font-medium">' + cellText(st.G) + '</td>';
         if (r === 0) html += '<td' + (rows > 1 ? ' rowspan="' + rows + '"' : '') + ' class="' + cell + '">' + whenCell + '</td>';
         html += '<td class="' + cell + ' font-medium">' + (st.E ? environmentThenHtml(st.E[r][0], st.E[r][1]) : cellText(st.T)) + '</td>';
@@ -214,20 +230,17 @@
 
   function smallBodyHtml(rawList) {
     var rows = orderByShared(rawList);
-    var th = 'px-3 py-2 text-left text-[0.625rem] font-bold tracking-wider text-faint';
+    var th = 'px-3 py-2 text-left text-xs font-bold tracking-wider text-faint';
     var html = '<div class="overflow-x-auto"><table class="w-full min-w-[44rem] border-collapse text-[0.9375rem] leading-relaxed">' +
       '<thead><tr class="border-b-2 border-strong"><th class="' + th + ' w-[27%]">Given</th><th class="' + th + ' w-[27%]">When</th><th class="' + th + '">Then</th><th class="' + th + ' w-[9.5rem]">タグ</th></tr></thead><tbody>';
-    var groupNo = -1;
     rows.forEach(function (c, i) {
       var prev = rows[i - 1];
       var cell = 'px-3 py-2.5 align-top border-l border-strong';
       var newG = !prev || gOf(prev) !== gOf(c);
-      if (newG) groupNo++;
-      var bg = groupNo % 2 ? 'bg-sunken' : '';
-      if (isBlockCase(c)) { html += stepRowsHtml(c, newG, newG ? givenSpan(rows, i) : 0, bg, cell); return; }
+      if (isBlockCase(c)) { html += stepRowsHtml(c, newG, newG ? givenSpan(rows, i) : 0, cell); return; }
       var newW = !prev || !canShareWhenCell(prev, c);
       var st = c.steps[0];
-      html += '<tr class="' + (newG ? 'border-t-2' : 'border-t') + ' border-strong ' + bg + '">';
+      html += '<tr class="' + (newG ? 'border-t-2' : 'border-t') + ' border-strong">';
       if (newG) {
         html += '<td rowspan="' + givenSpan(rows, i) + '" class="' + cell.replace('border-l border-strong', '') + ' font-medium">' + cellText(st.G) + '</td>';
       }
@@ -257,19 +270,19 @@
       toc += '<div><p class="mb-1 px-2 text-[0.6875rem] font-bold tracking-widest text-faint">' + esc(region) + '</p><ul class="flex flex-col">';
       majors.forEach(function (mcases, major) {
         var id = slug(region + major);
-        toc += '<li><a href="#' + id + '" class="flex items-center justify-between gap-2 rounded-md px-2 py-1 text-muted hover:bg-sunken hover:text-fg"><span class="min-w-0">' + esc(major) + '</span><span class="tabular text-xs text-faint">' + mcases.length + '</span></a></li>';
+        toc += '<li><a href="#' + id + '" class="flex items-center justify-between gap-2 px-2 py-1 text-muted hover:bg-sunken hover:text-fg"><span class="min-w-0">' + esc(major) + '</span><span class="tabular text-xs text-faint">' + mcases.length + '</span></a></li>';
         var minors = Array.from(groupBy(mcases, function (c) { return c.m || ''; }).entries());
         var sec = '<section id="' + id + '" class="scroll-mt-40"><div class="mb-3 flex items-baseline gap-3 border-b border-line pb-2">' +
           '<span class="text-xs font-medium text-faint">' + esc(region) + '</span><h2 class="text-xl font-bold">' + esc(major) + '</h2>' +
-          '<div class="ml-auto flex gap-1.5 self-center"><button type="button" data-section-action="expand" class="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて開く</button>' +
-          '<button type="button" data-section-action="collapse" class="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて閉じる</button></div></div><div class="flex flex-col gap-6">';
+          '<div class="ml-auto flex gap-1.5 self-center"><button type="button" data-section-action="expand" class="border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて開く</button>' +
+          '<button type="button" data-section-action="collapse" class="border border-line px-2.5 py-1.5 text-xs text-muted hover:bg-sunken">すべて閉じる</button></div></div><div class="flex flex-col gap-6">';
         minors.forEach(function (entry) {
           var minor = entry[0], ml = entry[1];
           var smalls = groupBy(ml, function (c) { return c.s; });
           sec += '<div class="flex flex-col gap-2">';
           smalls.forEach(function (sl, small) {
             var open = state.openAll === null ? true : state.openAll;
-            sec += '<details ' + (open ? 'open' : '') + ' class="overflow-hidden rounded-lg border border-strong bg-surface"><summary class="flex items-center gap-2 px-3 py-2.5">' +
+            sec += '<details ' + (open ? 'open' : '') + ' class="overflow-hidden border border-strong bg-surface"><summary class="flex items-center gap-2 px-3 py-2.5">' +
               '<svg class="chev h-3.5 w-3.5 flex-none text-faint" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>' +
               '<span class="min-w-0 flex-1 font-medium leading-snug">' + esc(small) + (region === 'シナリオ' ? '<span class="font-normal text-muted">（' + esc(minor) + '）</span>' : '') + '</span></summary>' +
               '<div class="border-t border-strong">' + smallBodyHtml(sl) + '</div></details>';
@@ -281,25 +294,57 @@
       });
       toc += '</ul></div>';
     });
-    if (!list.length) content = '<p class="rounded-lg border border-dashed border-line p-8 text-center text-muted">条件に合うケースがありません。絞り込みを外してください。</p>';
+    if (!list.length) content = '<p class="border border-dashed border-line p-8 text-center text-muted">条件に合うケースがありません。絞り込みを外してください。</p>';
     document.getElementById('toc').innerHTML = toc;
     document.getElementById('content').innerHTML = content;
     state.openAll = null;
   }
 
+  function buildLegend() {
+    var counts = countPerspectives();
+    document.getElementById('legend-body').innerHTML = PERSPECTIVES.map(function (p) {
+      return '<div class="legend-item"><div>' + perspectiveChipHtml(p.name) + '<div class="legend-count">' + (counts[p.name] || 0) + ' ケース</div></div>' +
+        '<div>' + esc(p.condition) + '</div></div>';
+    }).join('');
+  }
+
+  function countPerspectives() {
+    var counts = {};
+    CASES.forEach(function (c) { c.g.forEach(function (p) { counts[p] = (counts[p] || 0) + 1; }); });
+    return counts;
+  }
+
+  function filterButtonHtml(attribute, value, colorVar, count) {
+    return '<button type="button" ' + attribute + '="' + esc(value) + '"' + (colorVar ? ' style="--c:var(' + colorVar + ')"' : '') + ' aria-pressed="false" class="filter-btn">' +
+      esc(value) + '<span class="count">' + count + '</span></button>';
+  }
+
   function buildFilters() {
+    buildLegend();
     var counts = {};
     CASES.forEach(function (c) { counts[c.t] = (counts[c.t] || 0) + 1; });
     var kf = document.getElementById('kind-filter');
     kf.innerHTML = KINDS.filter(function (k) { return counts[k]; }).map(function (k) {
-      return '<button type="button" data-kind="' + esc(k) + '" aria-pressed="false" class="kind-btn inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-muted hover:bg-sunken aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-fg">' +
-        '<span class="dot" style="--dot:var(--k' + kindIndex(k) + ')"></span>' + esc(k) + '<span class="tabular text-faint">' + counts[k] + '</span></button>';
+      return filterButtonHtml('data-kind', k, '--k' + kindIndex(k), counts[k]);
     }).join('');
     kf.addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       var k = b.getAttribute('data-kind');
       if (state.kinds.has(k)) state.kinds.delete(k); else state.kinds.add(k);
       b.setAttribute('aria-pressed', state.kinds.has(k) ? 'true' : 'false');
+      render();
+    });
+    var perspectiveCounts = countPerspectives();
+    var untagged = CASES.filter(function (c) { return c.g.length === 0; }).length;
+    var pf = document.getElementById('perspective-filter');
+    pf.innerHTML = PERSPECTIVES.map(function (p, i) {
+      return filterButtonHtml('data-perspective', p.name, '--t' + i, perspectiveCounts[p.name] || 0);
+    }).join('') + filterButtonHtml('data-perspective', NO_PERSPECTIVE, '', untagged);
+    pf.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var p = b.getAttribute('data-perspective');
+      if (state.perspectives.has(p)) state.perspectives.delete(p); else state.perspectives.add(p);
+      b.setAttribute('aria-pressed', state.perspectives.has(p) ? 'true' : 'false');
       render();
     });
     var nf = document.getElementById('na-filter');

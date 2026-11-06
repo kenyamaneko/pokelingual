@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from generate_behavior_catalog import (
+from generate_test_case_catalog import (
     CatalogCase,
     CatalogError,
     Step,
@@ -124,7 +124,7 @@ def build_case(region="本体", major="認証", minor="", feature="ログイン"
     return CatalogCase(region, major, minor, feature, "単体テスト", "正常系", (Step("", ("操作する",), "結果になる"),), is_skipped)
 
 
-class Test運用__テスト観点カタログ__テスト名の分解:
+class Test運用__テストケースカタログ__テスト名の分解:
     class Testテスト名を分解すると:
         class Test単体テスト:
             class Test正常系:
@@ -171,7 +171,7 @@ class Test運用__テスト観点カタログ__テスト名の分解:
                         parse_top_level("[本体]ログイン", "場所")
 
 
-class Test運用__テスト観点カタログ__ステップの組み立て:
+class Test運用__テストケースカタログ__ステップの組み立て:
     class Testステップを組み立てると:
         class Test単体テスト:
             class Test正常系:
@@ -230,7 +230,7 @@ class Test運用__テスト観点カタログ__ステップの組み立て:
                         parse_steps(pairs, "場所")
 
 
-class Test運用__テスト観点カタログ__一覧の検証:
+class Test運用__テストケースカタログ__一覧の検証:
     class Test一覧を検証すると:
         class Test単体テスト:
             class Test正常系:
@@ -252,7 +252,7 @@ class Test運用__テスト観点カタログ__一覧の検証:
                         validate_feature(region, major, minor, FEATURES, "場所")
 
 
-class Test運用__テスト観点カタログ__JUnit_XMLの読み取り:
+class Test運用__テストケースカタログ__JUnit_XMLの読み取り:
     class TestJUnit_XMLを読み取ると:
         class Test単体テスト:
             class Test正常系:
@@ -339,7 +339,7 @@ class Test運用__テスト観点カタログ__JUnit_XMLの読み取り:
                         parse_junit_file(path, FEATURES)
 
 
-class Test運用__テスト観点カタログ__並び順:
+class Test運用__テストケースカタログ__並び順:
     class Testケースを並べ替えると:
         class Test単体テスト:
             class Test正常系:
@@ -356,7 +356,7 @@ class Test運用__テスト観点カタログ__並び順:
                     assert [c.feature for c in sort_cases(cases, FEATURES)] == ["B", "A"]
 
 
-class Test運用__テスト観点カタログ__HTML形式の出力:
+class Test運用__テストケースカタログ__HTML形式の出力:
     class TestHTMLを出力すると:
         class Test単体テスト:
             class Test正常系:
@@ -385,7 +385,7 @@ class Test運用__テスト観点カタログ__HTML形式の出力:
                     assert "</script>を押す" not in html
 
 
-class Test運用__テスト観点カタログ__生成コマンド:
+class Test運用__テストケースカタログ__生成コマンド:
     class Test生成コマンドを実行すると:
         class Test部品間結合テスト:
             class Test正常系:
@@ -402,3 +402,97 @@ class Test運用__テスト観点カタログ__生成コマンド:
                     with pytest.raises(SystemExit) as exit_info:
                         main(["--junit", str(junit), "--features", str(write_features(tmp_path)), "--css", str(write_css(tmp_path))])
                     assert "一覧にありません" in str(exit_info.value)
+
+
+BASE_PAIRS = [("種別", "単体テスト"), ("正常異常", "正常系"), ("When", "操作"), ("Then", "結果")]
+PERSPECTIVE_CASE_NAME = "[本体:認証]ログイン > あ"
+
+
+def build_perspective_pairs(*perspectives):
+    """観点を載せたテスト結果の (キー, 値) の並びを組み立てる。
+
+    Args:
+        perspectives: 載せる順の観点名。
+
+    Returns:
+        種別・正常異常・When・Then に続けて観点を 1 つずつ並べた (キー, 値) の並び。
+    """
+    return BASE_PAIRS + [("観点", perspective) for perspective in perspectives]
+
+
+class Test運用__テストケースカタログ__観点の読み取り:
+    def test_テスト結果に観点境界値とエッジケースが載っているとき_カタログ生成の観点の読み取りで_テスト結果のケースを読み取ると_読み取ったケースの観点は境界値とエッジケースの_2_つになる(
+        self, tmp_path, record_case_items
+    ):
+        record_case_items(
+            kind="単体テスト",
+            normality="正常系",
+            given="テスト結果に観点「境界値」と「エッジケース」が載っているとき",
+            when="カタログ生成の観点の読み取りで、テスト結果のケースを読み取る",
+            then="読み取ったケースの観点は「境界値」と「エッジケース」の 2 つになる",
+        )
+        path = write_junit_xml(tmp_path, build_case_xml(PERSPECTIVE_CASE_NAME, build_perspective_pairs("境界値", "エッジケース")))
+        cases = parse_junit_file(path, FEATURES)
+        assert sorted(cases[0].perspectives) == ["エッジケース", "境界値"]
+
+
+class Test運用__テストケースカタログ__許可されない観点の拒否:
+    def test_テスト結果に一覧にない観点網羅が載っているとき_カタログ生成の許可されない観点の拒否で_観点を載せたケースを読み取ると_ケースの読み取りは_一覧にない観点として網羅を示すエラーになる(
+        self, tmp_path, record_case_items
+    ):
+        record_case_items(
+            kind="単体テスト",
+            normality="異常系",
+            given="テスト結果に一覧にない観点「網羅」が載っているとき",
+            when="カタログ生成の許可されない観点の拒否で、観点を載せたケースを読み取る",
+            then="ケースの読み取りは、一覧にない観点として「網羅」を示すエラーになる",
+        )
+        path = write_junit_xml(tmp_path, build_case_xml(PERSPECTIVE_CASE_NAME, build_perspective_pairs("網羅")))
+        with pytest.raises(CatalogError, match="観点「網羅」は"):
+            parse_junit_file(path, FEATURES)
+
+    def test_テスト結果に観点境界値が_2_つ載っているとき_カタログ生成の許可されない観点の拒否で_観点を載せたケースを読み取ると_ケースの読み取りは_観点が重複していることを示すエラーになる(
+        self, tmp_path, record_case_items
+    ):
+        record_case_items(
+            kind="単体テスト",
+            normality="異常系",
+            given="テスト結果に観点「境界値」が 2 つ載っているとき",
+            when="カタログ生成の許可されない観点の拒否で、観点を載せたケースを読み取る",
+            then="ケースの読み取りは、観点が重複していることを示すエラーになる",
+        )
+        path = write_junit_xml(tmp_path, build_case_xml(PERSPECTIVE_CASE_NAME, build_perspective_pairs("境界値", "境界値")))
+        with pytest.raises(CatalogError, match="重複しています"):
+            parse_junit_file(path, FEATURES)
+
+    def test_テスト結果に観点境界値と同値分割が載っているとき_カタログ生成の許可されない観点の拒否で_観点を載せたケースを読み取ると_ケースの読み取りは_境界値と同値分割を同時に付けられないことを示すエラーになる(
+        self, tmp_path, record_case_items
+    ):
+        record_case_items(
+            kind="単体テスト",
+            normality="異常系",
+            given="テスト結果に観点「境界値」と「同値分割」が載っているとき",
+            when="カタログ生成の許可されない観点の拒否で、観点を載せたケースを読み取る",
+            then="ケースの読み取りは、境界値と同値分割を同時に付けられないことを示すエラーになる",
+        )
+        path = write_junit_xml(tmp_path, build_case_xml(PERSPECTIVE_CASE_NAME, build_perspective_pairs("境界値", "同値分割")))
+        with pytest.raises(CatalogError, match="同時に付けられません"):
+            parse_junit_file(path, FEATURES)
+
+
+class Test運用__テストケースカタログ__観点のHTML出力:
+    def test_テスト結果に観点境界値が_1_つ載っているとき_カタログ生成の観点のHTML出力で_観点を載せたテスト結果からカタログを生成すると_カタログのHTMLに埋め込まれるデータで_そのケースの_g_は境界値だけを持つ配列になる(
+        self, tmp_path, capsys, record_case_items
+    ):
+        record_case_items(
+            kind="部品間結合テスト",
+            normality="正常系",
+            given="テスト結果に観点「境界値」が 1 つ載っているとき",
+            when="カタログ生成の観点のHTML出力で、観点を載せたテスト結果からカタログを生成する",
+            then="カタログのHTMLに埋め込まれるデータで、そのケースの `g` は「境界値」だけを持つ配列になる",
+        )
+        junit = write_junit_xml(tmp_path, build_case_xml(PERSPECTIVE_CASE_NAME, build_perspective_pairs("境界値")))
+        main(["--junit", str(junit), "--features", str(write_features(tmp_path)), "--css", str(write_css(tmp_path))])
+        html = capsys.readouterr().out
+        payload = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>', html, re.S).group(1))
+        assert payload["cases"][0]["g"] == ["境界値"]

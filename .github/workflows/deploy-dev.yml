@@ -238,8 +238,8 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
-  behavior-catalog-test:
-    name: Test Perspective Catalog Generator Tests
+  test-case-catalog-test:
+    name: Test Case Catalog Generator Tests
     needs: test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
@@ -258,10 +258,10 @@ jobs:
       - name: Run catalog generator unit tests
         run: python -m pytest scripts
 
-  # テスト観点カタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
+  # テストケースカタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
   publish-reports:
-    name: Publish Test Perspective Catalog & Coverage to GitHub Pages
-    needs: behavior-catalog-test
+    name: Publish Test Case Catalog & Coverage to GitHub Pages
+    needs: test-case-catalog-test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     permissions:
@@ -302,9 +302,9 @@ jobs:
       - name: Generate catalog HTML
         run: |
           mkdir -p _site
-          python scripts/generate_behavior_catalog.py \
+          python scripts/generate_test_case_catalog.py \
             --commit "${GITHUB_SHA}" \
-            --css scripts/behavior_catalog.css \
+            --css scripts/test_case_catalog.css \
             --junit junit-artifacts/junit-backend/junit.xml \
             --junit junit-artifacts/junit-frontend/vitest-junit.xml \
             --junit junit-artifacts/junit-e2e/e2e-junit.xml \

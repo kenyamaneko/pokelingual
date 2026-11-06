@@ -27,7 +27,7 @@
 | [技術判断記録（ADR）](docs/adr/) | 各設計判断の背景・理由・結果 |
 | [業務判断記録（BDR）](docs/bdr/) | 仕様・ゲームルールの背景・理由・結果 |
 | [運用手順書](docs/ops/) | prod リリース・ロールバック・アラート対応と緊急停止・Firestore バックアップ復旧・コスト設計の手順 |
-| [テスト観点カタログ](https://kenyamaneko.github.io/pokelingual/) | テスト名から自動生成したテスト済みの観点一覧。区分・大機能ごとに掲載（main の CI が更新） |
+| [テストケースカタログ](https://kenyamaneko.github.io/pokelingual/) | テスト名から自動生成したテスト済みの振る舞い一覧。区分・大機能ごとに掲載（main の CI が更新） |
 | [テストカバレッジ（backend）](https://kenyamaneko.github.io/pokelingual/coverage/backend/) | backend のテストカバレッジレポート（main の CI が更新） |
 | [テストカバレッジ（frontend）](https://kenyamaneko.github.io/pokelingual/coverage/frontend/) | frontend のテストカバレッジレポート（main の CI が更新） |
 
@@ -64,7 +64,7 @@
 │   └── Dockerfile.dev
 ├── shared/api-types/        # backend↔frontend API 契約型 (SSoT)
 ├── terraform/               # Google Cloud インフラ（dev/prod）
-├── scripts/                 # デプロイ後スモーク・テスト観点カタログ生成スクリプト
+├── scripts/                 # デプロイ後スモーク・テストケースカタログ生成スクリプト
 ├── docs/                    # ドキュメント
 ├── docker-compose.dev.yml   # ローカル開発環境
 └── Makefile
