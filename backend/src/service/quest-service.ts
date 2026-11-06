@@ -625,7 +625,7 @@ const pluralHints = new Set([
 /**
  * 説明文中のポケモン名英語表記を "this Pokémon" / "of these Pokémon" に置換する。
  * @param text 元の説明文。
- * @param name 伏せるポケモンの英語名。
+ * @param name 伏せるポケモンの英語名。空文字は指定できず、指定すると例外を投げる。
  * @returns 名前を代名詞に置換した説明文。
  */
 export function maskPokemonNameEN(text: string, name: string): string {
@@ -677,7 +677,7 @@ export function maskPokemonNameEN(text: string, name: string): string {
 /**
  * 説明文中のポケモン名日本語表記を "この ポケモン" に置換する。
  * @param text 元の説明文。
- * @param name 伏せるポケモンの日本語名。
+ * @param name 伏せるポケモンの日本語名。空文字は指定できず、指定すると例外を投げる。
  * @returns 名前を置換した説明文。
  */
 export function maskPokemonNameJA(text: string, name: string): string {
