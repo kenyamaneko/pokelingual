@@ -269,7 +269,7 @@ describe("[本体:チュートリアル]「ポケモンを探しに行く」の�
       正常異常: "正常系",
       steps: [
         {
-          Given: "チュートリアルの完了状態の確認に時間がかかっていて、チュートリアルが完了済みのとき",
+          Given: TUTORIAL_COMPLETED,
           When: [PRESS_START_QUEST, "ホーム画面のクエストの開始で、ボタンの表示が「確認中...」でなくなるまで待つ"],
           Then: QUEST_SELECT_SHOWN,
         },

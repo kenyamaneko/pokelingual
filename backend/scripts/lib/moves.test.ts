@@ -235,7 +235,7 @@ describe("[外部連携:ポケモンデータ提供元]技の候補の日本語�
       観点: ["件数・有無", "エッジケース"],
       steps: [
         {
-          Given: `${MOVE_NAMES_RESOLVED_GIVEN}、技の候補が 0 件のとき`,
+          Given: "技の候補が 0 件のとき",
           When: [CONVERT_NAME_LIST],
           Then: "日本語名の一覧は空になる",
         },

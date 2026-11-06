@@ -44,10 +44,10 @@ async function requestWithLimitError(kind: string): Promise<RateLimitDetail> {
 }
 
 const CALL_BACKEND_API = "利用状況取得 API を呼び出す";
-const NOTHING_NOTIFIED = "日次上限の通知は発行されない";
-const INVALID_KIND_LIMIT = "日次上限に達していて、上限の種類が「invalid」でユーザーでも全体でもないとき";
+const NOTHING_NOTIFIED = "日次上限の通知の購読側に、通知が届かない";
+const INVALID_KIND_LIMIT = "日次上限に達していて、上限の種類が「organization」でユーザーでも全体でもないとき";
 const USER_LIMIT_REACHED = "ユーザーの日次上限に達しているとき";
-const USER_LIMIT_NOTIFIED = "日次上限の通知の種類がユーザーになる";
+const USER_LIMIT_NOTIFIED = "日次上限の通知の購読側に、種類がユーザーの通知が届く";
 const USER_LIMIT_WITHOUT_MESSAGE = "ユーザーの日次上限に達していて、メッセージが無いとき";
 const USER_LIMIT_WITH_EMPTY_MESSAGE = "ユーザーの日次上限に達していて、メッセージが空文字のとき";
 
@@ -106,7 +106,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
         {
           Given: "全体の日次上限に達しているとき",
           When: [CALL_BACKEND_API],
-          Then: "日次上限の通知の種類が全体になる",
+          Then: "日次上限の通知の購読側に、種類が全体の通知が届く",
         },
       ],
     },
@@ -129,7 +129,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
           {
             Given: `${label}の日次上限に達していて、メッセージが「上限に たっしました」のとき`,
             When: [CALL_BACKEND_API],
-            Then: "日次上限の通知のメッセージが「上限に たっしました」になる",
+            Then: "日次上限の通知の購読側に、メッセージが「上限に たっしました」の通知が届く",
           },
         ],
       },
@@ -142,7 +142,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
   }
 
   const NOTHING_NOTIFIED_CASES: { given: string; status: number; body: unknown; 観点: readonly Viewpoint[] }[] = [
-    { given: INVALID_KIND_LIMIT, status: 429, body: { error: "invalid", message: "x" }, 観点: ["エッジケース"] },
+    { given: INVALID_KIND_LIMIT, status: 429, body: { error: "organization", message: "本日の上限に達しました" }, 観点: ["エッジケース"] },
     {
       given: USER_LIMIT_WITHOUT_MESSAGE,
       status: 429,
@@ -194,7 +194,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     },
     async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
-      installAdapter(statusAdapter(429, { error: "invalid", message: "x" }));
+      installAdapter(statusAdapter(429, { error: "organization", message: "本日の上限に達しました" }));
       await expect(api.get("/usage")).rejects.toMatchObject({ response: { status: 429 } });
 
       const detail = await requestWithLimitError("user");
@@ -211,16 +211,16 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
       steps: [
         { Given: USER_LIMIT_REACHED, When: [CALL_BACKEND_API], Then: USER_LIMIT_NOTIFIED },
         {
-          Given: "日次上限に達しておらず、応答のデータが「ok」のとき",
+          Given: "日次上限に達しておらず、今日の AI 呼び出し回数が 0 回で、日次上限が 30 回のとき",
           When: [CALL_BACKEND_API],
-          Then: "API の応答のデータが「ok」になる",
+          Then: "API の応答の AI 呼び出し回数が 0 回、日次上限が 30 回になる",
         },
       ],
     },
     async () => {
       await requestWithLimitError("user");
       installAdapter(async (config) => ({
-        data: "ok",
+        data: { count: 0, limit: 30 },
         status: 200,
         statusText: "OK",
         headers: {},
@@ -229,7 +229,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
 
       const response = await api.get("/usage");
 
-      expect(response.data).toBe("ok");
+      expect(response.data).toEqual({ count: 0, limit: 30 });
     },
   );
 });
@@ -249,7 +249,7 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
       ],
     },
     async () => {
-      installAdapter(statusAdapter(429, { error: "invalid", message: "x" }));
+      installAdapter(statusAdapter(429, { error: "organization", message: "本日の上限に達しました" }));
       const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       await expect(api.get("/usage")).rejects.toMatchObject({ response: { status: 429 } });

@@ -166,7 +166,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: "出題されるポケモンがフシギダネだけで、AI による訳文の採点が 0.7 で、捕獲の抽選が必ず成功するとき",
+          Given: "出題されるポケモンがフシギダネだけで、AI の採点結果が意味単位1件の判定値0.7で、捕獲の抽選が必ず成功するとき",
           When: [
             CALL_QUEST,
             "翻訳の採点 API に、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を指定して呼び出す",
@@ -251,7 +251,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         {
           Given: "ユーザーの設定が利用できないとき",
           When: [CALL_QUEST],
-          Then: INTERNAL_ERROR,
+          Then: "API の応答は、ユーザーの設定を取得できないことを示す 500 のエラーになる",
         },
       ],
     },
@@ -290,18 +290,18 @@ describe("[本体:クエスト]場所の候補提示", () => {
       steps: [
         {
           When: ["場所の候補の取得 API を呼び出す"],
-          Then: "応答の先頭の場所の候補に ID・名前・説明・タイプが含まれる",
+          Then: "応答の先頭の場所の候補は、ID「rocky-mountain」、名前「ゴツゴツの岩山」、説明「ごつごつした岩肌と土けむり。力自慢が集まる」、タイプ rock・ground・fighting・bug になる",
         },
       ],
     },
     async () => {
       const res = await request(makeApp()).get("/api/quest/locations");
       expect(res.status).toBe(200);
-      expect(res.body.locations[0]).toMatchObject({
-        id: expect.any(String),
-        name: expect.any(String),
-        description: expect.any(String),
-        types: expect.any(Array),
+      expect(res.body.locations[0]).toEqual({
+        id: "rocky-mountain",
+        name: "ゴツゴツの岩山",
+        description: "ごつごつした岩肌と土けむり。力自慢が集まる",
+        types: ["rock", "ground", "fighting", "bug"],
       });
     },
   );
@@ -773,7 +773,7 @@ describe("[共通:設定]除外ポケモンの更新", () => {
         観点: ["境界値"],
         steps: [
           {
-            Given: "出題可能な図鑑番号が 1 から 100 で、除外ポケモンの件数の上限が 30 件のとき",
+            Given: "出題可能な図鑑番号が 1 から 100 のとき",
             When: [`除外ポケモンの更新 API に、図鑑番号 ${id} を指定して呼び出す`],
             Then: "API の応答は、指定した図鑑番号が図鑑に無いことを示す 400 のエラーになる",
           },

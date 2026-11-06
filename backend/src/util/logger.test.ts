@@ -123,7 +123,7 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
   });
 
   const writeLogAt = (level: "Info" | "Warn" | "Error") =>
-    `ログレベル ${level}、メッセージに something happened、ログに添える項目 path に /api/quest を指定して、ログを書き出す`;
+    `ログレベル ${level}、メッセージに quest session expired、ログに添える項目 path に /api/quest を指定して、ログを書き出す`;
 
   defineCase(
     {
@@ -132,19 +132,19 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
       steps: [
         {
           When: [writeLogAt("Info")],
-          Then: "標準出力に、severity が INFO、message が something happened、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
+          Then: "標準出力に、severity が INFO、message が quest session expired、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
         },
       ],
     },
     () => {
-      logger.info("something happened", { path: "/api/quest" });
+      logger.info("quest session expired", { path: "/api/quest" });
 
       expect(written.stdout).toHaveLength(1);
       const line = written.stdout[0];
       expect(line.endsWith("\n")).toBe(true);
       expect(JSON.parse(line)).toMatchObject({
         severity: "INFO",
-        message: "something happened",
+        message: "quest session expired",
         path: "/api/quest",
       });
     },
@@ -157,19 +157,19 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
       steps: [
         {
           When: [writeLogAt("Warn")],
-          Then: "標準エラー出力に、severity が WARNING、message が something happened、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
+          Then: "標準エラー出力に、severity が WARNING、message が quest session expired、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
         },
       ],
     },
     () => {
-      logger.warn("something happened", { path: "/api/quest" });
+      logger.warn("quest session expired", { path: "/api/quest" });
 
       expect(written.stderr).toHaveLength(1);
       const line = written.stderr[0];
       expect(line.endsWith("\n")).toBe(true);
       expect(JSON.parse(line)).toMatchObject({
         severity: "WARNING",
-        message: "something happened",
+        message: "quest session expired",
         path: "/api/quest",
       });
     },
@@ -182,19 +182,19 @@ describe("[運用:ログ出力]ログレベルごとの出力先", () => {
       steps: [
         {
           When: [writeLogAt("Error")],
-          Then: "標準エラー出力に、severity が ERROR、message が something happened、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
+          Then: "標準エラー出力に、severity が ERROR、message が quest session expired、path が /api/quest の改行で終わる 1 行の JSON が 1 回だけ書き出される",
         },
       ],
     },
     () => {
-      logger.error("something happened", { path: "/api/quest" });
+      logger.error("quest session expired", { path: "/api/quest" });
 
       expect(written.stderr).toHaveLength(1);
       const line = written.stderr[0];
       expect(line.endsWith("\n")).toBe(true);
       expect(JSON.parse(line)).toMatchObject({
         severity: "ERROR",
-        message: "something happened",
+        message: "quest session expired",
         path: "/api/quest",
       });
     },

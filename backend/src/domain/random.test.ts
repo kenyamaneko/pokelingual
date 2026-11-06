@@ -87,7 +87,7 @@ describe("[共通:機能共通]プールからの重複無し抽選", () => {
     defineCase(
       {
         種別: "単体テスト",
-        正常異常: "異常系",
+        正常異常: "正常系",
         観点: viewpoints,
         steps: [{ When: [drawFromPool(pool.length, count)], Then: "選ばれた一覧は空になる" }],
       },

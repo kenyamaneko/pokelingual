@@ -463,13 +463,13 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
         観点: viewpoints,
         steps: [
           {
-            When: [maskJapaneseDescriptionWhen(nameLabel, "あいうえお")],
-            Then: "伏せ字にした説明文は「あいうえお」のままになる",
+            When: [maskJapaneseDescriptionWhen(nameLabel, "ほっぺたの 電気袋に 電気を ためる")],
+            Then: "伏せ字にした説明文は「ほっぺたの 電気袋に 電気を ためる」のままになる",
           },
         ],
       },
       () => {
-        expect(maskPokemonNameJA("あいうえお", pokemonName)).toBe("あいうえお");
+        expect(maskPokemonNameJA("ほっぺたの 電気袋に 電気を ためる", pokemonName)).toBe("ほっぺたの 電気袋に 電気を ためる");
       },
     );
   }
@@ -692,7 +692,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "第1世代だけを選択していて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき",
+          Given: "出題世代に第1世代だけを選んでいて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき",
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は100になる",
         },
@@ -715,7 +715,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "第1世代と第3世代を選択していて、第3世代の図鑑番号300のポケモンがいるとき",
+          Given: "出題世代に第1世代と第3世代を選んでいて、第3世代の図鑑番号300のポケモンがいるとき",
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は300になる",
         },
@@ -879,7 +879,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     {
       given:
-        "第1世代だけを選択していて、第6世代の図鑑番号700と第1世代の図鑑番号100の、どちらもでんきタイプのポケモンがいるとき",
+        "出題世代に第1世代だけを選んでいて、第6世代の図鑑番号700と第1世代の図鑑番号100の、どちらもでんきタイプのポケモンがいるとき",
       overrides: {
         pokemons: [makePokemon({ id: 700, types: ["electric"] }), makePokemon({ id: 100, types: ["electric"] })],
         enabledGenerations: [1],
@@ -1067,17 +1067,17 @@ describe("[本体:採点]翻訳の採点", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: "クエストセッションの保存先が、エラー「boom」で利用できないとき",
+          Given: "クエストセッションの保存先が、エラー「接続が拒否された」で利用できないとき",
           When: [SCORE_BULBASAUR_TRANSLATION],
-          Then: "エラー「boom」を原因とする、クエストセッションの保存先が利用できないことを示すエラーになる",
+          Then: "エラー「接続が拒否された」を原因とする、クエストセッションの保存先が利用できないことを示すエラーになる",
         },
       ],
     },
     async () => {
-      const service = makeService({ sessionStoreError: new Error("boom") });
+      const service = makeService({ sessionStoreError: new Error("接続が拒否された") });
       const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
       expect(error).toBeInstanceOf(ExternalServiceError);
-      expect((error as ExternalServiceError).cause).toEqual(expect.objectContaining({ message: "boom" }));
+      expect((error as ExternalServiceError).cause).toEqual(expect.objectContaining({ message: "接続が拒否された" }));
     },
   );
 
@@ -1236,7 +1236,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       観点: ["外部依存の失敗", "境界値"],
       steps: [
         {
-          Given: "AI の採点結果が2回続けて、0.0から1.0の範囲外の判定値「-0.1」を含むとき",
+          Given: "AI の採点結果が2回続けて、判定値「-0.1」を含むとき",
           When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "範囲外の判定値「-0.1」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
@@ -1263,7 +1263,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       観点: ["外部依存の失敗", "境界値"],
       steps: [
         {
-          Given: "AI の採点結果が2回続けて、0.0から1.0の範囲外の判定値「1.1」を含むとき",
+          Given: "AI の採点結果が2回続けて、判定値「1.1」を含むとき",
           When: [SCORE_BULBASAUR_TRANSLATION],
           Then: "範囲外の判定値「1.1」を原因とする、AI の採点が失敗したことを示すエラーになる",
         },
@@ -1542,16 +1542,13 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
   );
 
-  const FUZZY_BULBASAUR_GIVEN =
-    "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みのとき";
   const WITHIN_FUZZY_DISTANCE_SPELLING = "名前当てで「bulbasaxx」と答える";
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
-      steps: [{ Given: FUZZY_BULBASAUR_GIVEN, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: RESULT_CORRECT }],
+      steps: [{ Given: ASKED_BULBASAUR, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: RESULT_CORRECT }],
     },
     async () => {
       const service = await startQuest();
@@ -1564,8 +1561,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
-      steps: [{ Given: FUZZY_BULBASAUR_GIVEN, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: BALL_ULTRA }],
+      steps: [{ Given: ASKED_BULBASAUR, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: BALL_ULTRA }],
     },
     async () => {
       const service = await startQuest();
@@ -1578,8 +1574,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      観点: ["境界値"],
-      steps: [{ Given: FUZZY_BULBASAUR_GIVEN, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: RESULT_FUZZY }],
+      steps: [{ Given: ASKED_BULBASAUR, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: RESULT_FUZZY }],
     },
     async () => {
       const service = await startQuest();
@@ -1621,8 +1616,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
   );
 
-  const ABRA_GIVEN =
-    "英語名「Abra」、日本語名「ケーシィ」で、英語名の文字数があいまい一致の最小文字数ちょうどのポケモンを出題済みのとき";
+  const ABRA_GIVEN = "英語名が4文字の「Abra」、日本語名「ケーシィ」のポケモンを出題済みのとき";
   const ONE_CHARACTER_OFF_SPELLING = "名前当てで「abrx」と答える";
 
   defineCase(
@@ -1655,16 +1649,14 @@ describe("[本体:名前当て]名前当ての判定", () => {
 
   for (const { given, when, pokemons, guess, viewpoints } of [
     {
-      given:
-        "英語名「Bulbasaur」、日本語名「フシギダネ」で、英語名があいまい一致の最小文字数以上のポケモンを出題済みのとき",
+      given: ASKED_BULBASAUR,
       when: "名前当てで「bulbasxxx」と答える",
       pokemons: [makePokemon()],
       guess: "bulbasxxx",
-      viewpoints: ["境界値"] as const,
+      viewpoints: [] as const,
     },
     {
-      given:
-        "英語名「Mew」、日本語名「ミュウ」で、英語名があいまい一致の最小文字数に満たないポケモンを出題済みのとき",
+      given: "英語名が3文字の「Mew」、日本語名「ミュウ」のポケモンを出題済みのとき",
       when: "名前当てで「mex」と答える",
       pokemons: [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })],
       guess: "mex",
@@ -1877,7 +1869,6 @@ describe("[本体:名前当て]名前当ての判定", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        観点: ["境界値"],
         steps: [{ Given: given, When: MISS_THREE_TIMES, Then: RESULT_INCORRECT }],
       },
       async () => {
@@ -1892,7 +1883,6 @@ describe("[本体:名前当て]名前当ての判定", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
-        観点: ["境界値"],
         steps: [{ Given: given, When: MISS_THREE_TIMES, Then: "ボールはモンスターボールになる" }],
       },
       async () => {
@@ -2373,7 +2363,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
   }
 
   const POKE_BALL_CAPTURE_GIVEN =
-    "図鑑番号1、英語名「Bulbasaur」、種族値合計318のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みのとき";
+    "種族値合計318のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みのとき";
 
   defineCase(
     {
@@ -2381,7 +2371,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: POKE_BALL_CAPTURE_GIVEN,
+          Given: "図鑑番号1、英語名「Bulbasaur」のポケモンを出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みのとき",
           When: [ATTEMPT_CAPTURE],
           Then: "捕獲したポケモンは、図鑑番号1、英語名「Bulbasaur」のポケモンになる",
         },
@@ -2513,7 +2503,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
   for (const { given, capture, viewpoints } of [
     {
       given:
-        "図鑑番号1、英語名「Bulbasaur」、種族値合計318のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みで、捕獲の抽選に当たるとき",
+        "種族値合計318のポケモンを最終評価点0のまま出題済みで、名前当てをスキップ済みで、モンスターボールが確定済みで、捕獲の抽選に当たるとき",
       capture: () => captureAfterSkip(),
       viewpoints: [] as const,
     },
@@ -2636,15 +2626,14 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     return service.getCurrentQuest(USER_ID);
   }
 
-  const MEWTWO_BEFORE_SCORING_GIVEN =
-    "英語名「Mewtwo」、英語説明文「Mewtwo was created by a scientist after years of horrific gene splicing and DNA engineering experiments.」の、図鑑番号150の伝説ポケモンを出題済みで、採点前のとき";
+  const BEFORE_SCORING_GIVEN = "ポケモンを出題済みで、採点前のとき";
 
   defineCase(
     {
       種別: "単体テスト",
       正常異常: "正常系",
       steps: [
-        { Given: MEWTWO_BEFORE_SCORING_GIVEN, When: [RESUME_QUEST], Then: "段階は訳文入力になる" },
+        { Given: BEFORE_SCORING_GIVEN, When: [RESUME_QUEST], Then: "段階は訳文入力になる" },
       ],
     },
     async () => {
@@ -2663,7 +2652,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: MEWTWO_BEFORE_SCORING_GIVEN,
+          Given: "図鑑番号150のポケモンを出題済みで、採点前のとき",
           When: [RESUME_QUEST],
           Then: "出題されたポケモンの図鑑番号は150になる",
         },
@@ -2682,7 +2671,8 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: MEWTWO_BEFORE_SCORING_GIVEN,
+          Given:
+            "英語名「Mewtwo」、英語説明文「Mewtwo was created by a scientist after years of horrific gene splicing and DNA engineering experiments.」のポケモンを出題済みで、採点前のとき",
           When: [RESUME_QUEST],
           Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon was created by a scientist after years of horrific gene splicing and DNA engineering experiments.」になる",
         },
@@ -2703,7 +2693,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: MEWTWO_BEFORE_SCORING_GIVEN,
+          Given: "伝説ポケモンを出題済みで、採点前のとき",
           When: [RESUME_QUEST],
           Then: "出題されたポケモンは伝説ポケモンである",
         },
@@ -2722,7 +2712,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: MEWTWO_BEFORE_SCORING_GIVEN,
+          Given: "幻ポケモンではないポケモンを出題済みで、採点前のとき",
           When: [RESUME_QUEST],
           Then: "出題されたポケモンは幻ポケモンではない",
         },
@@ -2741,7 +2731,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: MEWTWO_BEFORE_SCORING_GIVEN,
+          Given: BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
           Then: "名前当ての最大挑戦回数は3回になる",
         },
@@ -2754,8 +2744,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     },
   );
 
-  const SCORED_UNGUESSED_GIVEN =
-    "タイプが「くさ」「どく」、レベルアップで覚える技が「たいあたり」のポケモンを出題済みで、採点済みで、名前当てが未確定で、";
+  const SCORED_UNGUESSED_GIVEN = "ポケモンを出題済みで、採点済みで、名前当てが未確定で、";
 
   for (const { hintStatus, hintCount } of [
     { hintStatus: "ヒントを1回も要求していないとき", hintCount: 0 },
@@ -2856,17 +2845,17 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       正常異常: "正常系",
       steps: [
         {
-          Given: `${SCORED_UNGUESSED_GIVEN}採点した訳文が「みどり」のとき`,
+          Given: `${SCORED_UNGUESSED_GIVEN}採点した訳文が「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」のとき`,
           When: [RESUME_QUEST],
-          Then: "訳文は「みどり」になる",
+          Then: "訳文は「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」になる",
         },
       ],
     },
     async () => {
       const service = await startQuest();
-      await service.scoreTranslation(USER_ID, "みどり");
+      await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
       const res = await service.getCurrentQuest(USER_ID);
-      expect(res).toMatchObject({ user_translation: "みどり" });
+      expect(res).toMatchObject({ user_translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
     },
   );
 
@@ -2881,7 +2870,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         観点: ["件数・有無"],
         steps: [
           {
-            Given: `${SCORED_UNGUESSED_GIVEN}${hintStatus}`,
+            Given: `タイプが「くさ」「どく」のポケモンを出題済みで、採点済みで、名前当てが未確定で、${hintStatus}`,
             When: [RESUME_QUEST],
             Then: "開示済みのヒントとして、タイプ「くさ」「どく」が示される",
           },
@@ -2956,6 +2945,8 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
   );
 
   const TWO_HINTS_REQUESTED_GIVEN = `${SCORED_UNGUESSED_GIVEN}ヒントを2回要求済みのとき`;
+  const TWO_HINTS_REQUESTED_WITH_MOVE_GIVEN =
+    "レベルアップで覚える技が「たいあたり」のポケモンを出題済みで、採点済みで、名前当てが未確定で、ヒントを2回要求済みのとき";
 
   defineCase(
     {
@@ -2964,7 +2955,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       観点: ["件数・有無"],
       steps: [
         {
-          Given: TWO_HINTS_REQUESTED_GIVEN,
+          Given: TWO_HINTS_REQUESTED_WITH_MOVE_GIVEN,
           When: [RESUME_QUEST],
           Then: "開示済みのヒントとして、技「たいあたり」が示される",
         },

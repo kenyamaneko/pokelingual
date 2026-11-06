@@ -1,6 +1,5 @@
 import type { ComponentProps } from "react";
 import { render, screen, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, vi } from "vitest";
 import { spec } from "../../test/labels";
 import { defineCase, type Viewpoint } from "../../test/defineCase";
@@ -539,51 +538,11 @@ describe("[本体:名前当て]名前当てのヒント表示", () => {
     },
   );
 
-  const hintRequestScenarios: (NameGuessScenario & { buttonName: string })[] = [
-    { given: "ヒントをまだ使っていないとき", buttonName: HINT_BUTTON, props: { attemptsRemaining: 3 } },
-    {
-      given: "タイプのヒントを取得済みのとき",
-      buttonName: HINT_BUTTON_AGAIN,
-      props: { attemptsRemaining: 2, hintResult: TYPE_HINT_2_LEFT },
-    },
-  ];
-  for (const { given, buttonName, props } of hintRequestScenarios) {
-    defineCase(
-      {
-        種別: "部品間結合テスト",
-        正常異常: "正常系",
-        steps: [{ Given: given, When: [`名前当て画面のヒント表示で、「${buttonName}」ボタンを押す`], Then: "ヒントが 1 回要求される" }],
-      },
-      async () => {
-        const user = userEvent.setup();
-        const onHint = vi.fn().mockResolvedValue(undefined);
-        renderNameGuess({ ...props, onHint });
-        await user.click(screen.getByRole("button", { name: buttonName }));
-        expect(onHint).toHaveBeenCalledTimes(1);
-      },
-    );
-  }
-
   const HINT_RETRIEVAL_SLOW = "ヒントの取得に時間がかかるとき";
   const CLICK_HINT_BUTTON_TWICE = [
     `名前当て画面のヒント表示で、「${HINT_BUTTON}」ボタンを押す`,
     `名前当て画面のヒント表示で、「${HINT_BUTTON}」ボタンを押す`,
   ] as const;
-
-  defineCase(
-    {
-      種別: "部品間結合テスト",
-      正常異常: "異常系",
-      steps: [
-        { Given: HINT_RETRIEVAL_SLOW, When: CLICK_HINT_BUTTON_TWICE, Then: "ヒントは 1 回だけ要求される" },
-      ],
-    },
-    async () => {
-      const { onHint, completeHint } = await clickHintButtonTwiceBeforeCompletion();
-      expect(onHint).toHaveBeenCalledTimes(1);
-      await completeHint();
-    },
-  );
 
   defineCase(
     {

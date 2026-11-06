@@ -74,10 +74,10 @@ describe("[外部連携:AI]AI の回答からのテキスト取り出し", () =>
   );
 
   const EMPTY_RESPONSE_CASES: { given: string; candidates: unknown[]; 観点: readonly Viewpoint[] }[] = [
-    { given: "AI の回答が空であるとき", candidates: [], 観点: ["外部依存の失敗", "件数・有無"] },
-    { given: "AI の回答に本文が無いとき", candidates: [{}], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
-    { given: "AI の回答に本文が無いとき", candidates: [{ content: {} }], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
-    { given: "AI の回答に本文が無いとき", candidates: [{ content: { parts: [] } }], 観点: ["外部依存の失敗", "件数・有無"] },
+    { given: "AI の回答の候補が 0 件のとき", candidates: [], 観点: ["外部依存の失敗", "件数・有無"] },
+    { given: "AI の回答の候補に内容が無いとき", candidates: [{}], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
+    { given: "AI の回答の候補の内容に本文の部分が無いとき", candidates: [{ content: {} }], 観点: ["外部依存の失敗", "件数・有無", "エッジケース"] },
+    { given: "AI の回答の候補の本文の部分が 0 件のとき", candidates: [{ content: { parts: [] } }], 観点: ["外部依存の失敗", "件数・有無"] },
     { given: "AI の回答の本文が空文字であるとき", candidates: [{ content: { parts: [{ text: "" }] } }], 観点: ["外部依存の失敗", "件数・有無"] },
   ];
 

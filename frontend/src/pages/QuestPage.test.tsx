@@ -32,11 +32,12 @@ const SUBMIT_NAME_BULBASAUR = submitNameOperations("Bulbasaur");
 const SERVER_ERROR = "バックエンドでエラーが起きているとき";
 const BACKEND_RECOVERED_WITH_ELECTRIC_HINT = "バックエンドが正常に動作していて、出題されたポケモンのタイプが「でんき」のとき";
 const BACKEND_UNREACHABLE = "バックエンドに接続できないとき";
+const BACKEND_SKIP_ACCEPTED = "バックエンドが正常に動作していて、確定するボールがモンスターボールのとき";
 const HINT_FAILURE_MESSAGE = "「ヒントの取得に失敗しました」を含むメッセージが表示される";
 const HINT_FAILURE_GONE = "「ヒントの取得に失敗しました」を含むメッセージが表示されなくなる";
 const NAME_GUESS_FAILURE_MESSAGE = "「名前の判定に失敗しました」を含むメッセージが表示される";
 const NAME_GUESS_FAILURE_GONE = "「名前の判定に失敗しました」を含むメッセージが表示されなくなる";
-const SECOND_NAME_GUESS_CORRECT = "バックエンドが正常に動作していて、名前「Bulbasaur」が英語名として正解のとき";
+const SECOND_NAME_GUESS_CORRECT = "バックエンドが正常に動作していて、出題されたポケモンの英語名が「Bulbasaur」のとき";
 const SESSION_EXPIRED = "セッションが切れているとき";
 const SESSION_EXPIRED_MESSAGE = "「セッションが切断されました」を含むメッセージが表示される";
 const AT_NAME_GUESS_SCREEN = "翻訳の採点が済み、名前当て画面に進んでいて";
@@ -119,23 +120,17 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
         {
           Given:
             "1 回目の出題の英文が「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、2 回目の出題の英文が「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」で、出題されたポケモンの名前が「ピカチュウ」で、捕獲の抽選が必ず成功するとき",
-          When: [OPEN_QUEST_SCREEN, SELECT_PLACE],
-          Then: "出題の英文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」が表示される",
-        },
-        {
-          When: [enterTranslationOperation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"), PRESS_TRANSLATION_SUBMIT],
-          Then: "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」が表示される",
-        },
-        {
-          When: submitNameOperations("ピカチュウ"),
-          Then: "「正解！」と表示される",
-        },
-        {
-          When: [PRESS_PROCEED, pressBallUseButtonOperation("ハイパーボール")],
-          Then: "「やったー！　ピカチュウを　捕まえたぞ！」と表示される",
-        },
-        {
-          When: [PRESS_NEXT_QUEST, SELECT_PLACE],
+          When: [
+            OPEN_QUEST_SCREEN,
+            SELECT_PLACE,
+            enterTranslationOperation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"),
+            PRESS_TRANSLATION_SUBMIT,
+            ...submitNameOperations("ピカチュウ"),
+            PRESS_PROCEED,
+            pressBallUseButtonOperation("ハイパーボール"),
+            PRESS_NEXT_QUEST,
+            SELECT_PLACE,
+          ],
           Then: "2 回目の出題の英文「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」が表示される",
         },
       ],
@@ -310,6 +305,18 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     await screen.findByText(/ヒントの取得に失敗しました/);
 
     await user.click(screen.getByRole("button", { name: HINT_BUTTON }));
+  }
+
+  async function pressHintButtonWhileUnreachable() {
+    const user = userEvent.setup();
+    server.use(
+      http.post(apiUrl("/quest/hint"), () => HttpResponse.error()),
+    );
+
+    renderWithProviders(<QuestPage />, { withRouter: true });
+    await startQuestAndSubmitTranslation(user);
+
+    await user.click(await screen.findByRole("button", { name: HINT_BUTTON }));
   }
 
   async function skipNameGuessAfterHintFailure() {
@@ -493,11 +500,6 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       観点: ["外部依存の失敗"],
       steps: [
         {
-          Given: SERVER_ERROR,
-          When: [PRESS_HINT],
-          Then: HINT_FAILURE_MESSAGE,
-        },
-        {
           Given: BACKEND_UNREACHABLE,
           When: [PRESS_HINT],
           Then: "「接続できません」を含むメッセージが表示される",
@@ -505,48 +507,11 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       ],
     },
     async () => {
-      await pressHintButtonAgainAfterFailure(() => HttpResponse.error());
+      await pressHintButtonWhileUnreachable();
 
       expect(await screen.findByText(/接続できません/)).toBeInTheDocument();
     },
   );
-
-  for (const { given, secondResponse, expectedText, viewpoints } of [
-    {
-      given: BACKEND_RECOVERED_WITH_ELECTRIC_HINT,
-      secondResponse: () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
-      expectedText: "でんきタイプのポケモンだよ",
-      viewpoints: ["外部依存の失敗", "回復確認"] as const,
-    },
-    {
-      given: BACKEND_UNREACHABLE,
-      secondResponse: () => HttpResponse.error(),
-      expectedText: "接続できません",
-      viewpoints: ["外部依存の失敗"] as const,
-    },
-  ]) {
-    defineCase(
-      {
-        種別: "部品間結合テスト",
-        正常異常: "異常系",
-        観点: viewpoints,
-        steps: [
-          {
-            Given: SERVER_ERROR,
-            When: [PRESS_HINT],
-            Then: HINT_FAILURE_MESSAGE,
-          },
-          { Given: given, When: [PRESS_HINT], Then: HINT_FAILURE_GONE },
-        ],
-      },
-      async () => {
-        await pressHintButtonAgainAfterFailure(secondResponse);
-
-        await screen.findByText(new RegExp(expectedText));
-        expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
-      },
-    );
-  }
 
   defineCase(
     {
@@ -559,7 +524,52 @@ describe("[本体:名前当て]名前当てのヒント", () => {
           When: [PRESS_HINT],
           Then: HINT_FAILURE_MESSAGE,
         },
-        { When: [PRESS_SKIP], Then: "捕獲待機画面に「モンスターボールを　手に　入れた！」と表示される" },
+        { Given: BACKEND_RECOVERED_WITH_ELECTRIC_HINT, When: [PRESS_HINT], Then: HINT_FAILURE_GONE },
+      ],
+    },
+    async () => {
+      await pressHintButtonAgainAfterFailure(() =>
+        HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
+      );
+
+      await screen.findByText(/でんきタイプのポケモンだよ/);
+      expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      観点: ["外部依存の失敗"],
+      steps: [
+        {
+          Given: "名前当て画面に「ヒントの取得に失敗しました」を含むメッセージが表示されていて、バックエンドに接続できないとき",
+          When: [PRESS_HINT],
+          Then: HINT_FAILURE_GONE,
+        },
+      ],
+    },
+    async () => {
+      await pressHintButtonAgainAfterFailure(() => HttpResponse.error());
+
+      await screen.findByText(/接続できません/);
+      expect(screen.queryByText(/ヒントの取得に失敗しました/)).not.toBeInTheDocument();
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
+      steps: [
+        {
+          Given: SERVER_ERROR,
+          When: [PRESS_HINT],
+          Then: HINT_FAILURE_MESSAGE,
+        },
+        { Given: BACKEND_SKIP_ACCEPTED, When: [PRESS_SKIP], Then: "捕獲待機画面に「モンスターボールを　手に　入れた！」と表示される" },
       ],
     },
     async () => {
@@ -582,7 +592,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
           When: [PRESS_HINT],
           Then: HINT_FAILURE_MESSAGE,
         },
-        { When: [PRESS_SKIP], Then: HINT_FAILURE_GONE },
+        { Given: BACKEND_SKIP_ACCEPTED, When: [PRESS_SKIP], Then: HINT_FAILURE_GONE },
       ],
     },
     async () => {
@@ -796,17 +806,17 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
       ballCase: SKIPPED_NAME_GUESS,
     },
     {
-      given: `${AT_NAME_GUESS_SCREEN}、日本語名「フシギダネ」が正解のとき`,
+      given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの日本語名が「フシギダネ」のとき`,
       answerOperations: [...submitNameOperations("フシギダネ"), PRESS_PROCEED],
       ballCase: CORRECT_JAPANESE_NAME_GUESS,
     },
     {
-      given: `${AT_NAME_GUESS_SCREEN}、英語名「Bulbasaur」が正解のとき`,
+      given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの英語名が「Bulbasaur」のとき`,
       answerOperations: [...SUBMIT_NAME_BULBASAUR, PRESS_PROCEED],
       ballCase: CORRECT_ENGLISH_NAME_GUESS,
     },
     {
-      given: `${AT_NAME_GUESS_SCREEN}、英語名「Bulbasaur」が正解で、マスターボールが確定するとき`,
+      given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの英語名が「Bulbasaur」で、マスターボールが確定するとき`,
       answerOperations: [...SUBMIT_NAME_BULBASAUR, PRESS_PROCEED],
       ballCase: CORRECT_ENGLISH_NAME_GUESS_WITH_MASTER_BALL,
     },
@@ -852,7 +862,7 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${AT_NAME_GUESS_SCREEN}、英語名「Bulbasaur」が正解で、マスターボールが確定するとき`,
+          Given: `${AT_NAME_GUESS_SCREEN}、出題されたポケモンの英語名が「Bulbasaur」で、マスターボールが確定するとき`,
           When: [...SUBMIT_NAME_BULBASAUR, PRESS_PROCEED],
           Then: "博士のセリフ「今こそ　このボールを　使うときだ！」が表示される",
         },
@@ -915,6 +925,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
       steps: [
         { Given: SESSION_EXPIRED, When: [SELECT_PLACE, ...SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
         {
+          Given: "場所の候補が「木漏れ日の森」の 1 件のとき",
           When: ["エラー画面のセッション切れの表示で、「もう一度探す」ボタンを押す"],
           Then: "場所選択画面に、「木漏れ日の森」ボタンが表示される",
         },
