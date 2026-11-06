@@ -39,11 +39,13 @@ export type SpecFields =
   | {
       種別: NonScenarioKind;
       正常異常: CaseOutcome;
+      観点?: readonly Viewpoint[];
       steps: readonly [SpecStep, ...SpecStep[]];
     }
   | {
       種別: "シナリオテスト";
       正常異常: CaseOutcome;
+      観点?: readonly Viewpoint[];
       環境: readonly [Environment, ...Environment[]];
       steps: readonly [ScenarioStep, ...ScenarioStep[]];
     };
@@ -56,11 +58,20 @@ type SpecBody = (
 const STEP_SEPARATOR = "→";
 const CLAUSE_SEPARATOR = "、";
 const LAST_OPERATION_SUFFIX = "と";
+/** ケースに付ける観点。 */
+export type Viewpoint =
+  | "境界値"
+  | "同値分割"
+  | "エッジケース"
+  | "件数・有無"
+  | "外部依存の失敗"
+  | "回復確認";
 
-// テスト観点カタログの生成が、この名前の注釈を読む。Vitest 側の defineCase と同じ内容を置く (別のテストランナーのため共有できない)。
+// テストケースカタログの生成が、この名前の注釈を読む。Vitest 側の defineCase と同じ内容を置く (別のテストランナーのため共有できない)。
 const ANNOTATION = {
   kind: "種別",
   outcome: "正常異常",
+  viewpoint: "観点",
   environment: "環境",
   given: "Given",
   when: "When",
@@ -101,14 +112,17 @@ function annotateThen(then: string | ThenByEnvironment) {
 /**
  * E2E のケースを 1 件登録する。テスト名はステップから組み立て、項目を注釈としてテスト結果に載せる。
  * シナリオテストは、環境に含まれない環境で実行されたときスキップする。
- * @param fields 種別・正常異常・ステップ。シナリオテストは、実行する環境も持つ。
+ * @param fields 種別・正常異常・ステップ。シナリオテストは、実行する環境も持つ。観点は任意。
  * @param body 検証の本体。複数ステップのときは、ステップごとの確認をこの中で順に行う。
  */
 export function defineCase(fields: SpecFields, body: SpecBody): void {
+  const title = fields.steps.map(composeStepName).join(STEP_SEPARATOR);
+  const viewpoints = fields.観点 ?? [];
   const environments = fields.種別 === "シナリオテスト" ? fields.環境 : [];
   const annotation = [
     { type: ANNOTATION.kind, description: fields.種別 },
     { type: ANNOTATION.outcome, description: fields.正常異常 },
+    ...viewpoints.map((viewpoint) => ({ type: ANNOTATION.viewpoint, description: viewpoint })),
     ...environments.map((environment) => ({ type: ANNOTATION.environment, description: environment })),
     ...fields.steps.flatMap((step) => [
       ...(step.Given ? [{ type: ANNOTATION.given, description: step.Given }] : []),
@@ -116,7 +130,6 @@ export function defineCase(fields: SpecFields, body: SpecBody): void {
       ...annotateThen(step.Then),
     ]),
   ];
-  const title = fields.steps.map(composeStepName).join(STEP_SEPARATOR);
   const isRunnable = fields.種別 !== "シナリオテスト" || fields.環境.includes(CURRENT_ENVIRONMENT);
   if (isRunnable) {
     test(title, { annotation }, body);

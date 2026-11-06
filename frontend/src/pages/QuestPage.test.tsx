@@ -411,6 +411,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: HINT_FAILED_ONCE,
@@ -430,6 +431,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: HINT_FAILED_ONCE,
@@ -450,6 +452,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: "1 回目のヒント要求がサーバーエラー (500) で失敗するとき",
@@ -476,6 +479,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: "1 回目のヒント要求がサーバーエラー (500) で失敗するとき",
@@ -496,22 +500,25 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
   );
 
-  for (const { given, secondResponse, expectedText } of [
+  for (const { given, secondResponse, expectedText, viewpoints } of [
     {
       given: SECOND_HINT_SUCCEEDS,
       secondResponse: () => HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
       expectedText: "でんきタイプのポケモンだよ",
+      viewpoints: ["外部依存の失敗", "回復確認"] as const,
     },
     {
       given: SECOND_HINT_FAILS_TO_CONNECT,
       secondResponse: () => HttpResponse.error(),
       expectedText: "接続できません",
+      viewpoints: ["外部依存の失敗"] as const,
     },
   ]) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点: viewpoints,
         steps: [
           {
             Given: "1 回目のヒント要求がサーバーエラー (500) で失敗するとき",
@@ -534,6 +541,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: "ヒント要求がサーバーエラー (500) で失敗するとき",
@@ -556,6 +564,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: "ヒント要求がサーバーエラー (500) で失敗するとき",
@@ -877,6 +886,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         { Given: SESSION_EXPIRED_SCORING, When: [SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
       ],
@@ -892,6 +902,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         { Given: SESSION_EXPIRED_SCORING, When: [SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
         {

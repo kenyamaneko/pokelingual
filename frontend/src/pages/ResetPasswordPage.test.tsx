@@ -111,6 +111,7 @@ describe("[共通:認証]パスワードの再設定", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [{ Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: FAILURE_MESSAGE }],
     },
     async () => {
@@ -129,6 +130,7 @@ describe("[共通:認証]パスワードの再設定", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         { Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: "メールアドレスの入力フォームが表示されたままになる" },
       ],
@@ -149,6 +151,7 @@ describe("[共通:認証]パスワードの再設定", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         { Given: SEND_FAILED, When: [SUBMIT_RESET_EMAIL], Then: FAILURE_MESSAGE },
         {

@@ -5,7 +5,7 @@ import {
   type PokeAPISpeciesData,
   type PokeAPIPokemonData,
 } from "./convert.js";
-import { defineCase } from "../../src/test/defineCase.js";
+import { defineCase, type Viewpoint } from "../../src/test/defineCase.js";
 
 function speciesOf(
   id: number,
@@ -86,16 +86,19 @@ const CHARMANDER_FLAVOR_TEXTS_GIVEN =
   "ヒトカゲのバージョン X の説明文が英語「The flame on its tail indicates Charmander’s life⏎force. If it is healthy, the flame burns brightly.」・日本語「尻尾の　炎は⏎ヒトカゲの　生命力の　証。⏎元気だと　さかんに　燃えさかる。」、バージョン Y の説明文が英語「From the time it is born, a flame burns at the tip of⏎its tail. Its life would end if the flame were to⏎go out.」・日本語「生まれたときから　尻尾に　炎が⏎点っている。炎が　消えたとき⏎その　命は　終わってしまう。」のとき";
 
 describe("[外部連携:ポケモンデータ提供元]説明文の整形", () => {
-  for (const { given, text } of [
-    { given: "「A」と「B」の間に改ページがある", text: "A\fB" },
-    { given: "「A」と「B」の間に改行がある", text: "A\nB" },
-    { given: "「A」と「B」の間に復帰がある", text: "A\rB" },
-    { given: "「A」と「B」の間にスペースが 3 つ連続している", text: "A   B" },
-  ]) {
+  const WHITESPACE_CASES: { given: string; text: string; 観点: readonly Viewpoint[] }[] = [
+    { given: "「A」と「B」の間に改ページがある", text: "A\fB", 観点: ["同値分割"] },
+    { given: "「A」と「B」の間に改行がある", text: "A\nB", 観点: ["同値分割"] },
+    { given: "「A」と「B」の間に復帰がある", text: "A\rB", 観点: ["同値分割"] },
+    { given: "「A」と「B」の間にスペースが 3 つ連続している", text: "A   B", 観点: [] },
+  ];
+
+  for (const { given, text, 観点 } of WHITESPACE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [{ Given: `${given}とき`, When: [CLEAN_FLAVOR_TEXT], Then: "整形後の説明文は「A B」になる" }],
       },
       () => {
@@ -209,6 +212,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [{ Given: "タイプが grass と poison (くさ・どく) のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのタイプは grass と poison の 2 つになる" }],
     },
     () => {
@@ -220,6 +224,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [{ Given: "タイプが fire (ほのお) のとき", When: [CREATE_POKEMON_RECORD], Then: "作成したポケモンデータのタイプは fire の 1 つになる" }],
     },
     () => {
@@ -297,6 +302,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [{ Given: "タイプ名が未知の shadow のとき", When: [CREATE_POKEMON_RECORD], Then: "未知のタイプであることを示すエラーになる" }],
     },
     () => {
@@ -311,6 +317,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: "英語の説明文だけがあり日本語の説明文が無いとき",
@@ -386,6 +393,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [{ Given: BULBASAUR_FLAVOR_TEXTS_GIVEN, When: [CREATE_POKEMON_RECORD], Then: FLAVOR_TEXT_PAIR_COUNT }],
     },
     () => {
@@ -439,6 +447,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [{ Given: CHARMANDER_FLAVOR_TEXTS_GIVEN, When: [CREATE_POKEMON_RECORD], Then: FLAVOR_TEXT_PAIR_COUNT }],
     },
     () => {

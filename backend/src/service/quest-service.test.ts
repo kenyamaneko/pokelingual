@@ -21,7 +21,7 @@ import type { Pokemon } from "../domain/pokemon.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 import { DEFAULT_QUEST_TUNING } from "../testing/quest-tuning-fixture.js";
-import { defineCase } from "../test/defineCase.js";
+import { defineCase, type Viewpoint } from "../test/defineCase.js";
 
 interface ServiceOverrides {
   /** 出題の抽選元になるポケモンの一覧。 */
@@ -131,6 +131,7 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "ボール補正がなく、最終評価点が0で種族値合計が680のとき",
@@ -192,6 +193,7 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "ボール補正が大きく、最終評価点が99で種族値合計が200のとき",
@@ -209,6 +211,7 @@ describe("[本体:捕獲]捕獲確率の計算", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "ボール補正が大きく、最終評価点が99で種族値合計が680のとき",
@@ -278,6 +281,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "ポケモン名が Pikachu で、説明文が「Hello world」でポケモン名を含まないとき",
@@ -367,6 +371,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "ポケモン名が Pikachu で、ポケモン名が複数回出現する「Pikachu and Pikachu」のとき",
@@ -401,6 +406,7 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["件数・有無", "エッジケース"],
       steps: [
         {
           Given: "ポケモン名が空文字で、説明文が「A wild creature.」のとき",
@@ -437,6 +443,7 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "ポケモン名が「ピカチュウ」で、ポケモン名が複数回出現する「ピカチュウとピカチュウ」のとき",
@@ -454,6 +461,7 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "ポケモン名が「ピカチュウ」で、説明文が「あいうえお」でポケモン名を含まないとき",
@@ -471,6 +479,7 @@ describe("[本体:名前当て]日本語説明文のポケモン名の伏せ字"
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["件数・有無", "エッジケース"],
       steps: [
         {
           Given: "ポケモン名が空文字で、説明文が「あいうえお」のとき",
@@ -492,6 +501,7 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "意味単位が1件で判定値が0.6のとき",
@@ -509,6 +519,7 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値", "件数・有無"],
       steps: [
         {
           Given: "判定値が1.0、0.2、0.0の3件のとき",
@@ -526,6 +537,7 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値", "件数・有無"],
       steps: [
         {
           Given: "判定値が1.0、1.0、0.0の3件のとき",
@@ -547,6 +559,7 @@ describe("[本体:採点]意味単位の判定値からの素点算出", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["件数・有無"],
         steps: [{ Given: given, When: [COMPUTE_RAW_SCORE], Then: "素点は80になる" }],
       },
       () => {
@@ -563,6 +576,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: "素点が0のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は0になる" }],
     },
     () => {
@@ -574,6 +588,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: "素点が100のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は99になる" }],
     },
     () => {
@@ -585,6 +600,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: "素点が10のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は0になる" }],
     },
     () => {
@@ -596,6 +612,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: "素点が11のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は1になる" }],
     },
     () => {
@@ -607,6 +624,7 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["同値分割"],
       steps: [{ Given: "素点が15のとき", When: [CONVERT_TO_FINAL_SCORE], Then: "最終評価点は6になる" }],
     },
     () => {
@@ -706,6 +724,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "第1世代だけを選択していて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき",
@@ -728,6 +747,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "第1世代と第3世代を選択していて、第3世代の図鑑番号300のポケモンがいるとき",
@@ -750,6 +770,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "出題世代を設定していなくて、第5世代の図鑑番号500のポケモンがいるとき",
@@ -813,6 +834,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["件数・有無"],
         steps: [
           {
             Given: given,
@@ -835,6 +857,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "図鑑番号1のポケモンだけが出題対象で、図鑑番号1から10を除外しているとき",
@@ -852,14 +875,15 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
   );
 
-  for (const { given, flavorTexts } of [
-    { given: "バージョン別の説明文の一覧が未設定のとき", flavorTexts: undefined },
-    { given: "バージョン別の説明文の一覧が0件のとき", flavorTexts: [] },
-  ] satisfies { given: string; flavorTexts: Pokemon["flavor_texts"] }[]) {
+  for (const { given, flavorTexts, 観点 } of [
+    { given: "バージョン別の説明文の一覧が未設定のとき", flavorTexts: undefined, 観点: ["件数・有無", "エッジケース"] },
+    { given: "バージョン別の説明文の一覧が0件のとき", flavorTexts: [], 観点: ["件数・有無"] },
+  ] satisfies { given: string; flavorTexts: Pokemon["flavor_texts"]; 観点: readonly Viewpoint[] }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [
           {
             Given: `英語説明文が「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」のポケモンで、${given}`,
@@ -880,12 +904,13 @@ describe("[本体:クエスト]クエストの出題", () => {
     );
   }
 
-  for (const { given, overrides } of [
+  for (const { given, overrides, 観点 } of [
     {
       given: "でんきタイプの図鑑番号100とくさタイプの図鑑番号110のポケモンがいるとき",
       overrides: {
         pokemons: [makePokemon({ id: 110, types: ["grass"] }), makePokemon({ id: 100, types: ["electric"] })],
       },
+      観点: [],
     },
     {
       given:
@@ -894,6 +919,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 700, types: ["electric"] }), makePokemon({ id: 100, types: ["electric"] })],
         enabledGenerations: [1],
       },
+      観点: [],
     },
     {
       given: "幻・伝説の抽選に当たっていて、幻・伝説のポケモンがいなくて、でんきタイプの図鑑番号100のポケモンがいるとき",
@@ -901,12 +927,14 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 100, types: ["electric"] })],
         randomValue: 0.995,
       },
+      観点: ["件数・有無"],
     },
-  ] satisfies { given: string; overrides: ServiceOverrides }[]) {
+  ] satisfies { given: string; overrides: ServiceOverrides; 観点: readonly Viewpoint[] }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [
           {
             Given: `${LOCATION_GIVEN}${given}`,
@@ -953,6 +981,7 @@ describe("[本体:採点]翻訳の採点", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "AI が意味単位1件の判定値0.7を返すとき",
@@ -974,6 +1003,7 @@ describe("[本体:採点]翻訳の採点", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "AI が判定値1.0、0.6、0.2の3件を返すとき",
@@ -1068,6 +1098,7 @@ describe("[本体:採点]翻訳の採点", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: "クエストセッションの保存先がエラー「boom」で読み込みに失敗するとき",
@@ -1084,22 +1115,25 @@ describe("[本体:採点]翻訳の採点", () => {
     },
   );
 
-  for (const { given, prepare } of [
+  for (const { given, prepare, viewpoints } of [
     {
       given: "どのユーザーにも進行中のクエストセッションがないとき",
       prepare: async () => {},
+      viewpoints: ["エッジケース"],
     },
     {
       given: "別のユーザー「alice」にだけ進行中のクエストセッションがあるとき",
       prepare: async (service: QuestService) => {
         await service.newQuest(USER_ID);
       },
+      viewpoints: [],
     },
-  ] satisfies { given: string; prepare: (service: QuestService) => Promise<void> }[]) {
+  ] satisfies { given: string; prepare: (service: QuestService) => Promise<void>; viewpoints: readonly Viewpoint[] }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点: viewpoints,
         steps: [
           {
             Given: given,
@@ -1125,20 +1159,25 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     message: "LLM returned empty review",
   });
 
-  for (const { given, llmText } of [
+  const UNREADABLE_JSON_CASES: { given: string; llmText: string; 観点: readonly Viewpoint[] }[] = [
     {
       given: "AI が2回続けて、JSON ではない「ごめん、わからない」を返すとき",
       llmText: "ごめん、わからない",
+      観点: ["外部依存の失敗"],
     },
     {
       given: 'AI が2回続けて、JSON が途中で切れている ({"units": [0.7], "rev) を返すとき',
       llmText: '{"units": [0.7], "rev',
+      観点: ["外部依存の失敗"],
     },
-  ]) {
+  ];
+
+  for (const { given, llmText, 観点 } of UNREADABLE_JSON_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [
           {
             Given: given,
@@ -1156,24 +1195,30 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     );
   }
 
-  for (const { given, llmText } of [
+  const NO_SCORING_UNITS_CASES: { given: string; llmText: string; 観点: readonly Viewpoint[] }[] = [
     {
       given: "AI が2回続けて、判定値の項目がなく講評だけ「r」がある応答を返すとき",
       llmText: JSON.stringify({ review: "r" }),
+      観点: ["外部依存の失敗", "件数・有無"],
     },
     {
       given: "AI が2回続けて、判定値が一覧ではなく1つの数値0.7になっている応答を返すとき",
       llmText: JSON.stringify({ units: 0.7, review: "r" }),
+      観点: ["外部依存の失敗"],
     },
     {
       given: "AI が2回続けて、判定値が0件の応答を返すとき",
       llmText: JSON.stringify({ units: [], review: "r" }),
+      観点: ["外部依存の失敗", "件数・有無"],
     },
-  ]) {
+  ];
+
+  for (const { given, llmText, 観点 } of NO_SCORING_UNITS_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [
           {
             Given: given,
@@ -1195,6 +1240,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: "AI が2回続けて、判定値に数値でない値「a」を含む応答を返すとき",
@@ -1221,6 +1267,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "境界値"],
       steps: [
         {
           Given: "AI が2回続けて、0.0から1.0の範囲外の判定値 -0.1 を含む応答を返すとき",
@@ -1247,6 +1294,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "境界値"],
       steps: [
         {
           Given: "AI が2回続けて、0.0から1.0の範囲外の判定値 1.1 を含む応答を返すとき",
@@ -1269,20 +1317,25 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     },
   );
 
-  for (const { given, llmText } of [
+  const EMPTY_REVIEW_CASES: { given: string; llmText: string; 観点: readonly Viewpoint[] }[] = [
     {
       given: "AI が2回続けて、講評の項目がなく判定値 0.7 の1件だけがある応答を返すとき",
       llmText: JSON.stringify({ units: [0.7] }),
+      観点: ["外部依存の失敗", "件数・有無"],
     },
     {
       given: "AI が2回続けて、講評が空文字の応答を返すとき",
       llmText: JSON.stringify({ units: [0.7], review: "" }),
+      観点: ["外部依存の失敗", "件数・有無"],
     },
-  ]) {
+  ];
+
+  for (const { given, llmText, 観点 } of EMPTY_REVIEW_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [
           {
             Given: given,
@@ -1308,6 +1361,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: RETRIED_THEN_VALID_GIVEN,
@@ -1327,6 +1381,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗", "回復確認"],
       steps: [
         {
           Given: RETRIED_THEN_VALID_GIVEN,
@@ -1346,6 +1401,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "AI が意味単位1件の判定値0.0を返すとき",
@@ -1397,9 +1453,14 @@ describe("[本体:名前当て]名前当ての判定", () => {
         }),
     },
   ];
-  const ANSWER_BULBASAUR_START_CASES: { given: string; start: () => Promise<QuestService> }[] = [
+  const ANSWER_BULBASAUR_START_CASES: {
+    given: string;
+    start: () => Promise<QuestService>;
+    viewpoints?: readonly Viewpoint[];
+  }[] = [
     {
       given: "伝説ポケモンの「Bulbasaur」を最終評価点69で採点済みのとき",
+      viewpoints: ["境界値"],
       start: () =>
         startScoredQuest({
           pokemons: [makePokemon({ is_legendary: true })],
@@ -1519,6 +1580,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: FUZZY_BULBASAUR_GIVEN, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: RESULT_CORRECT }],
     },
     async () => {
@@ -1532,6 +1594,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: FUZZY_BULBASAUR_GIVEN, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: BALL_ULTRA }],
     },
     async () => {
@@ -1545,6 +1608,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: FUZZY_BULBASAUR_GIVEN, When: [WITHIN_FUZZY_DISTANCE_SPELLING], Then: RESULT_FUZZY }],
     },
     async () => {
@@ -1577,6 +1641,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: ASKED_BULBASAUR, When: [MISS_THREE_TIMES], Then: "判定結果の残り挑戦回数は0回になる" }],
     },
     async () => {
@@ -1594,6 +1659,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: ABRA_GIVEN, When: [ONE_CHARACTER_OFF_SPELLING], Then: RESULT_CORRECT }],
     },
     async () => {
@@ -1607,6 +1673,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: ABRA_GIVEN, When: [ONE_CHARACTER_OFF_SPELLING], Then: RESULT_FUZZY }],
     },
     async () => {
@@ -1616,30 +1683,34 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
   );
 
-  for (const { given, when, pokemons, guess } of [
+  for (const { given, when, pokemons, guess, viewpoints } of [
     {
       given: "英語名があいまい一致の最小文字数以上のポケモン「Bulbasaur」を出題済みのとき",
       when: "名前当て画面で、あいまい一致の許容距離を超えてずれた綴り「bulbasxxx」で答える",
       pokemons: [makePokemon()],
       guess: "bulbasxxx",
+      viewpoints: ["境界値"] as const,
     },
     {
       given: "英語名があいまい一致の最小文字数に満たないポケモン「Mew」(日本語名「ミュウ」) を出題済みのとき",
       when: "名前当て画面で、1文字ずれた綴り「mex」で答える",
       pokemons: [makePokemon({ name_en: "Mew", name_ja: "ミュウ" })],
       guess: "mex",
+      viewpoints: ["境界値"] as const,
     },
     {
       given: "英語名「Bulbasaur」のポケモンを出題済みのとき",
       when: "名前当て画面で、大きく異なる綴り「wrong」で答える",
       pokemons: [makePokemon()],
       guess: "wrong",
+      viewpoints: ["同値分割"] as const,
     },
   ]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [when], Then: RESULT_INCORRECT }],
       },
       async () => {
@@ -1657,6 +1728,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [{ Given: ANSWER_AGAIN_GIVEN, When: [ANSWER_WHATEVER], Then: RESULT_CORRECT }],
     },
     async () => {
@@ -1669,6 +1741,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [
         {
           Given: ANSWER_AGAIN_GIVEN,
@@ -1687,6 +1760,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [{ Given: ANSWER_AGAIN_GIVEN, When: [ANSWER_WHATEVER], Then: "判定結果の残り挑戦回数は0回になる" }],
     },
     async () => {
@@ -1699,6 +1773,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: LEGENDARY_SCORED_70, When: [ANSWER_BULBASAUR], Then: RESULT_CORRECT }],
     },
     async () => {
@@ -1712,6 +1787,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: LEGENDARY_SCORED_70, When: [ANSWER_BULBASAUR], Then: BALL_MASTER }],
     },
     async () => {
@@ -1725,6 +1801,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: LEGENDARY_SCORED_70, When: [ANSWER_BULBASAUR], Then: RESULT_LANGUAGE_EN }],
     },
     async () => {
@@ -1740,6 +1817,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: RESULT_CORRECT }],
     },
     async () => {
@@ -1753,6 +1831,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: BALL_MASTER }],
     },
     async () => {
@@ -1766,6 +1845,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: LEGENDARY_SCORED_70, When: [FUZZY_ENGLISH_NAME], Then: RESULT_FUZZY }],
     },
     async () => {
@@ -1782,6 +1862,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: MYTHICAL_SCORED_70, When: [ANSWER_JAPANESE_NAME], Then: RESULT_CORRECT }],
     },
     async () => {
@@ -1795,6 +1876,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: MYTHICAL_SCORED_70, When: [ANSWER_JAPANESE_NAME], Then: BALL_MASTER }],
     },
     async () => {
@@ -1808,6 +1890,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: MYTHICAL_SCORED_70, When: [ANSWER_JAPANESE_NAME], Then: RESULT_LANGUAGE_JA }],
     },
     async () => {
@@ -1822,6 +1905,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["境界値"],
         steps: [{ Given: given, When: [MISS_THREE_TIMES], Then: RESULT_INCORRECT }],
       },
       async () => {
@@ -1836,6 +1920,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["境界値"],
         steps: [{ Given: given, When: [MISS_THREE_TIMES], Then: "判定結果のボールはモンスターボールになる" }],
       },
       async () => {
@@ -1845,11 +1930,12 @@ describe("[本体:名前当て]名前当ての判定", () => {
     );
   }
 
-  for (const { given, start } of ANSWER_BULBASAUR_START_CASES) {
+  for (const { given, start, viewpoints } of ANSWER_BULBASAUR_START_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [ANSWER_BULBASAUR], Then: RESULT_CORRECT }],
       },
       async () => {
@@ -1859,11 +1945,12 @@ describe("[本体:名前当て]名前当ての判定", () => {
     );
   }
 
-  for (const { given, start } of ANSWER_BULBASAUR_START_CASES) {
+  for (const { given, start, viewpoints } of ANSWER_BULBASAUR_START_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [ANSWER_BULBASAUR], Then: BALL_ULTRA }],
       },
       async () => {
@@ -1880,6 +1967,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: RESULT_INCORRECT }],
     },
     async () => {
@@ -1892,6 +1980,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         { Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: "判定結果のボールはモンスターボールになる" },
       ],
@@ -1906,6 +1995,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: HINT_THEN_MISS_GIVEN, When: [MISS_AGAIN], Then: "判定結果の残り挑戦回数は0回になる" }],
     },
     async () => {
@@ -1978,18 +2068,28 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
   );
 
-  for (const { given, levelUpMoves } of [
+  for (const { given, levelUpMoves, viewpoints } of [
     {
       given: "レベルアップで覚える技が3つあるポケモン (「たいあたり」「なきごえ」「つるのムチ」)",
       levelUpMoves: ["たいあたり", "なきごえ", "つるのムチ"],
+      viewpoints: ["件数・有無"],
     },
-    { given: "レベルアップで覚える技の情報が未設定のポケモン", levelUpMoves: undefined },
-    { given: "レベルアップで覚える技の情報が0件のポケモン", levelUpMoves: [] },
-  ] satisfies { given: string; levelUpMoves: string[] | undefined }[]) {
+    {
+      given: "レベルアップで覚える技の情報が未設定のポケモン",
+      levelUpMoves: undefined,
+      viewpoints: ["件数・有無", "エッジケース"],
+    },
+    {
+      given: "レベルアップで覚える技の情報が0件のポケモン",
+      levelUpMoves: [],
+      viewpoints: ["件数・有無", "エッジケース"],
+    },
+  ] satisfies { given: string; levelUpMoves: string[] | undefined; viewpoints: readonly Viewpoint[] }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [
           {
             Given: `1回目のヒントを要求済みで、${given}のとき`,
@@ -2012,6 +2112,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: "1回目のヒントを要求済みで、レベルアップで覚える技が「たいあたり」「なきごえ」「つるのムチ」のポケモンのとき",
@@ -2037,6 +2138,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["件数・有無", "エッジケース"],
         steps: [
           {
             Given: `1回目のヒントを要求済みで、レベルアップで覚える技の情報が${state}のポケモンのとき`,
@@ -2088,6 +2190,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "名前当てを1回外していて、残り挑戦回数が2回のとき",
@@ -2123,6 +2226,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点: ["エッジケース"],
         steps: [
           {
             Given: given,
@@ -2143,6 +2247,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["境界値"],
       steps: [
         {
           Given: "名前当てを2回外していて、残り挑戦回数が1回のとき",
@@ -2163,6 +2268,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [
         {
           Given: "進行中のクエストセッションがないとき",
@@ -2211,6 +2317,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [
         {
           Given: "進行中のクエストセッションがないとき",
@@ -2229,6 +2336,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [
         {
           Given: "英語名で正解済みで、ハイパーボールが確定済みのとき",
@@ -2250,6 +2358,7 @@ describe("[本体:名前当て]名前当てのスキップ", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["エッジケース"],
       steps: [
         {
           Given: "日本語名で正解済みで、スーパーボールが確定済みのとき",
@@ -2347,20 +2456,27 @@ describe("[本体:捕獲]捕獲の実行", () => {
     },
   );
 
-  for (const { given, decideBall } of [
+  for (const { given, decideBall, viewpoints } of [
     {
       given: "名前当てをスキップ済みで、モンスターボールが確定済みのとき",
       decideBall: (service: QuestService) => service.skipGuess(USER_ID),
+      viewpoints: [],
     },
     {
       given: "名前当てで3回続けて外していて、モンスターボールが確定済みのとき",
       decideBall: (service: QuestService) => missThreeTimes(service),
+      viewpoints: ["境界値"],
     },
-  ] satisfies { given: string; decideBall: (service: QuestService) => Promise<unknown> }[]) {
+  ] satisfies {
+    given: string;
+    decideBall: (service: QuestService) => Promise<unknown>;
+    viewpoints: readonly Viewpoint[];
+  }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: viewpoints,
         steps: [{ Given: given, When: [ATTEMPT_CAPTURE], Then: "捕獲結果のボールはモンスターボールになる" }],
       },
       async () => {
@@ -2443,6 +2559,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値", "エッジケース"],
       steps: [{ Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲結果は成功になる" }],
     },
     async () => {
@@ -2455,6 +2572,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値", "エッジケース"],
       steps: [{ Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲結果の捕獲確率は1.0になる" }],
     },
     async () => {
@@ -2467,6 +2585,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値", "エッジケース"],
       steps: [
         { Given: MASTER_BALL_CAPTURE_GIVEN, When: [ATTEMPT_CAPTURE], Then: "捕獲結果のボールはマスターボールになる" },
       ],
@@ -2677,6 +2796,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["件数・有無"],
         steps: [
           {
             Given: `${SCORED_UNGUESSED_GIVEN}${hintStatus}`,
@@ -2788,6 +2908,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点: ["件数・有無"],
         steps: [
           {
             Given: `${SCORED_UNGUESSED_GIVEN}${hintStatus}`,
@@ -2811,6 +2932,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: NO_HINT_REQUESTED_GIVEN,
@@ -2829,6 +2951,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: NO_HINT_REQUESTED_GIVEN,
@@ -2847,6 +2970,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: `${SCORED_UNGUESSED_GIVEN}ヒントを1回要求済みのとき`,
@@ -2867,6 +2991,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: TWO_HINTS_REQUESTED_GIVEN,
@@ -2885,6 +3010,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["件数・有無"],
       steps: [
         {
           Given: TWO_HINTS_REQUESTED_GIVEN,
@@ -2899,13 +3025,14 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     },
   );
 
-  for (const { given, decideBall } of [
+  for (const { given, decideBall, 観点 } of [
     {
       given: "採点済みで、名前当てに正解済みで、ハイパーボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
         await service.scoreTranslation(USER_ID, "訳");
         await service.guessName(USER_ID, "bulbasaur");
       },
+      観点: [],
     },
     {
       given: "採点済みで、名前当てをスキップ済みで、モンスターボールが確定済みのとき",
@@ -2913,18 +3040,25 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         await service.scoreTranslation(USER_ID, "訳");
         await service.skipGuess(USER_ID);
       },
+      観点: [],
     },
     {
       given: "採点前で、名前当てに正解済みで、ハイパーボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
         await service.guessName(USER_ID, "bulbasaur");
       },
+      観点: ["エッジケース"],
     },
-  ] satisfies { given: string; decideBall: (service: QuestService) => Promise<unknown> }[]) {
+  ] satisfies {
+    given: string;
+    decideBall: (service: QuestService) => Promise<unknown>;
+    観点: readonly Viewpoint[];
+  }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [{ Given: given, When: [RESUME_QUEST], Then: "再開結果の段階は捕獲待機になる" }],
       },
       async () => {
@@ -2936,25 +3070,32 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     );
   }
 
-  for (const { given, decideBall } of [
+  for (const { given, decideBall, 観点 } of [
     {
       given: "採点済みで、名前当てに正解済みで、ハイパーボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
         await service.scoreTranslation(USER_ID, "訳");
         await service.guessName(USER_ID, "bulbasaur");
       },
+      観点: [],
     },
     {
       given: "採点前で、名前当てに正解済みで、ハイパーボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
         await service.guessName(USER_ID, "bulbasaur");
       },
+      観点: ["エッジケース"],
     },
-  ] satisfies { given: string; decideBall: (service: QuestService) => Promise<unknown> }[]) {
+  ] satisfies {
+    given: string;
+    decideBall: (service: QuestService) => Promise<unknown>;
+    観点: readonly Viewpoint[];
+  }[]) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "正常系",
+        観点,
         steps: [{ Given: given, When: [RESUME_QUEST], Then: "再開結果の確定済みのボールはハイパーボールになる" }],
       },
       async () => {

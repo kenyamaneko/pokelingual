@@ -112,6 +112,7 @@ describe("[本体:AI 呼び出し回数]ユーザーごとの日次上限超過�
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: "ユーザーの日次上限を超えているとき", When: [SEND_REQUEST], Then: REJECTED_USER_LIMIT },
         { Given: "次の依頼時には日次上限以内であるとき", When: ["クエスト画面の翻訳の採点をもう一度依頼して、AI 呼び出し回数の日次上限を確認する"], Then: RECOVERED },
@@ -154,6 +155,7 @@ describe("[本体:AI 呼び出し回数]全体の日次上限超過の拒否", (
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: "全体の日次上限を超えているとき", When: [SEND_REQUEST], Then: REJECTED_GLOBAL_LIMIT },
         { Given: "次の依頼時には日次上限以内であるとき", When: ["クエスト画面の翻訳の採点をもう一度依頼して、AI 呼び出し回数の日次上限を確認する"], Then: RECOVERED },

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""テスト実行結果の JUnit XML から、テスト観点カタログ (HTML) を生成する。
+"""テスト実行結果の JUnit XML から、テストケースカタログ (HTML) を生成する。
 
 テスト名の先頭 `[区分:大機能(:中機能)]小機能` と、ケースの結果に載せた項目
-(種別・正常異常・Given・When・Then) を読み、小機能ごとの表にして標準出力へ書き出す。
+(種別・正常異常・観点・Given・When・Then) を読み、小機能ごとの表にして標準出力へ書き出す。
 シナリオテストには実行する環境のタグを付け、環境で結果が違うステップは環境ごとの結果を表に並べる。
-項目が足りないケースと、一覧にない大機能・中機能の組はエラーにする。
+項目が足りないケースと、一覧にない大機能・中機能・観点の組はエラーにする。
 """
 
 import argparse
@@ -46,19 +46,63 @@ PROPERTY_GIVEN = "Given"
 PROPERTY_WHEN = "When"
 PROPERTY_THEN = "Then"
 PROPERTY_ENVIRONMENT = "環境"
+PROPERTY_PERSPECTIVE = "観点"
 # 環境ごとに結果が違うステップは、`Then:ローカル` のように環境名を添えたキーで載せる
 THEN_ENVIRONMENT_PREFIX = "Then:"
 
-# テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
-DISCLAIMER = (
-    "本カタログは自動テストから生成した「テスト済みの観点」の一覧であり、"
-    "仕様の全量ではない。テストの無い仕様はここに現れない。"
+PERSPECTIVE_BOUNDARY = "境界値"
+PERSPECTIVE_EQUIVALENCE = "同値分割"
+
+
+@dataclass(frozen=True)
+class Perspective:
+    """観点の名前と、その観点を付ける条件。
+
+    Args:
+        name: 観点の名前。
+        condition: 観点を付ける条件。
+    """
+
+    name: str
+    condition: str
+
+
+PERSPECTIVES = (
+    Perspective(
+        PERSPECTIVE_BOUNDARY,
+        "結果が切り替わる閾値の隣り合う値 (ちょうど・直前・直後)、または値域の最小・最大を前提にしたケース。"
+        "回数や件数が上限・下限に達する瞬間も含む。",
+    ),
+    Perspective(
+        PERSPECTIVE_EQUIVALENCE,
+        "同じ結果になる値のグループから代表を 1 つ選んだケース。"
+        "同じ小機能に、別のグループを代表する兄弟ケースがあるときに付ける。境界値とは同時に付けない。",
+    ),
+    Perspective(
+        "エッジケース",
+        "通常の操作では起こらない状況、画面から入力できない値、仕様上ほぼ到達しない値を前提にしたケース。"
+        "他の観点と同時に付けてよい (例: 乱数の最大近傍は境界値とエッジケース)。",
+    ),
+    Perspective("件数・有無", "0 件・1 件・複数件、または「無い」と「空」の違いが入力の軸になっているケース。"),
+    Perspective(
+        "外部依存の失敗",
+        "データベース・AI・外部 API・ネットワークなど、自分のコードの外が失敗・タイムアウト・不正な応答を返すことを前提にしたケース。",
+    ),
+    Perspective(
+        "回復確認",
+        "失敗の後に再試行や次の正常な操作をして、成功すること (失敗時の表示や状態が残らないこと) を確かめるケース。",
+    ),
 )
 
-PAGE_TITLE = "pokelingual テスト観点カタログ"
+PERSPECTIVE_NAMES = tuple(perspective.name for perspective in PERSPECTIVES)
 
-DEFAULT_FEATURES_PATH = Path(__file__).with_name("behavior_catalog_features.json")
-TEMPLATE_PATH = Path(__file__).with_name("behavior_catalog_template.html")
+# テストの無い仕様はカタログに現れないため、「載っていない = 仕様がない」という誤読を防ぐ
+DISCLAIMER = "本カタログはテストコードが担保する振る舞いの一覧であり、仕様の全量ではない。"
+
+PAGE_TITLE = "pokelingual テストケースカタログ"
+
+DEFAULT_FEATURES_PATH = Path(__file__).with_name("test_case_catalog_features.json")
+TEMPLATE_PATH = Path(__file__).with_name("test_case_catalog_template.html")
 DATA_PLACEHOLDER = "__DATA__"
 TITLE_PLACEHOLDER = "__TITLE__"
 CSS_PLACEHOLDER = "__CSS__"
@@ -99,6 +143,7 @@ class CatalogCase:
         steps: ステップ。skip 中のケースでは空。
         is_skipped: skip されて実行されていないケースかどうか。
         environments: 実行する環境。シナリオテストだけに付く。
+        perspectives: 観点。結果に載った順。付けないケースでは空。
     """
 
     region: str
@@ -110,6 +155,7 @@ class CatalogCase:
     steps: tuple[Step, ...]
     is_skipped: bool
     environments: tuple[str, ...] = ()
+    perspectives: tuple[str, ...] = ()
 
 
 def split_test_name(raw_name: str) -> tuple[str, str]:
@@ -250,6 +296,25 @@ def validate_environments(kind: str, environments: tuple[str, ...], steps: tuple
     return tuple(ordered)
 
 
+def validate_perspectives(perspectives: tuple[str, ...], where: str) -> None:
+    """観点が一覧にあり、重複せず、同時に付けられない組でないことを確かめる。
+
+    Args:
+        perspectives: 結果に載った観点。
+        where: エラー表示に使う、テストの所在。
+
+    Raises:
+        CatalogError: 一覧に無い観点があるとき、観点が重複しているとき、または境界値と同値分割が同時に付いているとき。
+    """
+    for perspective in perspectives:
+        if perspective not in PERSPECTIVE_NAMES:
+            raise CatalogError(f"観点「{perspective}」は {'・'.join(PERSPECTIVE_NAMES)} のいずれでもありません: {where}")
+    if len(set(perspectives)) != len(perspectives):
+        raise CatalogError(f"観点が重複しています: {where}")
+    if PERSPECTIVE_BOUNDARY in perspectives and PERSPECTIVE_EQUIVALENCE in perspectives:
+        raise CatalogError(f"観点「{PERSPECTIVE_BOUNDARY}」と「{PERSPECTIVE_EQUIVALENCE}」は同時に付けられません: {where}")
+
+
 def load_features(path: Path) -> dict[str, dict[str, list[str]]]:
     """大機能・中機能の一覧を読む。
 
@@ -317,6 +382,8 @@ def parse_junit_file(path: Path, features: dict) -> list[CatalogCase]:
                 raise CatalogError(f"環境「{environment}」は {'・'.join(ENVIRONMENTS)} のいずれでもありません: {where}")
         if len(set(environments)) != len(environments):
             raise CatalogError(f"環境のタグが重複しています: {where}")
+        perspectives = tuple(value for key, value in properties if key == PROPERTY_PERSPECTIVE)
+        validate_perspectives(perspectives, where)
         kind, outcome = meta.get(PROPERTY_KIND, ""), meta.get(PROPERTY_OUTCOME, "")
         if is_skipped and not properties:
             cases.append(CatalogCase(region, major, minor, feature, kind, outcome, (), True, ()))
@@ -329,7 +396,7 @@ def parse_junit_file(path: Path, features: dict) -> list[CatalogCase]:
         steps = parse_steps([p for p in properties if p[0] in step_keys or p[0].startswith(THEN_ENVIRONMENT_PREFIX)], where)
         steps = validate_environments(kind, environments, steps, where)
         ordered_environments = tuple(environment for environment in ENVIRONMENTS if environment in environments)
-        cases.append(CatalogCase(region, major, minor, feature, kind, outcome, steps, is_skipped, ordered_environments))
+        cases.append(CatalogCase(region, major, minor, feature, kind, outcome, steps, is_skipped, ordered_environments, perspectives))
     return cases
 
 
@@ -382,6 +449,7 @@ def build_payload(cases: list[CatalogCase], commit: str | None) -> dict:
         "disclaimer": DISCLAIMER,
         "commit": commit or "",
         "regions": list(REGIONS),
+        "perspectives": [{"name": perspective.name, "condition": perspective.condition} for perspective in PERSPECTIVES],
         "cases": [
             {
                 "k": case.region,
@@ -392,6 +460,7 @@ def build_payload(cases: list[CatalogCase], commit: str | None) -> dict:
                 "n": case.outcome,
                 "x": case.is_skipped,
                 "e": list(case.environments),
+                "g": list(case.perspectives),
                 "steps": [build_step_payload(step) for step in case.steps],
             }
             for case in cases
@@ -400,7 +469,7 @@ def build_payload(cases: list[CatalogCase], commit: str | None) -> dict:
 
 
 def render_html(cases: list[CatalogCase], commit: str | None, css: str) -> str:
-    """テスト観点カタログを単一ファイルの HTML ページとして描画する。
+    """テストケースカタログを単一ファイルの HTML ページとして描画する。
 
     Args:
         cases: 並べ替え済みのケース。
@@ -423,7 +492,7 @@ def main(argv: list[str] | None = None) -> None:
     Args:
         argv: コマンドライン引数。None なら sys.argv を使う。
     """
-    parser = argparse.ArgumentParser(description="JUnit XML からテスト観点カタログを生成する")
+    parser = argparse.ArgumentParser(description="JUnit XML からテストケースカタログを生成する")
     parser.add_argument("--junit", action="append", required=True, type=Path, metavar="PATH", help="JUnit XML のパス (複数指定可)")
     parser.add_argument("--commit", default=None, help="生成元 commit の SHA (省略可)")
     parser.add_argument("--css", required=True, type=Path, help="Tailwind が生成した CSS のパス")

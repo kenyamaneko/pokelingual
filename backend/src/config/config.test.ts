@@ -1,6 +1,6 @@
 import { describe, expect, beforeEach, afterEach } from "vitest";
 import { loadConfig } from "./config.js";
-import { defineCase } from "../test/defineCase.js";
+import { defineCase, type Viewpoint } from "../test/defineCase.js";
 
 // loadConfig は process.env を読むため、テストごとに退避・復元する。
 const ORIGINAL_ENV = { ...process.env };
@@ -183,6 +183,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が下限の 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定のユーザー 1 人あたりの AI 呼び出しの日次上限は 1 回になる" }],
     },
     () => {
@@ -196,6 +197,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が最終評価点の下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 0 になる" }],
     },
     () => {
@@ -209,6 +211,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が最終評価点の上限の 99 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 99 になる" }],
     },
     () => {
@@ -235,6 +238,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定のモンスターボールのボール補正は 0 になる" }],
     },
     () => {
@@ -248,6 +252,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が下限の 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0 になる" }],
     },
     () => {
@@ -261,6 +266,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が上限の 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 1 になる" }],
     },
     () => {
@@ -270,11 +276,17 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  for (const value of ["0", "abc"]) {
+  const PER_USER_DAILY_LIMIT_CASES: { value: string; 観点: readonly Viewpoint[] }[] = [
+    { value: "0", 観点: ["境界値"] },
+    { value: "abc", 観点: [] },
+  ];
+
+  for (const { value, 観点 } of PER_USER_DAILY_LIMIT_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [{ Given: `${MOCK_MODE}、PER_USER_DAILY_LIMIT が ${value} のとき`, When: [LOAD_CONFIG], Then: "PER_USER_DAILY_LIMIT が 1 以上の整数でないという起動エラーになる" }],
       },
       () => {
@@ -285,15 +297,18 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     );
   }
 
-  for (const { label, value } of [
-    { label: "最終評価点の下限 0 を下回る", value: "-1" },
-    { label: "最終評価点の上限 99 を超える", value: "100" },
-    { label: "整数でない", value: "1.5" },
-  ]) {
+  const MASTER_BALL_MIN_SCORE_CASES: { label: string; value: string; 観点: readonly Viewpoint[] }[] = [
+    { label: "最終評価点の下限 0 を下回る", value: "-1", 観点: ["境界値"] },
+    { label: "最終評価点の上限 99 を超える", value: "100", 観点: ["境界値"] },
+    { label: "整数でない", value: "1.5", 観点: [] },
+  ];
+
+  for (const { label, value, 観点 } of MASTER_BALL_MIN_SCORE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "MASTER_BALL_MIN_SCORE が 0 以上 99 以下の整数でないという起動エラーになる" }],
       },
       () => {
@@ -308,6 +323,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["境界値"],
       steps: [{ Given: `${MOCK_MODE}、BALL_CAPTURE_BONUS_POKE が下限 0 を下回る -0.01 のとき`, When: [LOAD_CONFIG], Then: "BALL_CAPTURE_BONUS_POKE の値が許容範囲の数でないことを示す起動エラーになる" }],
     },
     () => {
@@ -317,15 +333,18 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  for (const { label, value } of [
-    { label: "下限 0 を下回る", value: "-0.01" },
-    { label: "上限 1 を上回る", value: "1.01" },
-    { label: "数でない", value: "abc" },
-  ]) {
+  const LEGENDARY_ENCOUNTER_RATE_CASES: { label: string; value: string; 観点: readonly Viewpoint[] }[] = [
+    { label: "下限 0 を下回る", value: "-0.01", 観点: ["境界値"] },
+    { label: "上限 1 を上回る", value: "1.01", 観点: ["境界値"] },
+    { label: "数でない", value: "abc", 観点: [] },
+  ];
+
+  for (const { label, value, 観点 } of LEGENDARY_ENCOUNTER_RATE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が${label} ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_ENCOUNTER_RATE が 0 以上 1 以下の数でないという起動エラーになる" }],
       },
       () => {
@@ -573,14 +592,17 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  for (const { label, value } of [
-    { label: "空文字", value: "" },
-    { label: "空白のみ (半角スペース 3 文字)", value: "   " },
-  ]) {
+  const GOOGLE_CLOUD_PROJECT_CASES: { label: string; value: string; 観点: readonly Viewpoint[] }[] = [
+    { label: "空文字", value: "", 観点: ["件数・有無"] },
+    { label: "空白のみ (半角スペース 3 文字)", value: "   ", 観点: ["エッジケース"] },
+  ];
+
+  for (const { label, value, 観点 } of GOOGLE_CLOUD_PROJECT_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点,
         steps: [{ Given: `${REAL_MODE}、GOOGLE_CLOUD_PROJECT が${label}のとき`, When: [LOAD_CONFIG], Then: "GOOGLE_CLOUD_PROJECT が未設定であることを示す起動エラーになる" }],
       },
       () => {
@@ -595,6 +617,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "異常系",
+      観点: ["件数・有無"],
       steps: [{ Given: `${TUNING_SET}、APP_MODE が real で、チューニングパラメーター以外の必須の環境変数が 1 つも設定されていないとき`, When: [LOAD_CONFIG], Then: "必須の環境変数が未設定であることを示す起動エラーになる" }],
     },
     () => {

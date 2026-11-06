@@ -3,7 +3,7 @@ import type { AxiosAdapter, AxiosResponse } from "axios";
 import api from "./client";
 import { type RateLimitDetail } from "../utils/rateLimitEvents";
 import { spyOnRateLimitEvents } from "../test/rateLimitEventCapture";
-import { defineCase } from "../test/defineCase";
+import { defineCase, type Viewpoint } from "../test/defineCase";
 
 const originalAdapter = api.defaults.adapter;
 
@@ -140,24 +140,29 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     );
   }
 
-  for (const { given, status, body } of [
-    { given: INVALID_KIND_429, status: 429, body: { error: "invalid", message: "x" } },
+  const NOTHING_NOTIFIED_CASES: { given: string; status: number; body: unknown; 観点: readonly Viewpoint[] }[] = [
+    { given: INVALID_KIND_429, status: 429, body: { error: "invalid", message: "x" }, 観点: ["エッジケース"] },
     {
       given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが無いとき",
       status: 429,
       body: { error: "user" },
+      観点: ["エッジケース", "件数・有無"],
     },
     {
       given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが空文字のとき",
       status: 429,
       body: { error: "user", message: "" },
+      観点: ["エッジケース", "件数・有無"],
     },
-    { given: "バックエンドが 500 を返すとき", status: 500, body: { error: "internal" } },
-  ]) {
+    { given: "バックエンドが 500 を返すとき", status: 500, body: { error: "internal" }, 観点: ["外部依存の失敗"] },
+  ];
+
+  for (const { given, status, body, 観点 } of NOTHING_NOTIFIED_CASES) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点,
         steps: [{ Given: given, When: [SEND_REQUEST], Then: NOTHING_NOTIFIED }],
       },
       async () => {
@@ -176,6 +181,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["エッジケース", "回復確認"],
       steps: [
         { Given: INVALID_KIND_429, When: [SEND_REQUEST], Then: "リクエストは 429 のエラーになる" },
         { Given: USER_KIND_429, When: [SEND_REQUEST_AGAIN], Then: USER_LIMIT_NOTIFIED },
@@ -196,6 +202,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["回復確認"],
       steps: [
         { Given: USER_KIND_429, When: [SEND_REQUEST], Then: USER_LIMIT_NOTIFIED },
         {
@@ -227,6 +234,7 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
     {
       種別: "部品間結合テスト",
       正常異常: "異常系",
+      観点: ["外部依存の失敗"],
       steps: [
         {
           Given: INVALID_KIND_429,
@@ -246,17 +254,25 @@ describe("[運用:ログ出力]不正な日次上限エラーのログ出力", (
     },
   );
 
-  for (const { given, body } of [
-    { given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが無いとき", body: { error: "user" } },
+  const MISSING_MESSAGE_CASES: { given: string; body: unknown; 観点: readonly Viewpoint[] }[] = [
+    {
+      given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが無いとき",
+      body: { error: "user" },
+      観点: ["外部依存の失敗", "件数・有無"],
+    },
     {
       given: "バックエンドが 429 を返し、上限の種類はユーザーで、メッセージが空文字のとき",
       body: { error: "user", message: "" },
+      観点: ["外部依存の失敗", "件数・有無"],
     },
-  ]) {
+  ];
+
+  for (const { given, body, 観点 } of MISSING_MESSAGE_CASES) {
     defineCase(
       {
         種別: "部品間結合テスト",
         正常異常: "異常系",
+        観点,
         steps: [
           {
             Given: given,

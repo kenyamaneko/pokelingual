@@ -3,7 +3,7 @@ import express from "express";
 import request from "supertest";
 import type { Auth, DecodedIdToken } from "firebase-admin/auth";
 import { firebaseAuth } from "./auth.js";
-import { defineCase } from "../test/defineCase.js";
+import { defineCase, type Viewpoint } from "../test/defineCase.js";
 
 function stubAuthClient(verifyIdToken: () => Promise<Partial<DecodedIdToken>>): Auth {
   return { verifyIdToken } as unknown as Auth;
@@ -143,17 +143,24 @@ describe("[共通:認証]API リクエストの認証", () => {
     },
   );
 
-  for (const { given, token } of [
-    { given: "メール確認済みかどうかの情報が無いトークンのとき", token: { uid: "user-1", email: "no-claim@example.com" } },
+  const unverifiedEmailRows: { given: string; token: Partial<DecodedIdToken>; viewpoints: readonly Viewpoint[] }[] = [
+    {
+      given: "メール確認済みかどうかの情報が無いトークンのとき",
+      token: { uid: "user-1", email: "no-claim@example.com" },
+      viewpoints: ["エッジケース"],
+    },
     {
       given: "メール未確認のトークンのとき",
       token: { uid: "user-1", email: "unverified@example.com", email_verified: false },
+      viewpoints: [],
     },
-  ]) {
+  ];
+  for (const { given, token, viewpoints } of unverifiedEmailRows) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
+        観点: viewpoints,
         steps: [
           {
             Given: given,

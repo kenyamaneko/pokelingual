@@ -37,7 +37,7 @@ test-backend:
 test-frontend:
 	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
 
-# テスト観点カタログ生成器のテスト。pytest が入った Python 3 が要る。
+# テストケースカタログ生成器のテスト。pytest が入った Python 3 が要る。
 test-scripts:
 	python3 -m pytest scripts
 
@@ -51,7 +51,7 @@ coverage-backend:
 coverage-frontend:
 	cd frontend && npm run test:coverage
 
-# テスト観点カタログの CSS (Tailwind) を生成する。生成スクリプトの --css に渡す
+# テストケースカタログの CSS (Tailwind) を生成する。生成スクリプトの --css に渡す
 catalog-css:
 	cd scripts && npm ci && npm run build:css
 
