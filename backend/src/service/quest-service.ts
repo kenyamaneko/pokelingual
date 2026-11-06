@@ -152,11 +152,13 @@ export class QuestService {
       name_guessed: false,
       hint_reveal_count: 0,
     };
+    // 伏せ字に失敗したセッションを残すと再開のたびに同じ失敗を繰り返すため、保存より先に伏せ字にする
+    const maskedDescriptionEN = maskPokemonNameEN(descEN, pokemon.name_en);
     await this.saveSession(userId, session);
 
     return {
       pokemon_id: pokemon.id,
-      description_en: maskPokemonNameEN(descEN, pokemon.name_en),
+      description_en: maskedDescriptionEN,
       is_legendary: pokemon.is_legendary,
       is_mythical: pokemon.is_mythical,
       max_guess_attempts: MAX_NAME_GUESS_ATTEMPTS,
@@ -232,12 +234,14 @@ export class QuestService {
     session.score = translateToFinalScore(result.score);
     session.user_translation = translation;
     session.review = result.review;
+    // 伏せ字に失敗した採点済みセッションを残すと再開のたびに同じ失敗を繰り返すため、保存より先に伏せ字にする
+    const maskedDescriptionJA = maskPokemonNameJA(session.description_ja, session.name_ja);
     await this.saveSession(userId, session);
 
     return {
       score: session.score,
       review: result.review,
-      description_ja: maskPokemonNameJA(session.description_ja, session.name_ja),
+      description_ja: maskedDescriptionJA,
     };
   }
 
@@ -621,11 +625,12 @@ const pluralHints = new Set([
 /**
  * 説明文中のポケモン名英語表記を "this Pokémon" / "of these Pokémon" に置換する。
  * @param text 元の説明文。
- * @param name 伏せるポケモンの英語名。
+ * @param name 伏せるポケモンの英語名。空文字は指定できず、指定すると例外を投げる。
  * @returns 名前を代名詞に置換した説明文。
  */
 export function maskPokemonNameEN(text: string, name: string): string {
-  if (!name) return text;
+  // 空の名前は本文のあらゆる位置に一致して置換が進まなくなるため、想定外の値として止める
+  if (!name) throw new Error("pokemon name to mask is empty");
 
   const lower = text.toLowerCase();
   const lowerName = name.toLowerCase();
@@ -672,10 +677,11 @@ export function maskPokemonNameEN(text: string, name: string): string {
 /**
  * 説明文中のポケモン名日本語表記を "この ポケモン" に置換する。
  * @param text 元の説明文。
- * @param name 伏せるポケモンの日本語名。
+ * @param name 伏せるポケモンの日本語名。空文字は指定できず、指定すると例外を投げる。
  * @returns 名前を置換した説明文。
  */
 export function maskPokemonNameJA(text: string, name: string): string {
-  if (!name) return text;
+  // 空の名前は文字の間すべてに一致して本文を壊すため、想定外の値として止める
+  if (!name) throw new Error("pokemon name to mask is empty");
   return text.replaceAll(name, "この ポケモン");
 }

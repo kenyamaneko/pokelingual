@@ -47,23 +47,19 @@ export function PokemonDetailCard({ pokemon, onClose }: PokemonDetailCardProps) 
               {pokemon.name_en}
             </h2>
             <p className="text-gray-500">{pokemon.name_ja}</p>
-            {pokemon.types && pokemon.types.length > 0 && (
-              <div className="flex justify-center gap-2 mt-2">
-                {pokemon.types.map((t) => (
-                  <span
-                    key={t}
-                    className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
-                  >
-                    {getTypeLabel(t)}
-                  </span>
-                ))}
-              </div>
-            )}
-            {pokemon.height != null && pokemon.weight != null && (
-              <p className="text-sm text-gray-400 mt-2">
-                高さ: {formatHeightMeters(pokemon.height)}m | 重さ: {formatWeightKilograms(pokemon.weight)}kg
-              </p>
-            )}
+            <div className="flex justify-center gap-2 mt-2">
+              {pokemon.types.map((t) => (
+                <span
+                  key={t}
+                  className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
+                >
+                  {getTypeLabel(t)}
+                </span>
+              ))}
+            </div>
+            <p className="text-sm text-gray-400 mt-2">
+              高さ: {formatHeightMeters(pokemon.height)}m | 重さ: {formatWeightKilograms(pokemon.weight)}kg
+            </p>
           </div>
 
           {pokemon.flavor_texts && pokemon.flavor_texts.length > 0 ? (

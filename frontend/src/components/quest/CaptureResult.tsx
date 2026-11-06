@@ -112,18 +112,16 @@ export function CaptureResult({ result, onNewQuest }: CaptureResultProps) {
           <p className="text-gray-500" data-testid="captured-name-ja">
             {result.name_ja}
           </p>
-          {result.types && result.types.length > 0 && (
-            <div className="flex justify-center gap-2 mt-2">
-              {result.types.map((t) => (
-                <span
-                  key={t}
-                  className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
-                >
-                  {getTypeLabel(t)}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex justify-center gap-2 mt-2">
+            {result.types.map((t) => (
+              <span
+                key={t}
+                className={`${getTypeColor(t)} text-white text-xs font-bold px-3 py-1 rounded-full`}
+              >
+                {getTypeLabel(t)}
+              </span>
+            ))}
+          </div>
         </div>
 
         <button
