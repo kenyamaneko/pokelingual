@@ -32,7 +32,7 @@ const OPEN_QUEST_SCREEN = "クエスト画面を開く";
 const PRESS_HAMBURGER_MENU_BUTTON = "ログイン後の画面のヘッダーで、「メニュー」ボタンを押す";
 const PRESS_HAMBURGER_MENU_QUEST_LINK = "ログイン後の画面のヘッダーのハンバーガーメニューで、「ぼうけん」リンクを押す";
 const SUBMIT_TRANSLATION_FOR_SCORING = [
-  "場所選択画面で「テスト草原」を選ぶ",
+  "場所選択画面で「木漏れ日の森」を選ぶ",
   "クエスト画面の翻訳の入力欄に「この ポケモンは はやい」と入力する",
   "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
 ] as const;

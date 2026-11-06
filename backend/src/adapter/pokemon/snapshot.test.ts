@@ -4,10 +4,10 @@ import type { PokemonRecord } from "../../domain/pokemon.js";
 import type { PokemonType } from "../../../../shared/api-types/pokemon.js";
 import { defineCase } from "../../test/defineCase.js";
 
-const REAL_NAMES: Record<number, { name_en: string; name_ja: string }> = {
-  1: { name_en: "Bulbasaur", name_ja: "フシギダネ" },
-  4: { name_en: "Charmander", name_ja: "ヒトカゲ" },
-  25: { name_en: "Pikachu", name_ja: "ピカチュウ" },
+const REAL_NAMES: Record<number, { name_en: string; name_ja: string; description_en: string; description_ja: string }> = {
+  1: { name_en: "Bulbasaur", name_ja: "フシギダネ", description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.", description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。" },
+  4: { name_en: "Charmander", name_ja: "ヒトカゲ", description_en: "The flame on its tail indicates Charmander’s life force. If it is healthy, the flame burns brightly.", description_ja: "尻尾の　炎は ヒトカゲの　生命力の　証。 元気だと　さかんに　燃えさかる。" },
+  25: { name_en: "Pikachu", name_ja: "ピカチュウ", description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.", description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。" },
 };
 
 function record(id: number, types: PokemonType[]): PokemonRecord {
@@ -15,8 +15,8 @@ function record(id: number, types: PokemonType[]): PokemonRecord {
     id,
     name_en: REAL_NAMES[id].name_en,
     name_ja: REAL_NAMES[id].name_ja,
-    description_en: "en",
-    description_ja: "ja",
+    description_en: REAL_NAMES[id].description_en,
+    description_ja: REAL_NAMES[id].description_ja,
     base_stat_total: 300,
     types,
     height: 4,

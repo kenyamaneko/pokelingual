@@ -19,7 +19,8 @@ const CORRECT_TITLE = "正解！";
 const NEXT_QUEST_BUTTON = "次のポケモンを探す";
 
 const OPEN_QUEST_SCREEN = "クエスト画面を開く";
-const SELECT_PLACE = "場所選択画面で「テスト草原」を選ぶ";
+const LONG_SCENARIO_TIMEOUT_MS = 15000;
+const SELECT_PLACE = "場所選択画面で「木漏れ日の森」を選ぶ";
 const PRESS_TRANSLATION_SUBMIT = "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す";
 const PRESS_NAME_SUBMIT = "名前当て画面の名前の入力で、「君に　決めた！」ボタンを押す";
 const PRESS_HINT = "名前当て画面のヒントで、「ヒントを見る（チャンスを1回使う）」ボタンを押す";
@@ -60,8 +61,8 @@ type UserSession = ReturnType<typeof userEvent.setup>;
  * @param user userEvent のセッション。
  */
 async function startQuestAndSubmitTranslation(user: UserSession): Promise<void> {
-  await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
-  await user.type(await screen.findByRole("textbox"), "やくぶん");
+  await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
+  await user.type(await screen.findByRole("textbox"), "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
   await user.click(screen.getByRole("button", { name: TRANSLATION_SUBMIT_BUTTON }));
 }
 
@@ -72,7 +73,7 @@ describe("[本体:クエスト]場所の選択", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "場所の候補が「テスト草原」の 1 件のとき",
+          Given: "場所の候補が「木漏れ日の森」の 1 件のとき",
           When: [OPEN_QUEST_SCREEN],
           Then: "場所選択画面に、見出し「どこに　ポケモンを　探しに行く？」が表示される",
         },
@@ -93,9 +94,9 @@ describe("[本体:クエスト]場所の選択", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "場所の候補が「テスト草原」の 1 件のとき",
+          Given: "場所の候補が「木漏れ日の森」の 1 件のとき",
           When: [OPEN_QUEST_SCREEN],
-          Then: "場所選択画面に、「テスト草原」ボタンが表示される",
+          Then: "場所選択画面に、「木漏れ日の森」ボタンが表示される",
         },
       ],
     },
@@ -103,7 +104,7 @@ describe("[本体:クエスト]場所の選択", () => {
       renderWithProviders(<QuestPage />, { withRouter: true });
 
       expect(
-        await screen.findByRole("button", { name: /テスト草原/ }),
+        await screen.findByRole("button", { name: /木漏れ日の森/ }),
       ).toBeInTheDocument();
     },
   );
@@ -117,13 +118,13 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       steps: [
         {
           Given:
-            "1 回目の出題の英文が「The first wild creature.」、2 回目の出題の英文が「A second wild creature.」で、出題ポケモンの名前が「ピカチュウ」で、捕獲の抽選が必ず成功するとき",
+            "1 回目の出題の英文が「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、2 回目の出題の英文が「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」で、出題ポケモンの名前が「ピカチュウ」で、捕獲の抽選が必ず成功するとき",
           When: [OPEN_QUEST_SCREEN, SELECT_PLACE],
-          Then: "出題の英文「The first wild creature.」が表示される",
+          Then: "出題の英文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」が表示される",
         },
         {
-          When: [enterTranslationOperation("さいしょのやくぶん"), PRESS_TRANSLATION_SUBMIT],
-          Then: "翻訳「さいしょのやくぶん」が表示される",
+          When: [enterTranslationOperation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"), PRESS_TRANSLATION_SUBMIT],
+          Then: "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」が表示される",
         },
         {
           When: submitNameOperations("ピカチュウ"),
@@ -135,7 +136,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
         },
         {
           When: [PRESS_NEXT_QUEST, SELECT_PLACE],
-          Then: "2 回目の出題の英文「A second wild creature.」が表示される",
+          Then: "2 回目の出題の英文「The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.」が表示される",
         },
       ],
     },
@@ -167,14 +168,14 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
           return HttpResponse.json({
             pokemon_id: newQuestCall === 1 ? 25 : 4,
             description_en:
-              newQuestCall === 1 ? "The first wild creature." : "A second wild creature.",
+              newQuestCall === 1 ? "When several of these Pokémon gather, their electricity could build and cause lightning storms." : "The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.",
             is_legendary: false,
             is_mythical: false,
             max_guess_attempts: 3,
           });
         }),
         http.post(apiUrl("/quest/score"), () =>
-          HttpResponse.json({ score: 80, review: "いいね", description_ja: "テストの せつめい" }),
+          HttpResponse.json({ score: 80, review: "雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。", description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。" }),
         ),
         http.post(apiUrl("/quest/guess-name"), async ({ request }) => {
           const { guess } = (await request.json()) as { guess: string };
@@ -189,15 +190,15 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
 
       renderWithProviders(<QuestPage />, { withRouter: true });
 
-      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
 
       const translationBox = await screen.findByRole("textbox");
       // タイプライター演出で全文表示まで実時間がかかるため、既定の待機時間 (1000ms) を延長する。
-      await screen.findByText(/The first wild creature\./, {}, { timeout: 3000 });
+      await screen.findByText(/When several of these Pokémon gather, their electricity could build and cause lightning storms\./, {}, { timeout: 3000 });
 
-      await user.type(translationBox, "さいしょのやくぶん");
+      await user.type(translationBox, "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
       await user.click(screen.getByRole("button", { name: TRANSLATION_SUBMIT_BUTTON }));
-      expect(await screen.findByText("さいしょのやくぶん")).toBeInTheDocument();
+      expect(await screen.findByText("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある")).toBeInTheDocument();
 
       await user.type(screen.getByRole("textbox"), "ピカチュウ");
       await user.click(screen.getByRole("button", { name: NAME_SUBMIT_BUTTON }));
@@ -215,11 +216,12 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole("button", { name: NEXT_QUEST_BUTTON }));
-      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
       expect(
-        await screen.findByText(/A second wild creature\./, {}, { timeout: 3000 }),
+        await screen.findByText(/The flame on its tail indicates this Pokémon’s life force\. If it is healthy, the flame burns brightly\./, {}, { timeout: 3000 }),
       ).toBeInTheDocument();
     },
+    LONG_SCENARIO_TIMEOUT_MS,
   );
 });
 
@@ -229,14 +231,14 @@ describe("[本体:名前当て]名前当てのヒント", () => {
       http.get(apiUrl("/quest/new"), () =>
         HttpResponse.json({
           pokemon_id: 25,
-          description_en: "A wild creature.",
+          description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
           is_legendary: false,
           is_mythical: false,
           max_guess_attempts: 3,
         }),
       ),
       http.post(apiUrl("/quest/score"), () =>
-        HttpResponse.json({ score: 50, review: "", description_ja: "せつめい" }),
+        HttpResponse.json({ score: 50, review: "", description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。" }),
       ),
     );
   }
@@ -767,8 +769,8 @@ describe("[本体:捕獲]捕獲に使うボール", () => {
           name_ja: "フシギダネ",
           sprite_url: "https://example.com/1.png",
           score: 80,
-          description_en: "x",
-          description_ja: "y",
+          description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+          description_ja: "生まれたときから　背中に 不思議な　タネが　植えてあって 体と　ともに　育つという。",
           base_stat_total: 318,
           ball_type: ballCase.ballType,
           types: ["grass", "poison"],
@@ -887,7 +889,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
     return user;
   }
 
-  const SUBMIT_TRANSLATION = [enterTranslationOperation("やくぶん"), PRESS_TRANSLATION_SUBMIT] as const;
+  const SUBMIT_TRANSLATION = [enterTranslationOperation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"), PRESS_TRANSLATION_SUBMIT] as const;
 
   defineCase(
     {
@@ -914,7 +916,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
         { Given: SESSION_EXPIRED, When: [SELECT_PLACE, ...SUBMIT_TRANSLATION], Then: SESSION_EXPIRED_MESSAGE },
         {
           When: ["エラー画面のセッション切れの表示で、「もう一度探す」ボタンを押す"],
-          Then: "場所選択画面に、「テスト草原」ボタンが表示される",
+          Then: "場所選択画面に、「木漏れ日の森」ボタンが表示される",
         },
       ],
     },
@@ -925,7 +927,7 @@ describe("[本体:クエスト]採点中のセッション切れ", () => {
       await user.click(screen.getByRole("button", { name: /もう一度探す/ }));
 
       expect(
-        await screen.findByRole("button", { name: /テスト草原/ }),
+        await screen.findByRole("button", { name: /木漏れ日の森/ }),
       ).toBeInTheDocument();
     },
   );
@@ -948,7 +950,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
           http.get(apiUrl("/quest/new"), () =>
             HttpResponse.json({
               pokemon_id: pokemonID,
-              description_en: "A wild creature.",
+              description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
               is_legendary: isLegendary,
               is_mythical: isMythical,
               max_guess_attempts: 3,
@@ -957,7 +959,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
         );
 
         renderWithProviders(<QuestPage />, { withRouter: true });
-        await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+        await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
 
         expect(await screen.findByText(spec("ただならない　気配を感じる..."))).toBeInTheDocument();
       },
@@ -982,7 +984,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
         http.get(apiUrl("/quest/new"), () =>
           HttpResponse.json({
             pokemon_id: 25,
-            description_en: "A wild creature.",
+            description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
             is_legendary: false,
             is_mythical: false,
             max_guess_attempts: 3,
@@ -991,7 +993,7 @@ describe("[本体:クエスト]伝説・幻の気配演出", () => {
       );
 
       renderWithProviders(<QuestPage />, { withRouter: true });
-      await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+      await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
       await screen.findByTestId("quest-description");
 
       expect(screen.queryByText(spec("ただならない　気配を感じる..."))).not.toBeInTheDocument();

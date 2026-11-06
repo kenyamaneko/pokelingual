@@ -29,7 +29,7 @@ export function createUsageHandler(usageResponses: DailyUsage[]) {
 /** 出題の読み込みを待ち、翻訳を入力して採点へ送信する。 */
 export async function submitTranslationForScoring(): Promise<void> {
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: /テスト草原/ }));
+  await user.click(await screen.findByRole("button", { name: /木漏れ日の森/ }));
   await user.type(await screen.findByRole("textbox"), TRANSLATION_TEXT);
   await user.click(screen.getByRole("button", { name: "この翻訳に決めた！" }));
 }

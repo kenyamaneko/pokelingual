@@ -52,8 +52,9 @@ function composeStepName(step: SpecStep): string {
  * ケースを 1 件登録する。テスト名はステップから組み立て、項目を注釈としてテスト結果に載せる。
  * @param fields 種別・正常異常・ステップ。観点は任意。
  * @param body 検証の本体。複数ステップのときは、ステップごとの確認をこの中で順に行う。
+ * @param timeoutMs 既定の待機時間を超える長い操作の連続を確かめるときの、ケースの待機時間 (ミリ秒)。
  */
-export function defineCase(fields: SpecFields, body: () => void | Promise<void>): void {
+export function defineCase(fields: SpecFields, body: () => void | Promise<void>, timeoutMs?: number): void {
   const title = fields.steps.map(composeStepName).join(STEP_SEPARATOR);
   const viewpoints = fields.観点 ?? [];
   it(title, async ({ annotate }) => {
@@ -66,5 +67,5 @@ export function defineCase(fields: SpecFields, body: () => void | Promise<void>)
       await annotate(step.Then, ANNOTATION.then);
     }
     await body();
-  });
+  }, timeoutMs);
 }

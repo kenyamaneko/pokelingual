@@ -140,7 +140,7 @@ function makeApp(o: AppOverrides = {}) {
 }
 
 const CALL_QUEST = "クエストの出題 API を呼び出す";
-const CALL_SCORING = "翻訳の採点 API に、訳文「訳」を指定して呼び出す";
+const CALL_SCORING = "翻訳の採点 API に、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を指定して呼び出す";
 const CALL_HINT = "名前当てのヒントの取得 API を呼び出す";
 const CALL_CURRENT_QUEST = "進行中のクエストの取得 API を呼び出す";
 const CALL_SETTINGS = "設定の取得 API を呼び出す";
@@ -169,7 +169,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
           Given: "出題されるポケモンがフシギダネだけで、AI による訳文の採点が 0.7 で、捕獲の抽選が必ず成功するとき",
           When: [
             CALL_QUEST,
-            "翻訳の採点 API に、訳文「はやい」を指定して呼び出す",
+            "翻訳の採点 API に、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を指定して呼び出す",
             "名前当てのスキップ API を呼び出す",
             "捕獲 API を呼び出す",
             CALL_POKEDEX,
@@ -187,7 +187,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
         "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
       );
 
-      const score = await request(app).post("/api/quest/score").send({ translation: "はやい" });
+      const score = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(score.status).toBe(200);
       expect(score.body.score).toBe(66);
 
@@ -322,7 +322,7 @@ describe("[本体:採点]翻訳の採点", () => {
       ],
     },
     async () => {
-      const res = await request(makeApp()).post("/api/quest/score").send({ translation: "訳" });
+      const res = await request(makeApp()).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.status).toBe(404);
       expect(res.body).toEqual({ error: "resource not found" });
     },
@@ -344,7 +344,7 @@ describe("[本体:採点]翻訳の採点", () => {
     async () => {
       const app = makeApp({ llmError: new Error("llm down") });
       await request(app).get("/api/quest/new");
-      const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+      const res = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.status).toBe(502);
       expect(res.body).toEqual({ error: "external service unavailable" });
     },
@@ -385,7 +385,7 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
     },
     async () => {
       const app = makeApp({ rateLimitKind: "user" });
-      const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+      const res = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.status).toBe(429);
       expect(res.body.error).toBe("user");
     },
@@ -405,7 +405,7 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
     },
     async () => {
       const app = makeApp({ rateLimitKind: "user" });
-      const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+      const res = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.body.message).toBe("そろそろ　研究に　戻るぞ。また　明日　来てくれ");
     },
   );
@@ -424,7 +424,7 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
     },
     async () => {
       const app = makeApp({ rateLimitKind: "global" });
-      const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+      const res = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.status).toBe(429);
       expect(res.body.error).toBe("global");
     },
@@ -444,7 +444,7 @@ describe("[本体:AI 呼び出し回数]採点の日次上限", () => {
     },
     async () => {
       const app = makeApp({ rateLimitKind: "global" });
-      const res = await request(app).post("/api/quest/score").send({ translation: "訳" });
+      const res = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.body.message).toBe("今日は　たくさんの　トレーナーが　来ているぞ。また　明日　来てくれ");
     },
   );
@@ -497,7 +497,7 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "クエストが出題され、訳文「はやい」の採点が終わっているとき",
+          Given: "クエストが出題され、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」の採点が終わっているとき",
           When: [CALL_CURRENT_QUEST],
           Then: "応答の段階は名前当てになる",
         },
@@ -506,7 +506,7 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
     async () => {
       const app = makeApp();
       await request(app).get("/api/quest/new");
-      await request(app).post("/api/quest/score").send({ translation: "はやい" });
+      await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
 
       const res = await request(app).get("/api/quest/current");
       expect(res.status).toBe(200);
@@ -520,20 +520,20 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "クエストが出題され、訳文「はやい」の採点が終わっているとき",
+          Given: "クエストが出題され、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」の採点が終わっているとき",
           When: [CALL_CURRENT_QUEST],
-          Then: "応答の訳文は「はやい」になる",
+          Then: "応答の訳文は「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」になる",
         },
       ],
     },
     async () => {
       const app = makeApp();
       await request(app).get("/api/quest/new");
-      await request(app).post("/api/quest/score").send({ translation: "はやい" });
+      await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
 
       const res = await request(app).get("/api/quest/current");
       expect(res.status).toBe(200);
-      expect(res.body.user_translation).toBe("はやい");
+      expect(res.body.user_translation).toBe("生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
     },
   );
 
@@ -637,8 +637,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     async () => {
       const app = makeApp();
       await request(app).get("/api/quest/new");
-      await request(app).post("/api/quest/guess-name").send({ guess: "wrong1" });
-      await request(app).post("/api/quest/guess-name").send({ guess: "wrong2" });
+      await request(app).post("/api/quest/guess-name").send({ guess: "Charmander" });
+      await request(app).post("/api/quest/guess-name").send({ guess: "Squirtle" });
       const res = await request(app).post("/api/quest/hint").send({});
       expect(res.status).toBe(500);
       expect(res.body).toEqual({ error: "internal server error" });

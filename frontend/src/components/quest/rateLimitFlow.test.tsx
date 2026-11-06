@@ -36,7 +36,7 @@ const USER_DAILY_LIMIT_REACHED_GIVEN = "ユーザーの日次上限に達して�
 const MODAL_SHOWN_GIVEN = "日次上限モーダルが表示されているとき";
 const OPEN_QUEST_SCREEN = "クエスト画面を開く";
 const SUBMIT_TRANSLATION_FOR_SCORING = [
-  "場所選択画面で「テスト草原」を選ぶ",
+  "場所選択画面で「木漏れ日の森」を選ぶ",
   "クエスト画面の翻訳の入力欄に「この ポケモンは はやい」と入力する",
   "クエスト画面の翻訳の入力欄で、「この翻訳に決めた！」ボタンを押す",
 ] as const;

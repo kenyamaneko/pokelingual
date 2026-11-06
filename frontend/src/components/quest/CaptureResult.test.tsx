@@ -17,8 +17,8 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
     name_ja: "ピカチュウ",
     sprite_url: "https://example.com/pikachu.png",
     score: 90,
-    description_en: "desc en",
-    description_ja: "desc ja",
+    description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
+    description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。",
     base_stat_total: 320,
     ball_type: "ultra",
     types: ["electric"],
@@ -30,7 +30,7 @@ function baseResult(overrides: Partial<CaptureResponse> = {}): CaptureResponse {
   };
 }
 
-const DUMMY_IDENTITY = { pokemon_id: 9999, name_en: "Testmon", name_ja: "テスト用ポケモン" };
+const PIKACHU_IDENTITY = { pokemon_id: 25, name_en: "Pikachu", name_ja: "ピカチュウ" };
 const LEGENDARY_IDENTITY = { pokemon_id: 150, name_en: "Mewtwo", name_ja: "ミュウツー" };
 
 function renderCaptureResult(result: CaptureResponse) {
@@ -70,15 +70,15 @@ describe("[本体:捕獲]捕獲結果画面", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: `${NOT_SPECIAL_CAPTURED}、種族値が 599 のテスト用ポケモンのとき`,
+          Given: `${NOT_SPECIAL_CAPTURED}、種族値が 599 のピカチュウのとき`,
           When: [SHOW_RESULT],
-          Then: "「やったー！　テスト用ポケモンを　捕まえたぞ！」と表示される",
+          Then: "「やったー！　ピカチュウを　捕まえたぞ！」と表示される",
         },
       ],
     },
     () => {
-      renderCaptureResult(baseResult({ ...DUMMY_IDENTITY, base_stat_total: 599 }));
-      expect(screen.getByText(spec("やったー！　テスト用ポケモンを　捕まえたぞ！"))).toBeInTheDocument();
+      renderCaptureResult(baseResult({ ...PIKACHU_IDENTITY, base_stat_total: 599 }));
+      expect(screen.getByText(spec("やったー！　ピカチュウを　捕まえたぞ！"))).toBeInTheDocument();
     },
   );
 
@@ -89,16 +89,16 @@ describe("[本体:捕獲]捕獲結果画面", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: `${NOT_SPECIAL_CAPTURED}、種族値が 600 のテスト用ポケモンのとき`,
+          Given: `${NOT_SPECIAL_CAPTURED}、種族値が 600 のピカチュウのとき`,
           When: [SHOW_RESULT],
-          Then: "「やったー！　強そうな　テスト用ポケモンを　捕まえたぞ！」と表示される",
+          Then: "「やったー！　強そうな　ピカチュウを　捕まえたぞ！」と表示される",
         },
       ],
     },
     () => {
-      renderCaptureResult(baseResult({ ...DUMMY_IDENTITY, base_stat_total: 600 }));
+      renderCaptureResult(baseResult({ ...PIKACHU_IDENTITY, base_stat_total: 600 }));
       expect(
-        screen.getByText(spec("やったー！　強そうな　テスト用ポケモンを　捕まえたぞ！")),
+        screen.getByText(spec("やったー！　強そうな　ピカチュウを　捕まえたぞ！")),
       ).toBeInTheDocument();
     },
   );

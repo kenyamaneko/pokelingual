@@ -10,11 +10,12 @@ import {
 } from "../../test/intersectionObserverMock";
 import type { ScoreResponse } from "../../../../shared/api-types/quest";
 import { defineCase } from "../../test/defineCase";
+import { spec } from "../../test/labels";
 
-const DESCRIPTION_EN = "A wild creature roams.";
-const USER_TRANSLATION = "やくぶん";
-const REVIEW = "いいね";
-const DESCRIPTION_JA = "テストの せつめい";
+const DESCRIPTION_EN = "When several of these Pokémon gather, their electricity could build and cause lightning storms.";
+const USER_TRANSLATION = "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある";
+const REVIEW = "雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。";
+const DESCRIPTION_JA = "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。";
 
 function buildScore(): ScoreResponse {
   return { score: 85, review: REVIEW, description_ja: DESCRIPTION_JA };
@@ -220,7 +221,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
         {
           Given: ALL_FIELDS_IN_VIEW,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN, WAIT_FOR_DESCRIPTION_START],
-          Then: "「解答例」の先頭の 1 文字「テ」が表示される",
+          Then: "「解答例」の先頭の 1 文字「何」が表示される",
         },
       ],
     },
@@ -228,7 +229,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToDescriptionStage();
       advance(CHAR_INTERVAL_MS);
-      expect(screen.getByTestId("description-text")).toHaveTextContent("「テ」");
+      expect(screen.getByTestId("description-text")).toHaveTextContent("「何」");
     },
   );
 
@@ -240,7 +241,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
         {
           Given: ALL_FIELDS_IN_VIEW,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_ENGLISH_DESCRIPTION_FADE_IN, WAIT_FOR_DESCRIPTION_COMPLETE],
-          Then: "「解答例」が「テストの せつめい」と全文表示される",
+          Then: "「解答例」が「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」と全文表示される",
         },
       ],
     },
@@ -248,7 +249,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToDescriptionStage();
       advance(CHAR_INTERVAL_MS * DESCRIPTION_JA.length);
-      expect(screen.getByTestId("description-text")).toHaveTextContent("「テストの せつめい」");
+      expect(screen.getByTestId("description-text")).toHaveTextContent(spec("「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」"));
     },
   );
 
@@ -282,7 +283,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
         {
           Given: ALL_FIELDS_IN_VIEW,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_START],
-          Then: "「博士からのコメント」の先頭の 1 文字「い」が表示される",
+          Then: "「博士からのコメント」の先頭の 1 文字「雷」が表示される",
         },
       ],
     },
@@ -290,7 +291,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToReviewStage();
       advance(CHAR_INTERVAL_MS);
-      expect(screen.getByTestId("review-text")).toHaveTextContent("い");
+      expect(screen.getByTestId("review-text")).toHaveTextContent("雷");
     },
   );
 
@@ -302,7 +303,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
         {
           Given: ALL_FIELDS_IN_VIEW,
           When: [SHOW_RESULT_SCREEN, WAIT_FOR_DESCRIPTION_COMPLETE, WAIT_FOR_REVIEW_COMPLETE],
-          Then: "「博士からのコメント」が「いいね」と全文表示される",
+          Then: "「博士からのコメント」が「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」と全文表示される",
         },
       ],
     },
@@ -310,7 +311,7 @@ describe("[本体:採点]採点結果画面の段階的開示", () => {
       renderAnswerReveal();
       advanceToReviewStage();
       advance(CHAR_INTERVAL_MS * REVIEW.length);
-      expect(screen.getByTestId("review-text")).toHaveTextContent("いいね");
+      expect(screen.getByTestId("review-text")).toHaveTextContent("雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。");
     },
   );
 

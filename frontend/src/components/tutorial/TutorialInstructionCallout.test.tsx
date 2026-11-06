@@ -7,7 +7,7 @@ import {
 } from "./TutorialInstructionCallout";
 import { defineCase } from "../../test/defineCase";
 
-const CALLOUT_CONTENT = "タイトルが「この英文を訳してみよう」、案内文が「テスト用の案内文」";
+const CALLOUT_CONTENT = "タイトルが「この英文を訳してみよう」、案内文が「「電気タイプのねずみポケモン」と入力してみてね」";
 
 const START_CALLOUT = "案内の吹き出しの表示を始める";
 const WAIT_FOR_CALLOUT_APPEAR = "案内の吹き出しが表示されるまで待つ";
@@ -23,7 +23,7 @@ describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
   });
 
   function renderCallout() {
-    render(<TutorialInstructionCallout title="この英文を訳してみよう" instruction="テスト用の案内文" />);
+    render(<TutorialInstructionCallout title="この英文を訳してみよう" instruction="「電気タイプのねずみポケモン」と入力してみてね" />);
   }
 
   defineCase(
@@ -34,13 +34,13 @@ describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
         {
           Given: `${CALLOUT_CONTENT}のとき`,
           When: [START_CALLOUT],
-          Then: "案内文「テスト用の案内文」が表示されていない",
+          Then: "案内文「「電気タイプのねずみポケモン」と入力してみてね」が表示されていない",
         },
       ],
     },
     () => {
       renderCallout();
-      expect(screen.getByText("テスト用の案内文")).not.toBeVisible();
+      expect(screen.getByText("「電気タイプのねずみポケモン」と入力してみてね")).not.toBeVisible();
     },
   );
 
@@ -52,7 +52,7 @@ describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
         {
           Given: `${CALLOUT_CONTENT}のとき`,
           When: [START_CALLOUT, WAIT_FOR_CALLOUT_APPEAR],
-          Then: "タイトル「この英文を訳してみよう」と案内文「テスト用の案内文」が表示される",
+          Then: "タイトル「この英文を訳してみよう」と案内文「「電気タイプのねずみポケモン」と入力してみてね」が表示される",
         },
       ],
     },
@@ -62,7 +62,7 @@ describe("[本体:チュートリアル]案内の吹き出しの表示", () => {
         vi.advanceTimersByTime(INSTRUCTION_APPEAR_DELAY_MS);
       });
       expect(screen.getByText("この英文を訳してみよう")).toBeVisible();
-      expect(screen.getByText("テスト用の案内文")).toBeVisible();
+      expect(screen.getByText("「電気タイプのねずみポケモン」と入力してみてね")).toBeVisible();
     },
   );
 });
@@ -81,7 +81,7 @@ describe("[本体:チュートリアル]誤答時の案内の吹き出しの揺�
     const result = render(
       <TutorialInstructionCallout
         title="この英文を訳してみよう"
-        instruction="テスト用の案内文"
+        instruction="「電気タイプのねずみポケモン」と入力してみてね"
         invalidAnswerSignal={invalidAnswerSignal}
       />,
     );
@@ -92,7 +92,7 @@ describe("[本体:チュートリアル]誤答時の案内の吹き出しの揺�
       result.rerender(
         <TutorialInstructionCallout
           title="この英文を訳してみよう"
-          instruction="テスト用の案内文"
+          instruction="「電気タイプのねずみポケモン」と入力してみてね"
           invalidAnswerSignal={nextSignal}
         />,
       );

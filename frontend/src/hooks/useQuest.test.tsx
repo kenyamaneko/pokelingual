@@ -38,7 +38,7 @@ function Wrapper({ children }: { children: ReactNode }) {
 
 const questResp: QuestNewResponse = {
   pokemon_id: 25,
-  description_en: "A wild creature.",
+  description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
   is_legendary: false,
   is_mythical: false,
   max_guess_attempts: 3,
@@ -46,8 +46,8 @@ const questResp: QuestNewResponse = {
 
 const scoreResp: ScoreResponse = {
   score: 75,
-  review: "review",
-  description_ja: "ja desc",
+  review: "雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。",
+  description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。",
 };
 
 const captureResp: CaptureResponse = {
@@ -58,8 +58,8 @@ const captureResp: CaptureResponse = {
   name_ja: "ピカチュウ",
   sprite_url: "https://example.com/pikachu.png",
   score: 75,
-  description_en: "desc en",
-  description_ja: "desc ja",
+  description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
+  description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。",
   base_stat_total: 320,
   ball_type: "ultra",
   types: ["electric"],
@@ -71,8 +71,8 @@ const captureResp: CaptureResponse = {
 
 const grasslandLocation: QuestLocation = {
   id: "test-place",
-  name: "テスト草原",
-  description: "テスト用の場所",
+  name: "木漏れ日の森",
+  description: "やわらかい光と、虫の声",
   types: ["normal"],
 };
 
@@ -84,7 +84,7 @@ function mockNewQuest(resp: QuestNewResponse = questResp) {
   server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json(resp)));
 }
 
-/** GET /quest/locations が「テスト草原」の 1 件を返す状態をモックする。 */
+/** GET /quest/locations が「木漏れ日の森」の 1 件を返す状態をモックする。 */
 function mockGrasslandLocation() {
   server.use(
     http.get(apiUrl("/quest/locations"), () =>
@@ -148,8 +148,8 @@ const captureFailed: CaptureResponse = {
   name_ja: "ピカチュウ",
   sprite_url: "https://example.com/p.png",
   score: 40,
-  description_en: "x",
-  description_ja: "y",
+  description_en: "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
+  description_ja: "何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。",
   base_stat_total: 320,
   ball_type: "poke",
   types: ["electric"],
@@ -159,7 +159,7 @@ const captureFailed: CaptureResponse = {
   is_mythical: false,
 };
 
-const SCORE_STATE = "AI が翻訳「yaku」に最終評価点 75、講評「review」、日本語版の説明「ja desc」を付ける";
+const SCORE_STATE = "AI が翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」に最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」を付ける";
 const GUESS_WRONG_STATE = "名前「Pikachu」が不正解で、残り挑戦回数が 2 である";
 const ELECTRIC_HINT_STATE =
   "出題されたポケモンのタイプが「でんき」で、最大挑戦回数が 3 回で、ヒントの要求でチャンスを 1 回使う";
@@ -181,12 +181,12 @@ interface CommunicationOperation {
 
 const translationOperation: CommunicationOperation = {
   path: "/quest/score",
-  when: "翻訳「yaku」を送信する",
+  when: "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」を送信する",
   successState: SCORE_STATE,
-  call: (r) => r.submitTranslation("yaku"),
+  call: (r) => r.submitTranslation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"),
   buildSuccess: () => HttpResponse.json(scoreResp),
   recoveredOutcome:
-    "名前当て画面が表示され、採点結果は、最終評価点 75、講評「review」、日本語版の説明「ja desc」になる",
+    "名前当て画面が表示され、採点結果は、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる",
   expectRecovered: (r) => {
     expect(r.phase).toBe("guessing");
     expect(r.score).toEqual(scoreResp);
@@ -258,12 +258,12 @@ async function startNewQuestAfterProgress() {
       HttpResponse.json(guessCorrect),
     ),
     http.post(apiUrl("/quest/hint"), () =>
-      HttpResponse.json({ types: ["normal"], attempts_remaining: 2 }),
+      HttpResponse.json({ types: ["electric"], attempts_remaining: 2 }),
     ),
   );
   const hook = await mountInTranslating();
   await act(async () => {
-    await hook.result.current.submitTranslation("テスト");
+    await hook.result.current.submitTranslation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
   });
   await act(async () => {
     await hook.result.current.submitGuess("Pikachu");
@@ -271,17 +271,17 @@ async function startNewQuestAfterProgress() {
   await act(async () => {
     await hook.result.current.requestHint();
   });
-  mockNewQuest({ ...questResp, pokemon_id: 1 });
+  mockNewQuest({ ...questResp, pokemon_id: 1, description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon." });
   await act(async () => {
     await hook.result.current.startNewQuest();
   });
   return hook;
 }
 
-const QUEST_DETAIL = "図鑑番号 25、英語の説明文「A wild creature.」、伝説でも幻でもない、最大挑戦回数 3 回";
+const QUEST_DETAIL = "図鑑番号 25、英語の説明文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、伝説でも幻でもない、最大挑戦回数 3 回";
 const NO_QUEST_AND_QUEST_AVAILABLE = "進行中のクエストが無く、出題を取得できるとき";
 const NO_QUEST_AND_LOCATIONS_AVAILABLE = "進行中のクエストが無く、場所の一覧を取得できるとき";
-const NO_QUEST_AND_GRASSLAND_ONLY = "進行中のクエストが無く、選べる場所が「テスト草原」の 1 件だけのとき";
+const NO_QUEST_AND_GRASSLAND_ONLY = "進行中のクエストが無く、選べる場所が「木漏れ日の森」の 1 件だけのとき";
 const TRANSLATING_SCREEN_SHOWN = "翻訳画面を表示していて";
 
 const SELECT_LOCATION = "場所を選択する";
@@ -293,10 +293,10 @@ const GUESSING_SCREEN = "名前当て画面が表示される";
 const CAPTURING_SCREEN = "捕獲待機画面が表示される";
 const ERROR_SCREEN = "エラー画面が表示される";
 const SELECT_LOCATION_SCREEN = "場所選択画面が表示される";
-const GRASSLAND_LIST = "場所の一覧は、「テスト草原」の 1 件になる";
+const GRASSLAND_LIST = "場所の一覧は、「木漏れ日の森」の 1 件になる";
 const ERROR_MESSAGE_CLEARED = "エラーメッセージが消える";
 const QUEST_CONTENT = `出題の内容は、${QUEST_DETAIL}になる`;
-const SCORE_CONTENT = "採点結果は、最終評価点 75、講評「review」、日本語版の説明「ja desc」になる";
+const SCORE_CONTENT = "採点結果は、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる";
 const HINT_CONTENT = "ヒントの内容は、タイプ「でんき」、残り挑戦回数 2 になる";
 const ULTRA_BALL = "獲得したボールはハイパーボールになる";
 
@@ -555,14 +555,14 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
 });
 
 const SCORE_GIVEN =
-  "AI が翻訳「テスト翻訳」に最終評価点 75、講評「review」、日本語版の説明「ja desc」を付けるとき";
-const SUBMIT_TRANSLATION = "翻訳「テスト翻訳」を送信する";
+  "AI が翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」に最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」を付けるとき";
+const SUBMIT_TRANSLATION = "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」を送信する";
 
 async function submitTranslationSuccessfully() {
   server.use(http.post(apiUrl("/quest/score"), () => HttpResponse.json(scoreResp)));
   const { result } = await mountInTranslating();
   await act(async () => {
-    await result.current.submitTranslation("テスト翻訳");
+    await result.current.submitTranslation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
   });
   return result;
 }
@@ -601,14 +601,14 @@ describe("[本体:採点]翻訳の採点", () => {
       steps: [
         {
           When: [SUBMIT_TRANSLATION],
-          Then: "入力した翻訳は「テスト翻訳」になる",
+          Then: "入力した翻訳は「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」になる",
         },
       ],
     },
     async () => {
       const result = await submitTranslationSuccessfully();
 
-      expect(result.current.userTranslation).toBe("テスト翻訳");
+      expect(result.current.userTranslation).toBe("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
     },
   );
 });
@@ -1009,7 +1009,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
 });
 
 const PROGRESSED_STATE =
-  "翻訳「テスト」の採点結果が最終評価点 75、名前「Pikachu」への正解でハイパーボールを獲得し、ヒントのタイプ「ノーマル」と残り挑戦回数 2 が出ていて";
+  "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」の採点結果が最終評価点 75、名前「Pikachu」への正解でハイパーボールを獲得し、ヒントのタイプ「でんき」と残り挑戦回数 2 が出ていて";
 const PROGRESSED_GIVEN = `${PROGRESSED_STATE}、進行中のクエストが無いとき`;
 
 async function reselectLocation() {
@@ -1189,9 +1189,9 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `${PROGRESSED_STATE}、進行中のクエストが無く、出題の抽選で、図鑑番号 1、英語の説明文「A wild creature.」、伝説でも幻でもない、最大挑戦回数 3 回のクエストが選ばれるとき`,
+          Given: `${PROGRESSED_STATE}、進行中のクエストが無く、出題の抽選で、図鑑番号 1、英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、伝説でも幻でもない、最大挑戦回数 3 回のクエストが選ばれるとき`,
           When: [START_NEW_QUEST, SELECT_LOCATION],
-          Then: "出題の内容は、図鑑番号 1、英語の説明文「A wild creature.」、伝説でも幻でもない、最大挑戦回数 3 回になる",
+          Then: "出題の内容は、図鑑番号 1、英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、伝説でも幻でもない、最大挑戦回数 3 回になる",
         },
       ],
     },
@@ -1201,6 +1201,7 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       expect(result.current.quest).toEqual({
         ...questResp,
         pokemon_id: 1,
+        description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
       });
     },
   );
@@ -1489,7 +1490,7 @@ async function mountResumedGuessing() {
         phase: "guessing",
         quest: questResp,
         score: scoreResp,
-        user_translation: "テスト訳",
+        user_translation: "このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある",
         attempts_remaining: 2,
         hint: electricHint,
       }),
@@ -1629,9 +1630,9 @@ describe("[本体:クエスト]クエストの再開", () => {
 
   const GUESSING_SESSION = "進行中のクエストが名前当て画面の段階のとき";
   const GUESSING_SESSION_SCORE =
-    "進行中のクエストが名前当て画面の段階で、採点結果が、最終評価点 75、講評「review」、日本語版の説明「ja desc」であるとき";
+    "進行中のクエストが名前当て画面の段階で、採点結果が、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」であるとき";
   const GUESSING_SESSION_TRANSLATION =
-    "進行中のクエストが名前当て画面の段階で、入力した翻訳が「テスト訳」であるとき";
+    "進行中のクエストが名前当て画面の段階で、入力した翻訳が「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」であるとき";
   const GUESSING_SESSION_ATTEMPTS =
     "進行中のクエストが名前当て画面の段階で、残り挑戦回数が 2 であるとき";
   const GUESSING_SESSION_HINT =
@@ -1671,14 +1672,14 @@ describe("[本体:クエスト]クエストの再開", () => {
         {
           Given: GUESSING_SESSION_TRANSLATION,
           When: [OPEN_QUEST_SCREEN],
-          Then: "入力した翻訳は「テスト訳」になる",
+          Then: "入力した翻訳は「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」になる",
         },
       ],
     },
     async () => {
       const result = await mountResumedGuessing();
 
-      expect(result.current.userTranslation).toBe("テスト訳");
+      expect(result.current.userTranslation).toBe("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある");
     },
   );
 

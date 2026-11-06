@@ -84,11 +84,11 @@ function makeService(o: ServiceOverrides = {}): QuestService {
 const USER_ID = "alice";
 const AI_RESPONSE_FINAL_SCORE_70 = JSON.stringify({
   units: [0.74],
-  review: "よい",
+  review: "意味がしっかり伝わる、よい翻訳だ。",
 });
 const AI_RESPONSE_FINAL_SCORE_69 = JSON.stringify({
   units: [0.73],
-  review: "よい",
+  review: "意味がしっかり伝わる、よい翻訳だ。",
 });
 
 async function startQuest(o: ServiceOverrides = {}): Promise<QuestService> {
@@ -101,7 +101,7 @@ async function startScoredQuest(
   o: ServiceOverrides = {},
 ): Promise<QuestService> {
   const service = await startQuest(o);
-  await service.scoreTranslation(USER_ID, "訳");
+  await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
   return service;
 }
 
@@ -113,9 +113,9 @@ async function getRejection(promise: Promise<unknown>): Promise<unknown> {
 }
 
 async function missThreeTimes(service: QuestService) {
-  await service.guessName(USER_ID, "wrong1");
-  await service.guessName(USER_ID, "wrong2");
-  return service.guessName(USER_ID, "wrong3");
+  await service.guessName(USER_ID, "Charmander");
+  await service.guessName(USER_ID, "Squirtle");
+  return service.guessName(USER_ID, "Pidgey");
 }
 
 const CALCULATE_CAPTURE_RATE = "捕獲確率を計算する";
@@ -283,14 +283,14 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、説明文が「Hello world」でポケモン名を含まないとき",
+          Given: "ポケモン名が Pikachu で、説明文が「It stores electricity in the electric pouches on its cheeks.」でポケモン名を含まないとき",
           When: [MASK_ENGLISH_DESCRIPTION],
-          Then: "伏せ字にした説明文は「Hello world」のままになる",
+          Then: "伏せ字にした説明文は「It stores electricity in the electric pouches on its cheeks.」のままになる",
         },
       ],
     },
     () => {
-      expect(maskPokemonNameEN("Hello world", "Pikachu")).toBe("Hello world");
+      expect(maskPokemonNameEN("It stores electricity in the electric pouches on its cheeks.", "Pikachu")).toBe("It stores electricity in the electric pouches on its cheeks.");
     },
   );
 
@@ -319,14 +319,14 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名が文頭に出現する「Pikachu is yellow.」のとき",
+          Given: "ポケモン名が Pikachu で、ポケモン名が文頭に出現する「Pikachu stores electricity in the electric pouches on its cheeks.」のとき",
           When: [MASK_ENGLISH_DESCRIPTION],
-          Then: "伏せ字にした説明文は「This Pokémon is yellow.」になる",
+          Then: "伏せ字にした説明文は「This Pokémon stores electricity in the electric pouches on its cheeks.」になる",
         },
       ],
     },
     () => {
-      expect(maskPokemonNameEN("Pikachu is yellow.", "Pikachu")).toBe("This Pokémon is yellow.");
+      expect(maskPokemonNameEN("Pikachu stores electricity in the electric pouches on its cheeks.", "Pikachu")).toBe("This Pokémon stores electricity in the electric pouches on its cheeks.");
     },
   );
 
@@ -336,14 +336,14 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       正常異常: "正常系",
       steps: [
         {
-          Given: "ポケモン名が Pikachu で、ポケモン名がピリオドの直後に出現する「Hello. Pikachu runs.」のとき",
+          Given: "ポケモン名が Pikachu で、ポケモン名がピリオドの直後に出現する「It is very quick. Pikachu stores electricity in its cheeks.」のとき",
           When: [MASK_ENGLISH_DESCRIPTION],
-          Then: "伏せ字にした説明文は「Hello. This Pokémon runs.」になる",
+          Then: "伏せ字にした説明文は「It is very quick. This Pokémon stores electricity in its cheeks.」になる",
         },
       ],
     },
     () => {
-      expect(maskPokemonNameEN("Hello. Pikachu runs.", "Pikachu")).toBe("Hello. This Pokémon runs.");
+      expect(maskPokemonNameEN("It is very quick. Pikachu stores electricity in its cheeks.", "Pikachu")).toBe("It is very quick. This Pokémon stores electricity in its cheeks.");
     },
   );
 
@@ -408,14 +408,14 @@ describe("[本体:名前当て]英語説明文のポケモン名の伏せ字", (
       観点: ["件数・有無", "エッジケース"],
       steps: [
         {
-          Given: "ポケモン名が空文字で、説明文が「A wild creature.」のとき",
+          Given: "ポケモン名が空文字で、説明文が「It stores electricity in the electric pouches on its cheeks.」のとき",
           When: [MASK_ENGLISH_DESCRIPTION],
-          Then: "伏せ字にした説明文は「A wild creature.」のままになる",
+          Then: "伏せ字にした説明文は「It stores electricity in the electric pouches on its cheeks.」のままになる",
         },
       ],
     },
     () => {
-      expect(maskPokemonNameEN("A wild creature.", "")).toBe("A wild creature.");
+      expect(maskPokemonNameEN("It stores electricity in the electric pouches on its cheeks.", "")).toBe("It stores electricity in the electric pouches on its cheeks.");
     },
   );
 });
@@ -631,18 +631,18 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "英語説明文が「Bulbasaur is green.」のポケモンのとき",
+          Given: "英語説明文が「Bulbasaur can be seen napping in bright sunlight.」のポケモンのとき",
           When: [START_QUEST],
-          Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon is green.」になる",
+          Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon can be seen napping in bright sunlight.」になる",
         },
       ],
     },
     async () => {
       const service = makeService({
-        pokemons: [makePokemon({ description_en: "Bulbasaur is green." })],
+        pokemons: [makePokemon({ description_en: "Bulbasaur can be seen napping in bright sunlight." })],
       });
       const res = await service.newQuest(USER_ID);
-      expect(res.description_en).toBe("This Pokémon is green.");
+      expect(res.description_en).toBe("This Pokémon can be seen napping in bright sunlight.");
     },
   );
 
@@ -790,28 +790,28 @@ describe("[本体:クエスト]クエストの出題", () => {
 
   for (const { given, flavorTexts } of [
     {
-      given: "バージョン別の説明文が「Alpha Bulbasaur runs.」の1件のとき",
+      given: "バージョン別の説明文が「Under the bright sun, Bulbasaur naps with a strange seed on its back.」の1件のとき",
       flavorTexts: [
         {
           version_names: ["X"],
-          description_en: "Alpha Bulbasaur runs.",
-          description_ja: "フシギダネは 走る。",
+          description_en: "Under the bright sun, Bulbasaur naps with a strange seed on its back.",
+          description_ja: "強い　日差しの　下で フシギダネは　背中の　タネを 育てながら　昼寝をする。",
         },
       ],
     },
     {
       given:
-        "バージョン別の説明文が、1件目「Alpha Bulbasaur runs.」、2件目「Beta text.」の2件あり、抽選で1件目が選ばれるとき",
+        "バージョン別の説明文が、1件目「Under the bright sun, Bulbasaur naps with a strange seed on its back.」、2件目「For some time after its birth, it grows by gaining nourishment from the seed on its back.」の2件あり、抽選で1件目が選ばれるとき",
       flavorTexts: [
         {
           version_names: ["X"],
-          description_en: "Alpha Bulbasaur runs.",
-          description_ja: "フシギダネは 走る。",
+          description_en: "Under the bright sun, Bulbasaur naps with a strange seed on its back.",
+          description_ja: "強い　日差しの　下で フシギダネは　背中の　タネを 育てながら　昼寝をする。",
         },
         {
           version_names: ["Y"],
-          description_en: "Beta text.",
-          description_ja: "ベータ。",
+          description_en: "For some time after its birth, it grows by gaining nourishment from the seed on its back.",
+          description_ja: "生まれてから　しばらくの　あいだは 背中の　タネから　栄養を　もらって 大きく　育つ。",
         },
       ],
     },
@@ -825,7 +825,7 @@ describe("[本体:クエスト]クエストの出題", () => {
           {
             Given: given,
             When: [START_QUEST],
-            Then: "英語説明文は、ポケモン名を伏せ字にした「Alpha this Pokémon runs.」になる",
+            Then: "英語説明文は、ポケモン名を伏せ字にした「Under the bright sun, this Pokémon naps with a strange seed on its back.」になる",
           },
         ],
       },
@@ -834,7 +834,7 @@ describe("[本体:クエスト]クエストの出題", () => {
           pokemons: [makePokemon({ flavor_texts: flavorTexts })],
         });
         const res = await service.newQuest(USER_ID);
-        expect(res.description_en).toBe("Alpha this Pokémon runs.");
+        expect(res.description_en).toBe("Under the bright sun, this Pokémon naps with a strange seed on its back.");
       },
     );
   }
@@ -978,7 +978,7 @@ describe("[本体:採点]翻訳の採点", () => {
     },
     async () => {
       const service = await startQuest({
-        llmText: JSON.stringify({ units: [0.7], review: "よい" }),
+        llmText: JSON.stringify({ units: [0.7], review: "意味がしっかり伝わる、よい翻訳だ。" }),
       });
       const res = await service.scoreTranslation(USER_ID, "みどり");
       expect(res.score).toBe(66);
@@ -1002,7 +1002,7 @@ describe("[本体:採点]翻訳の採点", () => {
       const service = await startQuest({
         llmText: JSON.stringify({ units: [1.0, 0.6, 0.2], review: "r" }),
       });
-      const res = await service.scoreTranslation(USER_ID, "訳");
+      const res = await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
       expect(res.score).toBe(55);
     },
   );
@@ -1013,7 +1013,7 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "AI の採点結果が講評「よい」のとき",
+          Given: "AI の採点結果が講評「意味がしっかり伝わる、よい翻訳だ。」のとき",
           When: [SCORE_TRANSLATION],
           Then: "講評は「よい」になる",
         },
@@ -1021,10 +1021,10 @@ describe("[本体:採点]翻訳の採点", () => {
     },
     async () => {
       const service = await startQuest({
-        llmText: JSON.stringify({ units: [0.7], review: "よい" }),
+        llmText: JSON.stringify({ units: [0.7], review: "意味がしっかり伝わる、よい翻訳だ。" }),
       });
       const res = await service.scoreTranslation(USER_ID, "みどり");
-      expect(res.review).toBe("よい");
+      expect(res.review).toBe("意味がしっかり伝わる、よい翻訳だ。");
     },
   );
 
@@ -1055,9 +1055,9 @@ describe("[本体:採点]翻訳の採点", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "英語説明文が「Pikachu is yellow.」でポケモン名が Pikachu のとき",
+          Given: "英語説明文が「Pikachu stores electricity in the electric pouches on its cheeks.」でポケモン名が Pikachu のとき",
           When: [SCORE_TRANSLATION],
-          Then: "AI に渡す英文に、伏せ字にした説明文「This Pokémon is yellow.」が含まれる",
+          Then: "AI に渡す英文に、伏せ字にした説明文「This Pokémon stores electricity in the electric pouches on its cheeks.」が含まれる",
         },
       ],
     },
@@ -1067,7 +1067,7 @@ describe("[本体:採点]翻訳の採点", () => {
         pokemons: [
           makePokemon({
             name_en: "Pikachu",
-            description_en: "Pikachu is yellow.",
+            description_en: "Pikachu stores electricity in the electric pouches on its cheeks.",
           }),
         ],
         llmRespond: (prompt) => {
@@ -1075,8 +1075,8 @@ describe("[本体:採点]翻訳の採点", () => {
           return JSON.stringify({ units: [0.7], review: "よい 翻訳だ。" });
         },
       });
-      await service.scoreTranslation(USER_ID, "訳");
-      expect(sentPrompt).toContain("This Pokémon is yellow.");
+      await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
+      expect(sentPrompt).toContain("This Pokémon stores electricity in the electric pouches on its cheeks.");
     },
   );
 
@@ -1095,7 +1095,7 @@ describe("[本体:採点]翻訳の採点", () => {
     },
     async () => {
       const service = makeService({ sessionStoreError: new Error("boom") });
-      const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+      const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
       expect(error).toBeInstanceOf(ExternalServiceError);
       expect((error as ExternalServiceError).cause).toEqual(expect.objectContaining({ message: "boom" }));
     },
@@ -1131,7 +1131,7 @@ describe("[本体:採点]翻訳の採点", () => {
       async () => {
         const service = makeService();
         await prepare(service);
-        await expect(service.scoreTranslation("bob", "訳")).rejects.toBeInstanceOf(NotFoundError);
+        await expect(service.scoreTranslation("bob", "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ")).rejects.toBeInstanceOf(NotFoundError);
       },
     );
   }
@@ -1174,7 +1174,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       },
       async () => {
         const service = await startQuest({ llmText });
-        const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+        const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
         expect(error).toBeInstanceOf(ExternalServiceError);
         expect((error as ExternalServiceError).cause).toEqual(expect.any(SyntaxError));
       },
@@ -1215,7 +1215,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       },
       async () => {
         const service = await startQuest({ llmText });
-        const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+        const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
         expect(error).toBeInstanceOf(ExternalServiceError);
         expect((error as ExternalServiceError).cause).toEqual(NO_SCORING_UNITS);
       },
@@ -1239,7 +1239,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       const service = await startQuest({
         llmText: JSON.stringify({ units: ["a"], review: "r" }),
       });
-      const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+      const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
       expect(error).toBeInstanceOf(ExternalServiceError);
       expect((error as ExternalServiceError).cause).toEqual(
         expect.objectContaining({
@@ -1266,7 +1266,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       const service = await startQuest({
         llmText: JSON.stringify({ units: [-0.1], review: "r" }),
       });
-      const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+      const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
       expect(error).toBeInstanceOf(ExternalServiceError);
       expect((error as ExternalServiceError).cause).toEqual(
         expect.objectContaining({
@@ -1293,7 +1293,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       const service = await startQuest({
         llmText: JSON.stringify({ units: [1.1], review: "r" }),
       });
-      const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+      const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
       expect(error).toBeInstanceOf(ExternalServiceError);
       expect((error as ExternalServiceError).cause).toEqual(
         expect.objectContaining({
@@ -1332,7 +1332,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       },
       async () => {
         const service = await startQuest({ llmText });
-        const error = await getRejection(service.scoreTranslation(USER_ID, "訳"));
+        const error = await getRejection(service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ"));
         expect(error).toBeInstanceOf(ExternalServiceError);
         expect((error as ExternalServiceError).cause).toEqual(EMPTY_REVIEW);
       },
@@ -1340,8 +1340,8 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
   }
 
   const RETRIED_THEN_VALID_GIVEN =
-    "AI の採点結果が、1回目は JSON ではなく、2回目は判定値0.7の1件と講評「よい」の正しい形式のとき";
-  const retriedThenValidTexts = ["ごめん、わからない", JSON.stringify({ units: [0.7], review: "よい" })];
+    "AI の採点結果が、1回目は JSON ではなく、2回目は判定値0.7の1件と講評「意味がしっかり伝わる、よい翻訳だ。」の正しい形式のとき";
+  const retriedThenValidTexts = ["ごめん、わからない", JSON.stringify({ units: [0.7], review: "意味がしっかり伝わる、よい翻訳だ。" })];
 
   defineCase(
     {
@@ -1358,7 +1358,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     },
     async () => {
       const service = await startQuest({ llmTexts: retriedThenValidTexts });
-      const res = await service.scoreTranslation(USER_ID, "訳");
+      const res = await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
       expect(res.score).toBe(66);
     },
   );
@@ -1378,8 +1378,8 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
     },
     async () => {
       const service = await startQuest({ llmTexts: retriedThenValidTexts });
-      const res = await service.scoreTranslation(USER_ID, "訳");
-      expect(res.review).toBe("よい");
+      const res = await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
+      expect(res.review).toBe("意味がしっかり伝わる、よい翻訳だ。");
     },
   );
 
@@ -1400,7 +1400,7 @@ describe("[外部連携:AI]採点応答の検証と再試行", () => {
       const service = await startQuest({
         llmText: JSON.stringify({ units: [0.0], review: "r" }),
       });
-      const res = await service.scoreTranslation(USER_ID, "訳");
+      const res = await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
       expect(res.score).toBe(0);
     },
   );
@@ -1410,9 +1410,9 @@ const ASKED_BULBASAUR = "英語名「Bulbasaur」、日本語名「フシギダ�
 const LEGENDARY_SCORED_70_BASE = "英語名「Bulbasaur」の伝説ポケモンを最終評価点70で採点済み";
 const LEGENDARY_SCORED_70 = `${LEGENDARY_SCORED_70_BASE}のとき`;
 const MISS_THREE_TIMES = [
-  "名前当てで「wrong1」と答える",
-  "名前当てで「wrong2」と答える",
-  "名前当てで「wrong3」と答える",
+  "名前当てで「Charmander」と答える",
+  "名前当てで「Squirtle」と答える",
+  "名前当てで「Pidgey」と答える",
 ] as const;
 const ANSWER_BULBASAUR = "名前当てで「bulbasaur」と答える";
 const BALL_ULTRA = "ボールはハイパーボールになる";
@@ -1467,14 +1467,14 @@ describe("[本体:名前当て]名前当ての判定", () => {
   async function answerAgainAfterCorrect() {
     const service = await startQuest();
     await service.guessName(USER_ID, "bulbasaur");
-    return service.guessName(USER_ID, "whatever");
+    return service.guessName(USER_ID, "Eevee");
   }
 
   async function missAgainAfterHint() {
     const service = await startQuest();
-    await service.guessName(USER_ID, "wrong1");
+    await service.guessName(USER_ID, "Charmander");
     await service.requestHint(USER_ID);
-    return service.guessName(USER_ID, "wrong2");
+    return service.guessName(USER_ID, "Squirtle");
   }
 
   const SPACED_LOWERCASE_ENGLISH_NAME = "名前当てで、前に空白が2つ、後ろに空白が1つある「bulbasaur」と答える";
@@ -1616,14 +1616,14 @@ describe("[本体:名前当て]名前当ての判定", () => {
       steps: [
         {
           Given: ASKED_BULBASAUR,
-          When: ["名前当てで「wrong」と答える"],
+          When: ["名前当てで「Charmander」と答える"],
           Then: "残り挑戦回数は2回になる",
         },
       ],
     },
     async () => {
       const service = await startQuest();
-      const res = await service.guessName(USER_ID, "wrong");
+      const res = await service.guessName(USER_ID, "Charmander");
       expect(res).toMatchObject({ attempts_remaining: 2 });
     },
   );
@@ -1693,9 +1693,9 @@ describe("[本体:名前当て]名前当ての判定", () => {
     },
     {
       given: ASKED_BULBASAUR,
-      when: "名前当てで「wrong」と答える",
+      when: "名前当てで「Charmander」と答える",
       pokemons: [makePokemon()],
-      guess: "wrong",
+      guess: "Charmander",
       viewpoints: ["同値分割"] as const,
     },
   ]) {
@@ -1715,7 +1715,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   }
 
   const ANSWER_AGAIN_GIVEN = "英語名「Bulbasaur」で正解済みのとき";
-  const ANSWER_WHATEVER = "名前当てで「whatever」と答える";
+  const ANSWER_WHATEVER = "名前当てで「Eevee」と答える";
 
   defineCase(
     {
@@ -1955,7 +1955,7 @@ describe("[本体:名前当て]名前当ての判定", () => {
   }
 
   const HINT_THEN_MISS_GIVEN = "名前当てを1回外していて、ヒントを1回要求済みで、残り挑戦回数が1回のとき";
-  const MISS_AGAIN = "名前当てで「wrong2」と答える";
+  const MISS_AGAIN = "名前当てで「Squirtle」と答える";
 
   defineCase(
     {
@@ -2195,7 +2195,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
     async () => {
       const service = await startQuest();
-      await service.guessName(USER_ID, "wrong");
+      await service.guessName(USER_ID, "Charmander");
       const res = await service.requestHint(USER_ID);
       expect(res.attempts_remaining).toBe(1);
     },
@@ -2252,8 +2252,8 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
     async () => {
       const service = await startQuest();
-      await service.guessName(USER_ID, "wrong1");
-      await service.guessName(USER_ID, "wrong2");
+      await service.guessName(USER_ID, "Charmander");
+      await service.guessName(USER_ID, "Squirtle");
       await expect(service.requestHint(USER_ID)).rejects.toThrow(/insufficient guess attempts remaining/);
     },
   );
@@ -2633,7 +2633,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         id: 150,
         name_en: "Mewtwo",
         name_ja: "ミュウツー",
-        description_en: "Mewtwo is powerful.",
+        description_en: "Mewtwo was created by a scientist after years of horrific gene splicing and DNA engineering experiments.",
         base_stat_total: 680,
         types: ["psychic"],
         height: 20,
@@ -2650,13 +2650,13 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       randomValue: 0,
       ...o,
     });
-    await service.scoreTranslation(USER_ID, "訳");
+    await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
     for (let i = 0; i < hintCount; i++) await service.requestHint(USER_ID);
     return service.getCurrentQuest(USER_ID);
   }
 
   const MEWTWO_BEFORE_SCORING_GIVEN =
-    "英語名「Mewtwo」、英語説明文「Mewtwo is powerful.」の、図鑑番号150の伝説ポケモンを出題済みで、採点前のとき";
+    "英語名「Mewtwo」、英語説明文「Mewtwo was created by a scientist after years of horrific gene splicing and DNA engineering experiments.」の、図鑑番号150の伝説ポケモンを出題済みで、採点前のとき";
 
   defineCase(
     {
@@ -2703,7 +2703,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
         {
           Given: MEWTWO_BEFORE_SCORING_GIVEN,
           When: [RESUME_QUEST],
-          Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon is powerful.」になる",
+          Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon was created by a scientist after years of horrific gene splicing and DNA engineering experiments.」になる",
         },
       ],
     },
@@ -2711,7 +2711,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       const service = await startQuest(MEWTWO_OPTIONS);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toMatchObject({
-        quest: { description_en: "This Pokémon is powerful." },
+        quest: { description_en: "This Pokémon was created by a scientist after years of horrific gene splicing and DNA engineering experiments." },
       });
     },
   );
@@ -3018,7 +3018,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       given: "採点済みで、名前当てに正解済みで、ハイパーボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
-        await service.scoreTranslation(USER_ID, "訳");
+        await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
         await service.guessName(USER_ID, "bulbasaur");
       },
       観点: [],
@@ -3026,7 +3026,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       given: "採点済みで、名前当てをスキップ済みで、モンスターボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
-        await service.scoreTranslation(USER_ID, "訳");
+        await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
         await service.skipGuess(USER_ID);
       },
       観点: [],
@@ -3063,7 +3063,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
     {
       given: "採点済みで、名前当てに正解済みで、ハイパーボールが確定済みのとき",
       decideBall: async (service: QuestService) => {
-        await service.scoreTranslation(USER_ID, "訳");
+        await service.scoreTranslation(USER_ID, "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ");
         await service.guessName(USER_ID, "bulbasaur");
       },
       観点: [],

@@ -47,7 +47,7 @@ const defaultHandlers = [
   http.get(apiUrl("/quest/locations"), () =>
     HttpResponse.json({
       locations: [
-        { id: "test-place", name: "テスト草原", description: "テスト用の場所", types: ["normal"] },
+        { id: "test-place", name: "木漏れ日の森", description: "やわらかい光と、虫の声", types: ["normal"] },
       ],
     }),
   ),
