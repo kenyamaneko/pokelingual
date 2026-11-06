@@ -1,9 +1,12 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, vi, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
+import { MemoryRouter, Route, Routes } from "react-router";
 import type { User } from "firebase/auth";
 import type { DailyUsage } from "../../../../shared/api-types/usage";
+import { HomePage } from "../../pages/HomePage";
+import { LoginPage } from "../../pages/LoginPage";
 import { QuestPage } from "../../pages/QuestPage";
 import { server, apiUrl, countRequests } from "../../test/mswServer";
 import { renderWithProviders } from "../../test/render";
@@ -17,8 +20,33 @@ function mockUsage(usage: DailyUsage) {
   server.use(http.get(apiUrl("/usage"), () => HttpResponse.json(usage)));
 }
 
-function renderHeader(user: User | null = fakeUser) {
-  return renderWithProviders(<Header />, { user, withRouter: true });
+function renderLoginScreen() {
+  return renderWithProviders(
+    <MemoryRouter initialEntries={["/login"]}>
+      <Header />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>
+    </MemoryRouter>,
+    { user: null },
+  );
+}
+
+function renderHomeScreen() {
+  return renderWithProviders(
+    <MemoryRouter initialEntries={["/"]}>
+      <Header />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/quest" element={<QuestPage />} />
+      </Routes>
+    </MemoryRouter>,
+    { user: fakeUser },
+  );
+}
+
+function findHeader() {
+  return screen.findByRole("banner");
 }
 
 afterEach(() => {
@@ -26,11 +54,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const OPEN_LOGGED_IN_SCREEN = "ログイン後の画面を開く";
+const OPEN_HOME_SCREEN = "ホーム画面を開く";
 const OPEN_LOGIN_SCREEN = "ログイン画面を開く";
 const OPEN_QUEST_SCREEN = "クエスト画面を開く";
-const PRESS_HAMBURGER_MENU_BUTTON = "ログイン後の画面のヘッダーで、「メニュー」ボタンを押す";
-const PRESS_HAMBURGER_MENU_QUEST_LINK = "ログイン後の画面のヘッダーのハンバーガーメニューで、「ぼうけん」リンクを押す";
+const PRESS_HAMBURGER_MENU_BUTTON = "ホーム画面のヘッダーで、「メニュー」ボタンを押す";
+const PRESS_HAMBURGER_MENU_QUEST_LINK = "ホーム画面のヘッダーのハンバーガーメニューで、「ぼうけん」リンクを押す";
 const SUBMIT_TRANSLATION_FOR_SCORING = [
   "場所選択画面で「木漏れ日の森」を選ぶ",
   "クエスト画面の翻訳の入力欄に「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」と入力する",
@@ -43,15 +71,15 @@ describe("[共通:画面共通]実行環境の表示", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       観点: ["同値分割"],
-      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が local のとき", When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「LOCAL」と表示される" }],
+      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が local のとき", When: [OPEN_HOME_SCREEN], Then: "ヘッダーに「LOCAL」と表示される" }],
     },
     async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "local");
       mockUsage({ count: 0, limit: 30 });
 
-      renderHeader();
+      renderHomeScreen();
 
-      expect(await screen.findByText("LOCAL")).toBeInTheDocument();
+      expect(await within(await findHeader()).findByText("LOCAL")).toBeInTheDocument();
     },
   );
 
@@ -60,15 +88,15 @@ describe("[共通:画面共通]実行環境の表示", () => {
       種別: "部品間結合テスト",
       正常異常: "正常系",
       観点: ["同値分割"],
-      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が dev のとき", When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「DEV」と表示される" }],
+      steps: [{ Given: "ログインしていて、VITE_ENVIRONMENT が dev のとき", When: [OPEN_HOME_SCREEN], Then: "ヘッダーに「DEV」と表示される" }],
     },
     async () => {
       vi.stubEnv("VITE_ENVIRONMENT", "dev");
       mockUsage({ count: 0, limit: 30 });
 
-      renderHeader();
+      renderHomeScreen();
 
-      expect(await screen.findByText("DEV")).toBeInTheDocument();
+      expect(await within(await findHeader()).findByText("DEV")).toBeInTheDocument();
     },
   );
 
@@ -87,18 +115,19 @@ describe("[共通:画面共通]実行環境の表示", () => {
         種別: "部品間結合テスト",
         正常異常: outcome,
         観点: viewpoints,
-        steps: [{ Given: given, When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「LOCAL」も「DEV」も表示されない" }],
+        steps: [{ Given: given, When: [OPEN_HOME_SCREEN], Then: "ヘッダーに「LOCAL」も「DEV」も表示されない" }],
       },
       async () => {
         vi.stubEnv("VITE_ENVIRONMENT", environment);
         mockUsage({ count: 0, limit: 30 });
 
-        renderHeader();
+        renderHomeScreen();
 
         // 描画の完了を待ってから不在を確かめるため、残り回数の表示が出るのを待つ
-        await screen.findByText("残り 30/30");
-        expect(screen.queryByText("LOCAL")).not.toBeInTheDocument();
-        expect(screen.queryByText("DEV")).not.toBeInTheDocument();
+        const header = within(await findHeader());
+        await header.findByText("残り 30/30");
+        expect(header.queryByText("LOCAL")).not.toBeInTheDocument();
+        expect(header.queryByText("DEV")).not.toBeInTheDocument();
       },
     );
   }
@@ -113,7 +142,7 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       steps: [
         {
           Given: "ログインしていて、今日の AI 呼び出し回数が 29 回で、日次上限が 30 回のとき",
-          When: [OPEN_LOGGED_IN_SCREEN],
+          When: [OPEN_HOME_SCREEN],
           Then: "ヘッダーに「残り 1/30」と表示される",
         },
       ],
@@ -121,9 +150,9 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
     async () => {
       mockUsage({ count: 29, limit: 30 });
 
-      renderHeader();
+      renderHomeScreen();
 
-      expect(await screen.findByText("残り 1/30")).toBeInTheDocument();
+      expect(await within(await findHeader()).findByText("残り 1/30")).toBeInTheDocument();
     },
   );
 
@@ -142,14 +171,14 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
         種別: "部品間結合テスト",
         正常異常: outcome,
         観点: viewpoints,
-        steps: [{ Given: given, When: [OPEN_LOGGED_IN_SCREEN], Then: "ヘッダーに「残り 0/30」と表示される" }],
+        steps: [{ Given: given, When: [OPEN_HOME_SCREEN], Then: "ヘッダーに「残り 0/30」と表示される" }],
       },
       async () => {
         mockUsage({ count, limit: 30 });
 
-        renderHeader();
+        renderHomeScreen();
 
-        expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
+        expect(await within(await findHeader()).findByText("残り 0/30")).toBeInTheDocument();
       },
     );
   }
@@ -162,7 +191,7 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       steps: [
         {
           Given: "ログインしていて、今日の AI 呼び出し回数を取得できないとき",
-          When: [OPEN_LOGGED_IN_SCREEN],
+          When: [OPEN_HOME_SCREEN],
           Then: "ヘッダーに残り回数が表示されない",
         },
       ],
@@ -172,12 +201,13 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
       vi.spyOn(console, "warn").mockImplementation(() => {});
       server.use(http.get(apiUrl("/usage"), () => HttpResponse.error()));
 
-      renderHeader();
+      renderHomeScreen();
 
       // 取得の試行が済んでから不在を確かめるため、リクエストが送られるのを待つ
       await waitFor(() => expect(countRequests("/usage")).toBe(1));
-      expect(screen.getByText("Pokelingual")).toBeInTheDocument();
-      expect(screen.queryByText(/残り/)).not.toBeInTheDocument();
+      const header = within(await findHeader());
+      expect(header.getByText("Pokelingual")).toBeInTheDocument();
+      expect(header.queryByText(/残り/)).not.toBeInTheDocument();
     },
   );
 
@@ -219,7 +249,7 @@ describe("[本体:AI 呼び出し回数]残り回数の表示", () => {
 
       await submitTranslationForScoring();
 
-      expect(await screen.findByText("残り 0/30")).toBeInTheDocument();
+      expect(await within(await findHeader()).findByText("残り 0/30")).toBeInTheDocument();
     },
   );
 });
@@ -232,7 +262,7 @@ describe("[共通:画面共通]ヘッダーの表示条件", () => {
       steps: [{ Given: "ログインしていないとき", When: [OPEN_LOGIN_SCREEN], Then: "ヘッダーが表示されない" }],
     },
     () => {
-      renderHeader(null);
+      renderLoginScreen();
 
       expect(screen.queryByRole("banner")).not.toBeInTheDocument();
     },
@@ -244,11 +274,11 @@ describe("[共通:画面共通]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしているとき", When: [OPEN_LOGGED_IN_SCREEN], Then: "ハンバーガーメニューが閉じている" }],
+      steps: [{ Given: "ログインしているとき", When: [OPEN_HOME_SCREEN], Then: "ハンバーガーメニューが閉じている" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
-      renderHeader();
+      renderHomeScreen();
 
       expect(await screen.findByRole("button", { name: "メニュー" })).toHaveAttribute(
         "aria-expanded",
@@ -261,12 +291,12 @@ describe("[共通:画面共通]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしているとき", When: [OPEN_LOGGED_IN_SCREEN, PRESS_HAMBURGER_MENU_BUTTON], Then: "ハンバーガーメニューが開く" }],
+      steps: [{ Given: "ログインしているとき", When: [OPEN_HOME_SCREEN, PRESS_HAMBURGER_MENU_BUTTON], Then: "ハンバーガーメニューが開く" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
       const user = userEvent.setup();
-      renderHeader();
+      renderHomeScreen();
 
       await user.click(await screen.findByRole("button", { name: "メニュー" }));
 
@@ -281,12 +311,12 @@ describe("[共通:画面共通]ハンバーガーメニューの開閉", () => {
     {
       種別: "部品間結合テスト",
       正常異常: "正常系",
-      steps: [{ Given: "ログインしていて、ハンバーガーメニューが開いているとき", When: [PRESS_HAMBURGER_MENU_QUEST_LINK], Then: "ハンバーガーメニューが閉じる" }],
+      steps: [{ Given: "ログインしているとき", When: [OPEN_HOME_SCREEN, PRESS_HAMBURGER_MENU_BUTTON, PRESS_HAMBURGER_MENU_QUEST_LINK], Then: "ハンバーガーメニューが閉じる" }],
     },
     async () => {
       mockUsage({ count: 0, limit: 30 });
       const user = userEvent.setup();
-      renderHeader();
+      renderHomeScreen();
 
       await user.click(await screen.findByRole("button", { name: "メニュー" }));
       await user.click(screen.getByRole("link", { name: "ぼうけん" }));
