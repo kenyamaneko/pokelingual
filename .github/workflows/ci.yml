@@ -105,29 +105,6 @@ jobs:
       - name: Lint
         run: npm run lint
 
-  scripts-test:
-    name: Scripts Tests
-    needs: changes
-    if: needs.changes.outputs.code == 'true'
-    runs-on: ubicloud-standard-2
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
-
-      - name: Install pytest
-        run: pip install pytest
-
-      - name: Run catalog generator unit tests
-        run: python -m pytest scripts
-
   backend-test:
     name: Backend Tests
     needs: changes
@@ -314,40 +291,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: scripts/package-lock.json
-
-      - name: Build catalog CSS
-        run: |
-          npm ci --prefix scripts
-          npm run build:css --prefix scripts
-
       - name: Download JUnit XML
         uses: actions/download-artifact@v8
         with:
           pattern: junit-*
           path: junit-artifacts
 
+      - name: Create catalog directory
+        run: mkdir -p catalog
+
       - name: Generate catalog HTML
-        run: |
-          mkdir -p catalog
-          python scripts/generate_test_case_catalog.py \
-            --commit "${GITHUB_SHA}" \
-            --css scripts/test_case_catalog.css \
-            --junit junit-artifacts/junit-backend/junit.xml \
-            --junit junit-artifacts/junit-backend/integration-junit.xml \
-            --junit junit-artifacts/junit-frontend/vitest-junit.xml \
-            --junit junit-artifacts/junit-e2e/e2e-junit.xml \
-            > catalog/index.html
+        uses: ./.github/actions/generate-test-case-catalog
+        with:
+          junit-directory: junit-artifacts
+          output: catalog/index.html
 
       - name: Upload catalog
         uses: actions/upload-artifact@v7

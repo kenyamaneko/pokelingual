@@ -238,30 +238,10 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
-  test-case-catalog-test:
-    name: Test Case Catalog Generator Tests
-    needs: test
-    runs-on: ubicloud-standard-2
-    timeout-minutes: 5
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
-
-      - name: Install pytest
-        run: pip install pytest
-
-      - name: Run catalog generator unit tests
-        run: python -m pytest scripts
-
   # テストケースカタログ・カバレッジはマージ時点の状態として公開する (テストが走るのはこのマージ実行のみ)
   publish-reports:
     name: Publish Test Case Catalog & Coverage to GitHub Pages
-    needs: test-case-catalog-test
+    needs: test
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     permissions:
@@ -275,23 +255,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: scripts/package-lock.json
-
-      - name: Build catalog CSS
-        run: |
-          npm ci --prefix scripts
-          npm run build:css --prefix scripts
-
       - name: Download JUnit XML
         uses: actions/download-artifact@v8
         with:
@@ -299,17 +262,14 @@ jobs:
           path: junit-artifacts
 
       # カバレッジページとは別ページにするため、既存 URL に影響しないルート直下に生成する。
+      - name: Create site directory
+        run: mkdir -p _site
+
       - name: Generate catalog HTML
-        run: |
-          mkdir -p _site
-          python scripts/generate_test_case_catalog.py \
-            --commit "${GITHUB_SHA}" \
-            --css scripts/test_case_catalog.css \
-            --junit junit-artifacts/junit-backend/junit.xml \
-            --junit junit-artifacts/junit-backend/integration-junit.xml \
-            --junit junit-artifacts/junit-frontend/vitest-junit.xml \
-            --junit junit-artifacts/junit-e2e/e2e-junit.xml \
-            > _site/index.html
+        uses: ./.github/actions/generate-test-case-catalog
+        with:
+          junit-directory: junit-artifacts
+          output: _site/index.html
 
       - name: Download coverage reports
         uses: actions/download-artifact@v8

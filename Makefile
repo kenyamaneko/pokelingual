@@ -1,4 +1,4 @@
-.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend test-scripts coverage coverage-backend coverage-frontend emulator-up emulator-down catalog-css mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
+.PHONY: dev dev-up dev-down dev-logs dev-restart test test-backend test-frontend coverage coverage-backend coverage-frontend emulator-up emulator-down mutation mutation-backend snapshot-clone-api-data snapshot-generate snapshot-upload-dev snapshot-upload-prod
 
 # ローカル開発環境（Docker Compose）
 dev: dev-up
@@ -26,7 +26,7 @@ emulator-up:
 	cd backend && $(EMULATOR_ENV) npx firebase emulators:start --only firestore --project pokelingual-test
 
 # テスト
-test: test-backend test-frontend test-scripts
+test: test-backend test-frontend
 
 # backend テストは Firestore Emulator を必須化している。
 # firebase emulators:exec が Emulator 起動 → FIRESTORE_EMULATOR_HOST を自動注入 → 終了時に停止まで面倒を見る。
@@ -37,10 +37,6 @@ test-backend:
 test-frontend:
 	cd frontend && npm run lint && npx tsc --noEmit && npx vitest run
 
-# テストケースカタログ生成器のテスト。pytest が入った Python 3 が要る。
-test-scripts:
-	python3 -m pytest scripts
-
 # カバレッジ計測
 coverage: coverage-backend coverage-frontend
 
@@ -50,10 +46,6 @@ coverage-backend:
 
 coverage-frontend:
 	cd frontend && npm run test:coverage
-
-# テストケースカタログの CSS (Tailwind) を生成する。生成スクリプトの --css に渡す
-catalog-css:
-	cd scripts && npm ci && npm run build:css
 
 # Mutation testing (StrykerJS)。純粋ロジックのみ対象のため Emulator 不要 = emulators:exec で包まない。
 mutation: mutation-backend

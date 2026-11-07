@@ -1,0 +1,63 @@
+name: Generate Test Case Catalog
+description: keyandnotes-tools の共通の生成スクリプトで、テストケースカタログの HTML を生成する
+
+inputs:
+  junit-directory:
+    description: JUnit XML のアーティファクトを展開したディレクトリ
+    required: true
+  output:
+    description: 生成した HTML を書き出すファイルのパス
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # 版を 1 か所で決めるため、タグはこのアクションにだけ書く
+    - name: Checkout keyandnotes-tools
+      uses: actions/checkout@v7
+      with:
+        repository: kenyamaneko/keyandnotes-tools
+        ref: v1.1.0
+        path: keyandnotes-tools
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: keyandnotes-tools/package-lock.json
+
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.14"
+
+    - name: Build catalog CSS
+      shell: bash
+      working-directory: keyandnotes-tools
+      run: |
+        npm ci
+        npm run build:css
+
+    - name: Generate catalog HTML
+      shell: bash
+      env:
+        JUNIT_DIRECTORY: ${{ inputs.junit-directory }}
+        OUTPUT: ${{ inputs.output }}
+      run: |
+        jq -n \
+          --slurpfile features scripts/test_case_catalog_features.json \
+          --arg commit "${GITHUB_SHA}" \
+          --arg css "keyandnotes-tools/test_case_catalog/test_case_catalog.css" \
+          --arg junit_directory "${JUNIT_DIRECTORY}" \
+          '{
+            title: "pokelingual テストケースカタログ",
+            commit: $commit,
+            css: $css,
+            features: $features[0],
+            results: (
+              ["junit-backend/junit.xml", "junit-backend/integration-junit.xml", "junit-frontend/vitest-junit.xml", "junit-e2e/e2e-junit.xml"]
+              | map({language: "TypeScript", path: ($junit_directory + "/" + .)})
+            )
+          }' > catalog-config.json
+        python keyandnotes-tools/test_case_catalog/generate_test_case_catalog.py --config catalog-config.json > "${OUTPUT}"
