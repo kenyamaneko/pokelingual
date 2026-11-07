@@ -5,6 +5,7 @@ import type { ErrorResponse } from "../../../shared/api-types/error.js";
 import type { QuestLocationsResponse } from "../../../shared/api-types/quest.js";
 import { ExternalServiceError, NotFoundError } from "../domain/errors.js";
 import { handleError } from "./error.js";
+import { findLocation } from "../domain/location.js";
 
 /** クエスト関連エンドポイント (出題・採点・名前推測・捕獲) を束ねるハンドラ。 */
 export class QuestHandler {
@@ -18,13 +19,22 @@ export class QuestHandler {
   ) {}
 
   /**
-   * GET /quest/new — 新しい出題ポケモンを返す。
+   * GET /quest/new — 指定された探索場所の出題ポケモンを返す。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
   newQuest = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
-    const location = typeof req.query.location === "string" ? req.query.location : undefined;
+    const locationID = req.query.location;
+    if (typeof locationID !== "string") {
+      res.status(400).json({ error: "location is required" } satisfies ErrorResponse);
+      return;
+    }
+    const location = findLocation(locationID);
+    if (!location) {
+      res.status(400).json({ error: "unknown location" } satisfies ErrorResponse);
+      return;
+    }
     try {
       const resp = await this.questService.newQuest(userId, location);
       res.json(resp);

@@ -3,7 +3,7 @@ import { NotFoundError, ExternalServiceError, EmptyQuestPoolError, HintUnavailab
 import { buildExcludedPokemonIDs } from "../domain/exclusion.js";
 import { ALL_GENERATIONS, buildQuestPoolIDs } from "../domain/generation.js";
 import { LEGENDARY_MYTHICAL_IDS } from "../domain/legendary.js";
-import { findLocation, pickRandomLocations } from "../domain/location.js";
+import { pickRandomLocations } from "../domain/location.js";
 import { pickRandomSample } from "../domain/random.js";
 import { logger } from "../util/logger.js";
 import type {
@@ -96,16 +96,15 @@ export class QuestService {
   /**
    * 出題ポケモンを抽選してセッションを開始し、マスク済み説明文を返す。
    * @param userId ユーザ ID。
-   * @param locationId 選択された探索場所 ID (未指定ならタイプ非限定)。
    * @returns マスク済み説明文と伝説/幻フラグを含む出題レスポンス。
    */
-  async newQuest(userId: string, locationId?: string): Promise<QuestNewResponse> {
+  async newQuest(userId: string, location: QuestLocation): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
     const excluded = buildExcludedPokemonIDs(settings.excluded_pokemon_ids);
     const generations = settings.enabled_generations ?? ALL_GENERATIONS;
     const generationPool = buildQuestPoolIDs(generations, excluded);
 
-    const candidates = await this.pickQuestCandidates(locationId, generationPool);
+    const candidates = await this.pickQuestCandidates(location, generationPool);
     if (candidates.length === 0) {
       // 画面が最低1世代・除外上限で空プールを防ぐため通常は到達しない。防御的に案内エラーにする。
       throw new EmptyQuestPoolError();
@@ -167,11 +166,10 @@ export class QuestService {
 
   /**
    * 出題候補の図鑑番号を決める。低確率で幻・伝説プール、通常は場所のタイプで絞る。
-   * @param locationId 選択された探索場所 ID (未指定ならタイプ非限定)。
    * @param generationPool 世代・除外を反映した出題プール。
    * @returns 出題候補の図鑑番号 (データソースの提供順)。
    */
-  private async pickQuestCandidates(locationId: string | undefined, generationPool: Set<number>): Promise<number[]> {
+  private async pickQuestCandidates(location: QuestLocation, generationPool: Set<number>): Promise<number[]> {
     const servableIDs = this.pokemonClient.getServableIDs();
     const isLegendaryDraw = this.random.next() >= 1 - this.tuning.legendaryEncounterRate;
     if (isLegendaryDraw) {
@@ -179,25 +177,20 @@ export class QuestService {
       if (legendary.length > 0) return legendary;
       // 伝説抽選に当たったこと自体をユーザーに悟らせたくないので、対象がいなくてもエラーにせず通常抽選に落とす。
     }
-    return this.pickLocationCandidates(locationId, generationPool, servableIDs);
+    return this.pickLocationCandidates(location, generationPool, servableIDs);
   }
 
   /**
-   * 選んだ場所のタイプに合う出題候補を返す。場所未指定・未知 ID ならタイプ非限定。
-   * @param locationId 探索場所 ID。
+   * 選んだ場所のタイプに合う出題候補を返す。
    * @param generationPool 世代・除外を反映した出題プール。
    * @param servableIDs データソースが提供できる図鑑番号。
    * @returns 出題候補の図鑑番号。
    */
   private async pickLocationCandidates(
-    locationId: string | undefined,
+    location: QuestLocation,
     generationPool: Set<number>,
     servableIDs: readonly number[],
   ): Promise<number[]> {
-    const location = locationId === undefined ? undefined : findLocation(locationId);
-    if (!location) {
-      return servableIDs.filter((id) => generationPool.has(id));
-    }
     const typeIDs = new Set<number>();
     for (const type of location.types) {
       for (const id of await this.pokemonClient.getIDsByType(type)) typeIDs.add(id);

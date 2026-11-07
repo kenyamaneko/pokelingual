@@ -18,6 +18,7 @@ import type {
   UserSettingsRepository,
 } from "../domain/ports.js";
 import type { Pokemon } from "../domain/pokemon.js";
+import type { QuestLocation } from "../../../shared/api-types/quest.js";
 import { makePokemon, makePokemonClient } from "../testing/pokemon-fixtures.js";
 import { makeInMemoryQuestSessionStore } from "../testing/session-store-fixture.js";
 import { DEFAULT_QUEST_TUNING } from "../testing/quest-tuning-fixture.js";
@@ -82,6 +83,24 @@ function makeService(o: ServiceOverrides = {}): QuestService {
 }
 
 const USER_ID = "alice";
+const SUNLIT_FOREST: QuestLocation = {
+  id: "sunlit-forest",
+  name: "木漏れ日の森",
+  description: "やわらかい光と、虫の声",
+  types: ["grass", "bug", "fairy", "normal"],
+};
+const WIDE_LAKE: QuestLocation = {
+  id: "wide-lake",
+  name: "広い湖のほとり",
+  description: "水面をわたる風と、羽ばたきの音",
+  types: ["water", "flying", "psychic", "normal"],
+};
+const RUINED_POWERPLANT: QuestLocation = {
+  id: "ruined-powerplant",
+  name: "廃墟の発電所",
+  description: "錆びた機械が、まだ帯電している",
+  types: ["electric", "steel", "poison"],
+};
 const AI_RESPONSE_FINAL_SCORE_70 = JSON.stringify({
   units: [0.74],
   review: "意味がしっかり伝わる、よい翻訳だ。",
@@ -91,9 +110,12 @@ const AI_RESPONSE_FINAL_SCORE_69 = JSON.stringify({
   review: "意味がしっかり伝わる、よい翻訳だ。",
 });
 
-async function startQuest(o: ServiceOverrides = {}): Promise<QuestService> {
+async function startQuest(
+  o: ServiceOverrides = {},
+  location: QuestLocation = SUNLIT_FOREST,
+): Promise<QuestService> {
   const service = makeService(o);
-  await service.newQuest(USER_ID);
+  await service.newQuest(USER_ID, location);
   return service;
 }
 
@@ -599,11 +621,11 @@ describe("[本体:採点]素点から最終評価点への変換", () => {
   );
 });
 
-const START_QUEST = "ユーザー「alice」に、場所を指定せずにクエストを出題する";
+const START_QUEST = "ユーザー「alice」に、場所「木漏れ日の森」を指定してクエストを出題する";
+const FOREST_GIVEN = "場所「木漏れ日の森」がくさ・むし・フェアリー・ノーマルタイプで、ポケモンはすべてくさタイプで、";
 const START_QUEST_AT_LOCATION = "ユーザー「alice」に、場所「廃墟の発電所」を指定してクエストを出題する";
 
 describe("[本体:クエスト]クエストの出題", () => {
-  const LOCATION_ID = "ruined-powerplant";
   const LOCATION_GIVEN = "場所「廃墟の発電所」がでんき・はがね・どくタイプで、";
 
   defineCase(
@@ -612,7 +634,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "英語名が「Bulbasaur」で、英語説明文が「Bulbasaur can be seen napping in bright sunlight.」のポケモンのとき",
+          Given: `${FOREST_GIVEN}英語名が「Bulbasaur」で、英語説明文が「Bulbasaur can be seen napping in bright sunlight.」のポケモンのとき`,
           When: [START_QUEST],
           Then: "英語説明文は、ポケモン名を伏せ字にした「This Pokémon can be seen napping in bright sunlight.」になる",
         },
@@ -622,7 +644,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       const service = makeService({
         pokemons: [makePokemon({ description_en: "Bulbasaur can be seen napping in bright sunlight." })],
       });
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.description_en).toBe("This Pokémon can be seen napping in bright sunlight.");
     },
   );
@@ -633,7 +655,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "図鑑番号1のポケモンだけがいるとき",
+          Given: `${FOREST_GIVEN}図鑑番号1のポケモンだけがいるとき`,
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は1になる",
         },
@@ -641,7 +663,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     async () => {
       const service = makeService();
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(1);
     },
   );
@@ -652,7 +674,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "伝説ポケモンでないポケモンのとき",
+          Given: `${FOREST_GIVEN}伝説ポケモンでないポケモンのとき`,
           When: [START_QUEST],
           Then: "出題されたポケモンは伝説ポケモンではない",
         },
@@ -660,7 +682,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     async () => {
       const service = makeService();
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.is_legendary).toBe(false);
     },
   );
@@ -671,7 +693,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: "図鑑番号5と6のポケモンがいて、図鑑番号5を除外しているとき",
+          Given: `${FOREST_GIVEN}図鑑番号5と6のポケモンがいて、図鑑番号5を除外しているとき`,
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は6になる",
         },
@@ -682,7 +704,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 5 }), makePokemon({ id: 6 })],
         excludedIDs: [5],
       });
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(6);
     },
   );
@@ -694,7 +716,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "出題世代に第1世代だけを選んでいて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき",
+          Given: `${FOREST_GIVEN}出題世代に第1世代だけを選んでいて、第3世代の図鑑番号300と第1世代の図鑑番号100のポケモンがいるとき`,
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は100になる",
         },
@@ -705,7 +727,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
         enabledGenerations: [1],
       });
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(100);
     },
   );
@@ -717,7 +739,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "出題世代に第1世代と第3世代を選んでいて、第3世代の図鑑番号300のポケモンがいるとき",
+          Given: `${FOREST_GIVEN}出題世代に第1世代と第3世代を選んでいて、第3世代の図鑑番号300のポケモンがいるとき`,
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は300になる",
         },
@@ -728,7 +750,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 300 })],
         enabledGenerations: [1, 3],
       });
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(300);
     },
   );
@@ -740,7 +762,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "出題世代を設定していなくて、第5世代の図鑑番号500のポケモンがいるとき",
+          Given: `${FOREST_GIVEN}出題世代を設定していなくて、第5世代の図鑑番号500のポケモンがいるとき`,
           When: [START_QUEST],
           Then: "出題されたポケモンの図鑑番号は500になる",
         },
@@ -751,7 +773,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 500 })],
         enabledGenerations: null,
       });
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(500);
     },
   );
@@ -760,11 +782,11 @@ describe("[本体:クエスト]クエストの出題", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: [START_QUEST], Then: "名前当ての最大挑戦回数は3回になる" }],
+      steps: [{ Given: `${FOREST_GIVEN}図鑑番号1のポケモンだけがいるとき`, When: [START_QUEST], Then: "名前当ての最大挑戦回数は3回になる" }],
     },
     async () => {
       const service = makeService();
-      const res = await service.newQuest(USER_ID);
+      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
       expect(res.max_guess_attempts).toBe(3);
     },
   );
@@ -804,7 +826,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         観点: ["件数・有無"],
         steps: [
           {
-            Given: given,
+            Given: `${FOREST_GIVEN}${given}`,
             When: [START_QUEST],
             Then: "英語説明文は、ポケモン名を伏せ字にした「Under the bright sun, this Pokémon naps with a strange seed on its back.」になる",
           },
@@ -814,7 +836,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         const service = makeService({
           pokemons: [makePokemon({ flavor_texts: flavorTexts })],
         });
-        const res = await service.newQuest(USER_ID);
+        const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
         expect(res.description_en).toBe("Under the bright sun, this Pokémon naps with a strange seed on its back.");
       },
     );
@@ -827,7 +849,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          Given: "図鑑番号1のポケモンだけが出題対象で、図鑑番号1から10を除外しているとき",
+          Given: `${FOREST_GIVEN}図鑑番号1のポケモンだけが出題対象で、図鑑番号1から10を除外しているとき`,
           When: [START_QUEST],
           Then: "出題できるポケモンがいないことを示すエラーになる",
         },
@@ -838,7 +860,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 1 })],
         excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       });
-      await expect(service.newQuest(USER_ID)).rejects.toBeInstanceOf(EmptyQuestPoolError);
+      await expect(service.newQuest(USER_ID, SUNLIT_FOREST)).rejects.toBeInstanceOf(EmptyQuestPoolError);
     },
   );
 
@@ -853,7 +875,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         観点,
         steps: [
           {
-            Given: `英語説明文が「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」のポケモンで、${given}`,
+            Given: `${FOREST_GIVEN}英語説明文が「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」のポケモンで、${given}`,
             When: [START_QUEST],
             Then: "英語説明文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」になる",
           },
@@ -863,7 +885,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         const service = makeService({
           pokemons: [makePokemon({ flavor_texts: flavorTexts })],
         });
-        const res = await service.newQuest(USER_ID);
+        const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
         expect(res.description_en).toBe(
           "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
         );
@@ -912,7 +934,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       },
       async () => {
         const service = makeService(overrides);
-        const res = await service.newQuest(USER_ID, LOCATION_ID);
+        const res = await service.newQuest(USER_ID, RUINED_POWERPLANT);
         expect(res.pokemon_id).toBe(100);
       },
     );
@@ -935,7 +957,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
         randomValue: 0.995,
       });
-      const res = await service.newQuest(USER_ID, LOCATION_ID);
+      const res = await service.newQuest(USER_ID, RUINED_POWERPLANT);
       expect(res.pokemon_id).toBe(150);
     },
   );
@@ -1092,7 +1114,7 @@ describe("[本体:採点]翻訳の採点", () => {
     {
       given: "別のユーザー「alice」にだけ進行中のクエストセッションがあるとき",
       prepare: async (service: QuestService) => {
-        await service.newQuest(USER_ID);
+        await service.newQuest(USER_ID, SUNLIT_FOREST);
       },
       viewpoints: [],
     },
@@ -2639,7 +2661,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       ],
     },
     async () => {
-      const service = await startQuest(MEWTWO_OPTIONS);
+      const service = await startQuest(MEWTWO_OPTIONS, WIDE_LAKE);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toEqual({
         phase: "translating",
@@ -2661,7 +2683,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       ],
     },
     async () => {
-      const service = await startQuest(MEWTWO_OPTIONS);
+      const service = await startQuest(MEWTWO_OPTIONS, WIDE_LAKE);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toMatchObject({ quest: { pokemon_id: 150 } });
     },
@@ -2681,7 +2703,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       ],
     },
     async () => {
-      const service = await startQuest(MEWTWO_OPTIONS);
+      const service = await startQuest(MEWTWO_OPTIONS, WIDE_LAKE);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toMatchObject({
         quest: { description_en: "This Pokémon was created by a scientist after years of horrific gene splicing and DNA engineering experiments." },
@@ -2702,7 +2724,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       ],
     },
     async () => {
-      const service = await startQuest(MEWTWO_OPTIONS);
+      const service = await startQuest(MEWTWO_OPTIONS, WIDE_LAKE);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toMatchObject({ quest: { is_legendary: true } });
     },
@@ -2721,7 +2743,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       ],
     },
     async () => {
-      const service = await startQuest(MEWTWO_OPTIONS);
+      const service = await startQuest(MEWTWO_OPTIONS, WIDE_LAKE);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toMatchObject({ quest: { is_mythical: false } });
     },
@@ -2740,7 +2762,7 @@ describe("[本体:クエスト]再開するクエストの段階と状態", () =
       ],
     },
     async () => {
-      const service = await startQuest(MEWTWO_OPTIONS);
+      const service = await startQuest(MEWTWO_OPTIONS, WIDE_LAKE);
       const res = await service.getCurrentQuest(USER_ID);
       expect(res).toMatchObject({ quest: { max_guess_attempts: 3 } });
     },
