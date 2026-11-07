@@ -64,7 +64,7 @@
 │   └── Dockerfile.dev
 ├── shared/api-types/        # backend↔frontend API 契約型 (SSoT)
 ├── terraform/               # Google Cloud インフラ（dev/prod）
-├── scripts/                 # デプロイ後スモーク・テストケースカタログ生成スクリプト
+├── scripts/                 # デプロイ後スモーク・テストケースカタログの大機能と中機能の一覧
 ├── docs/                    # ドキュメント
 ├── docker-compose.dev.yml   # ローカル開発環境
 └── Makefile
