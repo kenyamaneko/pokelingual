@@ -34,7 +34,7 @@ gh workflow run deploy-prod.yml --ref main -f bump=patch
 注意が2点ある。
 
 - **契約の向き**：互換保証は「backend が frontend と同じか新しい」向きにしかない (ADR-026)。frontend を新しいまま backend だけ古くすると保証の逆向きになるため、切り戻し先のリリース以降に API 契約の変更が入っている場合は frontend も対になるバージョンへ戻す。
-- **トラフィックのピン留め**：`--to-revisions` はトラフィックを指定リビジョンへ固定する。以降のデプロイは新リビジョンを作るがトラフィックは移らない。deploy-prod.yml は最後に `--to-latest` を実行するため次の「Deploy to Prod」の実行で固定は解除されるが、手動で最新へ戻すときは次を実行する。
+- **トラフィックのピン留め**：`--to-revisions` はトラフィックを指定リビジョンへ固定する。以降のデプロイは新リビジョンを作るがトラフィックは移らない。「Deploy to Prod」のワークフローにはピン留めを解除する処理がないため、解除は次のコマンドで手動で行う。
 
   ```bash
   gcloud run services update-traffic pokelingual-api-prod \
@@ -79,8 +79,8 @@ gcloud run services describe pokelingual-api-prod \
 
 frontend は設定画面のバージョン表示が意図したバージョンであることを確認する。
 
-prod にはデプロイ後の自動スモークがまだない (#97 で追加予定) ため、最後に画面から主要動線 (ログイン → クエスト開始) を手で確認する。
+prod のスモークは「Deploy to Prod」の実行時にだけ走り (内容は[リリース手順](release.md)の「デプロイ後の検証」)、手動の切り戻しでは走らない。最後に画面から主要動線 (ログイン → クエスト開始) を手で確認する。
 
 ## 切り戻し状態の解消
 
-恒久修正を main に入れ、「Deploy to Prod」を `patch` で実行してリリースする。deploy-prod.yml は毎回 `--to-latest` を適用するため、手動のトラフィック切替はこのリリースで解消される。
+恒久修正を main に入れ、「Deploy to Prod」を `patch` で実行してリリースする。リリースの完了後、トラフィックのピン留めを解除する (「backend を旧リビジョンへ切り戻す」の `--to-latest` のコマンド)。
