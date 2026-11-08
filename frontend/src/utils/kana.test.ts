@@ -1,5 +1,5 @@
 import { describe, expect } from "vitest";
-import { hiraganaToKatakana } from "./kana";
+import { convertHiraganaToKatakana } from "./kana";
 import { defineCase } from "../test/defineCase";
 
 const convertToKatakana = (text: string) => `${text}をカタカナに変換する`;
@@ -18,7 +18,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       ],
     },
     () => {
-      expect(hiraganaToKatakana("ふしぎだね")).toBe("フシギダネ");
+      expect(convertHiraganaToKatakana("ふしぎだね")).toBe("フシギダネ");
     },
   );
 
@@ -35,7 +35,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       ],
     },
     () => {
-      expect(hiraganaToKatakana("ぴかちゅう")).toBe("ピカチュウ");
+      expect(convertHiraganaToKatakana("ぴかちゅう")).toBe("ピカチュウ");
     },
   );
 
@@ -52,7 +52,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       ],
     },
     () => {
-      expect(hiraganaToKatakana("ふしぎダネ")).toBe("フシギダネ");
+      expect(convertHiraganaToKatakana("ふしぎダネ")).toBe("フシギダネ");
     },
   );
 
@@ -69,7 +69,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       ],
     },
     () => {
-      expect(hiraganaToKatakana("あーぼ")).toBe("アーボ");
+      expect(convertHiraganaToKatakana("あーぼ")).toBe("アーボ");
     },
   );
 
@@ -86,7 +86,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       ],
     },
     () => {
-      expect(hiraganaToKatakana("フシギダネ")).toBe("フシギダネ");
+      expect(convertHiraganaToKatakana("フシギダネ")).toBe("フシギダネ");
     },
   );
 
@@ -98,7 +98,7 @@ describe("[共通:設定]ひらがなのカタカナ変換", () => {
       steps: [{ When: [convertToKatakana("空文字")], Then: "そのまま空文字になる" }],
     },
     () => {
-      expect(hiraganaToKatakana("")).toBe("");
+      expect(convertHiraganaToKatakana("")).toBe("");
     },
   );
 });

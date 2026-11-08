@@ -1,4 +1,4 @@
-import { hiraganaToKatakana } from "./kana";
+import { convertHiraganaToKatakana } from "./kana";
 
 /**
  * クエリの前方一致でポケモンを検索する。
@@ -10,7 +10,7 @@ import { hiraganaToKatakana } from "./kana";
  */
 export function searchPokemonByName<T extends { name_ja: string }>(entries: T[], query: string): T[] {
   if (query === "") return [];
-  const normalizedQuery = hiraganaToKatakana(query);
+  const normalizedQuery = convertHiraganaToKatakana(query);
   return entries
     .filter((entry) => entry.name_ja.startsWith(normalizedQuery))
     .sort((a, b) => a.name_ja.localeCompare(b.name_ja, "ja"));

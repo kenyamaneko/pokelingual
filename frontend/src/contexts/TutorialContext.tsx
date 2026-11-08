@@ -49,7 +49,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     return pending;
   }, [fetchTutorialCompleted]);
 
-  const prefetch = useCallback(async () => {
+  const prefetchTutorialCompleted = useCallback(async () => {
     resolvedRef.current = null;
     pendingRef.current = null;
     if (!user) return;
@@ -62,8 +62,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, [user, getTutorialCompleted]);
 
   useEffect(() => {
-    prefetch();
-  }, [prefetch]);
+    prefetchTutorialCompleted();
+  }, [prefetchTutorialCompleted]);
 
   const markTutorialCompleted = useCallback(async () => {
     try {

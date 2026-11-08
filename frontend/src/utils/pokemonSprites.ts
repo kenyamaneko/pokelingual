@@ -9,18 +9,10 @@ const SPRITES_BASE_URL = `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@${SPRITE_S
  * @param name アイテムのスプライト名 (例: "poke-ball")。
  * @returns 画像 URL。
  */
-export function itemSpriteURL(name: string): string {
+export function buildItemSpriteURL(name: string): string {
   return `${SPRITES_BASE_URL}/items/${name}.png`;
 }
 
 /** モンスターボール画像の URL。各ページのロゴに使う。 */
-export const POKE_BALL_SPRITE_URL = itemSpriteURL("poke-ball");
+export const POKE_BALL_SPRITE_URL = buildItemSpriteURL("poke-ball");
 
-/**
- * ポケモンの公式アートワーク画像の URL を図鑑番号から組み立てる。
- * @param id 図鑑番号。
- * @returns 画像 URL。
- */
-export function officialArtworkURL(id: number): string {
-  return `${SPRITES_BASE_URL}/pokemon/other/official-artwork/${id}.png`;
-}

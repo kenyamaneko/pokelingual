@@ -218,7 +218,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
     setPhase("loading");
     setError(null);
     try {
-      const res = await api.newQuest(locationId);
+      const res = await api.startQuest(locationId);
       setQuest(res.data);
       setAttemptsRemaining(res.data.max_guess_attempts);
       setPhase("translating");

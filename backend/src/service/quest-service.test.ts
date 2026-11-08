@@ -115,7 +115,7 @@ async function startQuest(
   location: QuestLocation = SUNLIT_FOREST,
 ): Promise<QuestService> {
   const service = makeService(o);
-  await service.newQuest(USER_ID, location);
+  await service.startQuest(USER_ID, location);
   return service;
 }
 
@@ -644,7 +644,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       const service = makeService({
         pokemons: [makePokemon({ description_en: "Bulbasaur can be seen napping in bright sunlight." })],
       });
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.description_en).toBe("This Pokémon can be seen napping in bright sunlight.");
     },
   );
@@ -663,7 +663,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     async () => {
       const service = makeService();
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(1);
     },
   );
@@ -682,7 +682,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     async () => {
       const service = makeService();
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.is_legendary).toBe(false);
     },
   );
@@ -704,7 +704,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 5 }), makePokemon({ id: 6 })],
         excludedIDs: [5],
       });
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(6);
     },
   );
@@ -727,7 +727,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 300 }), makePokemon({ id: 100 })],
         enabledGenerations: [1],
       });
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(100);
     },
   );
@@ -750,7 +750,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 300 })],
         enabledGenerations: [1, 3],
       });
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(300);
     },
   );
@@ -773,7 +773,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 500 })],
         enabledGenerations: null,
       });
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.pokemon_id).toBe(500);
     },
   );
@@ -786,7 +786,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     async () => {
       const service = makeService();
-      const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+      const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
       expect(res.max_guess_attempts).toBe(3);
     },
   );
@@ -836,7 +836,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         const service = makeService({
           pokemons: [makePokemon({ flavor_texts: flavorTexts })],
         });
-        const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+        const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
         expect(res.description_en).toBe("Under the bright sun, this Pokémon naps with a strange seed on its back.");
       },
     );
@@ -860,7 +860,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 1 })],
         excludedIDs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       });
-      await expect(service.newQuest(USER_ID, SUNLIT_FOREST)).rejects.toBeInstanceOf(EmptyQuestPoolError);
+      await expect(service.startQuest(USER_ID, SUNLIT_FOREST)).rejects.toBeInstanceOf(EmptyQuestPoolError);
     },
   );
 
@@ -885,7 +885,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         const service = makeService({
           pokemons: [makePokemon({ flavor_texts: flavorTexts })],
         });
-        const res = await service.newQuest(USER_ID, SUNLIT_FOREST);
+        const res = await service.startQuest(USER_ID, SUNLIT_FOREST);
         expect(res.description_en).toBe(
           "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
         );
@@ -934,7 +934,7 @@ describe("[本体:クエスト]クエストの出題", () => {
       },
       async () => {
         const service = makeService(overrides);
-        const res = await service.newQuest(USER_ID, RUINED_POWERPLANT);
+        const res = await service.startQuest(USER_ID, RUINED_POWERPLANT);
         expect(res.pokemon_id).toBe(100);
       },
     );
@@ -957,7 +957,7 @@ describe("[本体:クエスト]クエストの出題", () => {
         pokemons: [makePokemon({ id: 150, types: ["psychic"] }), makePokemon({ id: 100, types: ["electric"] })],
         randomValue: 0.995,
       });
-      const res = await service.newQuest(USER_ID, RUINED_POWERPLANT);
+      const res = await service.startQuest(USER_ID, RUINED_POWERPLANT);
       expect(res.pokemon_id).toBe(150);
     },
   );
@@ -1114,7 +1114,7 @@ describe("[本体:採点]翻訳の採点", () => {
     {
       given: "別のユーザー「alice」にだけ進行中のクエストセッションがあるとき",
       prepare: async (service: QuestService) => {
-        await service.newQuest(USER_ID, SUNLIT_FOREST);
+        await service.startQuest(USER_ID, SUNLIT_FOREST);
       },
       viewpoints: [],
     },

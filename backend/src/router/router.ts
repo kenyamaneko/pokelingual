@@ -22,7 +22,7 @@ function mountQuestRoutes(
   // 採点だけ LLM を呼ぶため、レート制限は採点のみに噛ませる。
   const scoreMiddleware = rateLimitMiddleware ? [rateLimitMiddleware] : [];
   router.get(`${prefix}/locations`, handler.getLocations);
-  router.get(`${prefix}/new`, handler.newQuest);
+  router.get(`${prefix}/new`, handler.startQuest);
   router.get(`${prefix}/current`, handler.getCurrentQuest);
   router.post(`${prefix}/score`, ...scoreMiddleware, handler.scoreTranslation);
   router.post(`${prefix}/guess-name`, handler.guessName);

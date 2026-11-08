@@ -91,14 +91,14 @@ export function formatUntilJstMidnight(): string {
   const m = Math.floor((remaining % MS_PER_HOUR) / MS_PER_MINUTE);
   const s = Math.floor((remaining % MS_PER_MINUTE) / MS_PER_SECOND);
 
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return `${padTwoDigits(h)}:${padTwoDigits(m)}:${padTwoDigits(s)}`;
 }
 
 /**
- * 数値を 2 桁ゼロパディングする。
+ * 数値を 2 桁にゼロ埋めする。
  * @param n 対象の数値。
- * @returns 2 桁ゼロパディングした文字列。
+ * @returns 2 桁にゼロ埋めした文字列。
  */
-function pad(n: number): string {
+function padTwoDigits(n: number): string {
   return n.toString().padStart(2, "0");
 }

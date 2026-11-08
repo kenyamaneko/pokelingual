@@ -20,7 +20,7 @@ export const ALL_GENERATIONS: number[] = GENERATION_RANGES.map((r) => r.generati
  * @param generations 選択された世代番号。
  * @returns 選択世代に含まれる図鑑番号の集合。
  */
-export function generationsToPokemonIDs(generations: readonly number[]): Set<number> {
+export function collectPokemonIDsByGenerations(generations: readonly number[]): Set<number> {
   const selected = new Set(generations);
   const ids = new Set<number>();
   for (const range of GENERATION_RANGES) {
@@ -42,7 +42,7 @@ export function buildQuestPoolIDs(
   generations: readonly number[],
   excludedIDs: ReadonlySet<number>,
 ): Set<number> {
-  const ids = generationsToPokemonIDs(generations);
+  const ids = collectPokemonIDsByGenerations(generations);
   for (const excluded of excludedIDs) {
     ids.delete(excluded);
   }

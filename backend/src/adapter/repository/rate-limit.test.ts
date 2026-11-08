@@ -34,7 +34,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     async () => {
       const repo = new RateLimitRepo(db, 5, 1000);
       for (let i = 0; i < 5; i++) {
-        const usage = await repo.checkAndIncrement("alice");
+        const usage = await repo.recordDailyUsage("alice");
         expect(usage.count).toBe(i + 1);
       }
     },
@@ -51,7 +51,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     async () => {
       const repo = new RateLimitRepo(db, 5, 1000);
       for (let i = 0; i < 5; i++) {
-        const usage = await repo.checkAndIncrement("alice");
+        const usage = await repo.recordDailyUsage("alice");
         expect(usage.limit).toBe(5);
       }
     },
@@ -71,14 +71,14 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     },
     async () => {
       const repo = new RateLimitRepo(db, 2, 1000);
-      await repo.checkAndIncrement("alice");
-      await repo.checkAndIncrement("alice");
-      await expect(repo.checkAndIncrement("alice")).rejects.toMatchObject({
+      await repo.recordDailyUsage("alice");
+      await repo.recordDailyUsage("alice");
+      await expect(repo.recordDailyUsage("alice")).rejects.toMatchObject({
         name: "RateLimitError",
         kind: "user",
       });
 
-      const usage = await repo.checkAndIncrement("bob");
+      const usage = await repo.recordDailyUsage("bob");
       expect(usage.count).toBe(1);
     },
   );
@@ -129,9 +129,9 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     },
     async () => {
       const repo = new RateLimitRepo(db, 30, 1000);
-      await repo.checkAndIncrement("alice");
-      await repo.checkAndIncrement("alice");
-      await repo.checkAndIncrement("alice");
+      await repo.recordDailyUsage("alice");
+      await repo.recordDailyUsage("alice");
+      await repo.recordDailyUsage("alice");
       const usage = await repo.getUserUsage("alice");
       expect(usage.count).toBe(3);
     },
@@ -146,9 +146,9 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     },
     async () => {
       const repo = new RateLimitRepo(db, 2, 1000);
-      await repo.checkAndIncrement("alice");
-      await repo.checkAndIncrement("alice");
-      await expect(repo.checkAndIncrement("alice")).rejects.toMatchObject({
+      await repo.recordDailyUsage("alice");
+      await repo.recordDailyUsage("alice");
+      await expect(repo.recordDailyUsage("alice")).rejects.toMatchObject({
         name: "RateLimitError",
         kind: "user",
       });
@@ -169,9 +169,9 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     },
     async () => {
       const repo = new RateLimitRepo(db, 100, 2);
-      await repo.checkAndIncrement("alice");
-      await repo.checkAndIncrement("bob");
-      await expect(repo.checkAndIncrement("carol")).rejects.toMatchObject({
+      await repo.recordDailyUsage("alice");
+      await repo.recordDailyUsage("bob");
+      await expect(repo.recordDailyUsage("carol")).rejects.toMatchObject({
         name: "RateLimitError",
         kind: "global",
       });
@@ -192,8 +192,8 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
     },
     async () => {
       const repo = new RateLimitRepo(db, 100, 1);
-      await repo.checkAndIncrement("alice");
-      await expect(repo.checkAndIncrement("alice")).rejects.toMatchObject({ kind: "global" });
+      await repo.recordDailyUsage("alice");
+      await expect(repo.recordDailyUsage("alice")).rejects.toMatchObject({ kind: "global" });
     },
   );
 });
@@ -233,14 +233,14 @@ describe("[本体:AI 呼び出し回数]日次上限のリセット", () => {
         const repo = new RateLimitRepo(db, userLimit, globalLimit);
 
         vi.setSystemTime(new Date("2026-05-28T23:59:00+09:00"));
-        await repo.checkAndIncrement("alice");
-        await expect(repo.checkAndIncrement("alice")).rejects.toMatchObject({
+        await repo.recordDailyUsage("alice");
+        await expect(repo.recordDailyUsage("alice")).rejects.toMatchObject({
           name: "RateLimitError",
           kind: reachedKind,
         });
 
         vi.setSystemTime(new Date("2026-05-29T00:00:00+09:00"));
-        const usage = await repo.checkAndIncrement("alice");
+        const usage = await repo.recordDailyUsage("alice");
         expect(usage.count).toBe(1);
       },
     );
@@ -263,9 +263,9 @@ describe("[本体:AI 呼び出し回数]日次上限のリセット", () => {
       const repo = new RateLimitRepo(db, 1, 100);
 
       vi.setSystemTime(new Date("2026-05-28T23:59:00+09:00"));
-      await repo.checkAndIncrement("alice");
+      await repo.recordDailyUsage("alice");
 
-      await expect(repo.checkAndIncrement("alice")).rejects.toMatchObject({
+      await expect(repo.recordDailyUsage("alice")).rejects.toMatchObject({
         name: "RateLimitError",
         kind: "user",
       });
