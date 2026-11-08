@@ -2,6 +2,21 @@
 
 # pokelingual 固有ルール (overlay)
 
+## [pokelingual] ブランチ戦略とデプロイ
+
+- ブランチ戦略は keyandnotes-rules の GitHub Flow に従う
+- デプロイ戦略は keyandnotes-rules の Merge → Dev, Tag → Prod に従う
+- main へのマージで dev にデプロイし、「Deploy to Prod」の手動実行で prod にデプロイする
+
+## [pokelingual] バージョニング
+
+- 版は Git タグ `vX.Y.Z` で示す。「Deploy to Prod」で選んだバージョンアップの種類から CI が打ち、そのタグのコミットを prod にデプロイする
+- 上げ方は keyandnotes-rules のバージョニングとCI方針に従う
+
+## [pokelingual] ブランチ保護 (GitHub Rulesets)
+
+- main へのマージに必要なステータスチェック: `Backend Lint`, `Frontend Lint`, `Backend Tests`, `Frontend Tests`, `E2E Tests`, `Terraform Format Check`, `Terraform Plan (dev)`
+
 ## [pokelingual] backend の後方互換
 
 - backend は常に直近1つ前の frontend と後方互換を保つ (backend → frontend の順で独立してデプロイするため、一時的に backend だけ先のバージョンに進む。ADR-026)
