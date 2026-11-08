@@ -15,6 +15,5 @@
 - `terraform/**/*.tf` → `../keyandnotes-rules/rules/lang/iac.md`
 - `scripts/**/*.py` → `../keyandnotes-rules/rules/lang/python.md`
 - テストコードを書くとき → `../keyandnotes-rules/rules/testing.md` + `rules/testing.md`
-- ブランチ運用・リリース → `rules/flow.md`
 
 共通 principles (`../keyandnotes-rules/rules/principles.md`) と pokelingual overlay (`rules/principles.md`) は本ファイルから @import 済みなので常に適用される。`../keyandnotes-rules` が存在しない場合、共通ルールは読み込まれない。
