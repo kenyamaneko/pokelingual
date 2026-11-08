@@ -14,7 +14,7 @@ import type {
 
 /**
  * 図鑑一覧のエントリを作る。
- * @param id 図鑑番号。
+ * @param id 全国図鑑番号。
  * @param nameEn 画面で観測する英語名。
  * @param nameJa 画面で観測する日本語名。
  * @returns 図鑑一覧の 1 エントリ。

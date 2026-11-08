@@ -8,7 +8,7 @@ interface PokemonDetailCardProps {
 }
 
 /**
- * ポケモン詳細モーダル。図鑑番号・タイプ・複数バージョンの説明文・実績を表示する。
+ * ポケモン詳細モーダル。全国図鑑番号・タイプ・複数バージョンの説明文・実績を表示する。
  * @param props pokemon / onClose を含む props。
  * @returns ポケモン詳細モーダルの要素。
  */

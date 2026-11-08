@@ -14,7 +14,7 @@ interface NameGuessProps {
   onSkip: () => void;
   onProceed: () => void;
   guessResult: GuessResponse | null;
-  /** 残り挑戦回数 (推測・ヒントのどちらの操作でも更新される)。 */
+  /** 残り挑戦回数 (名前当て・ヒントのどちらの操作でも更新される)。 */
   attemptsRemaining: number | null;
   /** 名前当ての最大挑戦回数。残り挑戦回数の表示に使う。 */
   maxGuessAttempts: number | null;
@@ -95,9 +95,9 @@ function GuessAttemptsBalls({ total, remaining }: GuessAttemptsBallsProps) {
 }
 
 /**
- * ポケモン名の推測入力 UI。残り試行数・正誤・最終正解・ヒントの表示を担う。
+ * 名前当ての入力 UI。残り挑戦回数・正誤・最終正解・ヒントの表示を担う。
  * @param props onSubmit / onSkip / onProceed / guessResult / attemptsRemaining / maxGuessAttempts / onHint / hintResult を含む props。
- * @returns 名前推測 UI の要素。
+ * @returns 名前当て UI の要素。
  */
 export function NameGuess({
   onSubmit,

@@ -27,7 +27,7 @@ import type {
   BallType,
 } from "../../../shared/api-types/quest.js";
 
-/** ポケモン名推測の最大試行回数。これを超えるとモンスターボール固定での捕獲フェーズへ。 */
+/** 名前当ての最大挑戦回数。これを超えるとモンスターボール固定での捕獲フェーズへ。 */
 const MAX_NAME_GUESS_ATTEMPTS = 3;
 
 /** ヒント要求に必要な最小残り挑戦回数。消費後も1回は名前当てへの挑戦が残るようにする。 */
@@ -36,8 +36,8 @@ const MIN_REMAINING_ATTEMPTS_FOR_HINT = 2;
 /** ヒントの最大開示回数。1回目でタイプ、2回目で技を開示する。 */
 const MAX_HINT_REVEALS = 2;
 
-/** 最終評価点変換の入力レンジ (素点 0-100)。 */
-const SCORE_MAX = 100;
+/** スコア変換の入力レンジ (素点 0-100)。 */
+const RAW_SCORE_MAX = 100;
 
 /** LLM が返す採点単位の判定値の許容範囲。プロンプト上 0.0-1.0 を指示しており、これを外れたら仕様違反。 */
 const UNIT_VALUE_MIN = 0;
@@ -45,13 +45,13 @@ const UNIT_VALUE_MAX = 1;
 
 const MAX_LLM_SCORE_ATTEMPTS = 2;
 
-/** 最終評価点変換: この値以下の素点は最終評価点 0 (効果なし) に切り下げる。 */
-const SCORE_TRANSLATION_FLOOR = 10;
-/** 最終評価点変換: 素点 (0-100) を最終評価点 (0-99) へ圧縮する係数。 */
-const SCORE_TRANSLATION_SCALE = 1.1;
+/** スコア変換: この値以下の素点はスコア 0 (効果なし) に切り下げる。 */
+const SCORE_CONVERSION_FLOOR = 10;
+/** スコア変換: 素点 (0-100) をスコア (0-99) へ圧縮する係数。 */
+const SCORE_CONVERSION_SCALE = 1.1;
 
-/** 最終評価点 (session.score) が実際に取りうる値の上限。 */
-export const MAX_FINAL_SCORE = Math.round((SCORE_MAX - SCORE_TRANSLATION_FLOOR) * SCORE_TRANSLATION_SCALE);
+/** スコア (session.score) が実際に取りうる値の上限。 */
+export const SCORE_MAX = Math.round((RAW_SCORE_MAX - SCORE_CONVERSION_FLOOR) * SCORE_CONVERSION_SCALE);
 
 // QuestNewResponse / ScoreResponse / GuessResponse / CaptureResponse の API 契約型は shared/api-types/quest.d.ts を参照
 
@@ -64,15 +64,15 @@ export interface QuestTuningConfig {
   /** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。master は確率計算をバイパスするため対象外。 */
   ballCaptureBonus: Record<Exclude<BallType, "master">, number>;
   /** 幻・伝説を抽選する確率 (場所によらず低確率で登場させる)。乱数の上位この割合が当たり。 */
-  legendaryEncounterRate: number;
+  legendaryAppearanceRate: number;
   /** 場所選択に一度に提示する場所の数。 */
   locationChoiceCount: number;
-  /** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要な最終評価点の下限。 */
+  /** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要なスコアの下限。 */
   masterBallMinScore: number;
 }
 
 /**
- * クエストの出題・採点・名前推測・捕獲のドメインロジックを束ねるサービス。
+ * クエストの出題・採点・名前当て・捕獲のドメインロジックを束ねるサービス。
  * セッションはユーザ ID ごとに QuestSessionStore へ保存する。
  */
 export class QuestService {
@@ -165,13 +165,13 @@ export class QuestService {
   }
 
   /**
-   * 出題候補の図鑑番号を決める。低確率で幻・伝説プール、通常は場所のタイプで絞る。
+   * 出題候補の全国図鑑番号を決める。低確率で幻・伝説プール、通常は場所のタイプで絞る。
    * @param generationPool 世代・除外を反映した出題プール。
-   * @returns 出題候補の図鑑番号 (データソースの提供順)。
+   * @returns 出題候補の全国図鑑番号 (データソースの提供順)。
    */
   private async pickQuestCandidates(location: QuestLocation, generationPool: Set<number>): Promise<number[]> {
     const servableIDs = this.pokemonClient.getServableIDs();
-    const isLegendaryDraw = this.random.next() >= 1 - this.tuning.legendaryEncounterRate;
+    const isLegendaryDraw = this.random.next() >= 1 - this.tuning.legendaryAppearanceRate;
     if (isLegendaryDraw) {
       const legendary = servableIDs.filter((id) => generationPool.has(id) && LEGENDARY_MYTHICAL_IDS.has(id));
       if (legendary.length > 0) return legendary;
@@ -183,8 +183,8 @@ export class QuestService {
   /**
    * 選んだ場所のタイプに合う出題候補を返す。
    * @param generationPool 世代・除外を反映した出題プール。
-   * @param servableIDs データソースが提供できる図鑑番号。
-   * @returns 出題候補の図鑑番号。
+   * @param servableIDs データソースが提供できる全国図鑑番号。
+   * @returns 出題候補の全国図鑑番号。
    */
   private async pickLocationCandidates(
     location: QuestLocation,
@@ -224,7 +224,7 @@ export class QuestService {
       throw new ExternalServiceError("LLM", err as Error);
     }
 
-    session.score = translateToFinalScore(result.score);
+    session.score = convertRawScoreToScore(result.score);
     session.user_translation = translation;
     session.review = result.review;
     // 伏せ字に失敗した採点済みセッションを残すと再開のたびに同じ失敗を繰り返すため、保存より先に伏せ字にする
@@ -269,10 +269,10 @@ export class QuestService {
   }
 
   /**
-   * 名前推測を判定し、正解ならボール種別を確定、不正解なら残り試行を返す。
+   * 名前当ての答えを判定し、正解ならボール種別を確定、不正解なら残り挑戦回数を返す。
    * @param userId ユーザ ID。
-   * @param guess ユーザの推測名 (英語または日本語)。
-   * @returns 正誤・確定ボール種別・残り試行回数を含む判定結果。
+   * @param guess ユーザの答え (英語または日本語)。
+   * @returns 正誤・確定ボール種別・残り挑戦回数を含む判定結果。
    */
   async guessName(userId: string, guess: string): Promise<GuessResponse> {
     const session = await this.loadSession(userId);
@@ -324,7 +324,7 @@ export class QuestService {
   }
 
   /**
-   * ヒントを要求する。名前推測の挑戦回数を1回消費し、1回目はタイプ、2回目は技を返す。
+   * ヒントを要求する。名前当ての挑戦回数を1回消費し、1回目はタイプ、2回目は技を返す。
    * レベルアップで覚える技が無いポケモンでは、2回目も技を0件として返す。
    * @param userId ユーザ ID。
    * @returns 今回開示された情報 (タイプまたは技) と消費後の残り挑戦回数。
@@ -522,7 +522,7 @@ interface RawScoreResult {
 }
 
 /**
- * 翻訳採点用のプロンプトを組み立てる。
+ * 採点用のプロンプトを組み立てる。
  * @param englishText 出題の英語原文。
  * @param translation ユーザの日本語訳。
  * @returns LLM へ渡すプロンプト文字列。
@@ -580,7 +580,7 @@ export function computeScoreFromUnits(unitValues: number[]): number {
 
 /**
  * スコアと種族値合計から捕獲確率を返す。ロジスティック関数にボール補正を加算で合成する。
- * @param score 採点スコア (最終評価点、0-99)。
+ * @param score スコア (0-99)。
  * @param baseStatTotal 種族値合計。
  * @param ballBonus ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。
  * @returns 0.0〜1.0 の捕獲確率。
@@ -602,13 +602,13 @@ export function calculateCaptureRate(score: number, baseStatTotal: number, ballB
 }
 
 /**
- * 素点 (0-100) を最終評価点 (0-99) に変換する。ポケモン世界の「瀕死にすると
- * 捕まえられない」という世界観に合わせ、最終評価が満点に達しないようにする。
+ * 素点 (0-100) をスコア (0-99) に変換する。ポケモン世界の「瀕死にすると
+ * 捕まえられない」という世界観に合わせ、スコアが満点に達しないようにする。
  * @param rawScore 素点 (0-100)。
- * @returns 最終評価点 (0-99)。
+ * @returns スコア (0-99)。
  */
-export function translateToFinalScore(rawScore: number): number {
-  return Math.max(0, Math.round((rawScore - SCORE_TRANSLATION_FLOOR) * SCORE_TRANSLATION_SCALE));
+export function convertRawScoreToScore(rawScore: number): number {
+  return Math.max(0, Math.round((rawScore - SCORE_CONVERSION_FLOOR) * SCORE_CONVERSION_SCALE));
 }
 
 const pluralHints = new Set([

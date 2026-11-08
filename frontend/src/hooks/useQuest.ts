@@ -51,7 +51,7 @@ export interface UseQuestResult {
 
 /** useQuest の依存差し替え口。本番は既定値で動き、チュートリアルは別 API と入力検証・副作用を注入する。 */
 export interface UseQuestOptions {
-  /** 場所選択・出題・採点・推測・捕獲を担う実装。既定は本番の HTTP クライアント。 */
+  /** 場所選択・出題・採点・名前当て・捕獲を担う実装。既定は本番の HTTP クライアント。 */
   api?: QuestApi;
   /** 出題する場所の ID。指定すると場所選択を出さずにこの場所で出題し、省略すると場所を選ばせる。 */
   fixedLocationId?: string;
@@ -59,7 +59,7 @@ export interface UseQuestOptions {
   enableResume?: boolean;
   /** 採点送信前の入力検証。false を返すと採点へ進めない。 */
   validateBeforeScore?: (translation: string) => boolean;
-  /** 名前推測送信前の入力検証。false を返すと判定へ進めない。 */
+  /** 名前当て送信前の入力検証。false を返すと判定へ進めない。 */
   validateBeforeGuess?: (guess: string) => boolean;
   /** validateBeforeScore / validateBeforeGuess が false を返し、送信を短絡した際に呼ぶ副作用。 */
   onValidationFailed?: () => void;
@@ -294,7 +294,7 @@ export function useQuest(options: UseQuestOptions = {}): UseQuestResult {
   };
 
   const skipGuess = async () => {
-    // 名前推測スキップはサーバに明示し、poke ボールを確定してから捕獲フェーズへ進む。
+    // 名前当てスキップはサーバに明示し、poke ボールを確定してから捕獲フェーズへ進む。
     setError(null);
     try {
       const res = await api.skipGuess();

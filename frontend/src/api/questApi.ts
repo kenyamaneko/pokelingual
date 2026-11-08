@@ -23,7 +23,7 @@ export interface QuestApi {
 }
 
 /**
- * 指定プレフィックスのクエストエンドポイント (場所選択・出題・採点・推測・捕獲) を呼ぶ API クライアントを作る。
+ * 指定プレフィックスのクエストエンドポイント (場所選択・出題・採点・名前当て・捕獲) を呼ぶ API クライアントを作る。
  * @param basePath エンドポイントのプレフィックス (本番は /quest、チュートリアルは /tutorial/quest)。
  * @returns QuestApi 実装。
  */

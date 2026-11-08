@@ -2,9 +2,9 @@ import { describe, expect } from "vitest";
 import { getScoreLabel } from "./scoreLabel";
 import { defineCase } from "../test/defineCase";
 
-const getLabelOf = (score: number | string) => `最終評価点 ${score} の『こうか』ラベルを取得する`;
+const getLabelOf = (score: number | string) => `スコア ${score} の『こうか』ラベルを取得する`;
 
-describe("[本体:クエスト]最終評価点に応じた『こうか』ラベル", () => {
+describe("[本体:クエスト]スコアに応じた『こうか』ラベル", () => {
   defineCase(
     {
       種別: "単体テスト",

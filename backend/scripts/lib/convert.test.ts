@@ -139,7 +139,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: [createPokemonRecordFrom("図鑑番号 1・フシギダネ")], Then: "作成したポケモンデータの図鑑番号は 1 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("全国図鑑番号 1・フシギダネ")], Then: "作成したポケモンデータの全国図鑑番号は 1 になる" }],
     },
     () => {
       expect(convertBulbasaur().id).toBe(1);
@@ -150,7 +150,7 @@ describe("[外部連携:ポケモンデータ提供元]スナップショット�
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: [createPokemonRecordFrom("図鑑番号 4・ヒトカゲ")], Then: "作成したポケモンデータの図鑑番号は 4 になる" }],
+      steps: [{ When: [createPokemonRecordFrom("全国図鑑番号 4・ヒトカゲ")], Then: "作成したポケモンデータの全国図鑑番号は 4 になる" }],
     },
     () => {
       expect(convertCharmander().id).toBe(4);

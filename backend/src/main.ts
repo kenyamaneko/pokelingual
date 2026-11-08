@@ -112,7 +112,7 @@ async function main(): Promise<void> {
     global_daily_limit: cfg.globalDailyLimit,
   });
 
-  // 除外設定の妥当性は「供給できる図鑑番号」を SSoT に判定する (env の上限値と二重管理しない)。
+  // 除外設定の妥当性は「供給できる全国図鑑番号」を SSoT に判定する (env の上限値と二重管理しない)。
   const servablePokemonIDs = new Set(pokemonClient.getServableIDs());
 
   // Redis クライアントは 'error' イベントにリスナーが無いと未処理例外で process を落とすため捕捉する。
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
     fuzzyMatchMinNameLength: cfg.fuzzyMatchMinNameLength,
     fuzzyMatchMaxDistance: cfg.fuzzyMatchMaxDistance,
     ballCaptureBonus: cfg.ballCaptureBonus,
-    legendaryEncounterRate: cfg.legendaryEncounterRate,
+    legendaryAppearanceRate: cfg.legendaryAppearanceRate,
     locationChoiceCount: cfg.locationChoiceCount,
     masterBallMinScore: cfg.masterBallMinScore,
   };

@@ -14,7 +14,7 @@ export const pokedexApi = {
   getPokedex: () => api.get<PokedexResponse>("/pokedex"),
   /**
    * GET /pokedex/:id — 特定ポケモンの詳細を取得する。
-   * @param id ポケモン ID。
+   * @param id 全国図鑑番号。
    * @returns ポケモン詳細レスポンス。
    */
   getPokemonDetail: (id: number) =>

@@ -51,7 +51,7 @@ export async function resetExcludedPokemon(page: Page) {
  * 図鑑に記録されている、指定したポケモンの捕獲回数を返す。local (mock) 専用。
  * 捕獲回数は実行間で残り、リセットする API が無いため、操作の前後の差で確かめるために使う。
  * @param page APIRequestContext を共有する Playwright の Page。
- * @param pokemonId 図鑑番号。
+ * @param pokemonId 全国図鑑番号。
  * @returns 捕獲回数。まだ遭遇していないポケモンは図鑑に載らないため 0。
  */
 export async function countCapturesViaApi(page: Page, pokemonId: number) {
@@ -160,9 +160,9 @@ export const prepareLoggedInUserWithCompletedTutorialAndNoExcludedPokemon = byEn
   dev環境: prepareDevUserWithCompletedTutorialAndNoExcludedPokemon,
 });
 
-/** mock の採点で表示されうるダメージ (%) の下限。素点の下限 20 を最終評価点に変換した値。 */
+/** mock の採点で表示されうるダメージ (%) の下限。素点の下限 20 をスコアに変換した値。 */
 export const MOCK_DAMAGE_PERCENT_MIN = 11;
-/** mock の採点で表示されうるダメージ (%) の上限。素点の上限 95 を最終評価点に変換した値。 */
+/** mock の採点で表示されうるダメージ (%) の上限。素点の上限 95 をスコアに変換した値。 */
 export const MOCK_DAMAGE_PERCENT_MAX = 94;
 
 /**

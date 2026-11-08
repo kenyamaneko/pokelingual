@@ -20,5 +20,5 @@ export interface Pokemon {
   level_up_moves?: string[];
 }
 
-/** データソースが保持するポケモン種別情報。sprite_url は保持せず、図鑑番号から読み出し時に組み立てる。 */
+/** データソースが保持するポケモン種別情報。sprite_url は保持せず、全国図鑑番号から読み出し時に組み立てる。 */
 export type PokemonRecord = Omit<Pokemon, "sprite_url">;

@@ -7,7 +7,7 @@ import { ExternalServiceError, NotFoundError } from "../domain/errors.js";
 import { handleError } from "./error.js";
 import { findLocation } from "../domain/location.js";
 
-/** クエスト関連エンドポイント (出題・採点・名前推測・捕獲) を束ねるハンドラ。 */
+/** クエスト関連エンドポイント (出題・採点・名前当て・捕獲) を束ねるハンドラ。 */
 export class QuestHandler {
   /**
    * @param questService クエストのドメインサービス。
@@ -95,7 +95,7 @@ export class QuestHandler {
   };
 
   /**
-   * POST /quest/guess-name — ポケモン名の推測を判定し残り試行回数を返す。
+   * POST /quest/guess-name — 名前当ての答えを判定し、残り挑戦回数を返す。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */

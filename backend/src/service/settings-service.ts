@@ -9,7 +9,7 @@ import type { SettingsResponse } from "../../../shared/api-types/settings.js";
 export class SettingsService {
   /**
    * @param settingsRepo ユーザ設定リポジトリ。
-   * @param servablePokemonIDs 供給可能な図鑑番号の集合。除外設定の妥当性検証に使う。
+   * @param servablePokemonIDs 供給可能な全国図鑑番号の集合。除外設定の妥当性検証に使う。
    * @param maxExcludedPokemonCount ユーザが除外指定できるポケモン数の上限。
    */
   constructor(
@@ -21,7 +21,7 @@ export class SettingsService {
   /**
    * ユーザ自身の設定を返す。
    * @param userId ユーザ ID。
-   * @returns 除外ポケモンIDと出題対象世代。
+   * @returns 除外ポケモンの全国図鑑番号と出題対象世代。
    */
   async getSettings(userId: string): Promise<SettingsResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
@@ -33,7 +33,7 @@ export class SettingsService {
   }
 
   /**
-   * 除外ポケモンIDリストをバリデーションし、成功時のみ永続化する。
+   * 除外ポケモンの全国図鑑番号リストをバリデーションし、成功時のみ永続化する。
    * @param userId ユーザ ID。
    * @param rawIDs リクエストで受け取った未バリデーションの値。
    * @returns 検証結果 (失敗時は永続化しない)。

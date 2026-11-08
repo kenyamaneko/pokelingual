@@ -6,7 +6,7 @@ import {
 } from "./pokemonFormat";
 import { defineCase } from "../test/defineCase";
 
-describe("[本体:図鑑]図鑑番号の表示形式", () => {
+describe("[本体:図鑑]全国図鑑番号の表示形式", () => {
   for (const [id, expected] of [
     [9, "009"],
     [10, "010"],
@@ -20,7 +20,7 @@ describe("[本体:図鑑]図鑑番号の表示形式", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ When: [`図鑑番号 ${id} を表示する`], Then: `表示は「${expected}」になる` }],
+        steps: [{ When: [`全国図鑑番号 ${id} を表示する`], Then: `表示は「${expected}」になる` }],
       },
       () => {
         expect(formatPokemonId(id)).toBe(expected);

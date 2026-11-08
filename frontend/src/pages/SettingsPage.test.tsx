@@ -19,7 +19,7 @@ let lastSavedGenerations: number[] | null = null;
 
 /**
  * GET /settings が指定の除外 ID・出題世代を返す状態をモックする。
- * @param ids 除外ポケモン ID の一覧。
+ * @param ids 除外ポケモンの全国図鑑番号の一覧。
  * @param generations 出題対象の世代 (既定は全世代)。
  */
 function mockGetSettings(ids: number[], generations: number[] = [1, 2, 3, 4, 5, 6, 7, 8]) {
@@ -308,7 +308,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
         {
           Given: `${GOLBAT_IN_NAME_LIST}、除外ポケモンがいないとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
-          Then: "バックエンドに保存される除外ポケモンの図鑑番号が、42 だけになる",
+          Then: "バックエンドに保存される除外ポケモンの全国図鑑番号が、42 だけになる",
         },
       ],
     },
@@ -413,7 +413,7 @@ describe("[共通:設定]除外ポケモン設定", () => {
         {
           Given: `${GOLBAT_IN_NAME_LIST}、ゴルバットが除外済みのとき`,
           When: SEARCH_AND_SELECT_GOLBAT,
-          Then: "バックエンドに保存される除外ポケモンの図鑑番号が、42 だけのままになる",
+          Then: "バックエンドに保存される除外ポケモンの全国図鑑番号が、42 だけのままになる",
         },
       ],
     },

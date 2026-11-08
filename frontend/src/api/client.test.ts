@@ -46,10 +46,10 @@ async function requestWithLimitError(kind: string): Promise<RateLimitDetail> {
 const CALL_BACKEND_API = "利用状況取得 API を呼び出す";
 const NOTHING_NOTIFIED = "日次上限の通知の購読側に、通知が届かない";
 const INVALID_KIND_LIMIT = "日次上限に達していて、上限の種類が「organization」でユーザーでも全体でもないとき";
-const USER_LIMIT_REACHED = "ユーザーの日次上限に達しているとき";
+const USER_LIMIT_REACHED = "ユーザーごとの日次上限に達しているとき";
 const USER_LIMIT_NOTIFIED = "日次上限の通知の購読側に、種類がユーザーの通知が届く";
-const USER_LIMIT_WITHOUT_MESSAGE = "ユーザーの日次上限に達していて、メッセージが無いとき";
-const USER_LIMIT_WITH_EMPTY_MESSAGE = "ユーザーの日次上限に達していて、メッセージが空文字のとき";
+const USER_LIMIT_WITHOUT_MESSAGE = "ユーザーごとの日次上限に達していて、メッセージが無いとき";
+const USER_LIMIT_WITH_EMPTY_MESSAGE = "ユーザーごとの日次上限に達していて、メッセージが空文字のとき";
 
 describe("[共通:認証]バックエンド呼び出しへの認証トークンの付与", () => {
   defineCase(
@@ -118,7 +118,7 @@ describe("[本体:AI 呼び出し回数]日次上限の通知", () => {
   );
 
   for (const { label, kind } of [
-    { label: "ユーザー", kind: "user" },
+    { label: "ユーザーごと", kind: "user" },
     { label: "全体", kind: "global" },
   ]) {
     defineCase(
