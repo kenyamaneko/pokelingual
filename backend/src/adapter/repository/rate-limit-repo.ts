@@ -63,7 +63,7 @@ export class RateLimitRepo implements RateLimitRepository {
    * @throws RateLimitError 全体またはユーザごとの日次上限に到達した場合。
    */
   private assertBelowDailyLimit(userCount: number, globalCount: number): void {
-    // グローバル上限を先に判定して、特定ユーザーだけが原因でないことを区別可能にする
+    // 特定ユーザーだけが原因でないことを区別できるようにするため、全体の日次上限を先に判定する
     if (globalCount >= this.globalLimit) throw new RateLimitError("global");
     if (userCount >= this.perUserLimit) throw new RateLimitError("user");
   }
