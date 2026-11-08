@@ -1,6 +1,6 @@
 # リリース手順とデプロイ後の検証
 
-dev への反映、prod へのリリース、デプロイ後の検証の手順。バージョンアップの種類の選び方は、リポ固有のルールに従う。
+dev への反映、prod へのリリース、デプロイ後の検証の手順。バージョンアップの種類の選び方は、keyandnotes-rules のバージョニングとCI方針に従う。
 
 ## dev への反映
 
@@ -113,3 +113,15 @@ prod のレート制限は実ユーザーと共有するため、クエスト (G
 2. backend 側の原因は Cloud Run のログで調べる。コマンドは[アラート対応と緊急停止の手順](emergency-response.md)の「共通の初動」にある。
 3. シナリオテストが失敗したときは、実行の成果物 `scenario-dev-real-results` (7 日間保持) にテスト結果がある。
 4. prod のスモークが失敗したら、利用者への影響を確認し、直せなければ[ロールバック手順](rollback-prod.md)で切り戻す。
+
+## main へのマージの条件
+
+`main` はルールセット `main-protection` で守る。PR を経ない `main` の更新、`main` の削除、強制的な更新は禁止で、履歴は直線に保つ。PR をマージするには、次のステータスチェックの合格が必要である。
+
+- Backend Lint
+- Frontend Lint
+- Backend Tests
+- Frontend Tests
+- E2E Tests
+- Terraform Format Check
+- Terraform Plan (dev)
