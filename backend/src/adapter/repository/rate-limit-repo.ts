@@ -35,13 +35,13 @@ export class RateLimitRepo implements RateLimitRepository {
 
     return await this.db.runTransaction(async (tx) => {
       const [userSnap, globalSnap] = await Promise.all([tx.get(userRef), tx.get(globalRef)]);
-      const userCount = (userSnap.data()?.count as number) ?? 0;
-      const globalCount = (globalSnap.data()?.count as number) ?? 0;
+      const perUserCallCount = (userSnap.data()?.count as number) ?? 0;
+      const globalCallCount = (globalSnap.data()?.count as number) ?? 0;
 
-      this.assertBelowDailyLimit(userCount, globalCount);
-      this.incrementDailyUsage(tx, { ref: userRef, count: userCount }, { ref: globalRef, count: globalCount });
+      this.assertBelowDailyLimit(perUserCallCount, globalCallCount);
+      this.incrementDailyUsage(tx, { ref: userRef, count: perUserCallCount }, { ref: globalRef, count: globalCallCount });
 
-      return { count: userCount + 1, limit: this.perUserLimit };
+      return { count: perUserCallCount + 1, limit: this.perUserLimit };
     });
   }
 
@@ -58,14 +58,14 @@ export class RateLimitRepo implements RateLimitRepository {
 
   /**
    * AI 呼び出し回数が、ユーザごとの日次上限と全体の日次上限のどちらにも達していないことを確かめる。
-   * @param userCount ユーザごとの AI 呼び出し回数。
-   * @param globalCount 全体の AI 呼び出し回数。
+   * @param perUserCallCount ユーザごとの AI 呼び出し回数。
+   * @param globalCallCount 全体の AI 呼び出し回数。
    * @throws RateLimitError 全体またはユーザごとの日次上限に到達した場合。
    */
-  private assertBelowDailyLimit(userCount: number, globalCount: number): void {
+  private assertBelowDailyLimit(perUserCallCount: number, globalCallCount: number): void {
     // 特定ユーザーだけが原因でないことを区別できるようにするため、全体の日次上限を先に判定する
-    if (globalCount >= this.globalLimit) throw new RateLimitError("global");
-    if (userCount >= this.perUserLimit) throw new RateLimitError("user");
+    if (globalCallCount >= this.globalLimit) throw new RateLimitError("global");
+    if (perUserCallCount >= this.perUserLimit) throw new RateLimitError("user");
   }
 
   /**
