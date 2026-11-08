@@ -48,7 +48,7 @@ export interface UserRepository {
 
 /** 日次レート制限カウンタを管理するリポジトリ。Firestore 版とインメモリ版がある。 */
 export interface RateLimitRepository {
-  checkAndIncrement(userId: string): Promise<DailyUsage>;
+  recordDailyUsage(userId: string): Promise<DailyUsage>;
   getUserUsage(userId: string): Promise<DailyUsage>;
 }
 

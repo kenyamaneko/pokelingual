@@ -11,7 +11,7 @@ export function rateLimit(repo: RateLimitRepository): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
     const userId = res.locals.userId as string;
     try {
-      await repo.checkAndIncrement(userId);
+      await repo.recordDailyUsage(userId);
       next();
     } catch (err) {
       handleError(res, err, req.path);

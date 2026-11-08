@@ -1,7 +1,12 @@
-import type { Firestore } from "@google-cloud/firestore";
+import type { DocumentReference, Firestore, Transaction } from "@google-cloud/firestore";
 import { FieldValue } from "@google-cloud/firestore";
 import { RateLimitError } from "../../domain/errors.js";
 import type { DailyUsage, RateLimitRepository } from "../../domain/ports.js";
+
+interface DailyCounter {
+  ref: DocumentReference;
+  count: number;
+}
 
 /** Firestore で日次レートリミットを管理する RateLimitRepository 実装。 */
 export class RateLimitRepo implements RateLimitRepository {
@@ -17,12 +22,12 @@ export class RateLimitRepo implements RateLimitRepository {
   ) {}
 
   /**
-   * 当日カウントを検証して上限到達なら RateLimitError、未到達ならインクリメントして返す。
+   * AI 呼び出し回数を記録する。日次上限に達していれば記録せずエラーにする。
    * @param userId ユーザ ID。
-   * @returns インクリメント後の当日利用状況。
-   * @throws RateLimitError グローバルまたはユーザ上限に到達した場合。
+   * @returns 記録後の AI 呼び出し回数と日次上限。
+   * @throws RateLimitError 全体またはユーザごとの日次上限に到達した場合。
    */
-  async checkAndIncrement(userId: string): Promise<DailyUsage> {
+  async recordDailyUsage(userId: string): Promise<DailyUsage> {
     const today = getJstToday();
     const userRef = this.db.doc(`users/${userId}/daily_usage/${today}`);
     // users/{userId}/daily_usage/{date} と階層を揃え、Firestore の doc は偶数階層必須という制約を満たす
@@ -30,24 +35,43 @@ export class RateLimitRepo implements RateLimitRepository {
 
     return await this.db.runTransaction(async (tx) => {
       const [userSnap, globalSnap] = await Promise.all([tx.get(userRef), tx.get(globalRef)]);
-      const userCount = (userSnap.data()?.count as number) ?? 0;
-      const globalCount = (globalSnap.data()?.count as number) ?? 0;
+      const perUserCallCount = (userSnap.data()?.count as number) ?? 0;
+      const globalCallCount = (globalSnap.data()?.count as number) ?? 0;
 
-      // グローバル上限を先に判定して、特定ユーザーだけが原因でないことを区別可能にする
-      if (globalCount >= this.globalLimit) throw new RateLimitError("global");
-      if (userCount >= this.perUserLimit) throw new RateLimitError("user");
+      this.assertBelowDailyLimit(perUserCallCount, globalCallCount);
+      this.incrementDailyUsage(tx, { ref: userRef, count: perUserCallCount }, { ref: globalRef, count: globalCallCount });
 
-      tx.set(userRef, { count: userCount + 1, updated_at: FieldValue.serverTimestamp() }, { merge: true });
-      tx.set(globalRef, { count: globalCount + 1, updated_at: FieldValue.serverTimestamp() }, { merge: true });
-
-      return { count: userCount + 1, limit: this.perUserLimit };
+      return { count: perUserCallCount + 1, limit: this.perUserLimit };
     });
   }
 
   /**
-   * 当日のユーザ利用カウントと上限を返す。読み取り専用。
+   * ユーザごとと全体の AI 呼び出し回数を、トランザクション内で 1 ずつ加算する。
+   * @param tx 読み取り済みのトランザクション。
+   * @param user ユーザごとの AI 呼び出し回数の文書と、加算前の回数。
+   * @param global 全体の AI 呼び出し回数の文書と、加算前の回数。
+   */
+  private incrementDailyUsage(tx: Transaction, user: DailyCounter, global: DailyCounter): void {
+    tx.set(user.ref, { count: user.count + 1, updated_at: FieldValue.serverTimestamp() }, { merge: true });
+    tx.set(global.ref, { count: global.count + 1, updated_at: FieldValue.serverTimestamp() }, { merge: true });
+  }
+
+  /**
+   * AI 呼び出し回数が、ユーザごとの日次上限と全体の日次上限のどちらにも達していないことを確かめる。
+   * @param perUserCallCount ユーザごとの AI 呼び出し回数。
+   * @param globalCallCount 全体の AI 呼び出し回数。
+   * @throws RateLimitError 全体またはユーザごとの日次上限に到達した場合。
+   */
+  private assertBelowDailyLimit(perUserCallCount: number, globalCallCount: number): void {
+    // 特定ユーザーだけが原因でないことを区別できるようにするため、全体の日次上限を先に判定する
+    if (globalCallCount >= this.globalLimit) throw new RateLimitError("global");
+    if (perUserCallCount >= this.perUserLimit) throw new RateLimitError("user");
+  }
+
+  /**
+   * ユーザごとの AI 呼び出し回数と日次上限を返す。読み取り専用。
    * @param userId ユーザ ID。
-   * @returns 当日の利用カウントと上限。
+   * @returns ユーザごとの AI 呼び出し回数と日次上限。
    */
   async getUserUsage(userId: string): Promise<DailyUsage> {
     const snap = await this.db.doc(`users/${userId}/daily_usage/${getJstToday()}`).get();

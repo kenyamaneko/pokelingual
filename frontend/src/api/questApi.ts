@@ -14,7 +14,7 @@ import type {
 export interface QuestApi {
   getLocations: () => Promise<{ data: QuestLocationsResponse }>;
   getCurrentQuest: () => Promise<{ data: QuestCurrentResponse }>;
-  newQuest: (locationId: string) => Promise<{ data: QuestNewResponse }>;
+  startQuest: (locationId: string) => Promise<{ data: QuestNewResponse }>;
   scoreTranslation: (translation: string) => Promise<{ data: ScoreResponse }>;
   guessName: (guess: string) => Promise<{ data: GuessResponse }>;
   requestHint: () => Promise<{ data: HintResponse }>;
@@ -31,7 +31,7 @@ export function createQuestApi(basePath: string): QuestApi {
   return {
     getLocations: () => api.get<QuestLocationsResponse>(`${basePath}/locations`),
     getCurrentQuest: () => api.get<QuestCurrentResponse>(`${basePath}/current`),
-    newQuest: (locationId: string) =>
+    startQuest: (locationId: string) =>
       api.get<QuestNewResponse>(`${basePath}/new`, { params: { location: locationId } }),
     scoreTranslation: (translation: string) =>
       api.post<ScoreResponse>(`${basePath}/score`, { translation }),

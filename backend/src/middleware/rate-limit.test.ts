@@ -7,26 +7,26 @@ import type { RateLimitKind } from "../domain/errors.js";
 import type { DailyUsage, RateLimitRepository } from "../domain/ports.js";
 import { defineCase } from "../test/defineCase.js";
 
-function stubRepo(checkAndIncrement: RateLimitRepository["checkAndIncrement"]): RateLimitRepository {
+function stubRepo(recordDailyUsage: RateLimitRepository["recordDailyUsage"]): RateLimitRepository {
   return {
-    checkAndIncrement,
+    recordDailyUsage,
     getUserUsage: async (): Promise<DailyUsage> => ({ count: 0, limit: 100 }),
   };
 }
 
-function makeApp(checkAndIncrement: RateLimitRepository["checkAndIncrement"]) {
+function makeApp(recordDailyUsage: RateLimitRepository["recordDailyUsage"]) {
   const app = express();
   app.use((_req, res, next) => {
     res.locals.userId = "alice";
     next();
   });
-  app.post("/api/quest/score", rateLimit(stubRepo(checkAndIncrement)), (_req, res) => {
+  app.post("/api/quest/score", rateLimit(stubRepo(recordDailyUsage)), (_req, res) => {
     res.status(200).json({ reached: true });
   });
   return app;
 }
 
-function rejectOnlyFirstRequest(kind: RateLimitKind): RateLimitRepository["checkAndIncrement"] {
+function rejectOnlyFirstRequest(kind: RateLimitKind): RateLimitRepository["recordDailyUsage"] {
   let isFirstRequest = true;
   return async () => {
     if (isFirstRequest) {

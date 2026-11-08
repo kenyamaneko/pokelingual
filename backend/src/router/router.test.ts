@@ -101,7 +101,7 @@ function makeApp(o: AppOverrides = {}) {
   };
 
   const rateLimitRepo: RateLimitRepository = {
-    checkAndIncrement: async () => {
+    recordDailyUsage: async () => {
       if (o.rateLimitKind) throw new RateLimitError(o.rateLimitKind);
       return { count: 1, limit: 30 };
     },

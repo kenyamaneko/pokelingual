@@ -1,12 +1,12 @@
 import type { BallType } from "../../../../shared/api-types/quest";
-import { itemSpriteURL } from "../../utils/pokemonSprites";
+import { buildItemSpriteURL } from "../../utils/pokemonSprites";
 
 /** ボール種別ごとのスプライト画像 URL。 */
 export const BALL_SPRITES: Record<BallType, string> = {
-  poke: itemSpriteURL("poke-ball"),
-  great: itemSpriteURL("great-ball"),
-  ultra: itemSpriteURL("ultra-ball"),
-  master: itemSpriteURL("master-ball"),
+  poke: buildItemSpriteURL("poke-ball"),
+  great: buildItemSpriteURL("great-ball"),
+  ultra: buildItemSpriteURL("ultra-ball"),
+  master: buildItemSpriteURL("master-ball"),
 };
 
 /** ボール種別ごとの表示名。 */
@@ -22,6 +22,6 @@ export const BALL_NAMES: Record<BallType, string> = {
  * @param ballType ボール種別。
  * @returns 使用ボタンの表示文言。
  */
-export function captureUseButtonLabel(ballType: BallType): string {
+export function getCaptureUseButtonLabel(ballType: BallType): string {
   return `${BALL_NAMES[ballType]}を　使う`;
 }

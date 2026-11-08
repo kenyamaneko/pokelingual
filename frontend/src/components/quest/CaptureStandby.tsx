@@ -1,6 +1,6 @@
 import type { BallType } from "../../../../shared/api-types/quest";
 import { TutorialInstructionCallout } from "../tutorial/TutorialInstructionCallout";
-import { BALL_SPRITES, BALL_NAMES, captureUseButtonLabel } from "./ballAssets";
+import { BALL_SPRITES, BALL_NAMES, getCaptureUseButtonLabel } from "./ballAssets";
 
 interface CaptureStandbyProps {
   ballType: BallType;
@@ -38,7 +38,7 @@ export function CaptureStandby({ ballType, onUse }: CaptureStandbyProps) {
                    hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl
                    active:scale-95 transform"
       >
-        {captureUseButtonLabel(ballType)}
+        {getCaptureUseButtonLabel(ballType)}
       </button>
     </div>
   );

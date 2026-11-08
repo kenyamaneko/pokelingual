@@ -80,7 +80,7 @@ const grasslandLocation: QuestLocation = {
  * GET /quest/new が指定の出題を返す状態をモックする。
  * @param resp 返す出題レスポンス。
  */
-function mockNewQuest(resp: QuestNewResponse = questResp) {
+function mockStartQuest(resp: QuestNewResponse = questResp) {
   server.use(http.get(apiUrl("/quest/new"), () => HttpResponse.json(resp)));
 }
 
@@ -125,7 +125,7 @@ async function mountAndSelectLocation() {
  * @returns renderHook の戻り値。
  */
 async function mountInTranslating() {
-  mockNewQuest();
+  mockStartQuest();
   const hook = await mountAndSelectLocation();
   await waitFor(() => expect(hook.result.current.phase).toBe("translating"));
   return hook;
@@ -278,7 +278,7 @@ async function startNewQuestAfterProgress() {
   await act(async () => {
     await hook.result.current.requestHint();
   });
-  mockNewQuest({ ...questResp, pokemon_id: 1, description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon." });
+  mockStartQuest({ ...questResp, pokemon_id: 1, description_en: "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon." });
   await act(async () => {
     await hook.result.current.startNewQuest();
   });
@@ -321,7 +321,7 @@ const LOCATIONS_FAIL_GIVEN = "バックエンドでエラーが起きていて�
 const CURRENT_QUEST_FAIL_GIVEN = "外部サービスが応答せず、進行中のクエストを確認できないとき";
 const SERVER_ERROR_GIVEN = "バックエンドでエラーが起きていて、出題を取得できないとき";
 const SERVER_ERROR_ERROR_SCREEN = describeErrorScreen("出題の読み込み失敗", SERVER_ERROR_MESSAGE);
-const NEW_QUEST_FAILURE_MESSAGES = [
+const START_QUEST_FAILURE_MESSAGES = [
   { status: 401, given: "認証に失敗して、出題を取得できないとき", message: "認証に失敗しました", meaning: "認証の失敗" },
   { status: 403, given: "アクセス権が無く、出題を取得できないとき", message: "アクセス権がありません", meaning: "アクセス権が無いこと" },
   { status: 404, given: "セッションが切れていて、出題を取得できないとき", message: "セッションが切断されました", meaning: "セッション切れ" },
@@ -329,13 +329,13 @@ const NEW_QUEST_FAILURE_MESSAGES = [
 ];
 const NETWORK_DOWN_GIVEN = "ネットワークが切れていて、出題を取得できないとき";
 
-function mockNewQuestFailure() {
+function mockStartQuestFailure() {
   server.use(
     http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 500 })),
   );
 }
 
-async function selectLocationWhenNewQuestFails(status: number) {
+async function selectLocationWhenStartQuestFails(status: number) {
   server.use(
     http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status })),
   );
@@ -345,7 +345,7 @@ async function selectLocationWhenNewQuestFails(status: number) {
   return result;
 }
 
-const newQuestFailures = [
+const startQuestFailures = [
   {
     cause: SERVER_ERROR_GIVEN,
     errorScreen: SERVER_ERROR_ERROR_SCREEN,
@@ -356,27 +356,27 @@ const newQuestFailures = [
       ),
   },
   {
-    cause: NEW_QUEST_FAILURE_MESSAGES[0].given,
-    errorScreen: describeErrorScreen(NEW_QUEST_FAILURE_MESSAGES[0].meaning, NEW_QUEST_FAILURE_MESSAGES[0].message),
-    message: NEW_QUEST_FAILURE_MESSAGES[0].message,
+    cause: START_QUEST_FAILURE_MESSAGES[0].given,
+    errorScreen: describeErrorScreen(START_QUEST_FAILURE_MESSAGES[0].meaning, START_QUEST_FAILURE_MESSAGES[0].message),
+    message: START_QUEST_FAILURE_MESSAGES[0].message,
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 401 })),
       ),
   },
   {
-    cause: NEW_QUEST_FAILURE_MESSAGES[1].given,
-    errorScreen: describeErrorScreen(NEW_QUEST_FAILURE_MESSAGES[1].meaning, NEW_QUEST_FAILURE_MESSAGES[1].message),
-    message: NEW_QUEST_FAILURE_MESSAGES[1].message,
+    cause: START_QUEST_FAILURE_MESSAGES[1].given,
+    errorScreen: describeErrorScreen(START_QUEST_FAILURE_MESSAGES[1].meaning, START_QUEST_FAILURE_MESSAGES[1].message),
+    message: START_QUEST_FAILURE_MESSAGES[1].message,
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 403 })),
       ),
   },
   {
-    cause: NEW_QUEST_FAILURE_MESSAGES[2].given,
-    errorScreen: describeErrorScreen(NEW_QUEST_FAILURE_MESSAGES[2].meaning, NEW_QUEST_FAILURE_MESSAGES[2].message),
-    message: NEW_QUEST_FAILURE_MESSAGES[2].message,
+    cause: START_QUEST_FAILURE_MESSAGES[2].given,
+    errorScreen: describeErrorScreen(START_QUEST_FAILURE_MESSAGES[2].meaning, START_QUEST_FAILURE_MESSAGES[2].message),
+    message: START_QUEST_FAILURE_MESSAGES[2].message,
     fail: () =>
       server.use(
         http.get(apiUrl("/quest/new"), () => HttpResponse.json({}, { status: 404 })),
@@ -390,14 +390,14 @@ const newQuestFailures = [
   },
 ];
 
-async function retryAfterNewQuestFailure(fail: () => void, message: string) {
+async function retryAfterStartQuestFailure(fail: () => void, message: string) {
   fail();
   const failed = await mountAndSelectLocation();
   await waitFor(() => expect(failed.result.current.phase).toBe("error"));
   expect(failed.result.current.error).toContain(message);
 
   mockNoQuestInProgress();
-  mockNewQuest();
+  mockStartQuest();
   await act(async () => {
     await failed.result.current.startNewQuest();
   });
@@ -418,7 +418,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       ],
     },
     async () => {
-      mockNewQuest();
+      mockStartQuest();
 
       const { result } = await mountAndSelectLocation();
 
@@ -439,7 +439,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       ],
     },
     async () => {
-      mockNewQuest();
+      mockStartQuest();
 
       const { result } = await mountAndSelectLocation();
 
@@ -461,7 +461,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
       ],
     },
     async () => {
-      mockNewQuestFailure();
+      mockStartQuestFailure();
 
       const { result } = await mountAndSelectLocation();
 
@@ -471,7 +471,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
   );
 
 
-  for (const { status, given, message } of NEW_QUEST_FAILURE_MESSAGES) {
+  for (const { status, given, message } of START_QUEST_FAILURE_MESSAGES) {
     defineCase(
       {
         種別: "部品間結合テスト",
@@ -486,7 +486,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
         ],
       },
       async () => {
-        const result = await selectLocationWhenNewQuestFails(status);
+        const result = await selectLocationWhenStartQuestFails(status);
 
         expect(result.current.error).toContain(message);
       },
@@ -516,7 +516,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
     },
   );
 
-  for (const { cause, errorScreen, message, fail } of newQuestFailures) {
+  for (const { cause, errorScreen, message, fail } of startQuestFailures) {
     defineCase(
       {
         種別: "部品間結合テスト",
@@ -532,7 +532,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
         ],
       },
       async () => {
-        const result = await retryAfterNewQuestFailure(fail, message);
+        const result = await retryAfterStartQuestFailure(fail, message);
 
         await waitFor(() => expect(result.current.phase).toBe("translating"));
       },
@@ -553,7 +553,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
         ],
       },
       async () => {
-        const result = await retryAfterNewQuestFailure(fail, message);
+        const result = await retryAfterStartQuestFailure(fail, message);
 
         await waitFor(() => expect(result.current.phase).toBe("translating"));
         expect(result.current.error).toBeNull();

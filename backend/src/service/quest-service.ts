@@ -98,7 +98,7 @@ export class QuestService {
    * @param userId ユーザ ID。
    * @returns マスク済み説明文と伝説/幻フラグを含む出題レスポンス。
    */
-  async newQuest(userId: string, location: QuestLocation): Promise<QuestNewResponse> {
+  async startQuest(userId: string, location: QuestLocation): Promise<QuestNewResponse> {
     const settings = await this.settingsRepo.getSettings(userId);
     const excluded = buildExcludedPokemonIDs(settings.excluded_pokemon_ids);
     const generations = settings.enabled_generations ?? ALL_GENERATIONS;

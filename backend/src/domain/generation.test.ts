@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 import {
-  generationsToPokemonIDs,
+  collectPokemonIDsByGenerations,
   buildQuestPoolIDs,
   validateEnabledGenerations,
 } from "./generation.js";
@@ -39,7 +39,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
       },
       () => {
-        expect(generationsToPokemonIDs([generation]).has(id)).toBe(true);
+        expect(collectPokemonIDsByGenerations([generation]).has(id)).toBe(true);
       },
     );
   }
@@ -70,7 +70,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` }],
       },
       () => {
-        expect(generationsToPokemonIDs([generation]).has(id)).toBe(false);
+        expect(collectPokemonIDsByGenerations([generation]).has(id)).toBe(false);
       },
     );
   }
@@ -82,7 +82,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
       steps: [{ When: [findIDsOf("第 1 世代だけ")], Then: "図鑑番号は 151 件になる" }],
     },
     () => {
-      expect(generationsToPokemonIDs([1]).size).toBe(151);
+      expect(collectPokemonIDsByGenerations([1]).size).toBe(151);
     },
   );
 
@@ -93,7 +93,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
       steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: "図鑑番号は 207 件になる" }],
     },
     () => {
-      expect(generationsToPokemonIDs([2, 4]).size).toBe(207);
+      expect(collectPokemonIDsByGenerations([2, 4]).size).toBe(207);
     },
   );
 
@@ -106,7 +106,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
       },
       () => {
-        expect(generationsToPokemonIDs([2, 4]).has(id)).toBe(true);
+        expect(collectPokemonIDsByGenerations([2, 4]).has(id)).toBe(true);
       },
     );
   }
@@ -122,7 +122,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         ],
       },
       () => {
-        expect(generationsToPokemonIDs([2, 4]).has(id)).toBe(false);
+        expect(collectPokemonIDsByGenerations([2, 4]).has(id)).toBe(false);
       },
     );
   }
@@ -135,7 +135,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
       steps: [{ When: ["出題世代に世代を 1 つも指定せずに、含まれる図鑑番号の一覧を求める"], Then: "図鑑番号は 0 件になる" }],
     },
     () => {
-      expect(generationsToPokemonIDs([]).size).toBe(0);
+      expect(collectPokemonIDsByGenerations([]).size).toBe(0);
     },
   );
 });

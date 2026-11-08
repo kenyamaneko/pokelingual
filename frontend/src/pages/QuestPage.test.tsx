@@ -137,7 +137,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
     },
     async () => {
       const user = userEvent.setup();
-      let newQuestCall = 0;
+      let startQuestCall = 0;
       const captured: CaptureResponse = {
         captured: true,
         probability: 0.9,
@@ -159,11 +159,11 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
       };
       server.use(
         http.get(apiUrl("/quest/new"), () => {
-          newQuestCall += 1;
+          startQuestCall += 1;
           return HttpResponse.json({
-            pokemon_id: newQuestCall === 1 ? 25 : 4,
+            pokemon_id: startQuestCall === 1 ? 25 : 4,
             description_en:
-              newQuestCall === 1 ? "When several of these Pokémon gather, their electricity could build and cause lightning storms." : "The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.",
+              startQuestCall === 1 ? "When several of these Pokémon gather, their electricity could build and cause lightning storms." : "The flame on its tail indicates this Pokémon’s life force. If it is healthy, the flame burns brightly.",
             is_legendary: false,
             is_mythical: false,
             max_guess_attempts: 3,

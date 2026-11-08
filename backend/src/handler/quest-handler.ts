@@ -23,7 +23,7 @@ export class QuestHandler {
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
-  newQuest = async (req: Request, res: Response) => {
+  startQuest = async (req: Request, res: Response) => {
     const userId = res.locals.userId as string;
     const locationID = req.query.location;
     if (typeof locationID !== "string") {
@@ -36,7 +36,7 @@ export class QuestHandler {
       return;
     }
     try {
-      const resp = await this.questService.newQuest(userId, location);
+      const resp = await this.questService.startQuest(userId, location);
       res.json(resp);
     } catch (err) {
       handleError(res, err, req.path);
