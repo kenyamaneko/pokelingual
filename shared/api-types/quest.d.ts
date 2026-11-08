@@ -23,7 +23,7 @@ export interface QuestLocationsResponse {
 
 /**
  * GET /api/quest/new のレスポンス。ポケモン名は説明文から伏せ字化されている。
- * クエリ `?location=<id>` で探索場所を指定し、その場所のタイプに出題を絞る。
+ * クエリ `?location=<id>` で探索場所を必ず指定し、その場所のタイプに出題を絞る。指定が無い、または存在しない場所のときは 400 を返す。
  */
 export interface QuestNewResponse {
   pokemon_id: number;

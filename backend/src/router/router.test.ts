@@ -139,13 +139,13 @@ function makeApp(o: AppOverrides = {}) {
   return app;
 }
 
-const CALL_QUEST = "クエストの出題 API を呼び出す";
+const CALL_QUEST = "クエストの出題 API に、場所「木漏れ日の森」を指定して呼び出す";
 const CALL_SCORING = "翻訳の採点 API に、訳文「生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ」を指定して呼び出す";
 const CALL_HINT = "名前当てのヒントの取得 API を呼び出す";
 const CALL_CURRENT_QUEST = "進行中のクエストの取得 API を呼び出す";
 const CALL_SETTINGS = "設定の取得 API を呼び出す";
 const CALL_TUTORIAL_STATUS = "チュートリアルの完了状態の取得 API を呼び出す";
-const CALL_TUTORIAL_QUEST = "チュートリアルのクエストの出題 API を呼び出す";
+const CALL_TUTORIAL_QUEST = "チュートリアルのクエストの出題 API に、場所「廃墟の発電所」を指定して呼び出す";
 const CALL_TUTORIAL_SCORING = "チュートリアルの翻訳の採点 API に、訳文「でたらめ」を指定して呼び出す";
 const CALL_TUTORIAL_CAPTURE = "チュートリアルの捕獲 API を呼び出す";
 const CALL_POKEDEX = "図鑑一覧の取得 API を呼び出す";
@@ -180,7 +180,7 @@ describe("[本体:クエスト]出題から捕獲までの一連の操作", () =
     async () => {
       const app = makeApp();
 
-      const quest = await request(app).get("/api/quest/new");
+      const quest = await request(app).get("/api/quest/new?location=sunlit-forest");
       expect(quest.status).toBe(200);
       expect(quest.body.description_en).toBe(
         "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
@@ -234,12 +234,61 @@ describe("[本体:クエスト]クエストの出題", () => {
       },
       async () => {
         const app = makeApp(overrides);
-        const res = await request(app).get("/api/quest/new");
+        const res = await request(app).get("/api/quest/new?location=sunlit-forest");
         expect(res.status).toBe(502);
         expect(res.body).toEqual({ error: "external service unavailable" });
       },
     );
   }
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      観点: ["回復確認"],
+      steps: [
+        {
+          When: ["クエストの出題 API を、場所を指定せずに呼び出す"],
+          Then: "API の応答は、場所の指定が必須であることを示す 400 のエラーになる",
+        },
+        {
+          When: [CALL_QUEST],
+          Then: "API の応答は成功し、出題の英文は「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」になる",
+        },
+      ],
+    },
+    async () => {
+      const app = makeApp();
+
+      const rejected = await request(app).get("/api/quest/new");
+      expect(rejected.status).toBe(400);
+      expect(rejected.body).toEqual({ error: "location is required" });
+
+      const retried = await request(app).get("/api/quest/new?location=sunlit-forest");
+      expect(retried.status).toBe(200);
+      expect(retried.body.description_en).toBe(
+        "A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.",
+      );
+    },
+  );
+
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          When: ["クエストの出題 API に、場所「deep-sea」を指定して呼び出す"],
+          Then: "API の応答は、指定した場所が存在しないことを示す 400 のエラーになる",
+        },
+      ],
+    },
+    async () => {
+      const res = await request(makeApp()).get("/api/quest/new?location=deep-sea");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "unknown location" });
+    },
+  );
 
   defineCase(
     {
@@ -256,7 +305,7 @@ describe("[本体:クエスト]クエストの出題", () => {
     },
     async () => {
       const app = makeApp({ settingsError: new Error("boom") });
-      const res = await request(app).get("/api/quest/new");
+      const res = await request(app).get("/api/quest/new?location=sunlit-forest");
       expect(res.status).toBe(500);
       expect(res.body).toEqual({ error: "internal server error" });
     },
@@ -342,7 +391,7 @@ describe("[本体:採点]翻訳の採点", () => {
     },
     async () => {
       const app = makeApp({ llmError: new Error("llm down") });
-      await request(app).get("/api/quest/new");
+      await request(app).get("/api/quest/new?location=sunlit-forest");
       const res = await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
       expect(res.status).toBe(502);
       expect(res.body).toEqual({ error: "external service unavailable" });
@@ -504,7 +553,7 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/quest/new");
+      await request(app).get("/api/quest/new?location=sunlit-forest");
       await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
 
       const res = await request(app).get("/api/quest/current");
@@ -527,7 +576,7 @@ describe("[本体:クエスト]進行中のクエストの取得", () => {
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/quest/new");
+      await request(app).get("/api/quest/new?location=sunlit-forest");
       await request(app).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
 
       const res = await request(app).get("/api/quest/current");
@@ -592,7 +641,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/quest/new");
+      await request(app).get("/api/quest/new?location=sunlit-forest");
       const res = await request(app).post("/api/quest/hint").send({});
       expect(res.status).toBe(200);
       expect(res.body.types).toEqual(["grass", "poison"]);
@@ -613,7 +662,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/quest/new");
+      await request(app).get("/api/quest/new?location=sunlit-forest");
       const res = await request(app).post("/api/quest/hint").send({});
       expect(res.status).toBe(200);
       expect(res.body.attempts_remaining).toBe(2);
@@ -635,7 +684,7 @@ describe("[本体:名前当て]名前当てのヒント", () => {
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/quest/new");
+      await request(app).get("/api/quest/new?location=sunlit-forest");
       await request(app).post("/api/quest/guess-name").send({ guess: "Charmander" });
       await request(app).post("/api/quest/guess-name").send({ guess: "Squirtle" });
       const res = await request(app).post("/api/quest/hint").send({});
@@ -920,13 +969,31 @@ describe("[本体:チュートリアル]チュートリアル完了状態の取�
 
 async function makeAppWithTutorialGuessed() {
   const app = makeApp();
-  await request(app).get("/api/tutorial/quest/new");
+  await request(app).get("/api/tutorial/quest/new?location=ruined-powerplant");
   await request(app).post("/api/tutorial/quest/score").send({ translation: "電気タイプのねずみポケモン" });
   await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
   return app;
 }
 
 describe("[本体:チュートリアル]固定シナリオのクエスト", () => {
+  defineCase(
+    {
+      種別: "部品間結合テスト",
+      正常異常: "異常系",
+      steps: [
+        {
+          When: ["チュートリアルのクエストの出題 API を、場所を指定せずに呼び出す"],
+          Then: "API の応答は、場所の指定が必須であることを示す 400 のエラーになる",
+        },
+      ],
+    },
+    async () => {
+      const res = await request(makeApp()).get("/api/tutorial/quest/new");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "location is required" });
+    },
+  );
+
   defineCase(
     {
       種別: "部品間結合テスト",
@@ -939,7 +1006,7 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       ],
     },
     async () => {
-      const res = await request(makeApp()).get("/api/tutorial/quest/new");
+      const res = await request(makeApp()).get("/api/tutorial/quest/new?location=ruined-powerplant");
       expect(res.status).toBe(200);
       expect(res.body.pokemon_id).toBe(25);
     },
@@ -957,7 +1024,7 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       ],
     },
     async () => {
-      const res = await request(makeApp()).get("/api/tutorial/quest/new");
+      const res = await request(makeApp()).get("/api/tutorial/quest/new?location=ruined-powerplant");
       expect(res.status).toBe(200);
       expect(res.body.description_en).toBe("It is an Electric-type Mouse Pokémon.");
     },
@@ -979,7 +1046,7 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
       },
       async () => {
         const app = makeApp(overrides);
-        await request(app).get("/api/tutorial/quest/new");
+        await request(app).get("/api/tutorial/quest/new?location=ruined-powerplant");
         const res = await request(app).post("/api/tutorial/quest/score").send({ translation: "でたらめ" });
         expect(res.status).toBe(200);
         expect(res.body.score).toBe(99);
@@ -1001,7 +1068,7 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/tutorial/quest/new");
+      await request(app).get("/api/tutorial/quest/new?location=ruined-powerplant");
       const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "pikachu" });
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ correct: true, ball_type: "ultra" });
@@ -1022,7 +1089,7 @@ describe("[本体:チュートリアル]固定シナリオのクエスト", () =
     },
     async () => {
       const app = makeApp();
-      await request(app).get("/api/tutorial/quest/new");
+      await request(app).get("/api/tutorial/quest/new?location=ruined-powerplant");
       const res = await request(app).post("/api/tutorial/quest/guess-name").send({ guess: "ピカチュウ" });
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ correct: true, ball_type: "great" });

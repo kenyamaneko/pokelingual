@@ -145,7 +145,7 @@ function buildTwoInstances(keyPrefix: string) {
 async function playQuestToCaptureAlternatingInstances(keyPrefix: string) {
   const { instanceA, instanceB } = buildTwoInstances(keyPrefix);
 
-  const quest = await request(instanceA).get("/api/quest/new");
+  const quest = await request(instanceA).get("/api/quest/new?location=sunlit-forest");
   expect(quest.status).toBe(200);
 
   const score = await request(instanceB).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
@@ -165,7 +165,7 @@ async function playQuestToCaptureAlternatingInstances(keyPrefix: string) {
 async function getCurrentQuestOnOtherInstanceAfterScore(keyPrefix: string) {
   const { instanceA, instanceB } = buildTwoInstances(keyPrefix);
 
-  await request(instanceA).get("/api/quest/new");
+  await request(instanceA).get("/api/quest/new?location=sunlit-forest");
   await request(instanceA).post("/api/quest/score").send({ translation: "生まれたときから背中に不思議なタネが植えられていて、タネは体とともに育つ" });
 
   const current = await request(instanceB).get("/api/quest/current");

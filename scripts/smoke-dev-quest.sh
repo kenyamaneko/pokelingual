@@ -26,7 +26,7 @@ auth_curl() {
 }
 
 echo "== GET /api/quest/new =="
-new_resp=$(auth_curl "${SERVICE_URL}/api/quest/new")
+new_resp=$(auth_curl "${SERVICE_URL}/api/quest/new?location=sunlit-forest")
 description=$(echo "${new_resp}" | jq -r '.description_en // empty')
 if [ -z "${description}" ]; then
   echo "FAIL: /api/quest/new did not return description_en"
