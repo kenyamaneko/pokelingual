@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { MAX_FINAL_SCORE } from "../service/quest-service.js";
+import { SCORE_MAX } from "../service/quest-service.js";
 import type { BallType } from "../../../shared/api-types/quest.js";
 
 // dotenv は既に process.env にある値を上書きしないため、配列の先頭ほど優先される。
@@ -34,10 +34,10 @@ export interface Config {
   /** ボール種別ごとの捕獲確率ボーナス (ロジットへの加算値)。master は確率計算をバイパスするため対象外。 */
   ballCaptureBonus: Record<Exclude<BallType, "master">, number>;
   /** 幻・伝説を抽選する確率 (場所によらず低確率で登場させる)。乱数の上位この割合が当たり。 */
-  legendaryEncounterRate: number;
+  legendaryAppearanceRate: number;
   /** 場所選択に一度に提示する場所の数。 */
   locationChoiceCount: number;
-  /** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要な最終評価点の下限。 */
+  /** 伝説・幻ポケモンをマスターボールで確定捕獲するために必要なスコアの下限。 */
   masterBallMinScore: number;
   /** ユーザが除外指定できるポケモン数の上限。 */
   maxExcludedPokemonCount: number;
@@ -201,9 +201,9 @@ export function loadConfig(): Config {
       great: requireFloatEnv("BALL_CAPTURE_BONUS_GREAT", 0),
       ultra: requireFloatEnv("BALL_CAPTURE_BONUS_ULTRA", 0),
     },
-    legendaryEncounterRate: requireFloatEnv("LEGENDARY_ENCOUNTER_RATE", 0, 1),
+    legendaryAppearanceRate: requireFloatEnv("LEGENDARY_APPEARANCE_RATE", 0, 1),
     locationChoiceCount: requireIntEnv("LOCATION_CHOICE_COUNT"),
-    masterBallMinScore: requireIntEnv("MASTER_BALL_MIN_SCORE", 0, MAX_FINAL_SCORE),
+    masterBallMinScore: requireIntEnv("MASTER_BALL_MIN_SCORE", 0, SCORE_MAX),
     maxExcludedPokemonCount: requireIntEnv("MAX_EXCLUDED_POKEMON_COUNT"),
   };
 }

@@ -7,7 +7,7 @@ export const DEFAULT_QUEST_TUNING: QuestTuningConfig = {
   fuzzyMatchMinNameLength: 4,
   fuzzyMatchMaxDistance: 2,
   ballCaptureBonus: { poke: 0, great: 1.5, ultra: 3.0 },
-  legendaryEncounterRate: 0.01,
+  legendaryAppearanceRate: 0.01,
   locationChoiceCount: 4,
   masterBallMinScore: 70,
 };

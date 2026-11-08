@@ -1,12 +1,12 @@
-/** 除外ポケモンID の検証結果。ok=false のとき message に 400 用の理由を持つ。 */
+/** 除外ポケモンの全国図鑑番号の検証結果。ok=false のとき message に 400 用の理由を持つ。 */
 export type ExcludedIDsValidation =
   | { ok: true; ids: number[] }
   | { ok: false; message: string };
 
 /**
- * 除外ポケモンID リストをバリデーションし、正規化 (重複排除・昇順) して返す。
+ * 除外ポケモンの全国図鑑番号のリストをバリデーションし、正規化 (重複排除・昇順) して返す。
  * @param raw リクエストで受け取った未バリデーションの値。
- * @param servableIDs 供給可能な図鑑番号の集合。この集合に無い ID は許可しない。
+ * @param servableIDs 供給可能な全国図鑑番号の集合。この集合に無い番号は許可しない。
  * @param maxCount 除外できる最大件数。
  * @returns 検証済み ID 配列、または理由付きの失敗。
  */

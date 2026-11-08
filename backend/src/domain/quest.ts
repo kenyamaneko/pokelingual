@@ -33,7 +33,7 @@ export interface QuestSession {
   hint_reveal_count: number;
 }
 
-/** 翻訳採点結果。算出したスコアと講評文。 */
+/** 採点の結果。算出したスコアと講評文。 */
 export interface ScoreResult {
   score: number;
   review: string;

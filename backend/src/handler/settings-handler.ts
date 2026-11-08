@@ -15,7 +15,7 @@ export class SettingsHandler {
   constructor(private settingsService: SettingsService) {}
 
   /**
-   * GET /settings — ユーザ自身の除外ポケモンIDを返す。
+   * GET /settings — ユーザ自身の除外ポケモンの全国図鑑番号を返す。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */
@@ -30,7 +30,7 @@ export class SettingsHandler {
   };
 
   /**
-   * PUT /settings/excluded-pokemon — 除外ポケモンIDリストをバリデーションして更新する。
+   * PUT /settings/excluded-pokemon — 除外ポケモンの全国図鑑番号リストをバリデーションして更新する。
    * @param req Express リクエスト。
    * @param res Express レスポンス。
    */

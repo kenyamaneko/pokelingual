@@ -23,7 +23,7 @@ function clearConfigEnv(): void {
     "BALL_CAPTURE_BONUS_POKE",
     "BALL_CAPTURE_BONUS_GREAT",
     "BALL_CAPTURE_BONUS_ULTRA",
-    "LEGENDARY_ENCOUNTER_RATE",
+    "LEGENDARY_APPEARANCE_RATE",
     "LOCATION_CHOICE_COUNT",
     "MASTER_BALL_MIN_SCORE",
     "MAX_EXCLUDED_POKEMON_COUNT",
@@ -38,7 +38,7 @@ function setDefaultTuningEnv(): void {
   process.env.BALL_CAPTURE_BONUS_POKE = "0";
   process.env.BALL_CAPTURE_BONUS_GREAT = "1.5";
   process.env.BALL_CAPTURE_BONUS_ULTRA = "3.0";
-  process.env.LEGENDARY_ENCOUNTER_RATE = "0.01";
+  process.env.LEGENDARY_APPEARANCE_RATE = "0.01";
   process.env.LOCATION_CHOICE_COUNT = "4";
   process.env.MASTER_BALL_MIN_SCORE = "70";
   process.env.MAX_EXCLUDED_POKEMON_COUNT = "30";
@@ -198,7 +198,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 0 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要なスコアの下限は 0 になる" }],
     },
     () => {
       setMockModeEnv();
@@ -212,7 +212,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が 99 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 99 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、MASTER_BALL_MIN_SCORE が 99 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要なスコアの下限は 99 になる" }],
     },
     () => {
       setMockModeEnv();
@@ -239,12 +239,12 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_APPEARANCE_RATE が 0 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0 になる" }],
     },
     () => {
       setMockModeEnv();
-      process.env.LEGENDARY_ENCOUNTER_RATE = "0";
-      expect(loadConfig().legendaryEncounterRate).toBe(0);
+      process.env.LEGENDARY_APPEARANCE_RATE = "0";
+      expect(loadConfig().legendaryAppearanceRate).toBe(0);
     },
   );
 
@@ -253,12 +253,12 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
       種別: "単体テスト",
       正常異常: "正常系",
       観点: ["境界値"],
-      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 1 になる" }],
+      steps: [{ Given: `${MOCK_MODE}、LEGENDARY_APPEARANCE_RATE が 1 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 1 になる" }],
     },
     () => {
       setMockModeEnv();
-      process.env.LEGENDARY_ENCOUNTER_RATE = "1";
-      expect(loadConfig().legendaryEncounterRate).toBe(1);
+      process.env.LEGENDARY_APPEARANCE_RATE = "1";
+      expect(loadConfig().legendaryAppearanceRate).toBe(1);
     },
   );
 
@@ -319,24 +319,24 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     },
   );
 
-  const LEGENDARY_ENCOUNTER_RATE_CASES: { value: string; 観点: readonly Viewpoint[] }[] = [
+  const LEGENDARY_APPEARANCE_RATE_CASES: { value: string; 観点: readonly Viewpoint[] }[] = [
     { value: "-0.01", 観点: ["境界値"] },
     { value: "1.01", 観点: ["境界値"] },
     { value: "abc", 観点: [] },
   ];
 
-  for (const { value, 観点 } of LEGENDARY_ENCOUNTER_RATE_CASES) {
+  for (const { value, 観点 } of LEGENDARY_APPEARANCE_RATE_CASES) {
     defineCase(
       {
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
-        steps: [{ Given: `${MOCK_MODE}、LEGENDARY_ENCOUNTER_RATE が ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_ENCOUNTER_RATE が 0 以上 1 以下の数でないことを示す起動エラーになる" }],
+        steps: [{ Given: `${MOCK_MODE}、LEGENDARY_APPEARANCE_RATE が ${value} のとき`, When: [LOAD_CONFIG], Then: "LEGENDARY_APPEARANCE_RATE が 0 以上 1 以下の数でないことを示す起動エラーになる" }],
       },
       () => {
         setMockModeEnv();
-        process.env.LEGENDARY_ENCOUNTER_RATE = value;
-        expect(() => loadConfig()).toThrow(/invalid env: LEGENDARY_ENCOUNTER_RATE=.*must be a number between 0 and 1/);
+        process.env.LEGENDARY_APPEARANCE_RATE = value;
+        expect(() => loadConfig()).toThrow(/invalid env: LEGENDARY_APPEARANCE_RATE=.*must be a number between 0 and 1/);
       },
     );
   }
@@ -535,12 +535,12 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、LEGENDARY_ENCOUNTER_RATE が 0.02 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0.02 になる" }],
+      steps: [{ Given: `${REAL_MODE}、LEGENDARY_APPEARANCE_RATE が 0.02 のとき`, When: [LOAD_CONFIG], Then: "起動設定の幻・伝説の出現確率は 0.02 になる" }],
     },
     () => {
       setRealModeEnv();
-      process.env.LEGENDARY_ENCOUNTER_RATE = "0.02";
-      expect(loadConfig().legendaryEncounterRate).toBe(0.02);
+      process.env.LEGENDARY_APPEARANCE_RATE = "0.02";
+      expect(loadConfig().legendaryAppearanceRate).toBe(0.02);
     },
   );
 
@@ -561,7 +561,7 @@ describe("[運用:起動と設定]起動設定の読み込み", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: `${REAL_MODE}、MASTER_BALL_MIN_SCORE が 80 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要な最終評価点の下限は 80 になる" }],
+      steps: [{ Given: `${REAL_MODE}、MASTER_BALL_MIN_SCORE が 80 のとき`, When: [LOAD_CONFIG], Then: "起動設定の確定捕獲に必要なスコアの下限は 80 になる" }],
     },
     () => {
       setRealModeEnv();

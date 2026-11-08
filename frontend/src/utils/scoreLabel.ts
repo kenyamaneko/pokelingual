@@ -17,7 +17,7 @@ export const SCORE_LABELS = {
 
 /**
  * スコア帯に応じた "こうか" ラベルを返す。
- * @param score 採点スコア (最終評価点、0-99)。
+ * @param score スコア (0-99)。
  * @returns スコア帯のラベル。通常帯では null。
  */
 export function getScoreLabel(score: number): string | null {

@@ -14,7 +14,7 @@ export const settingsApi = {
   getSettings: () => api.get<SettingsResponse>("/settings"),
   /**
    * PUT /settings/excluded-pokemon — 除外ポケモンを更新する。
-   * @param pokemonIDs 除外するポケモン ID の配列。
+   * @param pokemonIDs 除外する全国図鑑番号の配列。
    * @returns 更新結果のレスポンス。
    */
   updateExcludedPokemon: (pokemonIDs: number[]) =>

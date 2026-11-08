@@ -27,8 +27,8 @@ export class SnapshotPokemonClient implements PokemonClient {
   private readonly servableIDs: readonly number[];
 
   /**
-   * 図鑑番号をキーとする索引と、タイプ別の図鑑番号の逆引き索引を構築する。
-   * @param records スナップショットの全ポケモン (図鑑番号は一意)。
+   * 全国図鑑番号をキーとする索引と、タイプ別の全国図鑑番号の逆引き索引を構築する。
+   * @param records スナップショットの全ポケモン (全国図鑑番号は一意)。
    */
   constructor(records: readonly PokemonRecord[]) {
     for (const record of records) {
@@ -43,25 +43,25 @@ export class SnapshotPokemonClient implements PokemonClient {
   }
 
   /**
-   * スナップショットに含まれる図鑑番号を昇順で返す。
-   * @returns 図鑑番号の配列。
+   * スナップショットに含まれる全国図鑑番号を昇順で返す。
+   * @returns 全国図鑑番号の配列。
    */
   getServableIDs(): readonly number[] {
     return this.servableIDs;
   }
 
   /**
-   * 指定タイプを持つポケモンの図鑑番号を返す。
+   * 指定タイプを持つポケモンの全国図鑑番号を返す。
    * @param type ポケモンのタイプ。
-   * @returns 該当する図鑑番号の配列。
+   * @returns 該当する全国図鑑番号の配列。
    */
   async getIDsByType(type: PokemonType): Promise<readonly number[]> {
     return this.idsByType.get(type) ?? [];
   }
 
   /**
-   * 図鑑番号でポケモンを取得する。sprite_url は図鑑番号から組み立てて付与する。
-   * @param id 図鑑番号。
+   * 全国図鑑番号でポケモンを取得する。sprite_url は全国図鑑番号から組み立てて付与する。
+   * @param id 全国図鑑番号。
    * @returns 該当ポケモン。
    * @throws スナップショットに存在しない場合。
    */

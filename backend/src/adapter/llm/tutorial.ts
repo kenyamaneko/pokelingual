@@ -3,7 +3,7 @@ import type { LLMClient } from "../../domain/ports.js";
 const TUTORIAL_UNITS = [1.0];
 const TUTORIAL_REVIEW = "かんぺきな　ほんやくだ！";
 
-/** 翻訳採点に対して常に満点を返す LLMClient 実装。 */
+/** 採点に対して常に満点を返す LLMClient 実装。 */
 export class TutorialLLMClient implements LLMClient {
   /**
    * @param prompt サービス側が組み立てたプロンプト文字列。

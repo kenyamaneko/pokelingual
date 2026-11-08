@@ -1,7 +1,7 @@
 /**
- * 図鑑番号 (例: 25) を 3 桁ゼロパディング文字列 (例: "025") に整形する。
- * @param id 図鑑番号。
- * @returns 3 桁ゼロパディングした文字列。
+ * 全国図鑑番号 (例: 25) を 3 桁にゼロ埋めした文字列 (例: "025") に整形する。
+ * @param id 全国図鑑番号。
+ * @returns 3 桁にゼロ埋めした文字列。
  */
 export function formatPokemonId(id: number): string {
   const POKEMON_ID_DIGITS = 3;

@@ -19,9 +19,9 @@ export interface RandomSource {
 /** ポケモン情報の取得を担うデータソースポート。抽選 (どの ID を出すか) はサービス側が行い、実装はデータ提供のみを担う。 */
 export interface PokemonClient {
   getPokemonByID(id: number): Promise<Pokemon>;
-  /** このデータソースが取得できる図鑑番号の一覧 (mock は固定リスト、real はスナップショットに含まれる番号)。 */
+  /** このデータソースが取得できる全国図鑑番号の一覧 (mock は固定リスト、real はスナップショットに含まれる番号)。 */
   getServableIDs(): readonly number[];
-  /** 指定タイプを持つポケモンの図鑑番号 (このデータソースが扱える範囲内)。場所フィルタで使う。 */
+  /** 指定タイプを持つポケモンの全国図鑑番号 (このデータソースが扱える範囲内)。場所フィルタで使う。 */
   getIDsByType(type: PokemonType): Promise<readonly number[]>;
 }
 

@@ -78,7 +78,7 @@ export class PokedexService {
   /**
    * 苦手ポケモン名前検索の候補母集団を返す。
    * ユーザ実績・出題世代・苦手ポケモン設定によらず、取得できる全種族データを対象にする。
-   * @returns 検索候補 (図鑑番号・日本語名) の配列。
+   * @returns 検索候補 (全国図鑑番号・日本語名) の配列。
    */
   async getSearchCandidates(): Promise<PokemonSearchCandidate[]> {
     const targetIDs = this.pokemonClient.getServableIDs();
@@ -89,7 +89,7 @@ export class PokedexService {
   /**
    * 特定ポケモンのユーザ実績と種別詳細を合成して返す。
    * @param userId ユーザ ID。
-   * @param pokemonID ポケモン ID。
+   * @param pokemonID 全国図鑑番号。
    * @returns ユーザ実績とポケモンの種別詳細を合成したレスポンス。
    */
   async getPokemonDetail(userId: string, pokemonID: number): Promise<PokemonDetailResponse> {

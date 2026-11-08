@@ -22,14 +22,14 @@ const TUTORIAL_PIKACHU: PokemonRecord = {
 /** 出題を常にピカチュウ固定で供給する PokemonClient 実装。 */
 export class TutorialPokemonClient implements PokemonClient {
   /**
-   * @returns ピカチュウの図鑑番号のみ。
+   * @returns ピカチュウの全国図鑑番号のみ。
    */
   getServableIDs(): readonly number[] {
     return [TUTORIAL_PIKACHU.id];
   }
 
   /**
-   * @param id ポケモン ID。
+   * @param id 全国図鑑番号。
    * @returns ピカチュウ。
    * @throws ピカチュウ以外を要求された場合。
    */
@@ -42,7 +42,7 @@ export class TutorialPokemonClient implements PokemonClient {
 
   /**
    * @param type ポケモンのタイプ。
-   * @returns でんきタイプに合致する図鑑番号。
+   * @returns でんきタイプに合致する全国図鑑番号。
    */
   async getIDsByType(type: PokemonType): Promise<readonly number[]> {
     return TUTORIAL_PIKACHU.types.includes(type) ? [TUTORIAL_PIKACHU.id] : [];

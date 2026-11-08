@@ -17,10 +17,10 @@ import { HINT_MOVE_COUNT } from "../src/domain/quest.js";
 import type { PokemonRecord } from "../src/domain/pokemon.js";
 
 /**
- * PokeAPI/api-data のローカルクローンから、指定図鑑番号の species / pokemon JSON を読む。
+ * PokeAPI/api-data のローカルクローンから、指定した全国図鑑番号の species / pokemon JSON を読む。
  * @param apiDataDir api-data リポジトリのルートパス。
  * @param resource `pokemon-species` または `pokemon`。
- * @param id 図鑑番号。
+ * @param id 全国図鑑番号。
  * @returns パース済みの JSON。
  */
 async function readApiData(apiDataDir: string, resource: string, id: number): Promise<unknown> {
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
 
   if (!values["api-data"] || !values.out || !values["max-id"]) {
     throw new Error(
-      "usage: tsx scripts/generate-pokemon-snapshot.ts --api-data <PokeAPI/api-data path> --out <output.json> --max-id <取得する末尾の図鑑番号>",
+      "usage: tsx scripts/generate-pokemon-snapshot.ts --api-data <PokeAPI/api-data path> --out <output.json> --max-id <取得する末尾の全国図鑑番号>",
     );
   }
 

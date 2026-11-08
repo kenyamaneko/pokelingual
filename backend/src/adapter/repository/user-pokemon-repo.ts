@@ -17,7 +17,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
   /**
    * 遭遇/捕獲を 1 件記録する。既存ドキュメントがあれば集計値を更新する。
    * @param userId ユーザ ID。
-   * @param pokemonID ポケモン ID。
+   * @param pokemonID 全国図鑑番号。
    * @param score 今回のスコア。
    * @param isCaptured 捕獲に成功したか。
    */
@@ -65,7 +65,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
   }
 
   /**
-   * ユーザが遭遇したポケモン一覧をポケモンID昇順で返す。
+   * ユーザが遭遇したポケモン一覧を全国図鑑番号の昇順で返す。
    * @param userId ユーザ ID。
    * @returns 遭遇済みポケモンの配列 (ID 昇順)。
    */
@@ -82,7 +82,7 @@ export class UserPokemonRepo implements UserPokemonRepository {
   /**
    * 特定ポケモンのユーザ実績を取得する。
    * @param userId ユーザ ID。
-   * @param pokemonID ポケモン ID。
+   * @param pokemonID 全国図鑑番号。
    * @returns 該当ポケモンのユーザ実績。
    * @throws 未遭遇 (ドキュメント不在) の場合。
    */

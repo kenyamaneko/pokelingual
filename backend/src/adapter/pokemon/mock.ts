@@ -73,22 +73,22 @@ const mockPokemon: PokemonRecord[] = [
   },
 ];
 
-/** 固定リストの図鑑番号 (リスト順)。抽選はサービス側がこの一覧と許可 ID を突き合わせて行う。 */
+/** 固定リストの全国図鑑番号 (リスト順)。抽選はサービス側がこの一覧と許可された番号を突き合わせて行う。 */
 const MOCK_POKEMON_IDS: readonly number[] = mockPokemon.map((p) => p.id);
 
 /** 外部依存を呼ばずに固定リストから返す開発用 PokemonClient 実装。抽選ロジックは持たず、データ提供のみを担う。 */
 export class MockPokemonClient implements PokemonClient {
   /**
-   * このデータソースが取得できる図鑑番号の一覧 (固定リスト順)。
-   * @returns 図鑑番号の配列。
+   * このデータソースが取得できる全国図鑑番号の一覧 (固定リスト順)。
+   * @returns 全国図鑑番号の配列。
    */
   getServableIDs(): readonly number[] {
     return MOCK_POKEMON_IDS;
   }
 
   /**
-   * @param id ポケモン ID。
-   * @returns 該当ポケモン。sprite_url は図鑑番号から組み立てて付与する。
+   * @param id 全国図鑑番号。
+   * @returns 該当ポケモン。sprite_url は全国図鑑番号から組み立てて付与する。
    * @throws 固定リストに存在しない場合。
    */
   async getPokemonByID(id: number): Promise<Pokemon> {
@@ -98,9 +98,9 @@ export class MockPokemonClient implements PokemonClient {
   }
 
   /**
-   * 指定タイプを持つ固定リストのポケモンの図鑑番号を返す。
+   * 指定タイプを持つ固定リストのポケモンの全国図鑑番号を返す。
    * @param type ポケモンのタイプ。
-   * @returns 該当する図鑑番号の配列。
+   * @returns 該当する全国図鑑番号の配列。
    */
   async getIDsByType(type: PokemonType): Promise<readonly number[]> {
     return mockPokemon.filter((p) => p.types.includes(type)).map((p) => p.id);

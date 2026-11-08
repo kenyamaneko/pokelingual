@@ -1,5 +1,5 @@
 /**
- * 全国図鑑での世代境界。start/end は両端を含む図鑑番号。対象は第1〜8世代 (全国図鑑 1〜898)。
+ * 全国図鑑での世代境界。start/end は両端を含む全国図鑑番号。対象は第1〜8世代 (全国図鑑 1〜898)。
  */
 export const GENERATION_RANGES = [
   { generation: 1, start: 1, end: 151 },
@@ -16,9 +16,9 @@ export const GENERATION_RANGES = [
 export const ALL_GENERATIONS: number[] = GENERATION_RANGES.map((r) => r.generation);
 
 /**
- * 選択世代を図鑑番号 ID 集合に展開する。
+ * 選択世代を全国図鑑番号の集合に展開する。
  * @param generations 選択された世代番号。
- * @returns 選択世代に含まれる図鑑番号の集合。
+ * @returns 選択世代に含まれる全国図鑑番号の集合。
  */
 export function collectPokemonIDsByGenerations(generations: readonly number[]): Set<number> {
   const selected = new Set(generations);
@@ -33,10 +33,10 @@ export function collectPokemonIDsByGenerations(generations: readonly number[]): 
 }
 
 /**
- * 出題プールの図鑑番号 ID 集合を作る。選択世代を展開し、除外 ID を差し引く。
+ * 出題プールの全国図鑑番号の集合を作る。選択世代を展開し、除外分を差し引く。
  * @param generations 選択された世代番号。
- * @param excludedIDs 除外する図鑑番号。
- * @returns 出題プールの図鑑番号の集合。
+ * @param excludedIDs 除外する全国図鑑番号。
+ * @returns 出題プールの全国図鑑番号の集合。
  */
 export function buildQuestPoolIDs(
   generations: readonly number[],

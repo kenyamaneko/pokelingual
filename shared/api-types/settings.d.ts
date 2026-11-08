@@ -2,7 +2,7 @@
  * Pokelingual のユーザ設定 API 契約型。両側で import type する SSOT。
  */
 
-/** GET /api/settings のレスポンス。ユーザ自身の除外ポケモンIDと出題対象の世代。 */
+/** GET /api/settings のレスポンス。ユーザ自身の除外ポケモンの全国図鑑番号と出題対象の世代。 */
 export interface SettingsResponse {
   excluded_pokemon_ids: number[];
   /** 出題対象の世代。未設定ユーザーは全世代が返る。 */

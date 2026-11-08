@@ -41,9 +41,9 @@ export class UserSettingsRepo implements UserSettingsRepository {
   }
 
   /**
-   * 除外ポケモンID リストを上書き保存する。
+   * 除外ポケモンの全国図鑑番号のリストを上書き保存する。
    * @param userId ユーザ ID。
-   * @param pokemonIDs 除外するポケモン ID の配列。
+   * @param pokemonIDs 除外する全国図鑑番号の配列。
    */
   async updateExcludedPokemon(userId: string, pokemonIDs: number[]): Promise<void> {
     await this.getSettingsRef(userId).set(

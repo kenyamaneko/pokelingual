@@ -26,7 +26,7 @@ function hasReachedStage(stage: RevealStage, target: RevealStage): boolean {
 }
 
 /**
- * 採点結果画面を、出題英文 → 君の翻訳 → 解答例 → 博士のコメント → HP メーターの順に
+ * 採点結果画面を、出題英文 → 君の翻訳 → 解答例 → 講評 → HP メーターの順に
  * 段階的に開示する。各段は前段階の完了と要素の初可視化の両方を満たしたときに始まる。
  * @param props description / userTranslation / score を含む props。
  * @returns 採点結果表示の要素。
