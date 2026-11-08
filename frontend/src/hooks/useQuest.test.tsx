@@ -159,13 +159,13 @@ const captureFailed: CaptureResponse = {
   is_mythical: false,
 };
 
-const SCORE_STATE = "AI が翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」に最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」を付ける";
+const SCORE_STATE = "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」の採点結果が、スコア 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」である";
 const ELECTRIC_HINT_STATE =
   "出題されたポケモンのタイプが「でんき」で、最大挑戦回数が 3 回である";
 const CAPTURE_SUCCESS_STATE =
-  "捕獲の抽選に当たり、捕獲確率が 0.9、出題されたポケモンがピカチュウ、最終評価点が 75、使うボールがハイパーボールである";
+  "捕獲の抽選に当たり、捕獲確率が 0.9、出題されたポケモンがピカチュウ、スコアが 75、使うボールがハイパーボールである";
 const CAPTURE_FAILURE_DETAIL_STATE =
-  "捕獲の抽選に外れ、捕獲確率が 0.2、出題されたポケモンがピカチュウ、最終評価点が 40、使うボールがモンスターボールである";
+  "捕獲の抽選に外れ、捕獲確率が 0.2、出題されたポケモンがピカチュウ、スコアが 40、使うボールがモンスターボールである";
 const SKIP_SUCCESS_STATE = "バックエンドが正常に動作している";
 
 interface CommunicationOperation {
@@ -188,7 +188,7 @@ const translationOperation: CommunicationOperation = {
   call: (r) => r.submitTranslation("このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある"),
   buildSuccess: () => HttpResponse.json(scoreResp),
   recoveredOutcome:
-    "名前当て画面が表示され、採点結果は、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる",
+    "名前当て画面が表示され、採点結果は、スコア 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる",
   expectRecovered: (r) => {
     expect(r.phase).toBe("guessing");
     expect(r.score).toEqual(scoreResp);
@@ -235,7 +235,7 @@ const captureOperation: CommunicationOperation = {
   call: (r) => r.capture(),
   buildSuccess: () => HttpResponse.json(captureResp),
   recoveredOutcome:
-    "捕獲演出画面が表示され、捕獲結果は、捕獲成功、捕獲確率 0.9、ピカチュウ、最終評価点 75、ハイパーボールになる",
+    "捕獲演出画面が表示され、捕獲結果は、捕獲成功、捕獲確率 0.9、ピカチュウ、スコア 75、ハイパーボールになる",
   expectRecovered: (r) => {
     expect(r.phase).toBe("revealing");
     expect(r.captureResult).toEqual(captureResp);
@@ -285,7 +285,7 @@ async function startNewQuestAfterProgress() {
   return hook;
 }
 
-const QUEST_DETAIL = "図鑑番号 25、英語の説明文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、伝説でも幻でもない、最大挑戦回数 3 回";
+const QUEST_DETAIL = "全国図鑑番号 25、英語の説明文「When several of these Pokémon gather, their electricity could build and cause lightning storms.」、伝説でも幻でもない、最大挑戦回数 3 回";
 const NO_QUEST_AND_QUEST_AVAILABLE = "進行中のクエストが無く、出題を取得できるとき";
 const NO_QUEST_AND_LOCATIONS_AVAILABLE = "進行中のクエストが無く、場所の候補を取得できるとき";
 const NO_QUEST_AND_GRASSLAND_ONLY = "進行中のクエストが無く、場所の候補が「木漏れ日の森」の 1 件だけのとき";
@@ -305,7 +305,7 @@ const SELECT_LOCATION_SCREEN = "場所選択画面が表示される";
 const GRASSLAND_LIST = "場所の候補は、「木漏れ日の森」の 1 件になる";
 const ERROR_MESSAGE_CLEARED = "エラーメッセージが消える";
 const QUEST_CONTENT = `出題の内容は、${QUEST_DETAIL}になる`;
-const SCORE_CONTENT = "採点結果は、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる";
+const SCORE_CONTENT = "採点結果は、スコア 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」になる";
 const HINT_CONTENT = "ヒントの内容は、タイプ「でんき」、残り挑戦回数 2 になる";
 const ULTRA_BALL = "獲得したボールはハイパーボールになる";
 
@@ -563,7 +563,7 @@ describe("[本体:クエスト]場所選択と出題の開始", () => {
 });
 
 const SCORE_GIVEN =
-  "AI が翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」に最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」を付けるとき";
+  "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」の採点結果が、スコア 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」であるとき";
 const SUBMIT_TRANSLATION = "翻訳「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」を送信する";
 
 async function submitTranslationSuccessfully() {
@@ -965,7 +965,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
         {
           Given: CAPTURE_SUCCESS_GIVEN,
           When: [EXECUTE_CAPTURE],
-          Then: "捕獲結果は、捕獲成功、捕獲確率 0.9、ピカチュウ、最終評価点 75、ハイパーボールになる",
+          Then: "捕獲結果は、捕獲成功、捕獲確率 0.9、ピカチュウ、スコア 75、ハイパーボールになる",
         },
       ],
     },
@@ -1003,7 +1003,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
         {
           Given: CAPTURE_FAILURE_DETAIL_GIVEN,
           When: [EXECUTE_CAPTURE, FINISH_CAPTURE_EFFECT],
-          Then: "捕獲結果は、捕獲失敗、捕獲確率 0.2、ピカチュウ、最終評価点 40、モンスターボールになる",
+          Then: "捕獲結果は、捕獲失敗、捕獲確率 0.2、ピカチュウ、スコア 40、モンスターボールになる",
         },
       ],
     },
@@ -1016,7 +1016,7 @@ describe("[本体:捕獲]捕獲の実行", () => {
 });
 
 const NO_QUEST_IN_PROGRESS_GIVEN = "進行中のクエストが無いとき";
-const SCORED_GIVEN = "採点結果が最終評価点 75 で、進行中のクエストが無いとき";
+const SCORED_GIVEN = "採点結果がスコア 75 で、進行中のクエストが無いとき";
 const TRANSLATED_GIVEN = "入力した翻訳が「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」で、進行中のクエストが無いとき";
 const BALL_ACQUIRED_GIVEN = "ハイパーボールを獲得していて、進行中のクエストが無いとき";
 const ATTEMPTS_REMAINING_GIVEN = "残り挑戦回数が 2 で、進行中のクエストが無いとき";
@@ -1200,9 +1200,9 @@ describe("[本体:クエスト]新しいクエストの開始", () => {
       正常異常: "正常系",
       steps: [
         {
-          Given: `進行中のクエストが無く、出題の抽選で、図鑑番号 1、英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、伝説でも幻でもない、最大挑戦回数 3 回のクエストが選ばれるとき`,
+          Given: `進行中のクエストが無く、出題の抽選で、全国図鑑番号 1、英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、伝説でも幻でもない、最大挑戦回数 3 回のクエストが選ばれるとき`,
           When: [START_NEW_QUEST, SELECT_LOCATION],
-          Then: "出題の内容は、図鑑番号 1、英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、伝説でも幻でもない、最大挑戦回数 3 回になる",
+          Then: "出題の内容は、全国図鑑番号 1、英語の説明文「A strange seed was planted on its back at birth. The plant sprouts and grows with this Pokémon.」、伝説でも幻でもない、最大挑戦回数 3 回になる",
         },
       ],
     },
@@ -1306,8 +1306,8 @@ const FAILURE_RESPONSES: {
   {
     status: 429,
     body: { error: "user", message: "x" },
-    given: "ユーザーの日次上限に達しているとき",
-    recoveryCause: "ユーザーの日次上限に達していて",
+    given: "ユーザーごとの日次上限に達しているとき",
+    recoveryCause: "ユーザーごとの日次上限に達していて",
   },
   {
     status: 502,
@@ -1625,7 +1625,7 @@ describe("[本体:クエスト]クエストの再開", () => {
 
   const GUESSING_SESSION = "進行中のクエストが名前当て画面の段階のとき";
   const GUESSING_SESSION_SCORE =
-    "進行中のクエストが名前当て画面の段階で、採点結果が、最終評価点 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」であるとき";
+    "進行中のクエストが名前当て画面の段階で、採点結果が、スコア 75、講評「雷の嵐という訳がよくできている。集まるの意味も正しく伝わっている。」、日本語版の説明「何匹か　あつまっていると そこでは　強い　電気が　たまり 雷が　落ちることが　あるという。」であるとき";
   const GUESSING_SESSION_TRANSLATION =
     "進行中のクエストが名前当て画面の段階で、入力した翻訳が「このポケモンが何匹か集まると、強い電気がたまって雷が落ちることがある」であるとき";
   const GUESSING_SESSION_ATTEMPTS =

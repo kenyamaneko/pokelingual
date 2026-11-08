@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { validateTutorialTranslation, validateTutorialName } from "./tutorialValidation";
 import { defineCase, type Viewpoint } from "../test/defineCase";
 
-describe("[本体:チュートリアル]英文当てステップの入力の判定", () => {
+describe("[本体:チュートリアル]翻訳の段階の入力の判定", () => {
   const ACCEPTED_TRANSLATION_CASES: { label: string; input: string; 観点: readonly Viewpoint[] }[] = [
     { label: "「電気タイプのねずみポケモン」", input: "電気タイプのねずみポケモン", 観点: ["同値分割"] },
     { label: "「でんきタイプのねずみポケモン」", input: "でんきタイプのねずみポケモン", 観点: ["同値分割"] },
@@ -15,7 +15,7 @@ describe("[本体:チュートリアル]英文当てステップの入力の判�
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ When: [`英文当てステップの入力として${label}を判定する`], Then: "送信が許可される" }],
+        steps: [{ When: [`翻訳の段階の入力として${label}を判定する`], Then: "送信が許可される" }],
       },
       () => {
         expect(validateTutorialTranslation(input)).toBe(true);
@@ -35,7 +35,7 @@ describe("[本体:チュートリアル]英文当てステップの入力の判�
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
-        steps: [{ When: [`英文当てステップの入力として${label}を判定する`], Then: then }],
+        steps: [{ When: [`翻訳の段階の入力として${label}を判定する`], Then: then }],
       },
       () => {
         expect(validateTutorialTranslation(input)).toBe(false);
@@ -44,7 +44,7 @@ describe("[本体:チュートリアル]英文当てステップの入力の判�
   }
 });
 
-describe("[本体:チュートリアル]ポケモン名当てステップの入力の判定", () => {
+describe("[本体:チュートリアル]名前当ての段階の入力の判定", () => {
   const ACCEPTED_NAME_CASES: { label: string; input: string; 観点: readonly Viewpoint[] }[] = [
     { label: "「ピカチュウ」", input: "ピカチュウ", 観点: ["同値分割"] },
     { label: "「pikachu」", input: "pikachu", 観点: ["同値分割"] },
@@ -58,7 +58,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップの入�
         種別: "単体テスト",
         正常異常: "正常系",
         観点,
-        steps: [{ When: [`ポケモン名当てステップの入力として${label}を判定する`], Then: "送信が許可される" }],
+        steps: [{ When: [`名前当ての段階の入力として${label}を判定する`], Then: "送信が許可される" }],
       },
       () => {
         expect(validateTutorialName(input)).toBe(true);
@@ -78,7 +78,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップの入�
         種別: "単体テスト",
         正常異常: "異常系",
         観点,
-        steps: [{ When: [`ポケモン名当てステップの入力として${label}を判定する`], Then: then }],
+        steps: [{ When: [`名前当ての段階の入力として${label}を判定する`], Then: then }],
       },
       () => {
         expect(validateTutorialName(input)).toBe(false);

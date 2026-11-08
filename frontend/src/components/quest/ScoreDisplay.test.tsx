@@ -28,7 +28,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const DISPLAY_SCORE = "最終評価点の演出を始める";
+const DISPLAY_SCORE = "スコアの演出を始める";
 const WAIT_UNTIL_HP_DECREASE_ENDS = "HP の減少が終わるまで待つ";
 const WAIT_UNTIL_HP_BAR_SHOWS_85 = "HP バーが 85% を示すまで待つ";
 const WAIT_UNTIL_HP_NUMBER_SHOWS_85 = "HP の数値が 85% と表示されるまで待つ";
@@ -45,7 +45,7 @@ type HpBandRow = {
   viewpoints: readonly Viewpoint[];
 };
 
-describe("[本体:採点]最終評価点の演出", () => {
+describe("[本体:採点]スコアの演出", () => {
   defineCase(
     {
       種別: "単体テスト",
@@ -74,7 +74,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_NUMBER_SHOWS_85], Then: "HP バーが 85% を示す" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_NUMBER_SHOWS_85], Then: "HP バーが 85% を示す" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS / 2);
@@ -86,7 +86,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_BAR_SHOWS_85], Then: "HP の数値が 85% と表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_BAR_SHOWS_85], Then: "HP の数値が 85% と表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS / 2);
@@ -98,7 +98,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "HP バーが 70% を示す" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "HP バーが 70% を示す" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
@@ -110,7 +110,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "HP の数値が 70% と表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "HP の数値が 70% と表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
@@ -122,7 +122,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "ダメージ数値がまだ表示されていない" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "ダメージ数値がまだ表示されていない" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
@@ -134,7 +134,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "こうか表示「効果は　いまひとつのようだ」がまだ表示されていない" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "こうか表示「効果は　いまひとつのようだ」がまだ表示されていない" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS);
@@ -146,7 +146,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_EFFECT_REVEAL], Then: "ダメージ数値が 30% と表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_EFFECT_REVEAL], Then: "ダメージ数値が 30% と表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
@@ -158,7 +158,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_DAMAGE_REVEAL], Then: "こうか表示「効果は　いまひとつのようだ」が表示される" }],
+      steps: [{ Given: "スコアが 30 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_DAMAGE_REVEAL], Then: "こうか表示「効果は　いまひとつのようだ」が表示される" }],
     },
     () => {
       renderScoreDisplayAfter(30, METER_ANIMATION_DURATION_MS + DAMAGE_REVEAL_DELAY_MS);
@@ -170,7 +170,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 85 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_NUMBER_SHOWS_49], Then: "HP バーが 49% を示す" }],
+      steps: [{ Given: "スコアが 85 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_NUMBER_SHOWS_49], Then: "HP バーが 49% を示す" }],
     },
     () => {
       renderScoreDisplayAfter(85, METER_ANIMATION_DURATION_MS * 0.6);
@@ -182,7 +182,7 @@ describe("[本体:採点]最終評価点の演出", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ Given: "最終評価点が 85 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "HP バーが 15% を示す" }],
+      steps: [{ Given: "スコアが 85 のとき", When: [DISPLAY_SCORE, WAIT_UNTIL_HP_DECREASE_ENDS], Then: "HP バーが 15% を示す" }],
     },
     () => {
       renderScoreDisplayAfter(85, METER_ANIMATION_DURATION_MS);
@@ -210,7 +210,7 @@ describe("[本体:採点]最終評価点の演出", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: `最終評価点が ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は緑になる` }],
+        steps: [{ Given: `スコアが ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は緑になる` }],
       },
       () => {
         renderScoreDisplayAfter(score, METER_ANIMATION_DURATION_MS * elapsedRatio);
@@ -229,7 +229,7 @@ describe("[本体:採点]最終評価点の演出", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: `最終評価点が ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は黄になる` }],
+        steps: [{ Given: `スコアが ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は黄になる` }],
       },
       () => {
         renderScoreDisplayAfter(score, METER_ANIMATION_DURATION_MS * elapsedRatio);
@@ -247,7 +247,7 @@ describe("[本体:採点]最終評価点の演出", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: viewpoints,
-        steps: [{ Given: `最終評価点が ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は赤になる` }],
+        steps: [{ Given: `スコアが ${score} のとき`, When: operations, Then: `残り HP が ${remainingHp}% で、HP バーの色は赤になる` }],
       },
       () => {
         renderScoreDisplayAfter(score, METER_ANIMATION_DURATION_MS * elapsedRatio);

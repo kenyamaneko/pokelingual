@@ -5,12 +5,12 @@ import { defineCase } from "../../test/defineCase.js";
 
 const db = requireFirestoreEmulator();
 
-const USER_LIMIT_5 = "ユーザーの日次上限が 5 回に設定されているとき";
-const USER_LIMIT_REACHED = "ユーザーの日次上限に達しているとき";
+const USER_LIMIT_5 = "ユーザーごとの日次上限が 5 回に設定されているとき";
+const USER_LIMIT_REACHED = "ユーザーごとの日次上限に達しているとき";
 const RECORD_USAGE = "AI 呼び出し回数を記録する";
 const RECORD_5_TIMES = [RECORD_USAGE, RECORD_USAGE, RECORD_USAGE, RECORD_USAGE, RECORD_USAGE] as const;
 const RECORD_3_TIMES = [RECORD_USAGE, RECORD_USAGE, RECORD_USAGE] as const;
-const USER_LIMIT_ERROR = "ユーザーの日次上限に達したことを示すエラーになる";
+const USER_LIMIT_ERROR = "ユーザーごとの日次上限に達したことを示すエラーになる";
 const GLOBAL_LIMIT_ERROR = "全体の日次上限に達したことを示すエラーになる";
 const GET_USAGE = "AI 呼び出し回数を取得する";
 const NEWCOMER = "今日まだ記録の無いユーザーがいるとき";
@@ -63,7 +63,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "正常系",
       steps: [
         {
-          Given: "あるユーザーがユーザーの日次上限に達しているとき",
+          Given: "あるユーザーがユーザーごとの日次上限に達しているとき",
           When: ["別のユーザーの AI 呼び出し回数を記録する"],
           Then: "別のユーザーの今日の AI 呼び出し回数が 1 になる",
         },
@@ -103,7 +103,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "正常系",
       steps: [
         {
-          Given: `ユーザーの日次上限が 30 回に設定されていて、${NEWCOMER}`,
+          Given: `ユーザーごとの日次上限が 30 回に設定されていて、${NEWCOMER}`,
           When: [GET_USAGE],
           Then: "日次上限が 30 回になる",
         },
@@ -184,7 +184,7 @@ describe("[本体:AI 呼び出し回数]AI 呼び出し回数の記録と取得"
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの日次上限に余裕があり全体の日次上限に達しているとき",
+          Given: "ユーザーごとの日次上限に余裕があり全体の日次上限に達しているとき",
           When: [RECORD_USAGE],
           Then: GLOBAL_LIMIT_ERROR,
         },
@@ -210,7 +210,7 @@ describe("[本体:AI 呼び出し回数]日次上限のリセット", () => {
 
   for (const { given, userLimit, globalLimit, reachedKind } of [
     {
-      given: "JST 2026-05-28 23:59 にユーザーの日次上限まで記録が済んでいて、現在時刻が JST 2026-05-29 00:00 ちょうどのとき",
+      given: "JST 2026-05-28 23:59 にユーザーごとの日次上限まで記録が済んでいて、現在時刻が JST 2026-05-29 00:00 ちょうどのとき",
       userLimit: 1,
       globalLimit: 100,
       reachedKind: "user",
@@ -253,7 +253,7 @@ describe("[本体:AI 呼び出し回数]日次上限のリセット", () => {
       観点: ["境界値"],
       steps: [
         {
-          Given: "JST 2026-05-28 23:59 にユーザーの日次上限まで記録が済んでいて、現在時刻が JST 2026-05-28 23:59 のとき",
+          Given: "JST 2026-05-28 23:59 にユーザーごとの日次上限まで記録が済んでいて、現在時刻が JST 2026-05-28 23:59 のとき",
           When: [RECORD_USAGE],
           Then: USER_LIMIT_ERROR,
         },

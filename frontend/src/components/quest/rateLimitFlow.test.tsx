@@ -32,7 +32,7 @@ function setupRateLimited(usageResponses: DailyUsage[]): void {
   );
 }
 
-const USER_DAILY_LIMIT_REACHED_GIVEN = "ユーザーの日次上限に達しているとき";
+const USER_DAILY_LIMIT_REACHED_GIVEN = "ユーザーごとの日次上限に達しているとき";
 const MODAL_SHOWN_GIVEN = "日次上限モーダルが表示されているとき";
 const OPEN_QUEST_SCREEN = "クエスト画面を開く";
 const SUBMIT_TRANSLATION_FOR_SCORING = [
@@ -70,7 +70,7 @@ describe("[本体:AI 呼び出し回数]日次上限の表示", () => {
       正常異常: "異常系",
       steps: [
         {
-          Given: "ユーザーの日次上限に達していて、日次上限のメッセージが「きょうの　じょうげんに　たっしました」のとき",
+          Given: "ユーザーごとの日次上限に達していて、日次上限のメッセージが「きょうの　じょうげんに　たっしました」のとき",
           When: [OPEN_QUEST_SCREEN, ...SUBMIT_TRANSLATION_FOR_SCORING],
           Then: "日次上限モーダルに「きょうの　じょうげんに　たっしました」と表示される",
         },

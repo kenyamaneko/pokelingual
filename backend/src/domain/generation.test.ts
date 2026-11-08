@@ -7,12 +7,12 @@ import {
 import { defineCase } from "../test/defineCase.js";
 
 function findIDsOf(generationsText: string): string {
-  return `出題世代に${generationsText}を指定して、含まれる図鑑番号の一覧を求める`;
+  return `出題世代に${generationsText}を指定して、含まれる全国図鑑番号の一覧を求める`;
 }
 
 const FIND_IDS_OF_GENERATIONS_2_AND_4 = findIDsOf("第 2 世代と第 4 世代");
 
-describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
+describe("[本体:クエスト]出題世代に含まれる全国図鑑番号", () => {
   for (const { generation, id } of [
     { generation: 1, id: 1 },
     { generation: 1, id: 151 },
@@ -36,7 +36,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
+        steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `出題世代に含まれる全国図鑑番号の一覧は、全国図鑑番号 ${id} を含む` }],
       },
       () => {
         expect(collectPokemonIDsByGenerations([generation]).has(id)).toBe(true);
@@ -67,7 +67,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` }],
+        steps: [{ When: [findIDsOf(`第 ${generation} 世代だけ`)], Then: `出題世代に含まれる全国図鑑番号の一覧は、全国図鑑番号 ${id} を含まない` }],
       },
       () => {
         expect(collectPokemonIDsByGenerations([generation]).has(id)).toBe(false);
@@ -79,7 +79,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: [findIDsOf("第 1 世代だけ")], Then: "図鑑番号は 151 件になる" }],
+      steps: [{ When: [findIDsOf("第 1 世代だけ")], Then: "全国図鑑番号は 151 件になる" }],
     },
     () => {
       expect(collectPokemonIDsByGenerations([1]).size).toBe(151);
@@ -90,7 +90,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
     {
       種別: "単体テスト",
       正常異常: "正常系",
-      steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: "図鑑番号は 207 件になる" }],
+      steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: "全国図鑑番号は 207 件になる" }],
     },
     () => {
       expect(collectPokemonIDsByGenerations([2, 4]).size).toBe(207);
@@ -103,7 +103,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         種別: "単体テスト",
         正常異常: "正常系",
         観点: ["境界値"],
-        steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含む` }],
+        steps: [{ When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `出題世代に含まれる全国図鑑番号の一覧は、全国図鑑番号 ${id} を含む` }],
       },
       () => {
         expect(collectPokemonIDsByGenerations([2, 4]).has(id)).toBe(true);
@@ -118,7 +118,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
         正常異常: "正常系",
         観点: ["境界値"],
         steps: [
-          { When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `出題世代に含まれる図鑑番号の一覧は、図鑑番号 ${id} を含まない` },
+          { When: [FIND_IDS_OF_GENERATIONS_2_AND_4], Then: `出題世代に含まれる全国図鑑番号の一覧は、全国図鑑番号 ${id} を含まない` },
         ],
       },
       () => {
@@ -132,7 +132,7 @@ describe("[本体:クエスト]出題世代に含まれる図鑑番号", () => {
       種別: "単体テスト",
       正常異常: "異常系",
       観点: ["件数・有無"],
-      steps: [{ When: ["出題世代に世代を 1 つも指定せずに、含まれる図鑑番号の一覧を求める"], Then: "図鑑番号は 0 件になる" }],
+      steps: [{ When: ["出題世代に世代を 1 つも指定せずに、含まれる全国図鑑番号の一覧を求める"], Then: "全国図鑑番号は 0 件になる" }],
     },
     () => {
       expect(collectPokemonIDsByGenerations([]).size).toBe(0);
@@ -144,9 +144,9 @@ function buildPoolWith(excludedText: string): string {
   return `出題世代に第 1 世代、除外ポケモンに${excludedText}を指定して、出題プールを作る`;
 }
 
-const BUILD_POOL_EXCLUDING_5_AND_10 = buildPoolWith("図鑑番号 5 と 10");
+const BUILD_POOL_EXCLUDING_5_AND_10 = buildPoolWith("全国図鑑番号 5 と 10");
 
-describe("[本体:クエスト]出題プールの図鑑番号", () => {
+describe("[本体:クエスト]出題プールの全国図鑑番号", () => {
   defineCase(
     {
       種別: "単体テスト",
@@ -167,7 +167,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       steps: [
         {
           When: [BUILD_POOL_EXCLUDING_5_AND_10],
-          Then: "除外した図鑑番号 5 と 10 は出題プールに含まれない",
+          Then: "除外した全国図鑑番号 5 と 10 は出題プールに含まれない",
         },
       ],
     },
@@ -185,7 +185,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       steps: [
         {
           When: [BUILD_POOL_EXCLUDING_5_AND_10],
-          Then: "除外していない図鑑番号 1 は出題プールに含まれる",
+          Then: "除外していない全国図鑑番号 1 は出題プールに含まれる",
         },
       ],
     },
@@ -197,12 +197,12 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
 
   for (const { when, excluded, viewpoints } of [
     {
-      when: "出題世代に第 1 世代を指定し、除外ポケモンに図鑑番号を 1 つも指定せずに、出題プールを作る",
+      when: "出題世代に第 1 世代を指定し、除外ポケモンに全国図鑑番号を 1 つも指定せずに、出題プールを作る",
       excluded: [] as number[],
       viewpoints: ["件数・有無"] as const,
     },
     {
-      when: buildPoolWith("図鑑番号 200"),
+      when: buildPoolWith("全国図鑑番号 200"),
       excluded: [200],
       viewpoints: [] as const,
     },
@@ -228,7 +228,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          When: [buildPoolWith("図鑑番号 5 だけ")],
+          When: [buildPoolWith("全国図鑑番号 5 だけ")],
           Then: "出題プールは 150 件になる",
         },
       ],
@@ -246,7 +246,7 @@ describe("[本体:クエスト]出題プールの図鑑番号", () => {
       観点: ["件数・有無"],
       steps: [
         {
-          When: [buildPoolWith("図鑑番号 1 から 151 のすべて")],
+          When: [buildPoolWith("全国図鑑番号 1 から 151 のすべて")],
           Then: "出題プールは空になる",
         },
       ],

@@ -54,7 +54,7 @@ async function fillAndSubmitName(user: UserEvent, name: string): Promise<void> {
 }
 
 /**
- * 遊び方説明を閉じ、英文当てステップを突破してポケモン名当てステップまで進める。
+ * 遊び方説明を閉じ、翻訳の段階を突破して名前当ての段階まで進める。
  * @returns 操作継続に使う userEvent インスタンス。
  */
 async function proceedToNameStep(): Promise<UserEvent> {
@@ -65,7 +65,7 @@ async function proceedToNameStep(): Promise<UserEvent> {
 }
 
 /**
- * ポケモン名当てで正解し、ボールを使って結果画面まで到達させる。
+ * 名前当てで正解し、ボールを使って結果画面まで到達させる。
  * @returns 操作継続に使う userEvent インスタンス。
  */
 async function completeTutorial(): Promise<UserEvent> {
@@ -80,23 +80,23 @@ const OPEN_TUTORIAL = "チュートリアル画面を開く";
 const PRESS_INTRO_DISMISS = "チュートリアル画面の遊び方の説明モーダルで、「はじめる」ボタンを押す";
 const submitTranslation = (translation: string) =>
   [
-    `チュートリアル画面の英文当てステップの翻訳の入力欄に「${translation}」と入力する`,
-    "チュートリアル画面の英文当てステップで、「この翻訳に決めた！」ボタンを押す",
+    `チュートリアル画面の翻訳の入力欄に「${translation}」と入力する`,
+    "チュートリアル画面の翻訳の段階で、「この翻訳に決めた！」ボタンを押す",
   ] as const;
 const SUBMIT_TRANSLATION = submitTranslation("電気タイプのねずみポケモン");
 const SUBMIT_TRANSLATION_WITHOUT_ELECTRIC = submitTranslation("ねずみポケモン");
 const submitName = (name: string) =>
   [
-    `チュートリアル画面のポケモン名当てステップの名前の入力欄に「${name}」と入力する`,
-    "チュートリアル画面のポケモン名当てステップで、「君に　決めた！」ボタンを押す",
+    `チュートリアル画面の名前当ての入力欄に「${name}」と入力する`,
+    "チュートリアル画面の名前当ての段階で、「君に　決めた！」ボタンを押す",
   ] as const;
 const SUBMIT_NAME_PIKACHU = submitName("pikachu");
 const SUBMIT_NAME_PIKACHU_JA = submitName("ピカチュウ");
 const SUBMIT_NAME_RAICHU = submitName("raichu");
 const POKEMON_NAMES_GIVEN = "出題されたポケモンの英語名が「pikachu」、日本語名が「ピカチュウ」のとき";
 const PRESS_START_QUEST = "ホーム画面で、「ポケモンを探しに行く」ボタンを押す";
-const PRESS_PROCEED = "チュートリアル画面のポケモン名当てステップで、「次へ進む」ボタンを押す";
-const pressBall = (useButton: string) => `チュートリアル画面の捕獲ステップで、「${useButton}」ボタンを押す`;
+const PRESS_PROCEED = "チュートリアル画面の名前当ての段階で、「次へ進む」ボタンを押す";
+const pressBall = (useButton: string) => `チュートリアル画面の捕獲待機で、「${useButton}」ボタンを押す`;
 const SHAKE_GUIDE_BUBBLE = "案内の吹き出しが揺れる";
 
 describe("[本体:チュートリアル]遊び方の説明", () => {
@@ -143,7 +143,7 @@ describe("[本体:チュートリアル]遊び方の説明", () => {
   );
 });
 
-describe("[本体:チュートリアル]英文当てステップ", () => {
+describe("[本体:チュートリアル]翻訳の段階", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
@@ -194,7 +194,7 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
       steps: [
         {
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
-          Then: "最終評価点が上限の 99% と表示される",
+          Then: "スコアが上限の 99% と表示される",
         },
       ],
     },
@@ -252,7 +252,7 @@ describe("[本体:チュートリアル]英文当てステップ", () => {
   );
 });
 
-describe("[本体:チュートリアル]ポケモン名当てステップ", () => {
+describe("[本体:チュートリアル]名前当ての段階", () => {
   defineCase(
     {
       種別: "部品間結合テスト",
@@ -260,7 +260,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       steps: [
         {
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
-          Then: "ポケモン名当てステップの吹き出しにタイトル「このポケモンの名前を当てよう」と案内文「「ピカチュウ」または「pikachu」と入力してみてね」が表示される",
+          Then: "名前当ての段階の吹き出しにタイトル「このポケモンの名前を当てよう」と案内文「「ピカチュウ」または「pikachu」と入力してみてね」が表示される",
         },
       ],
     },
@@ -281,7 +281,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       steps: [
         {
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION],
-          Then: "ポケモン名当てステップに「ヒントを見る（チャンスを1回使う）」ボタンが表示されない",
+          Then: "名前当ての段階に「ヒントを見る（チャンスを1回使う）」ボタンが表示されない",
         },
       ],
     },
@@ -359,7 +359,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
       steps: [
         {
           When: [OPEN_TUTORIAL, PRESS_INTRO_DISMISS, ...SUBMIT_TRANSLATION, ...SUBMIT_NAME_RAICHU],
-          Then: "捕獲待機画面に進まず、名前の入力欄が表示されたままになる",
+          Then: "捕獲待機画面に進まず、名前当ての入力欄が表示されたままになる",
         },
       ],
     },
@@ -397,7 +397,7 @@ describe("[本体:チュートリアル]ポケモン名当てステップ", () =
   );
 });
 
-describe("[本体:チュートリアル]捕獲ステップと完了", () => {
+describe("[本体:チュートリアル]捕獲待機と完了", () => {
   for (const { input, submitNameOperations, useButton } of [
     { input: "pikachu", submitNameOperations: SUBMIT_NAME_PIKACHU, useButton: ULTRA_BALL_USE_BUTTON },
     { input: "ピカチュウ", submitNameOperations: SUBMIT_NAME_PIKACHU_JA, useButton: GREAT_BALL_USE_BUTTON },

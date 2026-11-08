@@ -289,7 +289,7 @@ describe("[本体:クエスト]インスタンス間でのセッションの引�
         {
           Given: BULBASAUR_ONLY,
           When: ALTERNATING_INSTANCES_OPERATIONS,
-          Then: "捕獲 API の応答のポケモンの図鑑番号は 1 になる",
+          Then: "捕獲 API の応答のポケモンの全国図鑑番号は 1 になる",
         },
       ],
     },
